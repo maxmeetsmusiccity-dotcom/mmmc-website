@@ -5,11 +5,15 @@ import type { User, Session } from '@supabase/supabase-js';
 const ADMIN_EMAILS = ['maxmeetsmusiccity@gmail.com', 'maxblachman@gmail.com'];
 
 export type UserMode = 'guest' | 'registered' | 'admin';
+export type UserRole = 'curator' | 'publicist' | 'admin';
+export type SubscriptionTier = 'free' | 'intelligence' | 'submissions' | 'priority';
 
 interface AuthState {
   user: User | null;
   session: Session | null;
   mode: UserMode;
+  role: UserRole;
+  tier: SubscriptionTier;
   loading: boolean;
   signInWithGoogle: () => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<void>;
@@ -18,6 +22,8 @@ interface AuthState {
   continueAsGuest: () => void;
   isGuest: boolean;
   isAdmin: boolean;
+  isPublicist: boolean;
+  hasTier: (required: SubscriptionTier) => boolean;
 }
 
 const AuthContext = createContext<AuthState | null>(null);
@@ -28,11 +34,25 @@ export function useAuth() {
   return ctx;
 }
 
+const TIER_ORDER: SubscriptionTier[] = ['free', 'intelligence', 'submissions', 'priority'];
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [guestMode, setGuestMode] = useState(false);
+  const [userRole, setUserRole] = useState<UserRole>('curator');
+  const [userTier, setUserTier] = useState<SubscriptionTier>('free');
+
+  // Fetch user profile for role/tier
+  const loadProfile = async (userId: string) => {
+    if (!supabase) return;
+    const { data } = await supabase.from('user_profiles').select('user_role, subscription_tier').eq('id', userId).single();
+    if (data) {
+      setUserRole((data.user_role as UserRole) || 'curator');
+      setUserTier((data.subscription_tier as SubscriptionTier) || 'free');
+    }
+  };
 
   useEffect(() => {
     if (!supabase) { setLoading(false); setGuestMode(true); return; }
@@ -40,12 +60,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
+      if (session?.user) loadProfile(session.user.id);
       setLoading(false);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
+      if (session?.user) loadProfile(session.user.id);
       setGuestMode(false);
     });
 
@@ -94,12 +116,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(false);
   };
 
+  const effectiveRole: UserRole = mode === 'admin' ? 'admin' : userRole;
+  const effectiveTier: SubscriptionTier = mode === 'admin' ? 'priority' : userTier;
+
+  const hasTier = (required: SubscriptionTier): boolean => {
+    return TIER_ORDER.indexOf(effectiveTier) >= TIER_ORDER.indexOf(required);
+  };
+
   return (
     <AuthContext.Provider value={{
       user, session, mode, loading,
+      role: effectiveRole,
+      tier: effectiveTier,
       signInWithGoogle, signInWithEmail, signUpWithEmail, signOut, continueAsGuest,
       isGuest: !user && guestMode,
       isAdmin: mode === 'admin',
+      isPublicist: effectiveRole === 'publicist' || effectiveRole === 'admin',
+      hasTier,
     }}>
       {children}
     </AuthContext.Provider>
