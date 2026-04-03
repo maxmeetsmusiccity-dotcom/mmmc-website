@@ -1,7 +1,7 @@
 import { clearToken } from './auth';
 
 const API = 'https://api.spotify.com/v1';
-const MAX_CONCURRENT = 5;
+const MAX_CONCURRENT = 10;
 
 export interface SpotifyArtist {
   id: string;
