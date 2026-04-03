@@ -2,8 +2,6 @@ import { useState, useEffect } from 'react';
 
 interface Props {
   selectedCount: number;
-  token: string;
-  playlistId: string;
   onPush: (mode: 'replace' | 'append') => Promise<void>;
   getPlaylistName: () => Promise<string>;
 }

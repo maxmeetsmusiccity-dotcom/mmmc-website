@@ -5,35 +5,49 @@ import {
   fetchFollowedArtists,
   fetchNewReleases,
   getLastFriday,
+  groupIntoReleases,
   replacePlaylistTracks,
   appendPlaylistTracks,
   getPlaylistName,
   type TrackItem,
+  type ReleaseCluster,
 } from '../lib/spotify';
+import {
+  type SelectionSlot,
+  type TargetCount,
+  TARGET_COUNTS,
+  buildSlots,
+  shuffleSlideGroup,
+  reorderInSlideGroup,
+  getSlideGroup,
+} from '../lib/selection';
 import { downloadJSON, downloadCSV, downloadArt } from '../lib/downloads';
-import ReleaseCard from '../components/ReleaseCard';
-import SelectionBar from '../components/SelectionBar';
+import ClusterCard from '../components/ClusterCard';
+import SlideGroup from '../components/SlideGroup';
 import FilterBar from '../components/FilterBar';
 import PlaylistPush from '../components/PlaylistPush';
 
 type Phase = 'auth' | 'scanning' | 'results';
-type SortKey = 'date' | 'artist' | 'title';
 type FilterKey = 'all' | 'single' | 'album';
+type SortKey = 'date' | 'artist' | 'title';
+type ViewMode = 'browse' | 'selected';
 
 const PLAYLIST_ID = '0ve1vYFkWoRaElCmfkw2IB';
 
 export default function NewMusicFriday() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [token, setToken] = useState<string | null>(getToken());
-  const [phase, setPhase] = useState<Phase>(token ? 'auth' : 'auth');
-  const [tracks, setTracks] = useState<TrackItem[]>([]);
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [phase, setPhase] = useState<Phase>('auth');
+  const [allTracks, setAllTracks] = useState<TrackItem[]>([]);
+  const [releases, setReleases] = useState<ReleaseCluster[]>([]);
+  const [selections, setSelections] = useState<SelectionSlot[]>([]);
+  const [targetCount, setTargetCount] = useState<TargetCount>(32);
   const [scanStatus, setScanStatus] = useState('');
   const [scanProgress, setScanProgress] = useState({ current: 0, total: 0 });
   const [filter, setFilter] = useState<FilterKey>('all');
   const [sort, setSort] = useState<SortKey>('date');
   const [search, setSearch] = useState('');
-  const [showSelectedOnly, setShowSelectedOnly] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('browse');
   const [error, setError] = useState('');
   const [artDownloading, setArtDownloading] = useState(false);
 
@@ -43,17 +57,14 @@ export default function NewMusicFriday() {
     if (code) {
       setSearchParams({}, { replace: true });
       exchangeCode(code)
-        .then(t => {
-          setToken(t);
-          setError('');
-        })
+        .then(t => { setToken(t); setError(''); })
         .catch(e => setError(`Auth failed: ${e.message}`));
     }
   }, [searchParams, setSearchParams]);
 
   // Auto-start scan when token arrives
   useEffect(() => {
-    if (token && phase === 'auth' && tracks.length === 0) {
+    if (token && phase === 'auth' && allTracks.length === 0) {
       runScan(token);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -73,12 +84,13 @@ export default function NewMusicFriday() {
       setScanStatus(`Scanning releases since ${cutoff}...`);
       setScanProgress({ current: 0, total: artists.length });
 
-      const results = await fetchNewReleases(artists, tkn, cutoff, (cur, tot) => {
+      const tracks = await fetchNewReleases(artists, tkn, cutoff, (cur, tot) => {
         setScanProgress({ current: cur, total: tot });
         setScanStatus(`Scanning: ${cur}/${tot} artists checked`);
       });
 
-      setTracks(results);
+      setAllTracks(tracks);
+      setReleases(groupIntoReleases(tracks));
       setPhase('results');
     } catch (e) {
       if ((e as Error).message === 'AUTH_EXPIRED') {
@@ -92,86 +104,104 @@ export default function NewMusicFriday() {
     }
   }, []);
 
-  const toggleSelect = useCallback((trackId: string) => {
-    setSelected(prev => {
-      const next = new Set(prev);
-      if (next.has(trackId)) {
-        next.delete(trackId);
-      } else {
-        if (next.size >= 32) {
-          // Soft cap — allow but we'll show warning
-        }
-        next.add(trackId);
+  // Selection helpers
+  const selectionByAlbum = useMemo(() => {
+    const map = new Map<string, SelectionSlot>();
+    for (const s of selections) map.set(s.albumId, s);
+    return map;
+  }, [selections]);
+
+  const handleSelectRelease = useCallback((cluster: ReleaseCluster, trackId?: string) => {
+    setSelections(prev => {
+      // Already selected? Update track choice
+      const existing = prev.findIndex(s => s.albumId === cluster.album_spotify_id);
+      if (existing >= 0) {
+        if (!trackId) return prev; // same click, ignore
+        const newTrack = cluster.tracks.find(t => t.track_id === trackId);
+        if (!newTrack) return prev;
+        const updated = [...prev];
+        updated[existing] = { ...updated[existing], track: newTrack };
+        return buildSlots(updated);
       }
-      return next;
+
+      // New selection
+      const chosenTrackId = trackId || cluster.titleTrackId;
+      const track = cluster.tracks.find(t => t.track_id === chosenTrackId) || cluster.tracks[0];
+
+      const newSlot: SelectionSlot = {
+        track,
+        albumId: cluster.album_spotify_id,
+        selectionNumber: prev.length + 1,
+        slideGroup: getSlideGroup(prev.length + 1),
+        positionInSlide: ((prev.length) % 8) + 1,
+        isCoverFeature: false,
+      };
+
+      return buildSlots([...prev, newSlot]);
     });
   }, []);
 
-  const filteredTracks = useMemo(() => {
-    let result = [...tracks];
+  const handleDeselect = useCallback((albumId: string) => {
+    setSelections(prev => buildSlots(prev.filter(s => s.albumId !== albumId)));
+  }, []);
 
-    // Filter by type
-    if (filter === 'single') {
-      result = result.filter(t => t.album_type === 'single' && t.total_tracks === 1);
-    } else if (filter === 'album') {
-      result = result.filter(t => t.album_type === 'album' || t.total_tracks > 1);
-    }
+  const handleShuffle = useCallback((slideGroup: number) => {
+    setSelections(prev => shuffleSlideGroup(prev, slideGroup));
+  }, []);
 
-    // Search
+  const handleReorder = useCallback((slideGroup: number, fromPos: number, toPos: number) => {
+    setSelections(prev => reorderInSlideGroup(prev, slideGroup, fromPos, toPos));
+  }, []);
+
+  const handleSetCoverFeature = useCallback((trackId: string) => {
+    setSelections(prev => prev.map(s => ({
+      ...s,
+      isCoverFeature: s.track.track_id === trackId,
+    })));
+  }, []);
+
+  // Filtered releases for browse mode
+  const filteredReleases = useMemo(() => {
+    let result = [...releases];
+    if (filter === 'single') result = result.filter(r => r.isSingle);
+    else if (filter === 'album') result = result.filter(r => !r.isSingle);
     if (search) {
       const q = search.toLowerCase();
-      result = result.filter(t =>
-        t.track_name.toLowerCase().includes(q) ||
-        t.artist_names.toLowerCase().includes(q) ||
-        t.album_name.toLowerCase().includes(q)
+      result = result.filter(r =>
+        r.album_name.toLowerCase().includes(q) ||
+        r.artist_names.toLowerCase().includes(q) ||
+        r.tracks.some(t => t.track_name.toLowerCase().includes(q))
       );
     }
-
-    // Show selected only
-    if (showSelectedOnly) {
-      result = result.filter(t => selected.has(t.track_id));
-    }
-
-    // Sort
-    if (sort === 'artist') {
-      result.sort((a, b) => a.artist_names.localeCompare(b.artist_names));
-    } else if (sort === 'title') {
-      result.sort((a, b) => a.track_name.localeCompare(b.track_name));
-    }
-    // 'date' is default sort from API
-
+    if (sort === 'artist') result.sort((a, b) => a.artist_names.localeCompare(b.artist_names));
+    else if (sort === 'title') result.sort((a, b) => a.album_name.localeCompare(b.album_name));
     return result;
-  }, [tracks, filter, sort, search, showSelectedOnly, selected]);
+  }, [releases, filter, sort, search]);
 
-  const selectedTracks = useMemo(
-    () => tracks.filter(t => selected.has(t.track_id)),
-    [tracks, selected],
-  );
+  // Release counts for filter labels
+  const singleCount = useMemo(() => releases.filter(r => r.isSingle).length, [releases]);
+  const albumCount = useMemo(() => releases.filter(r => !r.isSingle).length, [releases]);
+
+  // Slide groups for selected view
+  const slideGroups = useMemo(() => {
+    const groups: SelectionSlot[][] = [];
+    for (const slot of selections) {
+      while (groups.length < slot.slideGroup) groups.push([]);
+      groups[slot.slideGroup - 1].push(slot);
+    }
+    return groups;
+  }, [selections]);
+
+  // Selected tracks for downloads/playlist
+  const selectedTracks = useMemo(() => selections.map(s => s.track), [selections]);
 
   const handleDisconnect = () => {
     clearToken();
     setToken(null);
     setPhase('auth');
-    setTracks([]);
-    setSelected(new Set());
-  };
-
-  const handleDownloadAllArt = async () => {
-    setArtDownloading(true);
-    try {
-      await downloadArt(tracks);
-    } finally {
-      setArtDownloading(false);
-    }
-  };
-
-  const handleDownloadSelectedArt = async () => {
-    setArtDownloading(true);
-    try {
-      await downloadArt(selectedTracks);
-    } finally {
-      setArtDownloading(false);
-    }
+    setAllTracks([]);
+    setReleases([]);
+    setSelections([]);
   };
 
   const handlePlaylistPush = async (mode: 'replace' | 'append') => {
@@ -190,45 +220,29 @@ export default function NewMusicFriday() {
       <header style={{
         padding: '16px 24px',
         borderBottom: '1px solid var(--midnight-border)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        gap: 12,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        flexWrap: 'wrap', gap: 12,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <Link to="/" style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-            MMMC
-          </Link>
-          <h1 style={{
-            fontFamily: 'var(--font-display)',
-            fontSize: '1.25rem',
-            fontWeight: 600,
-          }}>
+          <Link to="/" style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>MMMC</Link>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', fontWeight: 600 }}>
             New Music Friday
           </h1>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           {token && phase === 'results' && (
-            <button className="btn btn-sm" onClick={() => runScan(token)}>
-              Re-scan
-            </button>
+            <button className="btn btn-sm" onClick={() => runScan(token)}>Re-scan</button>
           )}
           {token && (
-            <button className="btn btn-sm btn-danger" onClick={handleDisconnect}>
-              Disconnect
-            </button>
+            <button className="btn btn-sm btn-danger" onClick={handleDisconnect}>Disconnect</button>
           )}
         </div>
       </header>
 
       {error && (
         <div style={{
-          padding: '12px 24px',
-          background: 'rgba(204, 53, 53, 0.1)',
-          borderBottom: '1px solid var(--mmmc-red)',
-          color: '#E04A4A',
-          fontSize: '0.875rem',
+          padding: '12px 24px', background: 'rgba(204, 53, 53, 0.1)',
+          borderBottom: '1px solid var(--mmmc-red)', color: '#E04A4A', fontSize: '0.875rem',
         }}>
           {error}
         </div>
@@ -237,20 +251,11 @@ export default function NewMusicFriday() {
       {/* Auth Phase */}
       {phase === 'auth' && !token && (
         <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '60vh',
-          padding: 24,
-          textAlign: 'center',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          minHeight: '60vh', padding: 24, textAlign: 'center',
         }}>
           <div className="animate-float-up" style={{ maxWidth: 400 }}>
-            <h2 style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: '1.75rem',
-              marginBottom: 12,
-            }}>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.75rem', marginBottom: 12 }}>
               Connect <span style={{ color: 'var(--gold)' }}>Spotify</span>
             </h2>
             <p style={{ color: 'var(--text-secondary)', marginBottom: 32 }}>
@@ -262,7 +267,6 @@ export default function NewMusicFriday() {
               </svg>
               Connect Spotify
             </button>
-
             <div style={{ marginTop: 32 }}>
               <details style={{ textAlign: 'left' }}>
                 <summary style={{ color: 'var(--text-muted)', fontSize: '0.8rem', cursor: 'pointer' }}>
@@ -276,7 +280,6 @@ export default function NewMusicFriday() {
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         const val = (e.target as HTMLInputElement).value.trim();
-                        // Try to extract code from URL
                         try {
                           const url = new URL(val);
                           const code = url.searchParams.get('code');
@@ -285,7 +288,6 @@ export default function NewMusicFriday() {
                             return;
                           }
                         } catch { /* not a URL */ }
-                        // Try as raw token
                         if (val.length > 20) {
                           sessionStorage.setItem('spotify_token', val);
                           setToken(val);
@@ -306,31 +308,17 @@ export default function NewMusicFriday() {
       {/* Scanning Phase */}
       {phase === 'scanning' && (
         <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '60vh',
-          padding: 24,
-          textAlign: 'center',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          minHeight: '60vh', padding: 24, textAlign: 'center',
         }}>
           <div style={{ maxWidth: 480, width: '100%' }}>
-            <h2 style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: '1.5rem',
-              marginBottom: 24,
-            }}>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', marginBottom: 24 }}>
               Scanning<span style={{ color: 'var(--gold)' }}>...</span>
             </h2>
             <div className="progress-bar" style={{ marginBottom: 16 }}>
-              <div
-                className="progress-bar-fill"
-                style={{
-                  width: scanProgress.total > 0
-                    ? `${(scanProgress.current / scanProgress.total) * 100}%`
-                    : '0%',
-                }}
-              />
+              <div className="progress-bar-fill" style={{
+                width: scanProgress.total > 0 ? `${(scanProgress.current / scanProgress.total) * 100}%` : '0%',
+              }} />
             </div>
             <p className="mono" style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
               {scanStatus}
@@ -343,95 +331,170 @@ export default function NewMusicFriday() {
       {phase === 'results' && (
         <>
           {/* Selection bar */}
-          <SelectionBar
-            selectedCount={selected.size}
-            totalTracks={tracks.length}
-            showSelectedOnly={showSelectedOnly}
-            onToggleShowSelected={() => setShowSelectedOnly(v => !v)}
-          />
-
-          {/* Filter/sort/search bar */}
-          <FilterBar
-            filter={filter}
-            sort={sort}
-            search={search}
-            onFilterChange={setFilter}
-            onSortChange={setSort}
-            onSearchChange={setSearch}
-          />
-
-          {/* Download bar — all */}
-          <div style={{
-            padding: '12px 24px',
-            borderBottom: '1px solid var(--midnight-border)',
-            display: 'flex',
-            gap: 8,
-            flexWrap: 'wrap',
-            alignItems: 'center',
+          <div className="selection-bar" style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            flexWrap: 'wrap', gap: 12,
           }}>
-            <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginRight: 8 }}>All:</span>
-            <button className="btn btn-sm" onClick={handleDownloadAllArt} disabled={artDownloading}>
-              {artDownloading ? 'Downloading...' : 'Download All Art'}
-            </button>
-            <button className="btn btn-sm" onClick={() => downloadJSON(tracks, 'nmf-all-tracks.json')}>
-              JSON
-            </button>
-            <button className="btn btn-sm" onClick={() => downloadCSV(tracks, 'nmf-all-tracks.csv')}>
-              CSV
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                <span className="mono" style={{
+                  fontSize: '1.5rem', fontWeight: 700,
+                  color: selections.length > targetCount ? 'var(--mmmc-red)' : selections.length > 0 ? 'var(--gold)' : 'var(--text-muted)',
+                }}>
+                  {selections.length}
+                </span>
+                <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                  / {targetCount} selected
+                </span>
+                {selections.length > targetCount && (
+                  <span style={{ color: 'var(--mmmc-red)', fontSize: '0.75rem', fontWeight: 600 }}>Over limit!</span>
+                )}
+              </div>
 
-            {selected.size > 0 && (
-              <>
-                <span style={{ color: 'var(--midnight-border)', margin: '0 4px' }}>|</span>
-                <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginRight: 8 }}>Selected:</span>
-                <button className="btn btn-sm" onClick={handleDownloadSelectedArt} disabled={artDownloading}>
-                  Download Selected Art
-                </button>
-                <button className="btn btn-sm" onClick={() => downloadJSON(selectedTracks, 'nmf-curated.json')}>
-                  JSON
-                </button>
-                <button className="btn btn-sm" onClick={() => downloadCSV(selectedTracks, 'nmf-curated.csv')}>
-                  CSV
-                </button>
-              </>
-            )}
+              {/* Target count selector */}
+              <select
+                value={targetCount}
+                onChange={e => setTargetCount(Number(e.target.value) as TargetCount)}
+                style={{
+                  background: 'var(--midnight)', border: '1px solid var(--midnight-border)',
+                  borderRadius: 8, color: 'var(--text-secondary)', padding: '4px 8px',
+                  fontSize: '0.75rem', fontFamily: 'var(--font-mono)',
+                }}
+              >
+                {TARGET_COUNTS.map(n => (
+                  <option key={n} value={n}>{n} tracks ({n / 8} slides)</option>
+                ))}
+              </select>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>
+                {singleCount} singles, {albumCount} albums/EPs
+              </span>
+              <button
+                className={`filter-pill ${viewMode === 'browse' ? 'active' : ''}`}
+                onClick={() => setViewMode('browse')}
+              >
+                Browse
+              </button>
+              <button
+                className={`filter-pill ${viewMode === 'selected' ? 'active' : ''}`}
+                onClick={() => setViewMode('selected')}
+              >
+                Selected ({selections.length})
+              </button>
+            </div>
           </div>
 
-          {/* Playlist push */}
-          {selected.size > 0 && token && (
-            <PlaylistPush
-              selectedCount={selected.size}
-              token={token}
-              playlistId={PLAYLIST_ID}
-              onPush={handlePlaylistPush}
-              getPlaylistName={() => getPlaylistName(token, PLAYLIST_ID)}
-            />
+          {/* Browse mode */}
+          {viewMode === 'browse' && (
+            <>
+              <FilterBar
+                filter={filter} sort={sort} search={search}
+                onFilterChange={setFilter} onSortChange={setSort} onSearchChange={setSearch}
+              />
+
+              {/* Download bar */}
+              <div style={{
+                padding: '12px 24px', borderBottom: '1px solid var(--midnight-border)',
+                display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center',
+              }}>
+                <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginRight: 8 }}>All:</span>
+                <button className="btn btn-sm" onClick={async () => { setArtDownloading(true); try { await downloadArt(allTracks); } finally { setArtDownloading(false); } }} disabled={artDownloading}>
+                  {artDownloading ? 'Downloading...' : 'Download All Art'}
+                </button>
+                <button className="btn btn-sm" onClick={() => downloadJSON(allTracks, 'nmf-all-tracks.json')}>JSON</button>
+                <button className="btn btn-sm" onClick={() => downloadCSV(allTracks, 'nmf-all-tracks.csv')}>CSV</button>
+
+                {selections.length > 0 && (
+                  <>
+                    <span style={{ color: 'var(--midnight-border)', margin: '0 4px' }}>|</span>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginRight: 8 }}>Selected:</span>
+                    <button className="btn btn-sm" onClick={async () => { setArtDownloading(true); try { await downloadArt(selectedTracks); } finally { setArtDownloading(false); } }} disabled={artDownloading}>
+                      Download Selected Art
+                    </button>
+                    <button className="btn btn-sm" onClick={() => downloadJSON(selectedTracks, 'nmf-curated.json')}>JSON</button>
+                    <button className="btn btn-sm" onClick={() => downloadCSV(selectedTracks, 'nmf-curated.csv')}>CSV</button>
+                  </>
+                )}
+              </div>
+
+              {/* Playlist push */}
+              {selections.length > 0 && token && (
+                <PlaylistPush
+                  selectedCount={selections.length}
+                  onPush={handlePlaylistPush}
+                  getPlaylistName={() => getPlaylistName(token, PLAYLIST_ID)}
+                />
+              )}
+
+              {/* Release grid */}
+              <div style={{ padding: 24 }}>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: 16 }}>
+                  <span className="mono">{filteredReleases.length}</span> releases
+                  {search && ` matching "${search}"`}
+                </p>
+                <div className="release-grid">
+                  {filteredReleases.map(cluster => (
+                    <ClusterCard
+                      key={cluster.album_spotify_id}
+                      cluster={cluster}
+                      selectionSlot={selectionByAlbum.get(cluster.album_spotify_id) || null}
+                      hasSelections={selections.length > 0}
+                      onSelectRelease={handleSelectRelease}
+                      onDeselect={handleDeselect}
+                    />
+                  ))}
+                </div>
+                {filteredReleases.length === 0 && (
+                  <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginTop: 48 }}>
+                    {releases.length === 0 ? 'No new releases found since last Friday.' : 'No releases match your filters.'}
+                  </p>
+                )}
+              </div>
+            </>
           )}
 
-          {/* Track grid */}
-          <div style={{ padding: 24 }}>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: 16 }}>
-              <span className="mono">{filteredTracks.length}</span> tracks
-              {search && ` matching "${search}"`}
-              {showSelectedOnly && ' (selected only)'}
-            </p>
-            <div className="release-grid">
-              {filteredTracks.map(track => (
-                <ReleaseCard
-                  key={track.track_id}
-                  track={track}
-                  isSelected={selected.has(track.track_id)}
-                  hasSelections={selected.size > 0}
-                  onToggle={() => toggleSelect(track.track_id)}
-                />
-              ))}
+          {/* Selected / Slide view */}
+          {viewMode === 'selected' && (
+            <div style={{ padding: 24 }}>
+              {selections.length === 0 ? (
+                <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginTop: 48 }}>
+                  No tracks selected yet. Switch to Browse to start selecting.
+                </p>
+              ) : (
+                <>
+                  {/* Download/push bar for selected */}
+                  <div style={{
+                    display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 24,
+                  }}>
+                    <button className="btn btn-sm" onClick={async () => { setArtDownloading(true); try { await downloadArt(selectedTracks); } finally { setArtDownloading(false); } }} disabled={artDownloading}>
+                      Download Selected Art
+                    </button>
+                    <button className="btn btn-sm" onClick={() => downloadJSON(selectedTracks, 'nmf-curated.json')}>JSON</button>
+                    <button className="btn btn-sm" onClick={() => downloadCSV(selectedTracks, 'nmf-curated.csv')}>CSV</button>
+                    {token && (
+                      <button className="btn btn-gold btn-sm" onClick={() => handlePlaylistPush('replace')}>
+                        Push to Playlist (Replace)
+                      </button>
+                    )}
+                  </div>
+
+                  {slideGroups.map((slots, i) => (
+                    <SlideGroup
+                      key={i}
+                      slideNumber={i + 1}
+                      slots={slots}
+                      onShuffle={() => handleShuffle(i + 1)}
+                      onReorder={(from, to) => handleReorder(i + 1, from, to)}
+                      onSetCoverFeature={handleSetCoverFeature}
+                      onDeselect={handleDeselect}
+                    />
+                  ))}
+                </>
+              )}
             </div>
-            {filteredTracks.length === 0 && (
-              <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginTop: 48, fontSize: '1rem' }}>
-                {tracks.length === 0 ? 'No new releases found since last Friday.' : 'No tracks match your filters.'}
-              </p>
-            )}
-          </div>
+          )}
         </>
       )}
     </div>

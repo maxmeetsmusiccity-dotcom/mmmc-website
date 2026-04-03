@@ -58,6 +58,71 @@ export interface TrackItem {
   cover_art_64: string;
 }
 
+export interface ReleaseCluster {
+  album_spotify_id: string;
+  album_name: string;
+  album_type: string;
+  release_date: string;
+  artist_names: string;
+  total_tracks: number;
+  cover_art_640: string;
+  cover_art_300: string;
+  cover_art_64: string;
+  album_spotify_url: string;
+  isSingle: boolean;
+  tracks: TrackItem[];
+  titleTrackId: string; // best default track
+}
+
+/** Group flat track list into release clusters */
+export function groupIntoReleases(tracks: TrackItem[]): ReleaseCluster[] {
+  const map = new Map<string, TrackItem[]>();
+  for (const t of tracks) {
+    const arr = map.get(t.album_spotify_id) || [];
+    arr.push(t);
+    map.set(t.album_spotify_id, arr);
+  }
+
+  const clusters: ReleaseCluster[] = [];
+  for (const [albumId, albumTracks] of map) {
+    albumTracks.sort((a, b) => a.track_number - b.track_number);
+    const first = albumTracks[0];
+    const isSingle = first.total_tracks === 1 && first.album_type === 'single';
+
+    // Find title track: track name matches or contains album name
+    const albumLower = first.album_name.toLowerCase();
+    const titleTrack = albumTracks.find(t =>
+      t.track_name.toLowerCase() === albumLower ||
+      albumLower.includes(t.track_name.toLowerCase()) ||
+      t.track_name.toLowerCase().includes(albumLower)
+    ) || albumTracks[0];
+
+    clusters.push({
+      album_spotify_id: albumId,
+      album_name: first.album_name,
+      album_type: first.album_type,
+      release_date: first.release_date,
+      artist_names: first.artist_names,
+      total_tracks: first.total_tracks,
+      cover_art_640: first.cover_art_640,
+      cover_art_300: first.cover_art_300,
+      cover_art_64: first.cover_art_64,
+      album_spotify_url: first.album_spotify_url,
+      isSingle,
+      tracks: albumTracks,
+      titleTrackId: titleTrack.track_id,
+    });
+  }
+
+  // Sort by release date desc, then artist name
+  clusters.sort((a, b) => {
+    const d = b.release_date.localeCompare(a.release_date);
+    return d !== 0 ? d : a.artist_names.localeCompare(b.artist_names);
+  });
+
+  return clusters;
+}
+
 async function apiFetch(url: string, token: string, retries = 0): Promise<Response> {
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` },
