@@ -133,8 +133,13 @@ async function apiFetch(url: string, token: string, retries = 3): Promise<Respon
 
   if (res.status === 429 && retries > 0) {
     const wait = parseInt(res.headers.get('Retry-After') || '5', 10) * 1000;
+    console.warn(`[429] Retry-After ${wait / 1000}s — retries left: ${retries - 1}`);
     await sleep(wait);
     return apiFetch(url, token, retries - 1);
+  }
+  if (res.status === 429) {
+    console.error('[429] Retries exhausted — throwing');
+    throw new Error('RATE_LIMITED');
   }
 
   if (!res.ok) {
@@ -214,7 +219,9 @@ export async function fetchNewReleases(
         `${API}/artists/${artist.id}/albums?include_groups=album,single&limit=10&market=US`,
         token,
       );
+      console.log(`[SCAN] artist ${artist.name}: status=${res.status}`);
       const data = await res.json();
+      console.log(`[SCAN] artist ${artist.name}: ${data.items?.length ?? 'NO ITEMS'} albums, first release_date=${data.items?.[0]?.release_date} precision=${data.items?.[0]?.release_date_precision}`);
       for (const album of (data.items as (SpotifyAlbum & { release_date_precision?: string })[])) {
         // Only use early exit when date precision is 'day' — year/month precision
         // produces strings like "2026" or "2026-03" that compare falsely as "old"
@@ -366,6 +373,7 @@ export async function fetchNewReleases(
     return a.artist_names.localeCompare(b.artist_names);
   });
 
+  console.log(`[SCAN COMPLETE] cutoffDate=${cutoffDate}, albumMap size=${albumMap.size}, allTracks=${allTracks.length}, finalTracks=${finalTracks.length}`);
   return finalTracks;
 }
 
