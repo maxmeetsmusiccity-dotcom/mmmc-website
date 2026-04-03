@@ -55,7 +55,7 @@ export default function SlideGroup({ slideNumber, slots, onShuffle, onReorder, o
         display: 'grid',
         gridTemplateColumns: 'repeat(3, 1fr)',
         gap: 8,
-        maxWidth: 360,
+        maxWidth: 'min(360px, 100%)',
       }}>
         {Array.from({ length: 9 }, (_, i) => {
           // Position 4 (0-indexed) = center = MMMC logo

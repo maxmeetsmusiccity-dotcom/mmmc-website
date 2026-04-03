@@ -32,12 +32,23 @@ import CarouselPreview from '../components/CarouselPreview';
 import TagBlocks from '../components/TagBlocks';
 import WeekHistory from '../components/WeekHistory';
 
-type Phase = 'auth' | 'scanning' | 'results';
+type Phase = 'auth' | 'ready' | 'scanning' | 'results';
 type FilterKey = 'all' | 'single' | 'album';
 type SortKey = 'date' | 'artist' | 'title';
 type ViewMode = 'browse' | 'selected' | 'history';
 
 const PLAYLIST_ID = '0ve1vYFkWoRaElCmfkw2IB';
+
+const DEMO_TRACKS: TrackItem[] = [
+  { track_id: 'demo1', track_uri: 'spotify:track:demo1', track_name: 'Never Wanted To Know', track_number: 1, artist_names: 'Ashley Cooke', artist_id: 'demo_art1', artist_spotify_url: '', artist_genres: ['country'], artist_followers: 500000, album_name: 'Never Wanted To Know', album_spotify_id: 'demoalb1', album_type: 'single', album_spotify_url: '', cover_art_300: 'https://picsum.photos/seed/cooke/300/300', cover_art_640: 'https://picsum.photos/seed/cooke/640/640', cover_art_64: 'https://picsum.photos/seed/cooke/64/64', release_date: '2026-04-03', total_tracks: 1, track_spotify_url: 'https://open.spotify.com/track/demo1', duration_ms: 198000, explicit: false },
+  { track_id: 'demo2', track_uri: 'spotify:track:demo2', track_name: 'Come Back To Me', track_number: 1, artist_names: 'Ella Langley', artist_id: 'demo_art2', artist_spotify_url: '', artist_genres: ['country'], artist_followers: 300000, album_name: 'Come Back To Me', album_spotify_id: 'demoalb2', album_type: 'single', album_spotify_url: '', cover_art_300: 'https://picsum.photos/seed/langley/300/300', cover_art_640: 'https://picsum.photos/seed/langley/640/640', cover_art_64: 'https://picsum.photos/seed/langley/64/64', release_date: '2026-04-03', total_tracks: 1, track_spotify_url: 'https://open.spotify.com/track/demo2', duration_ms: 210000, explicit: false },
+  { track_id: 'demo3', track_uri: 'spotify:track:demo3', track_name: 'Gold Rush', track_number: 1, artist_names: 'Carter Faith', artist_id: 'demo_art3', artist_spotify_url: '', artist_genres: ['country'], artist_followers: 150000, album_name: 'Gold Rush', album_spotify_id: 'demoalb3', album_type: 'single', album_spotify_url: '', cover_art_300: 'https://picsum.photos/seed/faith/300/300', cover_art_640: 'https://picsum.photos/seed/faith/640/640', cover_art_64: 'https://picsum.photos/seed/faith/64/64', release_date: '2026-04-03', total_tracks: 1, track_spotify_url: 'https://open.spotify.com/track/demo3', duration_ms: 223000, explicit: false },
+  { track_id: 'demo4', track_uri: 'spotify:track:demo4', track_name: 'Waitin On You', track_number: 1, artist_names: 'Tigirlily Gold', artist_id: 'demo_art4', artist_spotify_url: '', artist_genres: ['country'], artist_followers: 200000, album_name: 'Waitin On You', album_spotify_id: 'demoalb4', album_type: 'single', album_spotify_url: '', cover_art_300: 'https://picsum.photos/seed/tigirlily/300/300', cover_art_640: 'https://picsum.photos/seed/tigirlily/640/640', cover_art_64: 'https://picsum.photos/seed/tigirlily/64/64', release_date: '2026-04-03', total_tracks: 1, track_spotify_url: 'https://open.spotify.com/track/demo4', duration_ms: 187000, explicit: false },
+  { track_id: 'demo5', track_uri: 'spotify:track:demo5', track_name: 'Heartbreak Hotel', track_number: 1, artist_names: 'Lainey Wilson', artist_id: 'demo_art5', artist_spotify_url: '', artist_genres: ['country'], artist_followers: 800000, album_name: 'Heartbreak Hotel', album_spotify_id: 'demoalb5', album_type: 'single', album_spotify_url: '', cover_art_300: 'https://picsum.photos/seed/wilson/300/300', cover_art_640: 'https://picsum.photos/seed/wilson/640/640', cover_art_64: 'https://picsum.photos/seed/wilson/64/64', release_date: '2026-04-04', total_tracks: 1, track_spotify_url: 'https://open.spotify.com/track/demo5', duration_ms: 201000, explicit: false },
+  { track_id: 'demo6', track_uri: 'spotify:track:demo6', track_name: 'Sand In My Boots', track_number: 1, artist_names: 'Morgan Wallen', artist_id: 'demo_art6', artist_spotify_url: '', artist_genres: ['country'], artist_followers: 2000000, album_name: 'Sand In My Boots', album_spotify_id: 'demoalb6', album_type: 'single', album_spotify_url: '', cover_art_300: 'https://picsum.photos/seed/wallen/300/300', cover_art_640: 'https://picsum.photos/seed/wallen/640/640', cover_art_64: 'https://picsum.photos/seed/wallen/64/64', release_date: '2026-04-04', total_tracks: 1, track_spotify_url: 'https://open.spotify.com/track/demo6', duration_ms: 234000, explicit: false },
+  { track_id: 'demo7', track_uri: 'spotify:track:demo7', track_name: 'Burn It Down', track_number: 1, artist_names: 'Zach Bryan', artist_id: 'demo_art7', artist_spotify_url: '', artist_genres: ['country'], artist_followers: 3000000, album_name: 'Burn It Down', album_spotify_id: 'demoalb7', album_type: 'single', album_spotify_url: '', cover_art_300: 'https://picsum.photos/seed/bryan/300/300', cover_art_640: 'https://picsum.photos/seed/bryan/640/640', cover_art_64: 'https://picsum.photos/seed/bryan/64/64', release_date: '2026-04-04', total_tracks: 1, track_spotify_url: 'https://open.spotify.com/track/demo7', duration_ms: 219000, explicit: false },
+  { track_id: 'demo8', track_uri: 'spotify:track:demo8', track_name: 'Take It Easy', track_number: 1, artist_names: 'Kelsea Ballerini', artist_id: 'demo_art8', artist_spotify_url: '', artist_genres: ['country'], artist_followers: 1000000, album_name: 'Take It Easy', album_spotify_id: 'demoalb8', album_type: 'single', album_spotify_url: '', cover_art_300: 'https://picsum.photos/seed/ballerini/300/300', cover_art_640: 'https://picsum.photos/seed/ballerini/640/640', cover_art_64: 'https://picsum.photos/seed/ballerini/64/64', release_date: '2026-04-04', total_tracks: 1, track_spotify_url: 'https://open.spotify.com/track/demo8', duration_ms: 195000, explicit: false },
+];
 
 export default function NewMusicFriday() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -57,6 +68,9 @@ export default function NewMusicFriday() {
   const [artDownloading, setArtDownloading] = useState(false);
   const [artistCount, setArtistCount] = useState(0);
   const [rateLimited, setRateLimited] = useState(false);
+  const [lastScanned, setLastScanned] = useState<string | null>(null);
+  const [isDemoMode, setIsDemoMode] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   // Handle OAuth callback
   useEffect(() => {
@@ -69,9 +83,7 @@ export default function NewMusicFriday() {
     }
   }, [searchParams, setSearchParams]);
 
-  const [lastScanned, setLastScanned] = useState<string | null>(null);
-
-  // Try to load cached results on mount
+  // On mount: try to load cached results. NEVER auto-scan.
   useEffect(() => {
     const cached = sessionStorage.getItem(`nmf_scan_${weekDate}`);
     if (cached) {
@@ -84,7 +96,7 @@ export default function NewMusicFriday() {
           setLastScanned(timestamp);
           return;
         }
-      } catch { /* corrupted cache, ignore */ }
+      } catch { /* corrupted cache */ }
     }
     // No session cache — try Supabase
     import('../lib/supabase').then(({ getWeek }) => {
@@ -95,9 +107,7 @@ export default function NewMusicFriday() {
           setReleases(groupIntoReleases(tracks));
           setPhase('results');
           setLastScanned(week.updated_at || week.created_at || null);
-          // Warm session cache
           sessionStorage.setItem(`nmf_scan_${weekDate}`, JSON.stringify({ tracks, timestamp: week.updated_at }));
-          // Restore selections if saved
           if (week.selections && Array.isArray(week.selections)) {
             setSelections(buildSlots(week.selections as SelectionSlot[]));
           }
@@ -107,17 +117,21 @@ export default function NewMusicFriday() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // When token arrives and no results loaded, DON'T scan if we have cached results
+  // When token arrives: move to ready (NOT scan). If we already have results, stay there.
   useEffect(() => {
-    if (token && phase === 'auth' && allTracks.length === 0) {
-      runScan(token);
-    }
-    // If token arrives but we already have results (from cache), just stay in results
-    if (token && phase === 'results') {
-      // Spotify connected silently — ready for playlist push
+    if (token && phase === 'auth') {
+      setPhase('ready');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
+
+  const loadDemo = () => {
+    setAllTracks(DEMO_TRACKS);
+    setReleases(groupIntoReleases(DEMO_TRACKS));
+    setIsDemoMode(true);
+    setPhase('results');
+    setError('');
+  };
 
   const runScan = useCallback(async (tkn: string) => {
     setPhase('scanning');
@@ -400,6 +414,9 @@ export default function NewMusicFriday() {
               </svg>
               Connect Spotify
             </button>
+            <button className="btn" onClick={loadDemo} style={{ fontSize: '1rem', padding: '14px 32px' }}>
+              Try Demo
+            </button>
             <div style={{ marginTop: 32 }}>
               <details style={{ textAlign: 'left' }}>
                 <summary style={{ color: 'var(--text-muted)', fontSize: '0.8rem', cursor: 'pointer' }}>
@@ -435,6 +452,49 @@ export default function NewMusicFriday() {
               </details>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Ready Phase — token received, waiting for explicit scan */}
+      {phase === 'ready' && (
+        <div style={{
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          minHeight: '60vh', padding: 24, textAlign: 'center',
+        }}>
+          <div className="animate-float-up" style={{ maxWidth: 480 }}>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.75rem', marginBottom: 12 }}>
+              Ready to <span style={{ color: 'var(--gold)' }}>Scan</span>
+            </h2>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: 32 }}>
+              Connected to Spotify. Click below to scan your followed artists for new releases since last Friday.
+            </p>
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+              <button className="btn btn-gold" onClick={() => token && runScan(token)} style={{ fontSize: '1rem', padding: '14px 32px' }}>
+                Scan New Releases
+              </button>
+              <button className="btn" onClick={loadDemo}>
+                Try Demo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Demo mode banner */}
+      {isDemoMode && (
+        <div style={{
+          background: 'rgba(212,168,67,0.12)', borderBottom: '1px solid var(--gold-dark)',
+          padding: '8px 24px', fontSize: '0.8rem', color: 'var(--gold)',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        }}>
+          <span>Demo mode — showing sample data. Connect Spotify and scan to see your real releases.</span>
+          <button
+            className="btn btn-sm"
+            onClick={() => { setIsDemoMode(false); setAllTracks([]); setReleases([]); setSelections([]); setPhase(token ? 'ready' : 'auth'); }}
+            style={{ fontSize: '0.7rem' }}
+          >
+            Exit Demo
+          </button>
         </div>
       )}
 
@@ -658,6 +718,10 @@ export default function NewMusicFriday() {
                     </button>
                     <button className="btn btn-sm" onClick={() => downloadJSON(selectedTracks, 'nmf-curated.json')}>JSON</button>
                     <button className="btn btn-sm" onClick={() => downloadCSV(selectedTracks, 'nmf-curated.csv')}>CSV</button>
+                    <button className="btn btn-sm" onClick={async () => {
+                      await navigator.clipboard.writeText(JSON.stringify(selectedTracks, null, 2));
+                      setCopied(true); setTimeout(() => setCopied(false), 2000);
+                    }}>{copied ? 'Copied!' : 'Copy Manifest'}</button>
                     {token && (
                       <button className="btn btn-gold btn-sm" onClick={() => handlePlaylistPush('replace')}>
                         Push to Playlist (Replace)

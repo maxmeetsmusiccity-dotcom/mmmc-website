@@ -27,40 +27,48 @@ export default function TagBlocks({ slideGroups }: Props) {
 
   const handleResolveAll = async () => {
     setResolving(true);
-    const newHandles = new Map(handles);
+    const accumulated = new Map(handles);
 
+    // Mark all as loading in one batch
     for (const name of allArtists) {
-      if (newHandles.has(name) && !newHandles.get(name)!.loading) continue;
-      newHandles.set(name, {
+      if (accumulated.has(name) && !accumulated.get(name)!.loading) continue;
+      accumulated.set(name, {
         artist_name: name, handle: null, source: 'unknown',
         confidence: 'low', pg_id: null, loading: true,
       });
-      setHandles(new Map(newHandles));
+    }
+    setHandles(new Map(accumulated));
 
+    // Resolve all, then batch update once
+    for (const name of allArtists) {
+      if (handles.has(name) && !handles.get(name)!.loading) continue;
       try {
         const result = await resolveInstagramHandle(name);
-        newHandles.set(name, result);
+        accumulated.set(name, result);
       } catch {
-        newHandles.set(name, {
+        accumulated.set(name, {
           artist_name: name, handle: null, source: 'unknown',
           confidence: 'low', pg_id: null, loading: false,
         });
       }
-      setHandles(new Map(newHandles));
     }
+    setHandles(new Map(accumulated));
     setResolving(false);
   };
 
+  const HANDLE_REGEX = /^@?[a-zA-Z0-9_.]{1,30}$/;
+
   const handleEditHandle = (artistName: string, newHandle: string) => {
-    const existing = handles.get(artistName);
+    const cleaned = newHandle.trim().replace(/^@/, '');
+    if (cleaned && !HANDLE_REGEX.test(cleaned)) return; // silently reject invalid
     setHandles(prev => {
       const next = new Map(prev);
       next.set(artistName, {
         artist_name: artistName,
-        handle: newHandle.startsWith('@') ? newHandle : `@${newHandle}`,
+        handle: cleaned ? `@${cleaned}` : null,
         source: 'nmf_manual',
         confidence: 'high',
-        pg_id: existing?.pg_id || null,
+        pg_id: prev.get(artistName)?.pg_id || null,
         loading: false,
       });
       return next;

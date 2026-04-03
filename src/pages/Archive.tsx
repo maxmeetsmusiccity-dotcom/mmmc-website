@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { listWeeks, searchFeatures, type NMFWeek, type NMFFeature } from '../lib/supabase';
 
@@ -9,18 +9,22 @@ export default function Archive() {
   const [expandedWeek, setExpandedWeek] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
     listWeeks().then(w => { setWeeks(w); setLoading(false); });
   }, []);
 
-  const handleSearch = async (query: string) => {
+  const handleSearch = (query: string) => {
     setSearch(query);
+    clearTimeout(debounceRef.current);
     if (query.length < 2) { setFeatures([]); return; }
-    setSearching(true);
-    const results = await searchFeatures(query);
-    setFeatures(results);
-    setSearching(false);
+    debounceRef.current = setTimeout(async () => {
+      setSearching(true);
+      const results = await searchFeatures(query);
+      setFeatures(results);
+      setSearching(false);
+    }, 300);
   };
 
   // Group search results by week
