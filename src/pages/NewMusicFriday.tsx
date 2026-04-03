@@ -23,7 +23,7 @@ import {
   getSlideGroup,
 } from '../lib/selection';
 import { downloadJSON, downloadCSV, downloadArt } from '../lib/downloads';
-import { saveWeek, saveFeatures, type NMFWeek } from '../lib/supabase';
+import { saveWeek, saveFeatures, getFeatureCounts, type NMFWeek } from '../lib/supabase';
 import { batchResolveAppleMusic } from '../lib/apple-music';
 import ClusterCard from '../components/ClusterCard';
 import SlideGroup from '../components/SlideGroup';
@@ -73,6 +73,7 @@ export default function NewMusicFriday() {
   const [isDemoMode, setIsDemoMode] = useState(false);
   const [copied, setCopied] = useState(false);
   const [appleEnriching, setAppleEnriching] = useState(false);
+  const [featureCounts, setFeatureCounts] = useState<Map<string, number>>(new Map());
 
   // Handle OAuth callback
   useEffect(() => {
@@ -173,6 +174,12 @@ export default function NewMusicFriday() {
       setLastScanned(now);
       setRateLimited(failCount > totalArtists * 0.5);
       setPhase('results');
+
+      // Background: query feature counts for "Previously Featured" badges
+      const artistIds = [...new Set(tracks.map(t => t.artist_id).filter(Boolean))];
+      if (artistIds.length > 0) {
+        getFeatureCounts(artistIds).then(setFeatureCounts).catch(() => {});
+      }
 
       // Background Apple Music enrichment (non-blocking)
       if (tracks.length > 0) {
@@ -663,6 +670,7 @@ export default function NewMusicFriday() {
                       onSelectRelease={handleSelectRelease}
                       onDeselect={handleDeselect}
                       onSetCoverFeature={handleSetCoverFeature}
+                      featureCount={featureCounts.get(cluster.tracks[0]?.artist_id) || 0}
                     />
                   ))}
                 </div>

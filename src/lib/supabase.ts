@@ -72,6 +72,7 @@ export interface NMFFeature {
   slide_position?: number;
   was_cover_feature: boolean;
   nd_pg_id?: string;
+  user_id?: string;
 }
 
 export async function saveFeatures(features: NMFFeature[]): Promise<boolean> {
@@ -104,6 +105,21 @@ export async function searchFeatures(query: string): Promise<NMFFeature[]> {
     .limit(100);
   if (error) return [];
   return data || [];
+}
+
+/** Get feature counts for a list of artist IDs (for "Previously Featured" badge) */
+export async function getFeatureCounts(artistIds: string[]): Promise<Map<string, number>> {
+  if (!supabase || artistIds.length === 0) return new Map();
+  const { data, error } = await supabase
+    .from('nmf_features')
+    .select('spotify_artist_id')
+    .in('spotify_artist_id', artistIds);
+  if (error || !data) return new Map();
+  const counts = new Map<string, number>();
+  for (const row of data) {
+    counts.set(row.spotify_artist_id, (counts.get(row.spotify_artist_id) || 0) + 1);
+  }
+  return counts;
 }
 
 export interface IGHandle {

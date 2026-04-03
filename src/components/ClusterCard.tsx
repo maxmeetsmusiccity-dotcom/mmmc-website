@@ -10,9 +10,10 @@ interface Props {
   onSelectRelease: (cluster: ReleaseCluster, trackId?: string) => void;
   onDeselect: (albumId: string) => void;
   onSetCoverFeature: (trackId: string) => void;
+  featureCount?: number;
 }
 
-export default memo(function ClusterCard({ cluster, selectionSlot, hasSelections, onSelectRelease, onDeselect, onSetCoverFeature }: Props) {
+export default memo(function ClusterCard({ cluster, selectionSlot, hasSelections, onSelectRelease, onDeselect, onSetCoverFeature, featureCount }: Props) {
   const [expanded, setExpanded] = useState(false);
   const isSelected = selectionSlot !== null;
   const selectedTrackId = selectionSlot?.track.track_id;
@@ -117,6 +118,11 @@ export default memo(function ClusterCard({ cluster, selectionSlot, hasSelections
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
           <span className={`badge ${badgeClass}`}>{badgeLabel}</span>
+          {featureCount && featureCount > 0 ? (
+            <span className="badge" style={{ background: 'rgba(212,168,67,0.15)', color: 'var(--gold)', fontSize: '0.6rem' }}>
+              Featured {featureCount}x
+            </span>
+          ) : null}
           {!cluster.isSingle && (
             <span className="badge" style={{ background: 'rgba(255,255,255,0.08)', color: 'var(--text-muted)' }}>
               {cluster.total_tracks} tracks
