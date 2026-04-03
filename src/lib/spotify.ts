@@ -341,3 +341,54 @@ export async function getPlaylistName(token: string, playlistId: string): Promis
   const data = await res.json();
   return data.name;
 }
+
+export async function getCurrentUserId(token: string): Promise<string> {
+  const res = await apiFetch(`${API}/me`, token);
+  const data = await res.json();
+  return data.id;
+}
+
+export async function createPlaylist(
+  token: string,
+  name: string,
+  isPublic: boolean,
+  uris: string[],
+): Promise<{ id: string; url: string }> {
+  const userId = await getCurrentUserId(token);
+
+  const createRes = await fetch(`${API}/users/${userId}/playlists`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      name,
+      public: isPublic,
+      description: 'Curated by Max Meets Music City',
+    }),
+  });
+  if (createRes.status === 401) { clearToken(); throw new Error('AUTH_EXPIRED'); }
+  if (!createRes.ok) throw new Error(`Failed to create playlist: ${createRes.status}`);
+
+  const playlist = await createRes.json();
+  const playlistId = playlist.id;
+  const playlistUrl = playlist.external_urls.spotify;
+
+  // Add tracks
+  for (let i = 0; i < uris.length; i += 100) {
+    const chunk = uris.slice(i, i + 100);
+    const res = await fetch(`${API}/playlists/${playlistId}/tracks`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ uris: chunk }),
+    });
+    if (res.status === 401) { clearToken(); throw new Error('AUTH_EXPIRED'); }
+    if (!res.ok) throw new Error(`Failed to add tracks to new playlist: ${res.status}`);
+  }
+
+  return { id: playlistId, url: playlistUrl };
+}

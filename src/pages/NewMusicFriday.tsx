@@ -9,6 +9,7 @@ import {
   replacePlaylistTracks,
   appendPlaylistTracks,
   getPlaylistName,
+  createPlaylist,
   type TrackItem,
   type ReleaseCluster,
 } from '../lib/spotify';
@@ -22,17 +23,19 @@ import {
   getSlideGroup,
 } from '../lib/selection';
 import { downloadJSON, downloadCSV, downloadArt } from '../lib/downloads';
+import { saveWeek, saveFeatures, type NMFWeek } from '../lib/supabase';
 import ClusterCard from '../components/ClusterCard';
 import SlideGroup from '../components/SlideGroup';
 import FilterBar from '../components/FilterBar';
-import PlaylistPush from '../components/PlaylistPush';
+import PlaylistCreate from '../components/PlaylistCreate';
 import CarouselPreview from '../components/CarouselPreview';
 import TagBlocks from '../components/TagBlocks';
+import WeekHistory from '../components/WeekHistory';
 
 type Phase = 'auth' | 'scanning' | 'results';
 type FilterKey = 'all' | 'single' | 'album';
 type SortKey = 'date' | 'artist' | 'title';
-type ViewMode = 'browse' | 'selected';
+type ViewMode = 'browse' | 'selected' | 'history';
 
 const PLAYLIST_ID = '0ve1vYFkWoRaElCmfkw2IB';
 
@@ -197,6 +200,8 @@ export default function NewMusicFriday() {
   // Selected tracks for downloads/playlist
   const selectedTracks = useMemo(() => selections.map(s => s.track), [selections]);
 
+  const weekDate = getLastFriday();
+
   const handleDisconnect = () => {
     clearToken();
     setToken(null);
@@ -214,6 +219,55 @@ export default function NewMusicFriday() {
     } else {
       await appendPlaylistTracks(token, PLAYLIST_ID, uris);
     }
+    // Save to history
+    await handleSaveWeek({ playlist_master_pushed: true });
+  };
+
+  const handleCreateAndPush = async (name: string, isPublic: boolean) => {
+    if (!token) throw new Error('Not authenticated');
+    const uris = selectedTracks.map(t => t.track_uri);
+    const result = await createPlaylist(token, name, isPublic, uris);
+    await handleSaveWeek({ playlist_new_id: result.id, playlist_new_url: result.url });
+    return result;
+  };
+
+  const handleSaveWeek = async (extra: Partial<NMFWeek> = {}) => {
+    const week: NMFWeek = {
+      week_date: weekDate,
+      all_releases: allTracks,
+      selections: selections,
+      cover_feature: selections.find(s => s.isCoverFeature) || null,
+      manifest_curated: selectedTracks,
+      playlist_master_pushed: false,
+      carousel_generated: false,
+      ...extra,
+    };
+    await saveWeek(week);
+    // Save individual features for the archive
+    const features = selections.map(s => ({
+      week_date: weekDate,
+      spotify_artist_id: s.track.artist_id,
+      artist_name: s.track.artist_names,
+      track_name: s.track.track_name,
+      track_spotify_id: s.track.track_id,
+      album_name: s.track.album_name,
+      slide_number: s.slideGroup,
+      slide_position: s.positionInSlide,
+      was_cover_feature: s.isCoverFeature,
+    }));
+    await saveFeatures(features);
+  };
+
+  const handleLoadWeek = (week: NMFWeek) => {
+    if (week.selections && Array.isArray(week.selections)) {
+      setSelections(buildSlots(week.selections as SelectionSlot[]));
+    }
+    if (week.all_releases && Array.isArray(week.all_releases)) {
+      setAllTracks(week.all_releases as TrackItem[]);
+      setReleases(groupIntoReleases(week.all_releases as TrackItem[]));
+    }
+    setPhase('results');
+    setViewMode('browse');
   };
 
   return (
@@ -385,6 +439,15 @@ export default function NewMusicFriday() {
               >
                 Selected ({selections.length})
               </button>
+              <button
+                className={`filter-pill ${viewMode === 'history' ? 'active' : ''}`}
+                onClick={() => setViewMode('history')}
+              >
+                History
+              </button>
+              <Link to="/newmusicfriday/archive" className="filter-pill" style={{ textDecoration: 'none' }}>
+                Archive
+              </Link>
             </div>
           </div>
 
@@ -421,11 +484,14 @@ export default function NewMusicFriday() {
                 )}
               </div>
 
-              {/* Playlist push */}
+              {/* Playlist management */}
               {selections.length > 0 && token && (
-                <PlaylistPush
+                <PlaylistCreate
                   selectedCount={selections.length}
-                  onPush={handlePlaylistPush}
+                  token={token}
+                  weekDate={weekDate}
+                  onCreateAndPush={handleCreateAndPush}
+                  onPushMaster={handlePlaylistPush}
                   getPlaylistName={() => getPlaylistName(token, PLAYLIST_ID)}
                 />
               )}
@@ -502,9 +568,21 @@ export default function NewMusicFriday() {
 
                   {/* Instagram tag blocks */}
                   <TagBlocks slideGroups={slideGroups} />
+
+                  {/* Save to history */}
+                  <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid var(--midnight-border)' }}>
+                    <button className="btn btn-gold" onClick={() => handleSaveWeek()}>
+                      Save Week to History
+                    </button>
+                  </div>
                 </>
               )}
             </div>
+          )}
+
+          {/* History view */}
+          {viewMode === 'history' && (
+            <WeekHistory onLoadWeek={handleLoadWeek} currentWeekDate={weekDate} />
           )}
         </>
       )}
