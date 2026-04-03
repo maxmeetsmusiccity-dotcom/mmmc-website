@@ -30,16 +30,31 @@ async function loadImage(src: string): Promise<HTMLImageElement | null> {
 }
 
 async function loadAllAssets(): Promise<void> {
-  await Promise.all(Object.values(ASSETS).map(loadImage));
+  await Promise.all([
+    ...Object.values(ASSETS).map(loadImage),
+    document.fonts.load(`700 56px ${SCRIPT}`).catch(() => {}),
+    document.fonts.load(`600 26px ${BODY}`).catch(() => {}),
+  ]);
 }
 
-function goldText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, font: string) {
-  ctx.fillStyle = GOLD;
+function neonText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, font: string) {
   ctx.font = font;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
+  // Pass 1: wide soft outer glow
+  ctx.shadowColor = 'rgba(212, 168, 67, 0.25)';
+  ctx.shadowBlur = 45;
+  ctx.fillStyle = 'rgba(212, 168, 67, 0.3)';
+  ctx.fillText(text, x, y);
+  // Pass 2: medium glow
   ctx.shadowColor = 'rgba(212, 168, 67, 0.5)';
-  ctx.shadowBlur = 16;
+  ctx.shadowBlur = 20;
+  ctx.fillStyle = 'rgba(230, 195, 100, 0.7)';
+  ctx.fillText(text, x, y);
+  // Pass 3: tight bright core
+  ctx.shadowColor = 'rgba(255, 225, 140, 0.8)';
+  ctx.shadowBlur = 6;
+  ctx.fillStyle = '#F5E6B8';
   ctx.fillText(text, x, y);
   ctx.shadowColor = 'transparent';
 }
@@ -71,13 +86,26 @@ function drawSparkles(ctx: CanvasRenderingContext2D, positions: [number, number]
 
 function vinylGrooves(ctx: CanvasRenderingContext2D) {
   const cx = S / 2, cy = S / 2;
-  for (let r = 90; r <= 500; r += 22) {
+  // Radial gradient: center slightly lighter
+  const grad = ctx.createRadialGradient(cx, cy, 80, cx, cy, 520);
+  grad.addColorStop(0, 'rgba(30, 36, 51, 0.4)');
+  grad.addColorStop(1, 'rgba(10, 15, 30, 0.3)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, S, S);
+  // 60+ concentric groove rings
+  for (let r = 80; r <= 520; r += 7) {
     ctx.beginPath();
     ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.strokeStyle = r % 44 === 0 ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.2)';
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = r % 14 === 0 ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.15)';
+    ctx.lineWidth = 0.8;
     ctx.stroke();
   }
+  // Highlight arc across upper-left for light reflection
+  ctx.beginPath();
+  ctx.arc(cx - 60, cy - 60, 380, -0.9, -0.3);
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  ctx.lineWidth = 40;
+  ctx.stroke();
 }
 
 function formatDate(weekDate: string): string {
@@ -129,7 +157,7 @@ export async function generateCoverSlide(
 
   // Artist name + song title below image
   const textY = imgY + imgSize + border + 16;
-  goldText(ctx, coverFeature.track.artist_names, S / 2, textY, `700 38px ${SCRIPT}`);
+  neonText(ctx, coverFeature.track.artist_names, S / 2, textY, `700 38px ${SCRIPT}`);
   ctx.fillStyle = '#FFFFFF';
   ctx.font = `500 26px ${BODY}`;
   ctx.textAlign = 'center';
@@ -137,9 +165,9 @@ export async function generateCoverSlide(
   ctx.fillText(coverFeature.track.track_name, S / 2, textY + 48);
 
   // Header
-  goldText(ctx, 'New Music Friday', S / 2, 42, `700 56px ${SCRIPT}`);
+  neonText(ctx, 'New Music Friday', S / 2, 42, `700 56px ${SCRIPT}`);
   goldRule(ctx, 108);
-  goldText(ctx, 'Max Meets Music City', S / 2, 118, `italic 600 26px ${BODY}`);
+  neonText(ctx, 'Max Meets Music City', S / 2, 118, `italic 600 26px ${BODY}`);
 
   // "Swipe right" pill
   const swipeY = 900;
@@ -151,20 +179,29 @@ export async function generateCoverSlide(
   ctx.beginPath();
   ctx.roundRect(pillX, swipeY - 4, swipeW, 36, 18);
   ctx.fill();
-  goldText(ctx, swipeText, S / 2, swipeY, `600 22px ${SCRIPT}`);
+  neonText(ctx, swipeText, S / 2, swipeY, `600 22px ${SCRIPT}`);
 
   // Date
-  goldText(ctx, formatDate(weekDate), S / 2, 960, `700 48px ${SCRIPT}`);
+  neonText(ctx, formatDate(weekDate), S / 2, 960, `700 48px ${SCRIPT}`);
 
-  // Gold chevrons (right-pointing)
+  // Gold chevron arrows (path shapes, not text)
   ctx.save();
-  ctx.fillStyle = GOLD;
   ctx.shadowColor = 'rgba(212,168,67,0.6)';
   ctx.shadowBlur = 14;
-  ctx.font = 'bold 64px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('>>', 980, S / 2);
+  ctx.fillStyle = GOLD;
+  for (let dx = 0; dx < 2; dx++) {
+    const bx = 940 + dx * 30;
+    const by = S / 2;
+    ctx.beginPath();
+    ctx.moveTo(bx, by - 28);
+    ctx.lineTo(bx + 20, by);
+    ctx.lineTo(bx, by + 28);
+    ctx.lineTo(bx + 6, by + 28);
+    ctx.lineTo(bx + 26, by);
+    ctx.lineTo(bx + 6, by - 28);
+    ctx.closePath();
+    ctx.fill();
+  }
   ctx.restore();
 
   // Decorations
@@ -176,7 +213,7 @@ export async function generateCoverSlide(
 
 // ─── GRID SLIDE ──────────────────────────────────────────
 
-const GRID_ROTATIONS = [-1.2, 0.8, -0.5, 1.1, 0, -1.4, 0.6, -0.9];
+const GRID_ROTATIONS = [-0.6, 0.4, -0.3, 0.5, 0, -0.7, 0.3, -0.5];
 
 function drawGrid(
   ctx: CanvasRenderingContext2D,
@@ -185,7 +222,7 @@ function drawGrid(
   logo: HTMLImageElement | null,
   ox: number, oy: number, gridSize: number,
 ) {
-  const gap = Math.round(gridSize * 0.012);
+  const gap = Math.round(gridSize * 0.005); // tight 4-6px gaps
   const cell = Math.floor((gridSize - gap * 4) / 3);
 
   const positions = [
@@ -224,11 +261,6 @@ function drawGrid(
     // Image
     ctx.drawImage(img, pos.x, pos.y, cell, cell);
 
-    // Cell border
-    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(pos.x + 1, pos.y + 1, cell - 2, cell - 2);
-
     ctx.restore();
   }
 
@@ -262,7 +294,7 @@ export async function generateGridSlide(
   ctx.fillRect(0, 0, S, S);
 
   // Header
-  goldText(ctx, 'New Music Friday', S / 2, 16, `700 52px ${SCRIPT}`);
+  neonText(ctx, 'New Music Friday', S / 2, 16, `700 52px ${SCRIPT}`);
   goldRule(ctx, 78);
 
   // Load images
@@ -274,7 +306,7 @@ export async function generateGridSlide(
   drawGrid(ctx, slots, images, logo, 74, 90, 932);
 
   // Date
-  goldText(ctx, formatDate(weekDate), S / 2, 1028, `700 40px ${SCRIPT}`);
+  neonText(ctx, formatDate(weekDate), S / 2, 1028, `700 40px ${SCRIPT}`);
 
   // Corner sparkles — outside grid bounds
   drawSparkles(ctx, [[28, 28], [1052, 28], [28, 1052], [1052, 1052]], 36);

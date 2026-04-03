@@ -34,7 +34,7 @@ export default function TagBlocks({ slideGroups }: Props) {
       if (accumulated.has(name) && !accumulated.get(name)!.loading) continue;
       accumulated.set(name, {
         artist_name: name, handle: null, source: 'unknown',
-        confidence: 'low', pg_id: null, loading: true, confirmed: false,
+        pg_id: null, loading: true, confirmed: false,
       });
     }
     setHandles(new Map(accumulated));
@@ -48,7 +48,7 @@ export default function TagBlocks({ slideGroups }: Props) {
       } catch {
         accumulated.set(name, {
           artist_name: name, handle: null, source: 'unknown',
-          confidence: 'low', pg_id: null, loading: false, confirmed: false,
+          pg_id: null, loading: false, confirmed: false,
         });
       }
     }
@@ -67,7 +67,6 @@ export default function TagBlocks({ slideGroups }: Props) {
         artist_name: artistName,
         handle: cleaned ? `@${cleaned}` : null,
         source: 'manual',
-        confidence: 'high',
         pg_id: prev.get(artistName)?.pg_id || null,
         loading: false,
         confirmed: true,
@@ -88,7 +87,7 @@ export default function TagBlocks({ slideGroups }: Props) {
         const result = handles.get(trimmed);
         if (!result?.handle) continue;
         // Only include confirmed handles in copy output
-        if (confirmedOnly && result.source === 'guessed' && !result.confirmed) continue;
+        if (confirmedOnly && !result.confirmed) continue;
         const handle = result.handle;
 
         switch (format) {
@@ -103,7 +102,7 @@ export default function TagBlocks({ slideGroups }: Props) {
   };
 
   const getSlideHandleCounts = (slots: SelectionSlot[]) => {
-    let confirmed = 0, unverified = 0, unknown = 0;
+    let confirmed = 0, needsHandle = 0;
     const seen = new Set<string>();
     for (const slot of slots) {
       for (const name of slot.track.artist_names.split(/\s*[,&]\s*/)) {
@@ -111,12 +110,11 @@ export default function TagBlocks({ slideGroups }: Props) {
         if (!trimmed || seen.has(trimmed)) continue;
         seen.add(trimmed);
         const r = handles.get(trimmed);
-        if (!r || !r.handle) unknown++;
-        else if (r.source === 'nd' || r.source === 'manual') confirmed++;
-        else unverified++;
+        if (r?.handle && r.confirmed) confirmed++;
+        else needsHandle++;
       }
     }
-    return { confirmed, unverified, unknown };
+    return { confirmed, needsHandle };
   };
 
   const copyToClipboard = async (text: string, slideIdx: number) => {
@@ -167,8 +165,7 @@ export default function TagBlocks({ slideGroups }: Props) {
                 <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>Slide {i + 1}</span>
                 <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
                   {counts.confirmed > 0 && <span style={{ color: 'var(--steel)' }}>{counts.confirmed} confirmed</span>}
-                  {counts.unverified > 0 && <span style={{ color: 'var(--gold)' }}> · {counts.unverified} unverified</span>}
-                  {counts.unknown > 0 && <span> · {counts.unknown} unknown</span>}
+                  {counts.needsHandle > 0 && <span> · {counts.needsHandle} need handle</span>}
                 </span>
               </div>
               <button
@@ -217,16 +214,15 @@ export default function TagBlocks({ slideGroups }: Props) {
                         <span style={{
                           fontSize: '0.55rem',
                           color: result.source === 'nd' ? 'var(--steel)'
+                            : result.source === 'spotify' ? '#5E8EA8'
                             : result.source === 'manual' ? 'var(--gold)'
-                            : result.source === 'guessed' ? '#E8C675'
                             : result.loading ? 'var(--steel)' : 'var(--text-muted)',
-                          fontStyle: result.source === 'guessed' ? 'italic' : 'normal',
                         }}>
                           {result.loading ? 'searching...'
                             : result.source === 'nd' ? '✓ ND'
+                            : result.source === 'spotify' ? '✓ Spotify'
                             : result.source === 'manual' ? '✓ manual'
-                            : result.source === 'guessed' ? '⚠ unverified'
-                            : '+ add'}
+                            : result.pg_id ? 'in ND · add handle' : '+ add handle'}
                         </span>
                       </div>
                     );
