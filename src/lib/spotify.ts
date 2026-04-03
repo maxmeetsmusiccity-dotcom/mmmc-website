@@ -203,14 +203,21 @@ async function pool<T>(tasks: (() => Promise<T>)[], limit: number, onDone?: () =
   return results;
 }
 
+export interface ScanResult {
+  tracks: TrackItem[];
+  failCount: number;
+  totalArtists: number;
+}
+
 export async function fetchNewReleases(
   artists: SpotifyArtist[],
   token: string,
   cutoffDate: string,
   onProgress: (current: number, total: number) => void,
-): Promise<TrackItem[]> {
+): Promise<ScanResult> {
   const albumMap = new Map<string, { album: SpotifyAlbum; triggerArtist: SpotifyArtist }>();
   let done = 0;
+  let failCount = 0;
 
   // Phase 1: fetch albums — all artists in concurrent pool, early exit on old releases
   const albumTasks = artists.map((artist) => async () => {
@@ -223,21 +230,17 @@ export async function fetchNewReleases(
       const data = await res.json();
       console.log(`[SCAN] artist ${artist.name}: ${data.items?.length ?? 'NO ITEMS'} albums, first release_date=${data.items?.[0]?.release_date} precision=${data.items?.[0]?.release_date_precision}`);
       for (const album of (data.items as (SpotifyAlbum & { release_date_precision?: string })[])) {
-        // Only use early exit when date precision is 'day' — year/month precision
-        // produces strings like "2026" or "2026-03" that compare falsely as "old"
         if (album.release_date_precision === 'day' && album.release_date < cutoffDate) break;
-
-        // Normalize imprecise dates for the include check
         let normalized = album.release_date;
         if (normalized.length === 4) normalized += '-01-01';
         else if (normalized.length === 7) normalized += '-01';
-
         if (normalized >= cutoffDate && !albumMap.has(album.id)) {
           albumMap.set(album.id, { album, triggerArtist: artist });
         }
       }
     } catch (e) {
       if ((e as Error).message === 'AUTH_EXPIRED') throw e;
+      failCount++;
     }
   });
 
@@ -373,8 +376,8 @@ export async function fetchNewReleases(
     return a.artist_names.localeCompare(b.artist_names);
   });
 
-  console.log(`[SCAN COMPLETE] cutoffDate=${cutoffDate}, albumMap size=${albumMap.size}, allTracks=${allTracks.length}, finalTracks=${finalTracks.length}`);
-  return finalTracks;
+  console.log(`[SCAN COMPLETE] cutoffDate=${cutoffDate}, albumMap size=${albumMap.size}, allTracks=${allTracks.length}, finalTracks=${finalTracks.length}, failCount=${failCount}`);
+  return { tracks: finalTracks, failCount, totalArtists: artists.length };
 }
 
 export async function replacePlaylistTracks(

@@ -55,6 +55,8 @@ export default function NewMusicFriday() {
   const [viewMode, setViewMode] = useState<ViewMode>('browse');
   const [error, setError] = useState('');
   const [artDownloading, setArtDownloading] = useState(false);
+  const [artistCount, setArtistCount] = useState(0);
+  const [rateLimited, setRateLimited] = useState(false);
 
   // Handle OAuth callback
   useEffect(() => {
@@ -132,7 +134,7 @@ export default function NewMusicFriday() {
       setScanStatus(`Scanning releases since ${cutoff}...`);
       setScanProgress({ current: 0, total: artists.length });
 
-      const tracks = await fetchNewReleases(artists, tkn, cutoff, (cur, tot) => {
+      const result = await fetchNewReleases(artists, tkn, cutoff, (cur, tot) => {
         setScanProgress({ current: cur, total: tot });
         const elapsed = (Date.now() - scanStart) / 1000;
         if (cur >= 50 && cur < tot) {
@@ -147,10 +149,13 @@ export default function NewMusicFriday() {
         }
       });
 
+      const { tracks, failCount, totalArtists } = result;
       const now = new Date().toISOString();
       setAllTracks(tracks);
       setReleases(groupIntoReleases(tracks));
+      setArtistCount(totalArtists);
       setLastScanned(now);
+      setRateLimited(failCount > totalArtists * 0.5);
       setPhase('results');
 
       // Only cache if results > 0
@@ -159,6 +164,8 @@ export default function NewMusicFriday() {
           sessionStorage.setItem(`nmf_scan_${weekDate}`, JSON.stringify({ tracks, timestamp: now }));
         } catch { /* storage full, ignore */ }
         saveWeek({ week_date: weekDate, all_releases: tracks, playlist_master_pushed: false, carousel_generated: false });
+      } else if (failCount > totalArtists * 0.5) {
+        setError(`Spotify rate limit hit — ${failCount}/${totalArtists} artists failed. Wait 30-60 minutes and try again.`);
       } else {
         setError(`Scan found 0 releases since ${cutoff}. Try re-scanning.`);
       }
@@ -583,10 +590,51 @@ export default function NewMusicFriday() {
                     />
                   ))}
                 </div>
-                {filteredReleases.length === 0 && (
+                {filteredReleases.length === 0 && releases.length > 0 && (
                   <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginTop: 48 }}>
-                    {releases.length === 0 ? 'No new releases found since last Friday.' : 'No releases match your filters.'}
+                    No releases match your filters.
                   </p>
+                )}
+                {releases.length === 0 && (
+                  <div style={{ textAlign: 'center', padding: '48px 24px' }}>
+                    <div style={{ fontSize: 48, marginBottom: 16 }}>
+                      {rateLimited ? '429' : '🎵'}
+                    </div>
+                    <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', marginBottom: 8 }}>
+                      {rateLimited ? 'Spotify Rate Limited' : 'No releases found this week'}
+                    </h3>
+                    <p style={{ color: 'var(--text-secondary)', marginBottom: 24, maxWidth: 440, margin: '0 auto 24px', lineHeight: 1.6 }}>
+                      {rateLimited
+                        ? `Spotify throttled the scan — most artist checks failed. Wait 30-60 minutes and try again, or load a saved week from History.`
+                        : `Scanned ${artistCount || '~800'} followed artists for releases since last Friday. If this seems wrong, try re-scanning in a few minutes.`
+                      }
+                    </p>
+                    <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+                      {token && (
+                        <button className="btn btn-sm btn-gold" onClick={() => runScan(token)}>Re-scan</button>
+                      )}
+                      <button className="btn btn-sm" onClick={() => setViewMode('history')}>Load from History</button>
+                    </div>
+
+                    {/* Feature overview cards */}
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                      gap: 16, marginTop: 48, opacity: 0.5, maxWidth: 800, margin: '48px auto 0',
+                    }}>
+                      {[
+                        { title: 'Scan Releases', desc: 'Finds new music from all your followed artists since last Friday' },
+                        { title: 'Build Carousel', desc: 'Generates 1080x1080 Instagram carousel slides automatically' },
+                        { title: 'Tag Blocks', desc: 'Auto-resolves Instagram handles for every artist featured' },
+                        { title: 'Push to Playlist', desc: 'Updates your NMF Spotify playlist with one click' },
+                      ].map(f => (
+                        <div key={f.title} className="card" style={{ textAlign: 'left' }}>
+                          <div style={{ fontWeight: 600, marginBottom: 4, fontSize: '0.85rem' }}>{f.title}</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>{f.desc}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 )}
               </div>
             </>
