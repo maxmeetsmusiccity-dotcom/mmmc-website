@@ -16,17 +16,22 @@ export default function CarouselPreview({ slideGroups, coverFeature }: Props) {
 
   const weekDate = getLastFriday();
 
+  const [genProgress, setGenProgress] = useState<{ current: number; total: number } | null>(null);
+
   const handleGenerate = async () => {
     if (!coverFeature) {
-      setError('Designate a cover feature first (click ★ on a track in the slide view)');
+      setError('Set a cover feature first — click ★ on any selected card in Browse view');
       return;
     }
     setGenerating(true);
     setError('');
+    setGenProgress(null);
     try {
-      const result = await generateFullCarousel(slideGroups, coverFeature, weekDate);
+      const result = await generateFullCarousel(slideGroups, coverFeature, weekDate, (cur, tot) => {
+        setGenProgress({ current: cur, total: tot });
+      });
       setCarousel(result);
-      // Create preview URLs
+      setGenProgress(null);
       const urls = result.allSlides.map(b => URL.createObjectURL(b));
       setPreviews(prev => { prev.forEach(URL.revokeObjectURL); return urls; });
     } catch (e) {
@@ -90,7 +95,10 @@ export default function CarouselPreview({ slideGroups, coverFeature }: Props) {
           onClick={handleGenerate}
           disabled={generating}
         >
-          {generating ? 'Generating...' : previews.length > 0 ? 'Regenerate Carousel' : 'Generate Carousel'}
+          {generating && genProgress
+            ? `Generating slide ${genProgress.current + 1} of ${genProgress.total}...`
+            : generating ? 'Generating...'
+            : previews.length > 0 ? 'Regenerate Carousel' : 'Generate Carousel'}
         </button>
         {carousel && (
           <button className="btn btn-sm" onClick={handleDownloadAll}>

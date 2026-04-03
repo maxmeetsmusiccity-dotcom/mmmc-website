@@ -621,19 +621,10 @@ export default function NewMusicFriday() {
                 )}
               </div>
 
-              {/* Playlist management */}
-              {selections.length > 0 && token && (
-                <PlaylistCreate
-                  selectedCount={selections.length}
-                  weekDate={weekDate}
-                  onCreateAndPush={handleCreateAndPush}
-                  onPushMaster={handlePlaylistPush}
-                  getPlaylistName={() => getPlaylistName(token, PLAYLIST_ID)}
-                />
-              )}
+              {/* Playlist management moved to Selected tab */}
 
               {/* Release grid */}
-              <div style={{ padding: 24 }}>
+              <div style={{ padding: 24, paddingBottom: selections.length > 0 ? 96 : 24 }}>
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: 16 }}>
                   <span className="mono">{filteredReleases.length}</span> releases
                   {search && ` matching "${search}"`}
@@ -647,6 +638,7 @@ export default function NewMusicFriday() {
                       hasSelections={selections.length > 0}
                       onSelectRelease={handleSelectRelease}
                       onDeselect={handleDeselect}
+                      onSetCoverFeature={handleSetCoverFeature}
                     />
                   ))}
                 </div>
@@ -709,12 +701,43 @@ export default function NewMusicFriday() {
                 </p>
               ) : (
                 <>
-                  {/* Download/push bar for selected */}
+                  {/* 3-step progress */}
+                  {(() => {
+                    const step1 = selections.length >= 8;
+                    const step2 = selections.some(s => s.isCoverFeature);
+                    return (
+                      <div style={{
+                        display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20,
+                        padding: '12px 16px', borderRadius: 10,
+                        background: 'var(--midnight)', border: '1px solid var(--midnight-border)',
+                        fontSize: '0.8rem', flexWrap: 'wrap',
+                      }}>
+                        <span style={{ color: step1 ? '#3DA877' : 'var(--text-muted)' }}>
+                          {step1 ? '✓' : '1.'} Select tracks
+                        </span>
+                        <span style={{ color: 'var(--midnight-border)' }}>→</span>
+                        <span style={{ color: step2 ? '#3DA877' : step1 ? 'var(--gold)' : 'var(--text-muted)' }}>
+                          {step2 ? '✓' : '★'} Set cover feature
+                        </span>
+                        <span style={{ color: 'var(--midnight-border)' }}>→</span>
+                        <span style={{ color: step1 && step2 ? 'var(--gold)' : 'var(--text-muted)' }}>
+                          3. Generate Carousel
+                        </span>
+                        {!step2 && step1 && (
+                          <span style={{ marginLeft: 'auto', fontSize: '0.7rem', color: 'var(--gold)', fontStyle: 'italic' }}>
+                            ★ Tap the star on any card in Browse to set a cover feature
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })()}
+
+                  {/* Download/export bar */}
                   <div style={{
                     display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 24,
                   }}>
                     <button className="btn btn-sm" onClick={async () => { setArtDownloading(true); try { await downloadArt(selectedTracks); } finally { setArtDownloading(false); } }} disabled={artDownloading}>
-                      Download Selected Art
+                      Download Art
                     </button>
                     <button className="btn btn-sm" onClick={() => downloadJSON(selectedTracks, 'nmf-curated.json')}>JSON</button>
                     <button className="btn btn-sm" onClick={() => downloadCSV(selectedTracks, 'nmf-curated.csv')}>CSV</button>
@@ -722,13 +745,9 @@ export default function NewMusicFriday() {
                       await navigator.clipboard.writeText(JSON.stringify(selectedTracks, null, 2));
                       setCopied(true); setTimeout(() => setCopied(false), 2000);
                     }}>{copied ? 'Copied!' : 'Copy Manifest'}</button>
-                    {token && (
-                      <button className="btn btn-gold btn-sm" onClick={() => handlePlaylistPush('replace')}>
-                        Push to Playlist (Replace)
-                      </button>
-                    )}
                   </div>
 
+                  {/* Slide groups */}
                   {slideGroups.map((slots, i) => (
                     <SlideGroup
                       key={i}
@@ -741,14 +760,39 @@ export default function NewMusicFriday() {
                     />
                   ))}
 
-                  {/* Carousel grid generation */}
+                  {/* Carousel generation — prominent */}
                   <CarouselPreview
                     slideGroups={slideGroups}
                     coverFeature={selections.find(s => s.isCoverFeature) || null}
                   />
 
-                  {/* Instagram tag blocks */}
-                  <TagBlocks slideGroups={slideGroups} />
+                  {/* Instagram tags — collapsible */}
+                  <details style={{ marginTop: 24, borderTop: '1px solid var(--midnight-border)', paddingTop: 16 }}>
+                    <summary style={{ cursor: 'pointer', color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 600 }}>
+                      Instagram Tags ▸
+                    </summary>
+                    <TagBlocks slideGroups={slideGroups} />
+                  </details>
+
+                  {/* Playlist push — collapsible */}
+                  <details style={{ marginTop: 16, borderTop: '1px solid var(--midnight-border)', paddingTop: 16 }}>
+                    <summary style={{ cursor: 'pointer', color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 600 }}>
+                      Push to Spotify ▸
+                    </summary>
+                    <div style={{ marginTop: 12 }}>
+                      {token ? (
+                        <PlaylistCreate
+                          selectedCount={selections.length}
+                          weekDate={weekDate}
+                          onCreateAndPush={handleCreateAndPush}
+                          onPushMaster={handlePlaylistPush}
+                          getPlaylistName={() => getPlaylistName(token, PLAYLIST_ID)}
+                        />
+                      ) : (
+                        <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Connect Spotify to push to playlist.</p>
+                      )}
+                    </div>
+                  </details>
 
                   {/* Save to history */}
                   <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid var(--midnight-border)' }}>
@@ -764,6 +808,27 @@ export default function NewMusicFriday() {
           {/* History view */}
           {viewMode === 'history' && (
             <WeekHistory onLoadWeek={handleLoadWeek} currentWeekDate={weekDate} />
+          )}
+
+          {/* Floating action bar */}
+          {selections.length > 0 && viewMode === 'browse' && (
+            <div style={{
+              position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100,
+              background: 'linear-gradient(to top, var(--midnight) 70%, transparent)',
+              padding: '20px 32px',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            }}>
+              <div style={{ color: 'var(--gold)', fontWeight: 600, fontSize: '0.9rem' }}>
+                {selections.length} selected
+                {selections.length >= 8
+                  ? ` · ${Math.floor(selections.length / 8)} slide${Math.floor(selections.length / 8) > 1 ? 's' : ''} ready`
+                  : ` · ${8 - (selections.length % 8)} more for next slide`}
+                {!selections.some(s => s.isCoverFeature) && ' · ★ Set a cover feature'}
+              </div>
+              <button className="btn btn-gold" onClick={() => setViewMode('selected')}>
+                Build Carousel ({selections.length}) →
+              </button>
+            </div>
           )}
         </>
       )}

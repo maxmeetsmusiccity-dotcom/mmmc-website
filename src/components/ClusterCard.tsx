@@ -5,13 +5,14 @@ import { formatDuration } from '../lib/utils';
 
 interface Props {
   cluster: ReleaseCluster;
-  selectionSlot: SelectionSlot | null; // null = not selected
+  selectionSlot: SelectionSlot | null;
   hasSelections: boolean;
   onSelectRelease: (cluster: ReleaseCluster, trackId?: string) => void;
   onDeselect: (albumId: string) => void;
+  onSetCoverFeature: (trackId: string) => void;
 }
 
-export default memo(function ClusterCard({ cluster, selectionSlot, hasSelections, onSelectRelease, onDeselect }: Props) {
+export default memo(function ClusterCard({ cluster, selectionSlot, hasSelections, onSelectRelease, onDeselect, onSetCoverFeature }: Props) {
   const [expanded, setExpanded] = useState(false);
   const isSelected = selectionSlot !== null;
   const selectedTrackId = selectionSlot?.track.track_id;
@@ -56,6 +57,22 @@ export default memo(function ClusterCard({ cluster, selectionSlot, hasSelections
         }}>
           {selectionSlot.selectionNumber}
         </div>
+      )}
+      {/* Cover feature star */}
+      {isSelected && selectionSlot && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onSetCoverFeature(selectionSlot.track.track_id); }}
+          style={{
+            position: 'absolute', top: 8, left: 8, zIndex: 10,
+            background: selectionSlot.isCoverFeature ? 'var(--gold)' : 'rgba(0,0,0,0.6)',
+            border: `2px solid ${selectionSlot.isCoverFeature ? 'var(--gold)' : 'rgba(255,255,255,0.3)'}`,
+            borderRadius: '50%', width: 32, height: 32,
+            color: selectionSlot.isCoverFeature ? 'var(--midnight)' : 'white',
+            fontSize: 16, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+          title={selectionSlot.isCoverFeature ? 'Cover feature — click to unset' : 'Set as cover feature'}
+        >★</button>
       )}
 
       {/* Cover art — clickable for selection */}

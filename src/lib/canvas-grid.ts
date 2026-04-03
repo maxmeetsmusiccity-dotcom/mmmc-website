@@ -1,24 +1,21 @@
 import type { SelectionSlot } from './selection';
 
-const S = 1080; // canvas size
-const BG_DARK = '#1E2433';
+const S = 1080;
+const BG = '#0F1B33';
 const GOLD = '#D4A843';
-const SCRIPT_FONT = '"Dancing Script", cursive';
-const BODY_FONT = '"DM Sans", sans-serif';
+const SCRIPT = '"Dancing Script", cursive';
+const BODY = '"DM Sans", sans-serif';
 
-// Asset paths
 const ASSETS = {
   logo: '/mmmc-logo.png',
   vinyl: '/assets/vinyl-bg.png',
   sparkle: '/assets/sparkle.png',
-  chevron: '/assets/chevron.png',
   noteTL: '/assets/note-tl.png',
   noteTR: '/assets/note-tr.png',
   noteBL: '/assets/note-bl.png',
   noteBR: '/assets/note-br.png',
 };
 
-// Image cache
 const imageCache = new Map<string, HTMLImageElement>();
 
 async function loadImage(src: string): Promise<HTMLImageElement | null> {
@@ -36,58 +33,57 @@ async function loadAllAssets(): Promise<void> {
   await Promise.all(Object.values(ASSETS).map(loadImage));
 }
 
-function drawGoldText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, font: string, maxWidth?: number) {
+function goldText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, font: string) {
   ctx.fillStyle = GOLD;
   ctx.font = font;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
-  // Glow effect
-  ctx.shadowColor = 'rgba(212, 168, 67, 0.4)';
-  ctx.shadowBlur = 15;
-  ctx.fillText(text, x, y, maxWidth);
+  ctx.shadowColor = 'rgba(212, 168, 67, 0.5)';
+  ctx.shadowBlur = 16;
+  ctx.fillText(text, x, y);
   ctx.shadowColor = 'transparent';
 }
 
-function drawDecorations(ctx: CanvasRenderingContext2D) {
-  const noteTL = imageCache.get(ASSETS.noteTL);
-  const noteTR = imageCache.get(ASSETS.noteTR);
-  const noteBL = imageCache.get(ASSETS.noteBL);
-  const noteBR = imageCache.get(ASSETS.noteBR);
+function goldRule(ctx: CanvasRenderingContext2D, y: number) {
+  ctx.strokeStyle = 'rgba(212, 168, 67, 0.5)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(S / 2 - 190, y);
+  ctx.lineTo(S / 2 + 190, y);
+  ctx.stroke();
+}
+
+function drawNotes(ctx: CanvasRenderingContext2D, size: number) {
+  const n = imageCache;
+  n.get(ASSETS.noteTL) && ctx.drawImage(n.get(ASSETS.noteTL)!, 52, 52, size * 0.7, size);
+  n.get(ASSETS.noteTR) && ctx.drawImage(n.get(ASSETS.noteTR)!, S - 52 - size * 0.65, 52, size * 0.65, size);
+  n.get(ASSETS.noteBL) && ctx.drawImage(n.get(ASSETS.noteBL)!, 52, S - 52 - size * 0.85, size * 0.85, size);
+  n.get(ASSETS.noteBR) && ctx.drawImage(n.get(ASSETS.noteBR)!, S - 52 - size * 0.85, S - 52 - size * 0.85, size * 0.85, size);
+}
+
+function drawSparkles(ctx: CanvasRenderingContext2D, positions: [number, number][], sz: number) {
   const sparkle = imageCache.get(ASSETS.sparkle);
-
-  if (noteTL) ctx.drawImage(noteTL, 95, 43, 52, 76);
-  if (noteTR) ctx.drawImage(noteTR, 959, 45, 48, 73);
-  if (noteBL) ctx.drawImage(noteBL, 86, 961, 60, 72);
-  if (noteBR) ctx.drawImage(noteBR, 934, 963, 58, 69);
-
-  if (sparkle) {
-    ctx.drawImage(sparkle, 147, 189, 64, 64);
-    ctx.drawImage(sparkle, 870, 843, 55, 55);
+  if (!sparkle) return;
+  for (const [x, y] of positions) {
+    ctx.drawImage(sparkle, x - sz / 2, y - sz / 2, sz, sz);
   }
 }
 
-function drawGridDecorations(ctx: CanvasRenderingContext2D) {
-  const noteTL = imageCache.get(ASSETS.noteTL);
-  const noteTR = imageCache.get(ASSETS.noteTR);
-  const noteBL = imageCache.get(ASSETS.noteBL);
-  const noteBR = imageCache.get(ASSETS.noteBR);
-  const sparkle = imageCache.get(ASSETS.sparkle);
-
-  if (noteTL) ctx.drawImage(noteTL, 95, 15, 42, 61);
-  if (noteTR) ctx.drawImage(noteTR, 959, 16, 38, 59);
-  if (noteBL) ctx.drawImage(noteBL, 86, 1005, 48, 58);
-  if (noteBR) ctx.drawImage(noteBR, 940, 1007, 46, 55);
-
-  if (sparkle) {
-    ctx.drawImage(sparkle, 108, 232, 55, 55);
-    ctx.drawImage(sparkle, 163, 310, 55, 55);
-    ctx.drawImage(sparkle, 849, 853, 55, 55);
+function vinylGrooves(ctx: CanvasRenderingContext2D) {
+  const cx = S / 2, cy = S / 2;
+  for (let r = 90; r <= 500; r += 22) {
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.strokeStyle = r % 44 === 0 ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.2)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
   }
 }
 
 function formatDate(weekDate: string): string {
-  const d = new Date(weekDate + 'T12:00:00');
-  return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  return new Date(weekDate + 'T12:00:00').toLocaleDateString('en-US', {
+    month: 'long', day: 'numeric', year: 'numeric',
+  });
 }
 
 // ─── COVER SLIDE ─────────────────────────────────────────
@@ -97,162 +93,199 @@ export async function generateCoverSlide(
   weekDate: string,
 ): Promise<Blob> {
   await loadAllAssets();
-
-  const canvas = document.createElement('canvas');
-  canvas.width = S;
-  canvas.height = S;
-  const ctx = canvas.getContext('2d')!;
-
-  // Background: vinyl record
-  ctx.fillStyle = BG_DARK;
-  ctx.fillRect(0, 0, S, S);
-  const vinyl = imageCache.get(ASSETS.vinyl);
-  if (vinyl) {
-    ctx.globalAlpha = 0.6;
-    ctx.drawImage(vinyl, 0, 0, S, S);
-    ctx.globalAlpha = 1;
-  }
-
-  // Featured image with white border frame
-  const featImg = await loadImage(coverFeature.track.cover_art_640);
-  const frameX = 210, frameY = 210, frameSize = 661, border = 15;
-  // White frame
-  ctx.fillStyle = '#FFFFFF';
-  ctx.shadowColor = 'rgba(0,0,0,0.5)';
-  ctx.shadowBlur = 30;
-  ctx.shadowOffsetX = 4;
-  ctx.shadowOffsetY = 4;
-  ctx.fillRect(frameX - border, frameY - border, frameSize + border * 2, frameSize + border * 2);
-  ctx.shadowColor = 'transparent';
-  // Image
-  if (featImg) {
-    ctx.drawImage(featImg, frameX, frameY, frameSize, frameSize);
-  }
-
-  // Chevron arrows
-  const chevron = imageCache.get(ASSETS.chevron);
-  if (chevron) {
-    // Rotate 90° to point right
-    ctx.save();
-    ctx.translate(894 + 78, 471 + 69);
-    ctx.rotate(Math.PI / 2);
-    ctx.globalAlpha = 0.8;
-    ctx.drawImage(chevron, -78, -69, 156, 138);
-    ctx.globalAlpha = 1;
-    ctx.restore();
-  }
-
-  // Text
-  drawGoldText(ctx, 'New Music Friday', S / 2, 50, `700 58px ${SCRIPT_FONT}`);
-  drawGoldText(ctx, 'Max Meets Music City', S / 2, 142, `italic 600 28px ${BODY_FONT}`);
-  drawGoldText(ctx, 'Swipe right for all this week\'s picks', S / 2, 898, `600 22px ${BODY_FONT}`);
-  drawGoldText(ctx, formatDate(weekDate), S / 2, 960, `700 52px ${SCRIPT_FONT}`);
-
-  // Decorations
-  drawDecorations(ctx);
-
-  return new Promise(resolve => canvas.toBlob(b => resolve(b!), 'image/png'));
-}
-
-// ─── GRID COMPOSITE (standalone 3x3) ─────────────────────
-
-function drawGrid(ctx: CanvasRenderingContext2D, slots: SelectionSlot[], images: (HTMLImageElement | null)[], logo: HTMLImageElement | null, offsetX: number, offsetY: number, gridSize: number) {
-  const gap = Math.round(gridSize * 0.01);
-  const cellSize = Math.floor((gridSize - gap * 4) / 3);
-
-  const positions = [
-    { x: offsetX + gap, y: offsetY + gap },
-    { x: offsetX + gap + cellSize + gap, y: offsetY + gap },
-    { x: offsetX + gap + (cellSize + gap) * 2, y: offsetY + gap },
-    { x: offsetX + gap, y: offsetY + gap + cellSize + gap },
-    // center = logo
-    { x: offsetX + gap + (cellSize + gap) * 2, y: offsetY + gap + cellSize + gap },
-    { x: offsetX + gap, y: offsetY + gap + (cellSize + gap) * 2 },
-    { x: offsetX + gap + cellSize + gap, y: offsetY + gap + (cellSize + gap) * 2 },
-    { x: offsetX + gap + (cellSize + gap) * 2, y: offsetY + gap + (cellSize + gap) * 2 },
-  ];
-
-  for (let i = 0; i < Math.min(slots.length, 8); i++) {
-    const img = images[i];
-    if (!img) continue;
-    const pos = positions[i];
-
-    ctx.save();
-    const cx = pos.x + cellSize / 2;
-    const cy = pos.y + cellSize / 2;
-    const rad = (2 * Math.PI) / 180 * (i % 2 === 0 ? 1 : -1);
-    ctx.translate(cx, cy);
-    ctx.rotate(rad);
-    ctx.translate(-cx, -cy);
-
-    ctx.shadowColor = 'rgba(0,0,0,0.4)';
-    ctx.shadowBlur = 12;
-    ctx.shadowOffsetX = 2;
-    ctx.shadowOffsetY = 2;
-    ctx.fillStyle = '#2A3A5C';
-    ctx.fillRect(pos.x - 2, pos.y - 2, cellSize + 4, cellSize + 4);
-    ctx.shadowColor = 'transparent';
-    ctx.drawImage(img, pos.x, pos.y, cellSize, cellSize);
-    ctx.restore();
-  }
-
-  // Center logo
-  const logoX = offsetX + gap + cellSize + gap;
-  const logoY = offsetY + gap + cellSize + gap;
-  if (logo) {
-    ctx.drawImage(logo, logoX, logoY, cellSize, cellSize);
-  } else {
-    ctx.fillStyle = '#162341';
-    ctx.fillRect(logoX, logoY, cellSize, cellSize);
-    ctx.fillStyle = GOLD;
-    ctx.font = `bold ${Math.round(cellSize * 0.12)}px ${BODY_FONT}`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('MMMC', logoX + cellSize / 2, logoY + cellSize / 2);
-  }
-}
-
-// ─── GRID SLIDE (wrapped in carousel frame) ──────────────
-
-export async function generateGridSlide(
-  slots: SelectionSlot[],
-  weekDate: string,
-): Promise<Blob> {
-  await loadAllAssets();
-
   const canvas = document.createElement('canvas');
   canvas.width = S;
   canvas.height = S;
   const ctx = canvas.getContext('2d')!;
 
   // Background
-  ctx.fillStyle = BG_DARK;
+  ctx.fillStyle = BG;
   ctx.fillRect(0, 0, S, S);
 
+  // Vinyl background
+  const vinyl = imageCache.get(ASSETS.vinyl);
+  if (vinyl) {
+    ctx.globalAlpha = 0.5;
+    ctx.drawImage(vinyl, 0, 0, S, S);
+    ctx.globalAlpha = 1;
+  }
+  vinylGrooves(ctx);
+
+  // Featured image (reduced to 560px for text room)
+  const featImg = await loadImage(coverFeature.track.cover_art_640);
+  const imgSize = 560, border = 14;
+  const imgX = (S - imgSize) / 2, imgY = 180;
+
+  // White frame with drop shadow
+  ctx.shadowColor = 'rgba(0,0,0,0.6)';
+  ctx.shadowBlur = 32;
+  ctx.shadowOffsetY = 10;
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(imgX - border, imgY - border, imgSize + border * 2, imgSize + border * 2);
+  ctx.shadowColor = 'transparent';
+  if (featImg) {
+    ctx.drawImage(featImg, imgX, imgY, imgSize, imgSize);
+  }
+
+  // Artist name + song title below image
+  const textY = imgY + imgSize + border + 16;
+  goldText(ctx, coverFeature.track.artist_names, S / 2, textY, `700 38px ${SCRIPT}`);
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = `500 26px ${BODY}`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.fillText(coverFeature.track.track_name, S / 2, textY + 48);
+
   // Header
-  drawGoldText(ctx, 'New Music Friday', S / 2, 16, `700 54px ${SCRIPT_FONT}`);
+  goldText(ctx, 'New Music Friday', S / 2, 42, `700 56px ${SCRIPT}`);
+  goldRule(ctx, 108);
+  goldText(ctx, 'Max Meets Music City', S / 2, 118, `italic 600 26px ${BODY}`);
 
-  // Load cover art images
-  const imagePromises = slots.map(s => loadImage(s.track.cover_art_640));
-  const logoPromise = loadImage(ASSETS.logo);
-  const [images, logo] = await Promise.all([
-    Promise.all(imagePromises),
-    logoPromise,
-  ]);
+  // "Swipe right" pill
+  const swipeY = 900;
+  const swipeText = 'Swipe right for all this week\'s picks';
+  ctx.font = `600 22px ${SCRIPT}`;
+  const swipeW = ctx.measureText(swipeText).width + 40;
+  ctx.fillStyle = 'rgba(0,0,0,0.45)';
+  const pillX = (S - swipeW) / 2;
+  ctx.beginPath();
+  ctx.roundRect(pillX, swipeY - 4, swipeW, 36, 18);
+  ctx.fill();
+  goldText(ctx, swipeText, S / 2, swipeY, `600 22px ${SCRIPT}`);
 
-  // Draw 3x3 grid at (74, 85) size 933x933
-  drawGrid(ctx, slots, images, logo, 74, 85, 933);
+  // Date
+  goldText(ctx, formatDate(weekDate), S / 2, 960, `700 48px ${SCRIPT}`);
 
-  // Date at bottom
-  drawGoldText(ctx, formatDate(weekDate), S / 2, 1012, `700 46px ${SCRIPT_FONT}`);
+  // Gold chevrons (right-pointing)
+  ctx.save();
+  ctx.fillStyle = GOLD;
+  ctx.shadowColor = 'rgba(212,168,67,0.6)';
+  ctx.shadowBlur = 14;
+  ctx.font = 'bold 64px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('>>', 980, S / 2);
+  ctx.restore();
 
   // Decorations
-  drawGridDecorations(ctx);
+  drawNotes(ctx, 52);
+  drawSparkles(ctx, [[160, 160], [920, 900]], 48);
 
   return new Promise(resolve => canvas.toBlob(b => resolve(b!), 'image/png'));
 }
 
-// ─── STANDALONE GRID (no frame, for preview) ─────────────
+// ─── GRID SLIDE ──────────────────────────────────────────
+
+const GRID_ROTATIONS = [-1.2, 0.8, -0.5, 1.1, 0, -1.4, 0.6, -0.9];
+
+function drawGrid(
+  ctx: CanvasRenderingContext2D,
+  slots: SelectionSlot[],
+  images: (HTMLImageElement | null)[],
+  logo: HTMLImageElement | null,
+  ox: number, oy: number, gridSize: number,
+) {
+  const gap = Math.round(gridSize * 0.012);
+  const cell = Math.floor((gridSize - gap * 4) / 3);
+
+  const positions = [
+    { x: ox + gap, y: oy + gap },
+    { x: ox + gap + cell + gap, y: oy + gap },
+    { x: ox + gap + (cell + gap) * 2, y: oy + gap },
+    { x: ox + gap, y: oy + gap + cell + gap },
+    { x: ox + gap + (cell + gap) * 2, y: oy + gap + cell + gap },
+    { x: ox + gap, y: oy + gap + (cell + gap) * 2 },
+    { x: ox + gap + cell + gap, y: oy + gap + (cell + gap) * 2 },
+    { x: ox + gap + (cell + gap) * 2, y: oy + gap + (cell + gap) * 2 },
+  ];
+
+  for (let i = 0; i < Math.min(slots.length, 8); i++) {
+    const img = images[i];
+    if (!img) continue;
+    const pos = positions[i];
+    const rot = (GRID_ROTATIONS[i] * Math.PI) / 180;
+
+    ctx.save();
+    const cx = pos.x + cell / 2;
+    const cy = pos.y + cell / 2;
+    ctx.translate(cx, cy);
+    ctx.rotate(rot);
+    ctx.translate(-cx, -cy);
+
+    // Shadow
+    ctx.shadowColor = 'rgba(0,0,0,0.4)';
+    ctx.shadowBlur = 12;
+    ctx.shadowOffsetX = 2;
+    ctx.shadowOffsetY = 2;
+    ctx.fillStyle = '#2A3A5C';
+    ctx.fillRect(pos.x - 2, pos.y - 2, cell + 4, cell + 4);
+    ctx.shadowColor = 'transparent';
+
+    // Image
+    ctx.drawImage(img, pos.x, pos.y, cell, cell);
+
+    // Cell border
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(pos.x + 1, pos.y + 1, cell - 2, cell - 2);
+
+    ctx.restore();
+  }
+
+  // Center logo
+  const logoX = ox + gap + cell + gap;
+  const logoY = oy + gap + cell + gap;
+  if (logo) {
+    ctx.drawImage(logo, logoX, logoY, cell, cell);
+  } else {
+    ctx.fillStyle = '#162341';
+    ctx.fillRect(logoX, logoY, cell, cell);
+    ctx.fillStyle = GOLD;
+    ctx.font = `bold ${Math.round(cell * 0.12)}px ${BODY}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('MMMC', logoX + cell / 2, logoY + cell / 2);
+  }
+}
+
+export async function generateGridSlide(
+  slots: SelectionSlot[],
+  weekDate: string,
+): Promise<Blob> {
+  await loadAllAssets();
+  const canvas = document.createElement('canvas');
+  canvas.width = S;
+  canvas.height = S;
+  const ctx = canvas.getContext('2d')!;
+
+  ctx.fillStyle = BG;
+  ctx.fillRect(0, 0, S, S);
+
+  // Header
+  goldText(ctx, 'New Music Friday', S / 2, 16, `700 52px ${SCRIPT}`);
+  goldRule(ctx, 78);
+
+  // Load images
+  const imagePromises = slots.map(s => loadImage(s.track.cover_art_640));
+  const logoPromise = loadImage(ASSETS.logo);
+  const [images, logo] = await Promise.all([Promise.all(imagePromises), logoPromise]);
+
+  // Grid at (74, 90) size 932x932
+  drawGrid(ctx, slots, images, logo, 74, 90, 932);
+
+  // Date
+  goldText(ctx, formatDate(weekDate), S / 2, 1028, `700 40px ${SCRIPT}`);
+
+  // Corner sparkles — outside grid bounds
+  drawSparkles(ctx, [[28, 28], [1052, 28], [28, 1052], [1052, 1052]], 36);
+
+  // Corner notes
+  drawNotes(ctx, 52);
+
+  return new Promise(resolve => canvas.toBlob(b => resolve(b!), 'image/png'));
+}
+
+// ─── STANDALONE GRID (for preview only) ──────────────────
 
 export async function generateGridComposite(
   slots: SelectionSlot[],
@@ -263,44 +296,45 @@ export async function generateGridComposite(
   canvas.height = S;
   const ctx = canvas.getContext('2d')!;
 
-  ctx.fillStyle = BG_DARK;
+  ctx.fillStyle = BG;
   ctx.fillRect(0, 0, S, S);
 
   const imagePromises = slots.map(s => loadImage(s.track.cover_art_640));
   const logoPromise = loadImage(logoUrl);
-  const [images, logo] = await Promise.all([
-    Promise.all(imagePromises),
-    logoPromise,
-  ]);
+  const [images, logo] = await Promise.all([Promise.all(imagePromises), logoPromise]);
 
   drawGrid(ctx, slots, images, logo, 0, 0, S);
 
   return new Promise(resolve => canvas.toBlob(b => resolve(b!), 'image/png'));
 }
 
-// ─── FULL CAROUSEL GENERATION ────────────────────────────
+// ─── FULL CAROUSEL ───────────────────────────────────────
 
 export interface CarouselOutput {
   coverSlide: Blob;
   gridSlides: Blob[];
-  allSlides: Blob[]; // cover first, then grids in order
+  allSlides: Blob[];
 }
 
 export async function generateFullCarousel(
   slideGroups: SelectionSlot[][],
   coverFeature: SelectionSlot,
   weekDate: string,
+  onProgress?: (current: number, total: number) => void,
 ): Promise<CarouselOutput> {
+  const total = 1 + slideGroups.length;
+  onProgress?.(0, total);
+
   const coverSlide = await generateCoverSlide(coverFeature, weekDate);
+  onProgress?.(1, total);
+
   const gridSlides: Blob[] = [];
-  for (const group of slideGroups) {
-    gridSlides.push(await generateGridSlide(group, weekDate));
+  for (let i = 0; i < slideGroups.length; i++) {
+    gridSlides.push(await generateGridSlide(slideGroups[i], weekDate));
+    onProgress?.(2 + i, total);
   }
-  return {
-    coverSlide,
-    gridSlides,
-    allSlides: [coverSlide, ...gridSlides],
-  };
+
+  return { coverSlide, gridSlides, allSlides: [coverSlide, ...gridSlides] };
 }
 
 export function downloadBlob(blob: Blob, filename: string): void {

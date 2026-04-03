@@ -21,74 +21,103 @@ interface NDProfile {
 }
 
 export async function searchND(query: string): Promise<NDSearchResult[]> {
-  const res = await fetch(`/api/nd-proxy?path=${encodeURIComponent(`/api/search?q=${encodeURIComponent(query)}`)}`);
-  if (!res.ok) return [];
-  const data = await res.json();
-  return data.results || [];
+  try {
+    const res = await fetch(`/api/nd-proxy?path=${encodeURIComponent(`/api/search?q=${encodeURIComponent(query)}`)}`);
+    console.log(`[ND SEARCH] query="${query}" status=${res.status}`);
+    if (!res.ok) {
+      const body = await res.text();
+      console.warn(`[ND SEARCH] FAILED: ${body.slice(0, 200)}`);
+      return [];
+    }
+    const data = await res.json();
+    console.log(`[ND SEARCH] results: ${data.results?.length ?? 0}`);
+    return data.results || [];
+  } catch (e) {
+    console.warn(`[ND SEARCH] error:`, e);
+    return [];
+  }
 }
 
 export async function getProfileIG(pgId: string): Promise<string | null> {
-  const res = await fetch(`/api/nd-proxy?path=${encodeURIComponent(`/api/profile/${pgId}`)}`);
-  if (!res.ok) return null;
-  const data: NDProfile = await res.json();
-  return data.social?.instagram || null;
+  try {
+    const res = await fetch(`/api/nd-proxy?path=${encodeURIComponent(`/api/profile/${pgId}`)}`);
+    console.log(`[ND PROFILE] pgId="${pgId}" status=${res.status}`);
+    if (!res.ok) return null;
+    const data: NDProfile = await res.json();
+    const handle = data.social?.instagram || null;
+    console.log(`[ND PROFILE] instagram=${handle}`);
+    return handle;
+  } catch {
+    return null;
+  }
 }
+
+export type HandleSource = 'nd' | 'guessed' | 'manual' | 'unknown';
 
 export interface HandleResult {
   artist_name: string;
   handle: string | null;
-  source: 'nd_database' | 'nmf_auto_discover' | 'nmf_manual' | 'unknown';
+  source: HandleSource;
   confidence: 'high' | 'medium' | 'low';
   pg_id: string | null;
   loading: boolean;
+  confirmed: boolean; // only nd + manual are confirmed
 }
 
-/** Resolve an Instagram handle for an artist. Tries ND first, falls back to auto-discovery. */
+/** Resolve an Instagram handle for an artist. Tries ND first, falls back to pattern guess. */
 export async function resolveInstagramHandle(artistName: string): Promise<HandleResult> {
-  // Step 1: Search ND for the artist
-  const results = await searchND(artistName);
-  if (results.length > 0) {
-    const best = results[0];
-    // Step 2: Check if profile has Instagram handle
-    const handle = await getProfileIG(best.id);
-    if (handle) {
-      return {
-        artist_name: artistName,
-        handle: `@${handle.replace(/^@/, '')}`,
-        source: 'nd_database',
-        confidence: 'high',
-        pg_id: best.id,
-        loading: false,
-      };
-    }
+  const base = { artist_name: artistName, loading: false };
 
-    // Step 3: Auto-discover
-    const discoverRes = await fetch('/api/discover-instagram', {
+  // Tier 1: ND database
+  try {
+    const results = await searchND(artistName);
+    if (results.length > 0) {
+      const best = results[0];
+      const handle = await getProfileIG(best.id);
+      if (handle) {
+        return {
+          ...base,
+          handle: `@${handle.replace(/^@/, '')}`,
+          source: 'nd',
+          confidence: 'high',
+          pg_id: best.id,
+          confirmed: true,
+        };
+      }
+    }
+  } catch {
+    // ND unavailable, continue to tier 2
+  }
+
+  // Tier 2: Pattern guess (NOT confirmed)
+  try {
+    const res = await fetch('/api/discover-instagram', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ artist_name: artistName }),
     });
-    if (discoverRes.ok) {
-      const data = await discoverRes.json();
+    if (res.ok) {
+      const data = await res.json();
       if (data.handle) {
         return {
-          artist_name: artistName,
+          ...base,
           handle: `@${data.handle}`,
-          source: 'nmf_auto_discover',
-          confidence: data.confidence,
-          pg_id: best.id,
-          loading: false,
+          source: 'guessed',
+          confidence: 'low',
+          pg_id: null,
+          confirmed: false,
         };
       }
     }
-  }
+  } catch { /* discovery unavailable */ }
 
+  // Tier 3: Unknown
   return {
-    artist_name: artistName,
+    ...base,
     handle: null,
     source: 'unknown',
     confidence: 'low',
     pg_id: null,
-    loading: false,
+    confirmed: false,
   };
 }

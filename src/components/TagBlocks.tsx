@@ -34,7 +34,7 @@ export default function TagBlocks({ slideGroups }: Props) {
       if (accumulated.has(name) && !accumulated.get(name)!.loading) continue;
       accumulated.set(name, {
         artist_name: name, handle: null, source: 'unknown',
-        confidence: 'low', pg_id: null, loading: true,
+        confidence: 'low', pg_id: null, loading: true, confirmed: false,
       });
     }
     setHandles(new Map(accumulated));
@@ -48,7 +48,7 @@ export default function TagBlocks({ slideGroups }: Props) {
       } catch {
         accumulated.set(name, {
           artist_name: name, handle: null, source: 'unknown',
-          confidence: 'low', pg_id: null, loading: false,
+          confidence: 'low', pg_id: null, loading: false, confirmed: false,
         });
       }
     }
@@ -66,42 +66,57 @@ export default function TagBlocks({ slideGroups }: Props) {
       next.set(artistName, {
         artist_name: artistName,
         handle: cleaned ? `@${cleaned}` : null,
-        source: 'nmf_manual',
+        source: 'manual',
         confidence: 'high',
         pg_id: prev.get(artistName)?.pg_id || null,
         loading: false,
+        confirmed: true,
       });
       return next;
     });
   };
 
-  const getSlideTagBlock = (slots: SelectionSlot[]): string => {
+  const getSlideTagBlock = (slots: SelectionSlot[], confirmedOnly = true): string => {
     const tags: string[] = [];
     const seen = new Set<string>();
 
     for (const slot of slots) {
-      for (const name of slot.track.artist_names.split(', ')) {
+      for (const name of slot.track.artist_names.split(/\s*[,&]\s*/)) {
         const trimmed = name.trim();
-        if (seen.has(trimmed)) continue;
+        if (!trimmed || seen.has(trimmed)) continue;
         seen.add(trimmed);
         const result = handles.get(trimmed);
-        const handle = result?.handle || `[${trimmed}]`;
+        if (!result?.handle) continue;
+        // Only include confirmed handles in copy output
+        if (confirmedOnly && result.source === 'guessed' && !result.confirmed) continue;
+        const handle = result.handle;
 
         switch (format) {
-          case 'handles':
-            tags.push(handle);
-            break;
-          case 'with_titles':
-            tags.push(`${handle} - ${slot.track.track_name}`);
-            break;
-          case 'newline':
-            tags.push(handle);
-            break;
+          case 'handles': tags.push(handle); break;
+          case 'with_titles': tags.push(`${handle} - ${slot.track.track_name}`); break;
+          case 'newline': tags.push(handle); break;
         }
       }
     }
 
     return format === 'newline' ? tags.join('\n') : tags.join(' ');
+  };
+
+  const getSlideHandleCounts = (slots: SelectionSlot[]) => {
+    let confirmed = 0, unverified = 0, unknown = 0;
+    const seen = new Set<string>();
+    for (const slot of slots) {
+      for (const name of slot.track.artist_names.split(/\s*[,&]\s*/)) {
+        const trimmed = name.trim();
+        if (!trimmed || seen.has(trimmed)) continue;
+        seen.add(trimmed);
+        const r = handles.get(trimmed);
+        if (!r || !r.handle) unknown++;
+        else if (r.source === 'nd' || r.source === 'manual') confirmed++;
+        else unverified++;
+      }
+    }
+    return { confirmed, unverified, unknown };
   };
 
   const copyToClipboard = async (text: string, slideIdx: number) => {
@@ -140,14 +155,22 @@ export default function TagBlocks({ slideGroups }: Props) {
       </div>
 
       {slideGroups.map((slots, i) => {
-        const tagBlock = getSlideTagBlock(slots);
+        const tagBlock = getSlideTagBlock(slots, true);
+        const counts = getSlideHandleCounts(slots);
         return (
           <div key={i} style={{
             marginBottom: 16, padding: 12, borderRadius: 8,
             background: 'var(--midnight)', border: '1px solid var(--midnight-border)',
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-              <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>Slide {i + 1}</span>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, flexWrap: 'wrap', gap: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>Slide {i + 1}</span>
+                <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
+                  {counts.confirmed > 0 && <span style={{ color: 'var(--steel)' }}>{counts.confirmed} confirmed</span>}
+                  {counts.unverified > 0 && <span style={{ color: 'var(--gold)' }}> · {counts.unverified} unverified</span>}
+                  {counts.unknown > 0 && <span> · {counts.unknown} unknown</span>}
+                </span>
+              </div>
               <button
                 className="btn btn-sm"
                 onClick={() => copyToClipboard(tagBlock, i)}
@@ -193,11 +216,17 @@ export default function TagBlocks({ slideGroups }: Props) {
                         />
                         <span style={{
                           fontSize: '0.55rem',
-                          color: result.source === 'nd_database' ? '#3DA877'
-                            : result.source === 'nmf_manual' ? 'var(--gold)'
+                          color: result.source === 'nd' ? 'var(--steel)'
+                            : result.source === 'manual' ? 'var(--gold)'
+                            : result.source === 'guessed' ? '#E8C675'
                             : result.loading ? 'var(--steel)' : 'var(--text-muted)',
+                          fontStyle: result.source === 'guessed' ? 'italic' : 'normal',
                         }}>
-                          {result.loading ? 'searching...' : result.source === 'nd_database' ? 'ND' : result.source === 'nmf_manual' ? 'manual' : result.source === 'nmf_auto_discover' ? 'auto' : '?'}
+                          {result.loading ? 'searching...'
+                            : result.source === 'nd' ? '✓ ND'
+                            : result.source === 'manual' ? '✓ manual'
+                            : result.source === 'guessed' ? '⚠ unverified'
+                            : '+ add'}
                         </span>
                       </div>
                     );
