@@ -1,8 +1,8 @@
 import { clearToken } from './auth';
 
 const API = 'https://api.spotify.com/v1';
-const BATCH_SIZE = 8;
-const BATCH_DELAY = 150;
+const BATCH_SIZE = 20;
+const BATCH_DELAY = 50;
 const MAX_RETRIES = 3;
 
 export interface SpotifyArtist {
