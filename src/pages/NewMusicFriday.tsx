@@ -26,6 +26,7 @@ import ClusterCard from '../components/ClusterCard';
 import SlideGroup from '../components/SlideGroup';
 import FilterBar from '../components/FilterBar';
 import PlaylistPush from '../components/PlaylistPush';
+import CarouselPreview from '../components/CarouselPreview';
 
 type Phase = 'auth' | 'scanning' | 'results';
 type FilterKey = 'all' | 'single' | 'album';
@@ -491,6 +492,12 @@ export default function NewMusicFriday() {
                       onDeselect={handleDeselect}
                     />
                   ))}
+
+                  {/* Carousel grid generation */}
+                  <CarouselPreview
+                    slideGroups={slideGroups}
+                    coverFeature={selections.find(s => s.isCoverFeature) || null}
+                  />
                 </>
               )}
             </div>
