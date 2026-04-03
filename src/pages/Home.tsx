@@ -29,7 +29,7 @@ export default function Home() {
           marginBottom: 40,
           lineHeight: 1.6,
         }}>
-          Tools &amp; experiments for Nashville's music industry.
+          Tools &amp; intelligence for Nashville's music industry.
         </p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
@@ -38,47 +38,31 @@ export default function Home() {
           </Link>
 
           <div style={{
-            display: 'flex',
-            gap: 20,
-            marginTop: 24,
-            flexWrap: 'wrap',
-            justifyContent: 'center',
+            display: 'flex', gap: 12, marginTop: 8, flexWrap: 'wrap', justifyContent: 'center',
           }}>
-            <a
-              href="https://nashvilledecoder.com"
-              className="btn btn-sm"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
+            <Link to="/newmusicfriday/thisweek" className="btn btn-sm">This Week's Picks</Link>
+            <Link to="/newmusicfriday/archive" className="btn btn-sm">Archive</Link>
+            <Link to="/newmusicfriday/submit" className="btn btn-sm">Submit a Track</Link>
+          </div>
+
+          <div style={{
+            display: 'flex', gap: 20, marginTop: 24, flexWrap: 'wrap', justifyContent: 'center',
+          }}>
+            <a href="https://nashvilledecoder.com" className="btn btn-sm" target="_blank" rel="noopener noreferrer">
               Nashville Decoder
             </a>
-            <a
-              href="https://cowritecompass.com"
-              className="btn btn-sm"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
+            <a href="https://cowritecompass.com" className="btn btn-sm" target="_blank" rel="noopener noreferrer">
               CoWrite Compass
             </a>
           </div>
         </div>
 
         <div style={{
-          marginTop: 48,
-          display: 'flex',
-          gap: 24,
-          justifyContent: 'center',
-          flexWrap: 'wrap',
+          marginTop: 48, display: 'flex', gap: 24, justifyContent: 'center', flexWrap: 'wrap',
         }}>
-          <a href="https://github.com/maxmeetsmusiccity-dotcom" style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-            GitHub
-          </a>
-          <a href="https://x.com/maxblachman" style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-            X / Twitter
-          </a>
-          <a href="https://linkedin.com/in/maxblachman" style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-            LinkedIn
-          </a>
+          <a href="https://github.com/maxmeetsmusiccity-dotcom" style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>GitHub</a>
+          <a href="https://x.com/maxblachman" style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>X / Twitter</a>
+          <a href="https://linkedin.com/in/maxblachman" style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>LinkedIn</a>
         </div>
       </div>
     </div>
