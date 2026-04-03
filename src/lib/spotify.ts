@@ -1,8 +1,7 @@
 import { clearToken } from './auth';
 
 const API = 'https://api.spotify.com/v1';
-const BATCH_SIZE = 20;
-const BATCH_DELAY = 50;
+const MAX_CONCURRENT = 50;
 const MAX_RETRIES = 3;
 
 export interface SpotifyArtist {
@@ -183,6 +182,21 @@ export async function fetchFollowedArtists(
   return artists;
 }
 
+/** Concurrent pool — runs up to `limit` promises at once, no artificial delays */
+async function pool<T>(tasks: (() => Promise<T>)[], limit: number, onDone?: () => void): Promise<T[]> {
+  const results: T[] = [];
+  let idx = 0;
+  async function next(): Promise<void> {
+    while (idx < tasks.length) {
+      const i = idx++;
+      results[i] = await tasks[i]();
+      onDone?.();
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, tasks.length) }, () => next()));
+  return results;
+}
+
 export async function fetchNewReleases(
   artists: SpotifyArtist[],
   token: string,
@@ -190,85 +204,143 @@ export async function fetchNewReleases(
   onProgress: (current: number, total: number) => void,
 ): Promise<TrackItem[]> {
   const albumMap = new Map<string, { album: SpotifyAlbum; triggerArtist: SpotifyArtist }>();
+  let done = 0;
 
-  // Batch artist album fetches
-  for (let i = 0; i < artists.length; i += BATCH_SIZE) {
-    const batch = artists.slice(i, i + BATCH_SIZE);
-    const promises = batch.map(async (artist) => {
-      try {
-        const res = await apiFetch(
-          `${API}/artists/${artist.id}/albums?include_groups=album,single&limit=10&market=US`,
-          token,
-        );
-        const data = await res.json();
-        for (const album of data.items as SpotifyAlbum[]) {
-          if (album.release_date >= cutoffDate && !albumMap.has(album.id)) {
-            albumMap.set(album.id, { album, triggerArtist: artist });
-          }
+  // Phase 1: fetch albums — all artists in concurrent pool
+  const albumTasks = artists.map((artist) => async () => {
+    try {
+      const res = await apiFetch(
+        `${API}/artists/${artist.id}/albums?include_groups=album,single&limit=10&market=US`,
+        token,
+      );
+      const data = await res.json();
+      for (const album of data.items as SpotifyAlbum[]) {
+        if (album.release_date >= cutoffDate && !albumMap.has(album.id)) {
+          albumMap.set(album.id, { album, triggerArtist: artist });
         }
-      } catch (e) {
-        if ((e as Error).message === 'AUTH_EXPIRED') throw e;
-        // Skip individual artist failures
       }
-    });
-    await Promise.all(promises);
-    onProgress(Math.min(i + BATCH_SIZE, artists.length), artists.length);
-    if (i + BATCH_SIZE < artists.length) await sleep(BATCH_DELAY);
-  }
+    } catch (e) {
+      if ((e as Error).message === 'AUTH_EXPIRED') throw e;
+    }
+  });
 
-  // Now fetch tracks for each album
+  await pool(albumTasks, MAX_CONCURRENT, () => {
+    done++;
+    onProgress(done, artists.length);
+  });
+
+  // Phase 2: fetch tracks — only for multi-track releases
+  // Singles already have all data from the album endpoint
   const albums = Array.from(albumMap.values());
   const allTracks: TrackItem[] = [];
 
-  for (let i = 0; i < albums.length; i += BATCH_SIZE) {
-    const batch = albums.slice(i, i + BATCH_SIZE);
-    const promises = batch.map(async ({ album, triggerArtist }) => {
-      try {
-        const res = await apiFetch(
-          `${API}/albums/${album.id}/tracks?limit=50&market=US`,
-          token,
-        );
-        const data = await res.json();
-        const tracks = data.items as SpotifyTrack[];
-        const img640 = album.images.find(i => i.width === 640)?.url || album.images[0]?.url || '';
-        const img300 = album.images.find(i => i.width === 300)?.url || album.images[1]?.url || '';
-        const img64 = album.images.find(i => i.width === 64)?.url || album.images[2]?.url || '';
-        const artistNames = album.artists.map(a => a.name).join(', ');
+  // For singles, build TrackItem directly from album data (no extra API call)
+  const multiTrackAlbums: typeof albums = [];
+  for (const { album, triggerArtist } of albums) {
+    const img640 = album.images.find(i => i.width === 640)?.url || album.images[0]?.url || '';
+    const img300 = album.images.find(i => i.width === 300)?.url || album.images[1]?.url || '';
+    const img64 = album.images.find(i => i.width === 64)?.url || album.images[2]?.url || '';
+    const artistNames = album.artists.map(a => a.name).join(', ');
 
-        for (const track of tracks) {
-          allTracks.push({
-            track_name: track.name,
-            track_number: track.track_number,
-            track_uri: track.uri,
-            track_spotify_url: track.external_urls.spotify,
-            track_id: track.id,
-            duration_ms: track.duration_ms,
-            explicit: track.explicit,
-            album_name: album.name,
-            artist_names: artistNames,
-            artist_id: triggerArtist.id,
-            artist_spotify_url: triggerArtist.external_urls.spotify,
-            artist_genres: triggerArtist.genres,
-            artist_followers: triggerArtist.followers.total,
-            album_type: album.album_type,
-            release_date: album.release_date,
-            total_tracks: album.total_tracks,
-            album_spotify_url: album.external_urls.spotify,
-            album_spotify_id: album.id,
-            cover_art_640: img640,
-            cover_art_300: img300,
-            cover_art_64: img64,
-          });
-        }
-      } catch (e) {
-        if ((e as Error).message === 'AUTH_EXPIRED') throw e;
-      }
-    });
-    await Promise.all(promises);
-    if (i + BATCH_SIZE < albums.length) await sleep(BATCH_DELAY);
+    if (album.total_tracks === 1) {
+      // Single — synthesize track from album data, skip tracks API call
+      allTracks.push({
+        track_name: album.name,
+        track_number: 1,
+        track_uri: '', // will be filled if user selects it
+        track_spotify_url: album.external_urls.spotify,
+        track_id: `synth_${album.id}`,
+        duration_ms: 0,
+        explicit: false,
+        album_name: album.name,
+        artist_names: artistNames,
+        artist_id: triggerArtist.id,
+        artist_spotify_url: triggerArtist.external_urls.spotify,
+        artist_genres: triggerArtist.genres,
+        artist_followers: triggerArtist.followers.total,
+        album_type: album.album_type,
+        release_date: album.release_date,
+        total_tracks: 1,
+        album_spotify_url: album.external_urls.spotify,
+        album_spotify_id: album.id,
+        cover_art_640: img640,
+        cover_art_300: img300,
+        cover_art_64: img64,
+      });
+    } else {
+      multiTrackAlbums.push({ album, triggerArtist });
+    }
   }
 
-  // Sort by release date descending, then artist name
+  // Fetch tracks only for multi-track releases
+  const trackTasks = multiTrackAlbums.map(({ album, triggerArtist }) => async () => {
+    try {
+      const res = await apiFetch(
+        `${API}/albums/${album.id}/tracks?limit=50&market=US`,
+        token,
+      );
+      const data = await res.json();
+      const tracks = data.items as SpotifyTrack[];
+      const img640 = album.images.find(i => i.width === 640)?.url || album.images[0]?.url || '';
+      const img300 = album.images.find(i => i.width === 300)?.url || album.images[1]?.url || '';
+      const img64 = album.images.find(i => i.width === 64)?.url || album.images[2]?.url || '';
+      const artistNames = album.artists.map(a => a.name).join(', ');
+
+      for (const track of tracks) {
+        allTracks.push({
+          track_name: track.name,
+          track_number: track.track_number,
+          track_uri: track.uri,
+          track_spotify_url: track.external_urls.spotify,
+          track_id: track.id,
+          duration_ms: track.duration_ms,
+          explicit: track.explicit,
+          album_name: album.name,
+          artist_names: artistNames,
+          artist_id: triggerArtist.id,
+          artist_spotify_url: triggerArtist.external_urls.spotify,
+          artist_genres: triggerArtist.genres,
+          artist_followers: triggerArtist.followers.total,
+          album_type: album.album_type,
+          release_date: album.release_date,
+          total_tracks: album.total_tracks,
+          album_spotify_url: album.external_urls.spotify,
+          album_spotify_id: album.id,
+          cover_art_640: img640,
+          cover_art_300: img300,
+          cover_art_64: img64,
+        });
+      }
+    } catch (e) {
+      if ((e as Error).message === 'AUTH_EXPIRED') throw e;
+    }
+  });
+
+  if (trackTasks.length > 0) {
+    await pool(trackTasks, MAX_CONCURRENT);
+  }
+
+  // Now backfill single track URIs — fetch just the ones we need
+  const synthTracks = allTracks.filter(t => t.track_id.startsWith('synth_'));
+  if (synthTracks.length > 0) {
+    const backfillTasks = synthTracks.map((t) => async () => {
+      try {
+        const res = await apiFetch(`${API}/albums/${t.album_spotify_id}/tracks?limit=1&market=US`, token);
+        const data = await res.json();
+        const real = data.items?.[0] as SpotifyTrack | undefined;
+        if (real) {
+          t.track_id = real.id;
+          t.track_uri = real.uri;
+          t.track_name = real.name;
+          t.track_spotify_url = real.external_urls.spotify;
+          t.duration_ms = real.duration_ms;
+          t.explicit = real.explicit;
+        }
+      } catch { /* non-critical */ }
+    });
+    await pool(backfillTasks, MAX_CONCURRENT);
+  }
+
   allTracks.sort((a, b) => {
     const dateComp = b.release_date.localeCompare(a.release_date);
     if (dateComp !== 0) return dateComp;
