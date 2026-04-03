@@ -1,0 +1,11 @@
+{
+  "name": "New Music Friday — Max Meets Music City",
+  "short_name": "NMF",
+  "start_url": "/newmusicfriday",
+  "display": "standalone",
+  "theme_color": "#0F1B33",
+  "background_color": "#0F1B33",
+  "icons": [
+    { "src": "/mmmc-logo.png", "sizes": "200x200", "type": "image/png" }
+  ]
+}

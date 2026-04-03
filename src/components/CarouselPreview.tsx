@@ -112,9 +112,9 @@ export default function CarouselPreview({ slideGroups, coverFeature }: Props) {
         )}
       </div>
 
-      {/* Slide previews */}
+      {/* Slide previews — swipeable on mobile */}
       {previews.length > 0 && (
-        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+        <div className="carousel-preview-row" style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
           {previews.map((url, i) => (
             <div key={i} style={{ textAlign: 'center' }}>
               <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: 4 }}>

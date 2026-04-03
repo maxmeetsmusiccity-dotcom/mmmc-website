@@ -24,6 +24,7 @@ import {
 } from '../lib/selection';
 import { downloadJSON, downloadCSV, downloadArt } from '../lib/downloads';
 import { saveWeek, saveFeatures, type NMFWeek } from '../lib/supabase';
+import { batchResolveAppleMusic } from '../lib/apple-music';
 import ClusterCard from '../components/ClusterCard';
 import SlideGroup from '../components/SlideGroup';
 import FilterBar from '../components/FilterBar';
@@ -71,6 +72,7 @@ export default function NewMusicFriday() {
   const [lastScanned, setLastScanned] = useState<string | null>(null);
   const [isDemoMode, setIsDemoMode] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [appleEnriching, setAppleEnriching] = useState(false);
 
   // Handle OAuth callback
   useEffect(() => {
@@ -171,6 +173,19 @@ export default function NewMusicFriday() {
       setLastScanned(now);
       setRateLimited(failCount > totalArtists * 0.5);
       setPhase('results');
+
+      // Background Apple Music enrichment (non-blocking)
+      if (tracks.length > 0) {
+        setAppleEnriching(true);
+        batchResolveAppleMusic(tracks).then(appleMap => {
+          setAllTracks(prev => prev.map(t => {
+            const key = `${t.artist_names}::${t.track_name}`;
+            const url = appleMap.get(key);
+            return url ? { ...t, apple_music_url: url } : t;
+          }));
+          setAppleEnriching(false);
+        }).catch(() => setAppleEnriching(false));
+      }
 
       // Only cache if results > 0
       if (tracks.length > 0) {
@@ -392,6 +407,15 @@ export default function NewMusicFriday() {
           borderBottom: '1px solid var(--mmmc-red)', color: '#E04A4A', fontSize: '0.875rem',
         }}>
           {error}
+        </div>
+      )}
+
+      {appleEnriching && (
+        <div style={{
+          padding: '6px 24px', background: 'rgba(94,142,168,0.1)',
+          borderBottom: '1px solid var(--steel-dark)', color: 'var(--steel)', fontSize: '0.75rem',
+        }}>
+          Adding Apple Music links...
         </div>
       )}
 

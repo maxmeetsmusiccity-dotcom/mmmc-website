@@ -341,3 +341,72 @@ button {
 .animate-float-up {
   animation: float-up 0.6s ease-out forwards;
 }
+
+/* ─── Mobile-first overrides ─── */
+
+/* Touch targets: minimum 44px */
+.btn {
+  min-height: 44px;
+}
+
+.btn-sm {
+  min-height: 36px;
+}
+
+.filter-pill {
+  min-height: 36px;
+  padding: 8px 16px;
+}
+
+/* iPhone safe area for sticky bars */
+.selection-bar,
+.floating-action-bar {
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+}
+
+/* Mobile layout adjustments */
+@media (max-width: 767px) {
+  .release-grid {
+    gap: 10px;
+  }
+
+  .selection-bar {
+    padding: 8px 12px;
+    gap: 8px;
+  }
+
+  /* Hide download buttons on mobile — moved to overflow menu */
+  .mobile-hide {
+    display: none !important;
+  }
+
+  /* Full-width buttons on mobile */
+  .btn-mobile-full {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Carousel preview: horizontal scroll on mobile */
+  .carousel-preview-row {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    gap: 12px;
+    padding-bottom: 8px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .carousel-preview-row > div {
+    scroll-snap-align: center;
+    flex-shrink: 0;
+  }
+}
+
+/* Minimum font sizes */
+body {
+  font-size: max(14px, 1rem);
+}
+
+.mono {
+  font-size: max(12px, 0.75rem);
+}
