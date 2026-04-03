@@ -1,10 +1,8 @@
 import type { SelectionSlot } from './selection';
+import type { CarouselTemplate } from './carousel-templates';
+import { getTemplate } from './carousel-templates';
 
 const S = 1080;
-const BG = '#0F1B33';
-const GOLD = '#D4A843';
-const SCRIPT = '"Dancing Script", cursive';
-const BODY = '"DM Sans", sans-serif';
 
 const ASSETS = {
   logo: '/mmmc-logo.png',
@@ -29,38 +27,42 @@ async function loadImage(src: string): Promise<HTMLImageElement | null> {
   });
 }
 
-async function loadAllAssets(): Promise<void> {
+async function loadAllAssets(t: CarouselTemplate): Promise<void> {
+  const loads = Object.values(ASSETS).map(loadImage);
+  // Check for template-specific assets
+  if (t.assets?.background) loads.push(loadImage(t.assets.background));
+  if (t.assets?.vinyl) loads.push(loadImage(t.assets.vinyl));
   await Promise.all([
-    ...Object.values(ASSETS).map(loadImage),
-    document.fonts.load(`700 56px ${SCRIPT}`).catch(() => {}),
-    document.fonts.load(`600 26px ${BODY}`).catch(() => {}),
+    ...loads,
+    document.fonts.load(`700 56px ${t.scriptFont}`).catch(() => {}),
+    document.fonts.load(`600 26px ${t.bodyFont}`).catch(() => {}),
   ]);
 }
 
-function neonText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, font: string) {
+function neonText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, font: string, t: CarouselTemplate) {
   ctx.font = font;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
-  // Pass 1: wide soft outer glow
-  ctx.shadowColor = 'rgba(212, 168, 67, 0.25)';
-  ctx.shadowBlur = 45;
-  ctx.fillStyle = 'rgba(212, 168, 67, 0.3)';
+  // Pass 1: wide outer glow
+  ctx.shadowColor = t.neon.outerGlow;
+  ctx.shadowBlur = t.neon.outerBlur;
+  ctx.fillStyle = `${t.accentGlow}${t.neon.outerAlpha})`;
   ctx.fillText(text, x, y);
   // Pass 2: medium glow
-  ctx.shadowColor = 'rgba(212, 168, 67, 0.5)';
-  ctx.shadowBlur = 20;
-  ctx.fillStyle = 'rgba(230, 195, 100, 0.7)';
+  ctx.shadowColor = t.neon.midGlow;
+  ctx.shadowBlur = t.neon.midBlur;
+  ctx.fillStyle = `${t.accentGlow}${t.neon.midAlpha})`;
   ctx.fillText(text, x, y);
-  // Pass 3: tight bright core
-  ctx.shadowColor = 'rgba(255, 225, 140, 0.8)';
-  ctx.shadowBlur = 6;
-  ctx.fillStyle = '#F5E6B8';
+  // Pass 3: bright core
+  ctx.shadowColor = `${t.accentGlow}0.8)`;
+  ctx.shadowBlur = t.neon.coreBlur;
+  ctx.fillStyle = t.neon.coreColor;
   ctx.fillText(text, x, y);
   ctx.shadowColor = 'transparent';
 }
 
-function goldRule(ctx: CanvasRenderingContext2D, y: number) {
-  ctx.strokeStyle = 'rgba(212, 168, 67, 0.5)';
+function goldRule(ctx: CanvasRenderingContext2D, y: number, t: CarouselTemplate) {
+  ctx.strokeStyle = `${t.accentGlow}0.5)`;
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(S / 2 - 190, y);
@@ -84,23 +86,22 @@ function drawSparkles(ctx: CanvasRenderingContext2D, positions: [number, number]
   }
 }
 
-function vinylGrooves(ctx: CanvasRenderingContext2D) {
+function vinylGrooves(ctx: CanvasRenderingContext2D, t: CarouselTemplate) {
+  if (!t.cover.vinylOverlay) return;
   const cx = S / 2, cy = S / 2;
-  // Radial gradient: center slightly lighter
   const grad = ctx.createRadialGradient(cx, cy, 80, cx, cy, 520);
   grad.addColorStop(0, 'rgba(30, 36, 51, 0.4)');
   grad.addColorStop(1, 'rgba(10, 15, 30, 0.3)');
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, S, S);
-  // 60+ concentric groove rings
-  for (let r = 80; r <= 520; r += 7) {
+  const step = Math.max(4, Math.floor(420 / t.cover.grooveCount));
+  for (let r = 80; r <= 520; r += step) {
     ctx.beginPath();
     ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.strokeStyle = r % 14 === 0 ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.15)';
+    ctx.strokeStyle = r % (step * 2) === 0 ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.15)';
     ctx.lineWidth = 0.8;
     ctx.stroke();
   }
-  // Highlight arc across upper-left for light reflection
   ctx.beginPath();
   ctx.arc(cx - 60, cy - 60, 380, -0.9, -0.3);
   ctx.strokeStyle = 'rgba(255,255,255,0.06)';
@@ -119,110 +120,100 @@ function formatDate(weekDate: string): string {
 export async function generateCoverSlide(
   coverFeature: SelectionSlot,
   weekDate: string,
+  templateId = 'mmmc_classic',
 ): Promise<Blob> {
-  await loadAllAssets();
+  const t = getTemplate(templateId);
+  await loadAllAssets(t);
   const canvas = document.createElement('canvas');
-  canvas.width = S;
-  canvas.height = S;
+  canvas.width = S; canvas.height = S;
   const ctx = canvas.getContext('2d')!;
 
   // Background
-  ctx.fillStyle = BG;
+  ctx.fillStyle = t.background;
   ctx.fillRect(0, 0, S, S);
 
-  // Vinyl background
-  const vinyl = imageCache.get(ASSETS.vinyl);
-  if (vinyl) {
-    ctx.globalAlpha = 0.5;
+  // Template-specific or default vinyl
+  const vinylSrc = t.assets?.vinyl || ASSETS.vinyl;
+  const vinyl = await loadImage(vinylSrc);
+  if (vinyl && t.cover.vinylOverlay) {
+    ctx.globalAlpha = t.cover.vinylOpacity;
     ctx.drawImage(vinyl, 0, 0, S, S);
     ctx.globalAlpha = 1;
   }
-  vinylGrooves(ctx);
+  vinylGrooves(ctx, t);
 
-  // Featured image (reduced to 560px for text room)
+  // Featured image
   const featImg = await loadImage(coverFeature.track.cover_art_640);
-  const imgSize = 560, border = 14;
+  const imgSize = 560, border = t.cover.frameBorder;
   const imgX = (S - imgSize) / 2, imgY = 180;
 
-  // White frame with drop shadow
   ctx.shadowColor = 'rgba(0,0,0,0.6)';
-  ctx.shadowBlur = 32;
+  ctx.shadowBlur = t.cover.frameShadowBlur;
   ctx.shadowOffsetY = 10;
-  ctx.fillStyle = '#FFFFFF';
+  ctx.fillStyle = t.cover.frameColor;
   ctx.fillRect(imgX - border, imgY - border, imgSize + border * 2, imgSize + border * 2);
   ctx.shadowColor = 'transparent';
-  if (featImg) {
-    ctx.drawImage(featImg, imgX, imgY, imgSize, imgSize);
-  }
+  if (featImg) ctx.drawImage(featImg, imgX, imgY, imgSize, imgSize);
 
-  // Artist name + song title below image
-  const textY = imgY + imgSize + border + 16;
-  neonText(ctx, coverFeature.track.artist_names, S / 2, textY, `700 38px ${SCRIPT}`);
-  ctx.fillStyle = '#FFFFFF';
-  ctx.font = `500 26px ${BODY}`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
-  ctx.fillText(coverFeature.track.track_name, S / 2, textY + 48);
+  // Artist name + song title
+  if (t.cover.showArtistName) {
+    const textY = imgY + imgSize + border + 16;
+    neonText(ctx, coverFeature.track.artist_names, S / 2, textY, `700 38px ${t.scriptFont}`, t);
+    if (t.cover.showTrackName) {
+      ctx.fillStyle = t.textSecondary;
+      ctx.font = `500 26px ${t.bodyFont}`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+      ctx.fillText(coverFeature.track.track_name, S / 2, textY + 48);
+    }
+  }
 
   // Header
-  neonText(ctx, 'New Music Friday', S / 2, 42, `700 56px ${SCRIPT}`);
-  goldRule(ctx, 108);
-  neonText(ctx, 'Max Meets Music City', S / 2, 118, `italic 600 26px ${BODY}`);
+  neonText(ctx, 'New Music Friday', S / 2, 42, `700 56px ${t.scriptFont}`, t);
+  goldRule(ctx, 108, t);
+  neonText(ctx, t.cover.subtitleText, S / 2, 118, `italic 600 26px ${t.bodyFont}`, t);
 
-  // "Swipe right" pill
-  const swipeY = 900;
+  // Swipe pill
   const swipeText = 'Swipe right for all this week\'s picks';
-  ctx.font = `600 22px ${SCRIPT}`;
+  ctx.font = `600 22px ${t.scriptFont}`;
   const swipeW = ctx.measureText(swipeText).width + 40;
   ctx.fillStyle = 'rgba(0,0,0,0.45)';
-  const pillX = (S - swipeW) / 2;
-  ctx.beginPath();
-  ctx.roundRect(pillX, swipeY - 4, swipeW, 36, 18);
-  ctx.fill();
-  neonText(ctx, swipeText, S / 2, swipeY, `600 22px ${SCRIPT}`);
+  ctx.beginPath(); ctx.roundRect((S - swipeW) / 2, 896, swipeW, 36, 18); ctx.fill();
+  neonText(ctx, swipeText, S / 2, 900, `600 22px ${t.scriptFont}`, t);
 
   // Date
-  neonText(ctx, formatDate(weekDate), S / 2, 960, `700 48px ${SCRIPT}`);
+  neonText(ctx, formatDate(weekDate), S / 2, 960, `700 48px ${t.scriptFont}`, t);
 
-  // Gold chevron arrows (path shapes, not text)
-  ctx.save();
-  ctx.shadowColor = 'rgba(212,168,67,0.6)';
-  ctx.shadowBlur = 14;
-  ctx.fillStyle = GOLD;
-  for (let dx = 0; dx < 2; dx++) {
-    const bx = 940 + dx * 30;
-    const by = S / 2;
-    ctx.beginPath();
-    ctx.moveTo(bx, by - 28);
-    ctx.lineTo(bx + 20, by);
-    ctx.lineTo(bx, by + 28);
-    ctx.lineTo(bx + 6, by + 28);
-    ctx.lineTo(bx + 26, by);
-    ctx.lineTo(bx + 6, by - 28);
-    ctx.closePath();
-    ctx.fill();
+  // Chevrons
+  if (t.cover.showChevrons) {
+    ctx.save();
+    ctx.shadowColor = `${t.accentGlow}0.6)`;
+    ctx.shadowBlur = 14;
+    ctx.fillStyle = t.accent;
+    for (let dx = 0; dx < 2; dx++) {
+      const bx = 940 + dx * 30, by = S / 2;
+      ctx.beginPath();
+      ctx.moveTo(bx, by - 28); ctx.lineTo(bx + 20, by); ctx.lineTo(bx, by + 28);
+      ctx.lineTo(bx + 6, by + 28); ctx.lineTo(bx + 26, by); ctx.lineTo(bx + 6, by - 28);
+      ctx.closePath(); ctx.fill();
+    }
+    ctx.restore();
   }
-  ctx.restore();
 
   // Decorations
-  drawNotes(ctx, 52);
-  drawSparkles(ctx, [[160, 160], [920, 900]], 48);
+  if (t.decorations.showNotes) drawNotes(ctx, t.decorations.noteSize);
+  if (t.decorations.showSparkles) drawSparkles(ctx, [[160, 160], [920, 900]], t.decorations.sparkleSize);
 
   return new Promise(resolve => canvas.toBlob(b => resolve(b!), 'image/png'));
 }
 
-// ─── GRID SLIDE ──────────────────────────────────────────
-
-const GRID_ROTATIONS = [-0.6, 0.4, -0.3, 0.5, 0, -0.7, 0.3, -0.5];
+// ─── GRID ────────────────────────────────────────────────
 
 function drawGrid(
-  ctx: CanvasRenderingContext2D,
-  slots: SelectionSlot[],
-  images: (HTMLImageElement | null)[],
-  logo: HTMLImageElement | null,
-  ox: number, oy: number, gridSize: number,
+  ctx: CanvasRenderingContext2D, slots: SelectionSlot[],
+  images: (HTMLImageElement | null)[], logo: HTMLImageElement | null,
+  ox: number, oy: number, gridSize: number, t: CarouselTemplate,
 ) {
-  const gap = Math.round(gridSize * 0.005); // tight 4-6px gaps
+  const gap = Math.round(gridSize * t.grid.gap);
   const cell = Math.floor((gridSize - gap * 4) / 3);
 
   const positions = [
@@ -240,42 +231,41 @@ function drawGrid(
     const img = images[i];
     if (!img) continue;
     const pos = positions[i];
-    const rot = (GRID_ROTATIONS[i] * Math.PI) / 180;
+    const rot = (t.grid.rotations[i] * Math.PI) / 180;
 
     ctx.save();
-    const cx = pos.x + cell / 2;
-    const cy = pos.y + cell / 2;
-    ctx.translate(cx, cy);
-    ctx.rotate(rot);
-    ctx.translate(-cx, -cy);
+    const cx = pos.x + cell / 2, cy = pos.y + cell / 2;
+    ctx.translate(cx, cy); ctx.rotate(rot); ctx.translate(-cx, -cy);
 
-    // Shadow
-    ctx.shadowColor = 'rgba(0,0,0,0.4)';
-    ctx.shadowBlur = 12;
-    ctx.shadowOffsetX = 2;
-    ctx.shadowOffsetY = 2;
-    ctx.fillStyle = '#2A3A5C';
-    ctx.fillRect(pos.x - 2, pos.y - 2, cell + 4, cell + 4);
-    ctx.shadowColor = 'transparent';
+    if (t.grid.cellShadow) {
+      ctx.shadowColor = 'rgba(0,0,0,0.4)'; ctx.shadowBlur = 12;
+      ctx.shadowOffsetX = 2; ctx.shadowOffsetY = 2;
+      ctx.fillStyle = t.background;
+      ctx.fillRect(pos.x - 2, pos.y - 2, cell + 4, cell + 4);
+      ctx.shadowColor = 'transparent';
+    }
 
-    // Image
     ctx.drawImage(img, pos.x, pos.y, cell, cell);
+
+    if (t.grid.cellBorder) {
+      ctx.strokeStyle = t.grid.cellBorderColor;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(pos.x + 1, pos.y + 1, cell - 2, cell - 2);
+    }
 
     ctx.restore();
   }
 
   // Center logo
-  const logoX = ox + gap + cell + gap;
-  const logoY = oy + gap + cell + gap;
+  const logoX = ox + gap + cell + gap, logoY = oy + gap + cell + gap;
   if (logo) {
     ctx.drawImage(logo, logoX, logoY, cell, cell);
   } else {
-    ctx.fillStyle = '#162341';
+    ctx.fillStyle = t.background;
     ctx.fillRect(logoX, logoY, cell, cell);
-    ctx.fillStyle = GOLD;
-    ctx.font = `bold ${Math.round(cell * 0.12)}px ${BODY}`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
+    ctx.fillStyle = t.accent;
+    ctx.font = `bold ${Math.round(cell * 0.12)}px ${t.bodyFont}`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText('MMMC', logoX + cell / 2, logoY + cell / 2);
   }
 }
@@ -283,59 +273,58 @@ function drawGrid(
 export async function generateGridSlide(
   slots: SelectionSlot[],
   weekDate: string,
+  templateId = 'mmmc_classic',
+  logoUrl = '/mmmc-logo.png',
 ): Promise<Blob> {
-  await loadAllAssets();
+  const t = getTemplate(templateId);
+  await loadAllAssets(t);
   const canvas = document.createElement('canvas');
-  canvas.width = S;
-  canvas.height = S;
+  canvas.width = S; canvas.height = S;
   const ctx = canvas.getContext('2d')!;
 
-  ctx.fillStyle = BG;
+  // Background (check for template asset)
+  ctx.fillStyle = t.background;
   ctx.fillRect(0, 0, S, S);
+  if (t.assets?.background) {
+    const bg = await loadImage(t.assets.background);
+    if (bg) ctx.drawImage(bg, 0, 0, S, S);
+  }
 
-  // Header
-  neonText(ctx, 'New Music Friday', S / 2, 16, `700 52px ${SCRIPT}`);
-  goldRule(ctx, 78);
+  neonText(ctx, 'New Music Friday', S / 2, 16, `700 52px ${t.scriptFont}`, t);
+  goldRule(ctx, 78, t);
 
-  // Load images
   const imagePromises = slots.map(s => loadImage(s.track.cover_art_640));
-  const logoPromise = loadImage(ASSETS.logo);
+  const logoPromise = loadImage(logoUrl);
   const [images, logo] = await Promise.all([Promise.all(imagePromises), logoPromise]);
 
-  // Grid at (74, 90) size 932x932
-  drawGrid(ctx, slots, images, logo, 74, 90, 932);
+  drawGrid(ctx, slots, images, logo, 74, 90, 932, t);
 
-  // Date
-  neonText(ctx, formatDate(weekDate), S / 2, 1028, `700 40px ${SCRIPT}`);
+  neonText(ctx, formatDate(weekDate), S / 2, 1028, `700 40px ${t.scriptFont}`, t);
 
-  // Corner sparkles — outside grid bounds
-  drawSparkles(ctx, [[28, 28], [1052, 28], [28, 1052], [1052, 1052]], 36);
-
-  // Corner notes
-  drawNotes(ctx, 52);
+  if (t.decorations.showSparkles) drawSparkles(ctx, [[28, 28], [1052, 28], [28, 1052], [1052, 1052]], t.decorations.sparkleSize);
+  if (t.decorations.showNotes) drawNotes(ctx, t.decorations.noteSize);
 
   return new Promise(resolve => canvas.toBlob(b => resolve(b!), 'image/png'));
 }
 
-// ─── STANDALONE GRID (for preview only) ──────────────────
+// ─── STANDALONE GRID ─────────────────────────────────────
 
 export async function generateGridComposite(
-  slots: SelectionSlot[],
-  logoUrl: string,
+  slots: SelectionSlot[], logoUrl: string, templateId = 'mmmc_classic',
 ): Promise<Blob> {
+  const t = getTemplate(templateId);
   const canvas = document.createElement('canvas');
-  canvas.width = S;
-  canvas.height = S;
+  canvas.width = S; canvas.height = S;
   const ctx = canvas.getContext('2d')!;
 
-  ctx.fillStyle = BG;
+  ctx.fillStyle = t.background;
   ctx.fillRect(0, 0, S, S);
 
   const imagePromises = slots.map(s => loadImage(s.track.cover_art_640));
   const logoPromise = loadImage(logoUrl);
   const [images, logo] = await Promise.all([Promise.all(imagePromises), logoPromise]);
 
-  drawGrid(ctx, slots, images, logo, 0, 0, S);
+  drawGrid(ctx, slots, images, logo, 0, 0, S, t);
 
   return new Promise(resolve => canvas.toBlob(b => resolve(b!), 'image/png'));
 }
@@ -353,16 +342,18 @@ export async function generateFullCarousel(
   coverFeature: SelectionSlot,
   weekDate: string,
   onProgress?: (current: number, total: number) => void,
+  templateId = 'mmmc_classic',
+  logoUrl = '/mmmc-logo.png',
 ): Promise<CarouselOutput> {
   const total = 1 + slideGroups.length;
   onProgress?.(0, total);
 
-  const coverSlide = await generateCoverSlide(coverFeature, weekDate);
+  const coverSlide = await generateCoverSlide(coverFeature, weekDate, templateId);
   onProgress?.(1, total);
 
   const gridSlides: Blob[] = [];
   for (let i = 0; i < slideGroups.length; i++) {
-    gridSlides.push(await generateGridSlide(slideGroups[i], weekDate));
+    gridSlides.push(await generateGridSlide(slideGroups[i], weekDate, templateId, logoUrl));
     onProgress?.(2 + i, total);
   }
 
@@ -372,10 +363,8 @@ export async function generateFullCarousel(
 export function downloadBlob(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }

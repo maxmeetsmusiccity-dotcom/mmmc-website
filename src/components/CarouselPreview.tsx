@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { SelectionSlot } from '../lib/selection';
 import { generateFullCarousel, downloadBlob, type CarouselOutput } from '../lib/canvas-grid';
 import { getLastFriday } from '../lib/spotify';
+import TemplateSelector from './TemplateSelector';
 
 interface Props {
   slideGroups: SelectionSlot[][];
@@ -13,10 +14,19 @@ export default function CarouselPreview({ slideGroups, coverFeature }: Props) {
   const [previews, setPreviews] = useState<string[]>([]);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState('');
+  const [templateId, setTemplateId] = useState(localStorage.getItem('nmf_template') || 'mmmc_classic');
 
   const weekDate = getLastFriday();
 
   const [genProgress, setGenProgress] = useState<{ current: number; total: number } | null>(null);
+
+  const handleTemplateChange = (id: string) => {
+    setTemplateId(id);
+    localStorage.setItem('nmf_template', id);
+    // Clear previous carousel so user regenerates with new template
+    setCarousel(null);
+    setPreviews([]);
+  };
 
   const handleGenerate = async () => {
     if (!coverFeature) {
@@ -29,7 +39,7 @@ export default function CarouselPreview({ slideGroups, coverFeature }: Props) {
     try {
       const result = await generateFullCarousel(slideGroups, coverFeature, weekDate, (cur, tot) => {
         setGenProgress({ current: cur, total: tot });
-      });
+      }, templateId);
       setCarousel(result);
       setGenProgress(null);
       const urls = result.allSlides.map(b => URL.createObjectURL(b));
@@ -84,6 +94,8 @@ export default function CarouselPreview({ slideGroups, coverFeature }: Props) {
       <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', marginBottom: 16 }}>
         Instagram Carousel
       </h3>
+
+      <TemplateSelector selected={templateId} onSelect={handleTemplateChange} />
 
       {error && (
         <p style={{ color: 'var(--mmmc-red)', fontSize: '0.8rem', marginBottom: 12 }}>{error}</p>
