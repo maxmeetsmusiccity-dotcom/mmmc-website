@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { SelectionSlot } from '../lib/selection';
-import { generateGridComposite, downloadBlob } from '../lib/canvas-grid';
-import { startCanvaAuth, getCanvaToken, exchangeCanvaCode, uploadCanvaAsset, clearCanvaToken } from '../lib/canva';
+import { generateFullCarousel, downloadBlob, type CarouselOutput } from '../lib/canvas-grid';
+import { getLastFriday } from '../lib/spotify';
 
 interface Props {
   slideGroups: SelectionSlot[][];
@@ -9,113 +9,80 @@ interface Props {
 }
 
 export default function CarouselPreview({ slideGroups, coverFeature }: Props) {
+  const [carousel, setCarousel] = useState<CarouselOutput | null>(null);
   const [previews, setPreviews] = useState<string[]>([]);
   const [generating, setGenerating] = useState(false);
-  const [canvaToken, setCanvaToken] = useState(getCanvaToken());
-  const [uploading, setUploading] = useState(false);
-  const [uploadStatus, setUploadStatus] = useState('');
+  const [error, setError] = useState('');
+
+  const weekDate = getLastFriday();
 
   const handleGenerate = async () => {
+    if (!coverFeature) {
+      setError('Designate a cover feature first (click ★ on a track in the slide view)');
+      return;
+    }
     setGenerating(true);
+    setError('');
     try {
-      const newPreviews: string[] = [];
-      for (const group of slideGroups) {
-        const blob = await generateGridComposite(group, '/mmmc-logo.png');
-        newPreviews.push(URL.createObjectURL(blob));
-      }
-      setPreviews(newPreviews);
+      const result = await generateFullCarousel(slideGroups, coverFeature, weekDate);
+      setCarousel(result);
+      // Create preview URLs
+      const urls = result.allSlides.map(b => URL.createObjectURL(b));
+      setPreviews(prev => { prev.forEach(URL.revokeObjectURL); return urls; });
     } catch (e) {
-      console.error('Grid generation failed:', e);
+      setError(`Generation failed: ${(e as Error).message}`);
     } finally {
       setGenerating(false);
     }
   };
 
   const handleDownloadAll = async () => {
-    for (let i = 0; i < slideGroups.length; i++) {
-      const blob = await generateGridComposite(slideGroups[i], '/mmmc-logo.png');
-      downloadBlob(blob, `nmf-grid-slide-${i + 1}.png`);
-      if (i < slideGroups.length - 1) {
-        await new Promise(r => setTimeout(r, 300));
-      }
-    }
-  };
-
-  const handleCanvaConnect = () => {
-    startCanvaAuth();
-  };
-
-  // Handle Canva OAuth callback (check for state=canva in URL)
-  const handleCanvaCallback = async (code: string) => {
+    if (!carousel) return;
+    // Try zip
     try {
-      const token = await exchangeCanvaCode(code);
-      setCanvaToken(token);
-    } catch (e) {
-      console.error('Canva auth failed:', e);
+      const JSZip = (await import('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js' as string)).default
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        || (window as any).JSZip;
+      if (JSZip) {
+        const zip = new JSZip();
+        zip.file('01_cover.png', carousel.coverSlide);
+        carousel.gridSlides.forEach((b, i) => {
+          zip.file(`${String(i + 2).padStart(2, '0')}_grid_slide${i + 1}.png`, b);
+        });
+        const content = await zip.generateAsync({ type: 'blob' });
+        downloadBlob(content, `nmf-carousel-${weekDate}.zip`);
+        return;
+      }
+    } catch { /* fall through */ }
+
+    // Fallback: individual downloads
+    downloadBlob(carousel.coverSlide, '01_cover.png');
+    for (let i = 0; i < carousel.gridSlides.length; i++) {
+      await new Promise(r => setTimeout(r, 300));
+      downloadBlob(carousel.gridSlides[i], `${String(i + 2).padStart(2, '0')}_grid_slide${i + 1}.png`);
     }
   };
 
-  const handleUploadToCanva = async () => {
-    if (!canvaToken) return;
-    setUploading(true);
-    setUploadStatus('Uploading grid composites...');
-    try {
-      const assetIds: string[] = [];
-      for (let i = 0; i < slideGroups.length; i++) {
-        setUploadStatus(`Uploading slide ${i + 1}/${slideGroups.length}...`);
-        const blob = await generateGridComposite(slideGroups[i], '/mmmc-logo.png');
-        const assetId = await uploadCanvaAsset(canvaToken, blob, `NMF Grid Slide ${i + 1}`);
-        assetIds.push(assetId);
-      }
-
-      // Upload cover feature art if designated
-      if (coverFeature) {
-        setUploadStatus('Uploading cover feature art...');
-        const res = await fetch(coverFeature.track.cover_art_640);
-        const blob = await res.blob();
-        const coverId = await uploadCanvaAsset(canvaToken, blob, `NMF Cover - ${coverFeature.track.artist_names}`);
-        assetIds.push(coverId);
-      }
-
-      setUploadStatus(`Done! ${assetIds.length} assets uploaded to Canva. Open Canva to assemble the carousel.`);
-    } catch (e) {
-      const msg = (e as Error).message;
-      if (msg.includes('401') || msg.includes('403')) {
-        clearCanvaToken();
-        setCanvaToken(null);
-        setUploadStatus('Canva session expired. Reconnect to try again.');
-      } else {
-        setUploadStatus(`Upload failed: ${msg}`);
-      }
-    } finally {
-      setUploading(false);
+  const handleDownloadSingle = (index: number) => {
+    if (!carousel) return;
+    if (index === 0) {
+      downloadBlob(carousel.coverSlide, '01_cover.png');
+    } else {
+      downloadBlob(carousel.gridSlides[index - 1], `${String(index + 1).padStart(2, '0')}_grid_slide${index}.png`);
     }
   };
-
-  // Check if we just returned from Canva OAuth
-  if (typeof window !== 'undefined') {
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get('code');
-    const state = params.get('state');
-    if (code && state === 'canva' && !canvaToken) {
-      handleCanvaCallback(code);
-      // Clean URL
-      const url = new URL(window.location.href);
-      url.searchParams.delete('code');
-      url.searchParams.delete('state');
-      window.history.replaceState({}, '', url.toString());
-    }
-  }
 
   return (
     <div style={{
-      padding: '16px 0',
-      borderTop: '1px solid var(--midnight-border)',
-      marginTop: 24,
+      padding: '16px 0', borderTop: '1px solid var(--midnight-border)', marginTop: 24,
     }}>
       <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', marginBottom: 16 }}>
-        Carousel Grids
+        Instagram Carousel
       </h3>
+
+      {error && (
+        <p style={{ color: 'var(--mmmc-red)', fontSize: '0.8rem', marginBottom: 12 }}>{error}</p>
+      )}
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
         <button
@@ -123,61 +90,38 @@ export default function CarouselPreview({ slideGroups, coverFeature }: Props) {
           onClick={handleGenerate}
           disabled={generating}
         >
-          {generating ? 'Generating...' : previews.length > 0 ? 'Regenerate Grids' : 'Generate Grid Previews'}
+          {generating ? 'Generating...' : previews.length > 0 ? 'Regenerate Carousel' : 'Generate Carousel'}
         </button>
-        {previews.length > 0 && (
+        {carousel && (
           <button className="btn btn-sm" onClick={handleDownloadAll}>
-            Download All Grid PNGs
+            Download Carousel (ZIP)
           </button>
         )}
-
-        <span style={{ color: 'var(--midnight-border)', margin: '0 4px', alignSelf: 'center' }}>|</span>
-
-        {!canvaToken ? (
-          <button className="btn btn-sm" onClick={handleCanvaConnect}>
-            Connect Canva
-          </button>
-        ) : (
-          <>
-            <button
-              className="btn btn-sm"
-              onClick={handleUploadToCanva}
-              disabled={uploading}
-            >
-              {uploading ? 'Uploading...' : 'Upload to Canva'}
-            </button>
-            <button
-              className="btn btn-sm btn-danger"
-              onClick={() => { clearCanvaToken(); setCanvaToken(null); }}
-              style={{ fontSize: '0.7rem' }}
-            >
-              Disconnect Canva
-            </button>
-          </>
+        {!coverFeature && (
+          <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', alignSelf: 'center' }}>
+            Set a cover feature first
+          </span>
         )}
       </div>
 
-      {uploadStatus && (
-        <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 12 }}>
-          {uploadStatus}
-        </p>
-      )}
-
-      {/* Grid previews */}
+      {/* Slide previews */}
       {previews.length > 0 && (
         <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
           {previews.map((url, i) => (
             <div key={i} style={{ textAlign: 'center' }}>
               <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: 4 }}>
-                Slide {i + 1}
+                {i === 0 ? 'Cover' : `Slide ${i}`}
               </p>
               <img
                 src={url}
-                alt={`Grid slide ${i + 1}`}
+                alt={i === 0 ? 'Cover slide' : `Grid slide ${i}`}
                 style={{
                   width: 200, height: 200, borderRadius: 8,
                   border: '1px solid var(--midnight-border)',
+                  cursor: 'pointer',
                 }}
+                onClick={() => handleDownloadSingle(i)}
+                title="Click to download"
               />
             </div>
           ))}

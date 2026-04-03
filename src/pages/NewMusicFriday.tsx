@@ -67,7 +67,45 @@ export default function NewMusicFriday() {
     }
   }, [searchParams, setSearchParams]);
 
-  // Auto-start scan when token arrives
+  const [lastScanned, setLastScanned] = useState<string | null>(null);
+
+  // Try to load cached results on mount
+  useEffect(() => {
+    const cached = sessionStorage.getItem(`nmf_scan_${weekDate}`);
+    if (cached) {
+      try {
+        const { tracks, timestamp } = JSON.parse(cached);
+        if (tracks?.length) {
+          setAllTracks(tracks);
+          setReleases(groupIntoReleases(tracks));
+          setPhase('results');
+          setLastScanned(timestamp);
+          return;
+        }
+      } catch { /* corrupted cache, ignore */ }
+    }
+    // No session cache — try Supabase
+    import('../lib/supabase').then(({ getWeek }) => {
+      getWeek(weekDate).then(week => {
+        if (week?.all_releases && Array.isArray(week.all_releases) && (week.all_releases as TrackItem[]).length > 0) {
+          const tracks = week.all_releases as TrackItem[];
+          setAllTracks(tracks);
+          setReleases(groupIntoReleases(tracks));
+          setPhase('results');
+          setLastScanned(week.updated_at || week.created_at || null);
+          // Warm session cache
+          sessionStorage.setItem(`nmf_scan_${weekDate}`, JSON.stringify({ tracks, timestamp: week.updated_at }));
+          // Restore selections if saved
+          if (week.selections && Array.isArray(week.selections)) {
+            setSelections(buildSlots(week.selections as SelectionSlot[]));
+          }
+        }
+      });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // When token arrives and no results loaded, scan
   useEffect(() => {
     if (token && phase === 'auth' && allTracks.length === 0) {
       runScan(token);
@@ -94,9 +132,19 @@ export default function NewMusicFriday() {
         setScanStatus(`Scanning: ${cur}/${tot} artists checked`);
       });
 
+      const now = new Date().toISOString();
       setAllTracks(tracks);
       setReleases(groupIntoReleases(tracks));
+      setLastScanned(now);
       setPhase('results');
+
+      // Cache to sessionStorage
+      try {
+        sessionStorage.setItem(`nmf_scan_${weekDate}`, JSON.stringify({ tracks, timestamp: now }));
+      } catch { /* storage full, ignore */ }
+
+      // Save to Supabase
+      saveWeek({ week_date: weekDate, all_releases: tracks, playlist_master_pushed: false, carousel_generated: false });
     } catch (e) {
       if ((e as Error).message === 'AUTH_EXPIRED') {
         setToken(null);
@@ -286,6 +334,11 @@ export default function NewMusicFriday() {
           </h1>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {lastScanned && (
+            <span style={{ color: 'var(--text-muted)', fontSize: '0.65rem' }}>
+              Scanned {new Date(lastScanned).toLocaleString()}
+            </span>
+          )}
           {token && phase === 'results' && (
             <button className="btn btn-sm" onClick={() => runScan(token)}>Re-scan</button>
           )}
