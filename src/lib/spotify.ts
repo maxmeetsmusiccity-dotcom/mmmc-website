@@ -151,13 +151,12 @@ function sleep(ms: number): Promise<void> {
 
 export function getLastFriday(): string {
   const now = new Date();
-  const day = now.getDay(); // 0=Sun ... 5=Fri 6=Sat
-  // Days since the most recent Friday that is strictly before today
-  // If today IS Friday, we still want the PREVIOUS Friday (7 days ago)
-  // so we always go back at least 1 day
-  const daysSinceFriday = ((day - 5) + 7) % 7 || 7;
+  const day = now.getDay(); // 0=Sun, 5=Fri
+  // Most recent Friday INCLUDING today if today is Friday
+  // Music drops Thursday night with Friday's release_date
+  const diff = day >= 5 ? day - 5 : day + 2;
   const friday = new Date(now);
-  friday.setDate(now.getDate() - daysSinceFriday);
+  friday.setDate(now.getDate() - diff);
   friday.setHours(0, 0, 0, 0);
   return friday.toISOString().split('T')[0];
 }
@@ -218,9 +217,16 @@ export async function fetchNewReleases(
       );
       const data = await res.json();
       for (const album of data.items as SpotifyAlbum[]) {
-        // Results are sorted by release_date desc — early exit once past cutoff
-        if (album.release_date < cutoffDate) break;
-        if (!albumMap.has(album.id)) {
+        // Normalize imprecise dates: "2026" → "2026-01-01", "2026-03" → "2026-03-01"
+        let normalized = album.release_date;
+        if (normalized.length === 4) normalized += '-01-01';
+        else if (normalized.length === 7) normalized += '-01';
+
+        // Safe early exit only with day-precision dates (sorted desc)
+        if (album.release_date.length === 10 && album.release_date < cutoffDate) break;
+
+        // Include if within window
+        if (normalized >= cutoffDate && !albumMap.has(album.id)) {
           albumMap.set(album.id, { album, triggerArtist: artist });
         }
       }
