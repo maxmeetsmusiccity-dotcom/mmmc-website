@@ -558,7 +558,6 @@ export default function NewMusicFriday() {
               {selections.length > 0 && token && (
                 <PlaylistCreate
                   selectedCount={selections.length}
-                  token={token}
                   weekDate={weekDate}
                   onCreateAndPush={handleCreateAndPush}
                   onPushMaster={handlePlaylistPush}

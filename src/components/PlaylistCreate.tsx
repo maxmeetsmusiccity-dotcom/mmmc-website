@@ -1,8 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface Props {
   selectedCount: number;
-  token: string;
   weekDate: string;
   onCreateAndPush: (name: string, isPublic: boolean) => Promise<{ id: string; url: string }>;
   onPushMaster: (mode: 'replace' | 'append') => Promise<void>;
@@ -22,7 +21,7 @@ export default function PlaylistCreate({
   const [showConfirm, setShowConfirm] = useState(false);
   const [masterName, setMasterName] = useState('');
 
-  useState(() => { getPlaylistName().then(setMasterName).catch(() => setMasterName('NMF Playlist')); });
+  useEffect(() => { getPlaylistName().then(setMasterName).catch(() => setMasterName('NMF Playlist')); }, [getPlaylistName]);
 
   const handlePushMaster = async () => {
     setPushing(true);

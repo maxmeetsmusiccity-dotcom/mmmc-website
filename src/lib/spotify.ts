@@ -2,7 +2,6 @@ import { clearToken } from './auth';
 
 const API = 'https://api.spotify.com/v1';
 const MAX_CONCURRENT = 50;
-const MAX_RETRIES = 3;
 
 export interface SpotifyArtist {
   id: string;
@@ -122,7 +121,7 @@ export function groupIntoReleases(tracks: TrackItem[]): ReleaseCluster[] {
   return clusters;
 }
 
-async function apiFetch(url: string, token: string, retries = 0): Promise<Response> {
+async function apiFetch(url: string, token: string, retries = 3): Promise<Response> {
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -132,10 +131,10 @@ async function apiFetch(url: string, token: string, retries = 0): Promise<Respon
     throw new Error('AUTH_EXPIRED');
   }
 
-  if (res.status === 429 && retries < MAX_RETRIES) {
-    const retryAfter = parseInt(res.headers.get('Retry-After') || '1', 10);
-    await sleep((retryAfter + 1) * 1000);
-    return apiFetch(url, token, retries + 1);
+  if (res.status === 429 && retries > 0) {
+    const wait = parseInt(res.headers.get('Retry-After') || '5', 10) * 1000;
+    await sleep(wait);
+    return apiFetch(url, token, retries - 1);
   }
 
   if (!res.ok) {
@@ -216,16 +215,16 @@ export async function fetchNewReleases(
         token,
       );
       const data = await res.json();
-      for (const album of data.items as SpotifyAlbum[]) {
-        // Normalize imprecise dates: "2026" → "2026-01-01", "2026-03" → "2026-03-01"
+      for (const album of (data.items as (SpotifyAlbum & { release_date_precision?: string })[])) {
+        // Only use early exit when date precision is 'day' — year/month precision
+        // produces strings like "2026" or "2026-03" that compare falsely as "old"
+        if (album.release_date_precision === 'day' && album.release_date < cutoffDate) break;
+
+        // Normalize imprecise dates for the include check
         let normalized = album.release_date;
         if (normalized.length === 4) normalized += '-01-01';
         else if (normalized.length === 7) normalized += '-01';
 
-        // Safe early exit only with day-precision dates (sorted desc)
-        if (album.release_date.length === 10 && album.release_date < cutoffDate) break;
-
-        // Include if within window
         if (normalized >= cutoffDate && !albumMap.has(album.id)) {
           albumMap.set(album.id, { album, triggerArtist: artist });
         }
@@ -331,34 +330,43 @@ export async function fetchNewReleases(
     await pool(trackTasks, MAX_CONCURRENT);
   }
 
-  // Now backfill single track URIs — fetch just the ones we need
-  const synthTracks = allTracks.filter(t => t.track_id.startsWith('synth_'));
-  if (synthTracks.length > 0) {
-    const backfillTasks = synthTracks.map((t) => async () => {
+  // Backfill single track URIs — immutable: build a replacement map, then create new array
+  const synthIds = new Set(allTracks.filter(t => t.track_id.startsWith('synth_')).map(t => t.track_id));
+  const backfills = new Map<string, Partial<TrackItem>>();
+  if (synthIds.size > 0) {
+    const synthList = allTracks.filter(t => synthIds.has(t.track_id));
+    const backfillTasks = synthList.map((t) => async () => {
       try {
         const res = await apiFetch(`${API}/albums/${t.album_spotify_id}/tracks?limit=1&market=US`, token);
         const data = await res.json();
         const real = data.items?.[0] as SpotifyTrack | undefined;
         if (real) {
-          t.track_id = real.id;
-          t.track_uri = real.uri;
-          t.track_name = real.name;
-          t.track_spotify_url = real.external_urls.spotify;
-          t.duration_ms = real.duration_ms;
-          t.explicit = real.explicit;
+          backfills.set(t.track_id, {
+            track_id: real.id,
+            track_uri: real.uri,
+            track_name: real.name,
+            track_spotify_url: real.external_urls.spotify,
+            duration_ms: real.duration_ms,
+            explicit: real.explicit,
+          });
         }
       } catch { /* non-critical */ }
     });
     await pool(backfillTasks, MAX_CONCURRENT);
   }
 
-  allTracks.sort((a, b) => {
+  // Apply backfills immutably
+  const finalTracks = backfills.size > 0
+    ? allTracks.map(t => backfills.has(t.track_id) ? { ...t, ...backfills.get(t.track_id)! } : t)
+    : allTracks;
+
+  finalTracks.sort((a, b) => {
     const dateComp = b.release_date.localeCompare(a.release_date);
     if (dateComp !== 0) return dateComp;
     return a.artist_names.localeCompare(b.artist_names);
   });
 
-  return allTracks;
+  return finalTracks;
 }
 
 export async function replacePlaylistTracks(
@@ -368,11 +376,11 @@ export async function replacePlaylistTracks(
 ): Promise<void> {
   // Clear playlist
   await apiFetch(
-    `${API}/playlists/${playlistId}/tracks`,
+    `${API}/playlists/${playlistId}/items`,
     token,
   ).then(() => {}); // just to check auth
 
-  const clearRes = await fetch(`${API}/playlists/${playlistId}/tracks`, {
+  const clearRes = await fetch(`${API}/playlists/${playlistId}/items`, {
     method: 'PUT',
     headers: {
       Authorization: `Bearer ${token}`,
@@ -386,7 +394,7 @@ export async function replacePlaylistTracks(
   // Add in chunks of 100
   for (let i = 0; i < uris.length; i += 100) {
     const chunk = uris.slice(i, i + 100);
-    const res = await fetch(`${API}/playlists/${playlistId}/tracks`, {
+    const res = await fetch(`${API}/playlists/${playlistId}/items`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -406,7 +414,7 @@ export async function appendPlaylistTracks(
 ): Promise<void> {
   for (let i = 0; i < uris.length; i += 100) {
     const chunk = uris.slice(i, i + 100);
-    const res = await fetch(`${API}/playlists/${playlistId}/tracks`, {
+    const res = await fetch(`${API}/playlists/${playlistId}/items`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -461,7 +469,7 @@ export async function createPlaylist(
   // Add tracks
   for (let i = 0; i < uris.length; i += 100) {
     const chunk = uris.slice(i, i + 100);
-    const res = await fetch(`${API}/playlists/${playlistId}/tracks`, {
+    const res = await fetch(`${API}/playlists/${playlistId}/items`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,

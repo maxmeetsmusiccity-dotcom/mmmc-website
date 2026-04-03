@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import type { ReleaseCluster, TrackItem } from '../lib/spotify';
 import type { SelectionSlot } from '../lib/selection';
 import { formatDuration } from '../lib/utils';
@@ -11,7 +11,7 @@ interface Props {
   onDeselect: (albumId: string) => void;
 }
 
-export default function ClusterCard({ cluster, selectionSlot, hasSelections, onSelectRelease, onDeselect }: Props) {
+export default memo(function ClusterCard({ cluster, selectionSlot, hasSelections, onSelectRelease, onDeselect }: Props) {
   const [expanded, setExpanded] = useState(false);
   const isSelected = selectionSlot !== null;
   const selectedTrackId = selectionSlot?.track.track_id;
@@ -63,14 +63,24 @@ export default function ClusterCard({ cluster, selectionSlot, hasSelections, onS
         onClick={handleCardClick}
         style={{ position: 'relative', paddingBottom: '100%', background: 'var(--midnight)', cursor: 'pointer' }}
       >
-        {cluster.cover_art_300 && (
-          <img
-            src={cluster.cover_art_300}
-            alt={`${cluster.album_name} cover`}
-            loading="lazy"
-            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
-          />
-        )}
+        <img
+          src={cluster.cover_art_300 || ''}
+          alt={`${cluster.album_name} cover`}
+          loading="lazy"
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+          onError={(e) => {
+            const el = e.currentTarget;
+            el.style.display = 'none';
+            const parent = el.parentElement;
+            if (parent && !parent.querySelector('.art-fallback')) {
+              const fb = document.createElement('div');
+              fb.className = 'art-fallback';
+              fb.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:var(--midnight-raised);color:var(--text-muted);font-size:1.5rem;font-weight:700;';
+              fb.textContent = cluster.artist_names.split(',')[0].trim().split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+              parent.appendChild(fb);
+            }
+          }}
+        />
       </div>
 
       {/* Info */}
@@ -170,4 +180,4 @@ export default function ClusterCard({ cluster, selectionSlot, hasSelections, onS
       </div>
     </div>
   );
-}
+});
