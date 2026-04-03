@@ -401,7 +401,10 @@ export default function NewMusicFriday() {
             </span>
           )}
           {token && phase === 'results' && (
-            <button className="btn btn-sm" onClick={() => runScan(token)}>Re-scan</button>
+            <>
+              <button className="btn btn-sm" onClick={() => runScan(token)}>Re-scan</button>
+              <button className="btn btn-sm" onClick={() => { localStorage.removeItem('nmf_followed_artists'); runScan(token); }} title="Re-fetch followed artists from Spotify">Refresh Follows</button>
+            </>
           )}
           {token && (
             <button className="btn btn-sm btn-danger" onClick={handleDisconnect}>Disconnect</button>

@@ -1,7 +1,7 @@
 import { clearToken } from './auth';
 
 const API = 'https://api.spotify.com/v1';
-const MAX_CONCURRENT = 10;
+const MAX_CONCURRENT = 30;
 
 export interface SpotifyArtist {
   id: string;
@@ -169,11 +169,26 @@ export function getLastFriday(): string {
 export async function fetchFollowedArtists(
   token: string,
   onProgress: (current: number, total: number) => void,
+  forceRefresh = false,
 ): Promise<SpotifyArtist[]> {
+  // Check localStorage cache first
+  if (!forceRefresh) {
+    try {
+      const cached = localStorage.getItem('nmf_followed_artists');
+      if (cached) {
+        const { artists, timestamp } = JSON.parse(cached);
+        if (artists?.length > 0 && Date.now() - timestamp < 7 * 24 * 60 * 60 * 1000) {
+          onProgress(artists.length, artists.length);
+          console.log(`[SCAN] Loaded ${artists.length} artists from cache`);
+          return artists;
+        }
+      }
+    } catch { /* corrupted cache */ }
+  }
+
   const artists: SpotifyArtist[] = [];
   let after: string | null = null;
 
-  // First fetch to get a sense of total
   do {
     const url = after
       ? `${API}/me/following?type=artist&limit=50&after=${after}`
@@ -185,6 +200,11 @@ export async function fetchFollowedArtists(
     after = data.artists.cursors?.after || null;
     onProgress(artists.length, data.artists.total || artists.length);
   } while (after);
+
+  // Cache for next time
+  try {
+    localStorage.setItem('nmf_followed_artists', JSON.stringify({ artists, timestamp: Date.now() }));
+  } catch { /* storage full */ }
 
   return artists;
 }
