@@ -32,6 +32,7 @@ import PlaylistCreate from '../components/PlaylistCreate';
 import CarouselPreview from '../components/CarouselPreview';
 import TagBlocks from '../components/TagBlocks';
 import WeekHistory from '../components/WeekHistory';
+import EmbedWidget from '../components/EmbedWidget';
 
 type Phase = 'auth' | 'ready' | 'scanning' | 'results';
 type FilterKey = 'all' | 'single' | 'album';
@@ -825,6 +826,28 @@ export default function NewMusicFriday() {
                       )}
                     </div>
                   </details>
+
+                  {/* Cross-platform export */}
+                  <details style={{ marginTop: 16, borderTop: '1px solid var(--midnight-border)', paddingTop: 16 }}>
+                    <summary style={{ cursor: 'pointer', color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 600 }}>
+                      Cross-Platform Export ▸
+                    </summary>
+                    <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      {['twitter', 'tiktok', 'facebook'].map(p => (
+                        <button key={p} className="btn btn-sm" onClick={async () => {
+                          const { generatePlatformImage } = await import('../lib/cross-platform');
+                          const blob = await generatePlatformImage(selections.map(s => s), weekDate, p as 'twitter' | 'tiktok' | 'facebook');
+                          const { downloadBlob } = await import('../lib/canvas-grid');
+                          downloadBlob(blob, `nmf-${p}-${weekDate}.png`);
+                        }}>
+                          {p === 'twitter' ? 'Twitter/X (1200x675)' : p === 'tiktok' ? 'TikTok (1080x1920)' : 'Facebook (1200x630)'}
+                        </button>
+                      ))}
+                    </div>
+                  </details>
+
+                  {/* Embed widget */}
+                  <EmbedWidget />
 
                   {/* Save to history */}
                   <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid var(--midnight-border)' }}>
