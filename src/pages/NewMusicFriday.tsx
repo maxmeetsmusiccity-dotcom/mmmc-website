@@ -105,10 +105,14 @@ export default function NewMusicFriday() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // When token arrives and no results loaded, scan
+  // When token arrives and no results loaded, DON'T scan if we have cached results
   useEffect(() => {
     if (token && phase === 'auth' && allTracks.length === 0) {
       runScan(token);
+    }
+    // If token arrives but we already have results (from cache), just stay in results
+    if (token && phase === 'results') {
+      // Spotify connected silently — ready for playlist push
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
@@ -116,6 +120,7 @@ export default function NewMusicFriday() {
   const runScan = useCallback(async (tkn: string) => {
     setPhase('scanning');
     setError('');
+    const scanStart = Date.now();
     try {
       setScanStatus('Fetching followed artists...');
       const artists = await fetchFollowedArtists(tkn, (cur, tot) => {
@@ -129,7 +134,17 @@ export default function NewMusicFriday() {
 
       const tracks = await fetchNewReleases(artists, tkn, cutoff, (cur, tot) => {
         setScanProgress({ current: cur, total: tot });
-        setScanStatus(`Scanning: ${cur}/${tot} artists checked`);
+        const elapsed = (Date.now() - scanStart) / 1000;
+        if (cur >= 50 && cur < tot) {
+          const rate = cur / elapsed;
+          const remaining = (tot - cur) / rate;
+          const eta = remaining < 10 ? 'Almost done...'
+            : remaining < 60 ? `~${Math.round(remaining)}s remaining`
+            : `~${Math.floor(remaining / 60)}m ${Math.round(remaining % 60)}s remaining`;
+          setScanStatus(`Scanning: ${cur}/${tot} artists — ${eta}`);
+        } else {
+          setScanStatus(`Scanning: ${cur}/${tot} artists checked`);
+        }
       });
 
       const now = new Date().toISOString();
@@ -138,13 +153,15 @@ export default function NewMusicFriday() {
       setLastScanned(now);
       setPhase('results');
 
-      // Cache to sessionStorage
-      try {
-        sessionStorage.setItem(`nmf_scan_${weekDate}`, JSON.stringify({ tracks, timestamp: now }));
-      } catch { /* storage full, ignore */ }
-
-      // Save to Supabase
-      saveWeek({ week_date: weekDate, all_releases: tracks, playlist_master_pushed: false, carousel_generated: false });
+      // Only cache if results > 0
+      if (tracks.length > 0) {
+        try {
+          sessionStorage.setItem(`nmf_scan_${weekDate}`, JSON.stringify({ tracks, timestamp: now }));
+        } catch { /* storage full, ignore */ }
+        saveWeek({ week_date: weekDate, all_releases: tracks, playlist_master_pushed: false, carousel_generated: false });
+      } else {
+        setError(`Scan found 0 releases since ${cutoff}. Try re-scanning.`);
+      }
     } catch (e) {
       if ((e as Error).message === 'AUTH_EXPIRED') {
         setToken(null);

@@ -151,10 +151,13 @@ function sleep(ms: number): Promise<void> {
 
 export function getLastFriday(): string {
   const now = new Date();
-  const day = now.getDay(); // 0=Sun, 5=Fri
-  const diff = day >= 5 ? day - 5 : day + 2;
+  const day = now.getDay(); // 0=Sun ... 5=Fri 6=Sat
+  // Days since the most recent Friday that is strictly before today
+  // If today IS Friday, we still want the PREVIOUS Friday (7 days ago)
+  // so we always go back at least 1 day
+  const daysSinceFriday = ((day - 5) + 7) % 7 || 7;
   const friday = new Date(now);
-  friday.setDate(now.getDate() - diff);
+  friday.setDate(now.getDate() - daysSinceFriday);
   friday.setHours(0, 0, 0, 0);
   return friday.toISOString().split('T')[0];
 }
@@ -206,7 +209,7 @@ export async function fetchNewReleases(
   const albumMap = new Map<string, { album: SpotifyAlbum; triggerArtist: SpotifyArtist }>();
   let done = 0;
 
-  // Phase 1: fetch albums — all artists in concurrent pool
+  // Phase 1: fetch albums — all artists in concurrent pool, early exit on old releases
   const albumTasks = artists.map((artist) => async () => {
     try {
       const res = await apiFetch(
@@ -215,7 +218,9 @@ export async function fetchNewReleases(
       );
       const data = await res.json();
       for (const album of data.items as SpotifyAlbum[]) {
-        if (album.release_date >= cutoffDate && !albumMap.has(album.id)) {
+        // Results are sorted by release_date desc — early exit once past cutoff
+        if (album.release_date < cutoffDate) break;
+        if (!albumMap.has(album.id)) {
           albumMap.set(album.id, { album, triggerArtist: artist });
         }
       }
