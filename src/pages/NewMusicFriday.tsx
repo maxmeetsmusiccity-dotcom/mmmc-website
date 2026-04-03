@@ -27,6 +27,7 @@ import SlideGroup from '../components/SlideGroup';
 import FilterBar from '../components/FilterBar';
 import PlaylistPush from '../components/PlaylistPush';
 import CarouselPreview from '../components/CarouselPreview';
+import TagBlocks from '../components/TagBlocks';
 
 type Phase = 'auth' | 'scanning' | 'results';
 type FilterKey = 'all' | 'single' | 'album';
@@ -498,6 +499,9 @@ export default function NewMusicFriday() {
                     slideGroups={slideGroups}
                     coverFeature={selections.find(s => s.isCoverFeature) || null}
                   />
+
+                  {/* Instagram tag blocks */}
+                  <TagBlocks slideGroups={slideGroups} />
                 </>
               )}
             </div>
