@@ -937,7 +937,48 @@ export default function NewMusicFriday() {
                       getPlaylistName={() => getPlaylistName(token, PLAYLIST_ID)}
                     />
                   ) : (
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Connect Spotify to push to playlist.</p>
+                    <>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Connect Spotify to push to a Spotify playlist.</p>
+                    <button
+                      className="btn btn-sm"
+                      style={{ marginTop: 8 }}
+                      onClick={async () => {
+                        try {
+                          const { authorizeAppleMusic } = await import('../lib/sources/apple-music');
+                          await authorizeAppleMusic();
+                          const music = (window as any).MusicKit?.getInstance();
+                          if (!music) throw new Error('MusicKit not available');
+                          // Create playlist
+                          const name = `New Music Friday — ${new Date(weekDate + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`;
+                          const trackIds = selectedTracks
+                            .filter(t => t.apple_music_url)
+                            .map(t => {
+                              const match = t.apple_music_url?.match(/\/(\d+)$/);
+                              return match ? { id: match[1], type: 'songs' as const } : null;
+                            })
+                            .filter(Boolean);
+                          if (trackIds.length === 0) {
+                            alert('No Apple Music track IDs found. Run Apple Music enrichment first.');
+                            return;
+                          }
+                          await music.api.music('/v1/me/library/playlists', undefined, {
+                            fetchOptions: {
+                              method: 'POST',
+                              body: JSON.stringify({
+                                attributes: { name, description: 'Curated by Max Meets Music City' },
+                                relationships: { tracks: { data: trackIds } },
+                              }),
+                            },
+                          });
+                          alert(`Created Apple Music playlist: ${name}`);
+                        } catch (e) {
+                          alert(`Apple Music error: ${(e as Error).message}`);
+                        }
+                      }}
+                    >
+                      Push to Apple Music
+                    </button>
+                    </>
                   )}
                 </div>
               </details>

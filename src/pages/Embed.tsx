@@ -1,83 +1,134 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { supabase, type NMFWeek } from '../lib/supabase';
+import { getCarouselUrls } from '../lib/supabase';
 import { getLastFriday } from '../lib/spotify';
 
 export default function Embed() {
   const [searchParams] = useSearchParams();
-  const [week, setWeek] = useState<NMFWeek | null>(null);
+  const [images, setImages] = useState<string[]>([]);
+  const [activeSlide, setActiveSlide] = useState(0);
   const [loading, setLoading] = useState(true);
-  const curatorId = searchParams.get('curator');
-  const weekDate = getLastFriday();
+  const [paused, setPaused] = useState(false);
 
+  const weekDate = searchParams.get('week') || getLastFriday();
+  const intervalMs = parseInt(searchParams.get('interval') || '5000', 10);
+
+  // Load carousel images from Supabase Storage
   useEffect(() => {
-    if (!supabase) { setLoading(false); return; }
-    const query = supabase.from('nmf_weeks').select('*').eq('week_date', weekDate);
-    if (curatorId && curatorId !== 'guest') query.eq('user_id', curatorId);
-    query.single().then(({ data }) => { setWeek(data); setLoading(false); });
-  }, [weekDate, curatorId]);
+    getCarouselUrls(weekDate).then(urls => {
+      setImages(urls);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  }, [weekDate]);
 
-  const selections = (week?.selections as Array<{ track: { track_name: string; artist_names: string; cover_art_64: string; track_spotify_url: string } }>) || [];
+  // Auto-advance
+  useEffect(() => {
+    if (images.length <= 1 || paused) return;
+    const timer = setInterval(() => {
+      setActiveSlide(prev => (prev + 1) % images.length);
+    }, intervalMs);
+    return () => clearInterval(timer);
+  }, [images.length, paused, intervalMs]);
 
-  return (
-    <div style={{
-      background: '#0F1B33', color: '#F0EDE8', fontFamily: '"DM Sans", system-ui, sans-serif',
-      padding: 16, minHeight: '100%',
-    }}>
-      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 12 }}>
-        <h2 style={{ fontFamily: '"Source Serif 4", Georgia, serif', fontSize: '1.1rem' }}>
+  const goTo = useCallback((idx: number) => {
+    setActiveSlide(idx);
+    setPaused(true);
+    // Resume auto-advance after 10s of inactivity
+    setTimeout(() => setPaused(false), 10000);
+  }, []);
+
+  if (loading) {
+    return (
+      <div style={containerStyle}>
+        <p style={{ color: '#6B7F95', fontSize: '0.8rem' }}>Loading...</p>
+      </div>
+    );
+  }
+
+  if (images.length === 0) {
+    return (
+      <div style={containerStyle}>
+        <h2 style={titleStyle}>
           New Music <span style={{ color: '#D4A843' }}>Friday</span>
         </h2>
-        <span style={{ fontSize: '0.65rem', color: '#6B7F95' }}>
-          {new Date(weekDate + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-        </span>
+        <p style={{ color: '#6B7F95', fontSize: '0.8rem', marginTop: 12 }}>
+          No carousel generated for this week yet.
+        </p>
+        <p style={{ color: '#4A5568', fontSize: '0.65rem', marginTop: 8 }}>
+          {weekDate}
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      style={containerStyle}
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+    >
+      {/* Slide */}
+      <div style={{ position: 'relative', width: '100%', aspectRatio: '1', overflow: 'hidden', borderRadius: 8 }}>
+        {images.map((url, i) => (
+          <img
+            key={url}
+            src={url}
+            alt={`Slide ${i + 1}`}
+            style={{
+              position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover',
+              opacity: i === activeSlide ? 1 : 0,
+              transition: 'opacity 0.6s ease-in-out',
+            }}
+          />
+        ))}
       </div>
 
-      {loading ? (
-        <p style={{ color: '#6B7F95', fontSize: '0.8rem' }}>Loading...</p>
-      ) : selections.length === 0 ? (
-        <p style={{ color: '#6B7F95', fontSize: '0.8rem' }}>No picks for this week yet.</p>
-      ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 8 }}>
-          {selections.slice(0, 16).map((sel, i) => (
-            <a
-              key={i}
-              href={sel.track.track_spotify_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                display: 'flex', alignItems: 'center', gap: 8,
-                padding: 6, borderRadius: 6, background: '#162341',
-                textDecoration: 'none', color: 'inherit',
-                border: '1px solid #2A3A5C', transition: 'border-color 0.2s',
-              }}
-            >
-              {sel.track.cover_art_64 && (
-                <img src={sel.track.cover_art_64} alt="" style={{ width: 36, height: 36, borderRadius: 4 }} />
-              )}
-              <div style={{ overflow: 'hidden', flex: 1 }}>
-                <p style={{ fontSize: '0.7rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {sel.track.track_name}
-                </p>
-                <p style={{ fontSize: '0.6rem', color: '#A0B4C8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {sel.track.artist_names}
-                </p>
-              </div>
-            </a>
-          ))}
-        </div>
-      )}
+      {/* Navigation dots */}
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 4, marginTop: 8 }}>
+        {images.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => goTo(i)}
+            style={{
+              width: i === activeSlide ? 16 : 6, height: 6, borderRadius: 3,
+              background: i === activeSlide ? '#D4A843' : '#2A3A5C',
+              transition: 'all 0.3s', cursor: 'pointer', border: 'none',
+            }}
+          />
+        ))}
+      </div>
 
-      <div style={{ marginTop: 12, textAlign: 'center' }}>
+      {/* Branding */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
+        <span style={{ fontSize: '0.55rem', color: '#6B7F95' }}>
+          {weekDate}
+        </span>
         <a
-          href="https://maxmeetsmusiccity.com/newmusicfriday/archive"
+          href="https://maxmeetsmusiccity.com/newmusicfriday"
           target="_blank"
           rel="noopener noreferrer"
-          style={{ fontSize: '0.6rem', color: '#D4A843', textDecoration: 'none' }}
+          style={{ fontSize: '0.55rem', color: '#D4A843', textDecoration: 'none' }}
         >
-          Powered by Max Meets Music City
+          Max Meets Music City
         </a>
       </div>
     </div>
   );
 }
+
+const containerStyle: React.CSSProperties = {
+  background: '#0F1B33',
+  color: '#F0EDE8',
+  fontFamily: '"DM Sans", system-ui, sans-serif',
+  padding: 12,
+  minHeight: '100%',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+};
+
+const titleStyle: React.CSSProperties = {
+  fontFamily: '"Source Serif 4", Georgia, serif',
+  fontSize: '1.1rem',
+};
