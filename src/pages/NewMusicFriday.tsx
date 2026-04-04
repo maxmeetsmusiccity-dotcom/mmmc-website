@@ -133,6 +133,7 @@ export default function NewMusicFriday() {
   const [appleEnriching, setAppleEnriching] = useState(false);
   const [featureCounts, setFeatureCounts] = useState<Map<string, number>>(new Map());
   const [activeSource, setActiveSource] = useState<MusicSource['id']>('spotify');
+  const [tracksPerSlide, setTracksPerSlide] = useState(8);
 
   // Step section refs for scroll-to
   const step1Ref = useRef<HTMLElement>(null);
@@ -381,15 +382,14 @@ export default function NewMusicFriday() {
   const singleCount = useMemo(() => releases.filter(r => r.isSingle).length, [releases]);
   const albumCount = useMemo(() => releases.filter(r => !r.isSingle).length, [releases]);
 
-  // Slide groups for TagBlocks
+  // Slide groups for TagBlocks — follows tracksPerSlide from carousel config
   const slideGroups = useMemo(() => {
     const groups: SelectionSlot[][] = [];
-    for (const slot of selections) {
-      while (groups.length < slot.slideGroup) groups.push([]);
-      groups[slot.slideGroup - 1].push(slot);
+    for (let i = 0; i < selections.length; i += tracksPerSlide) {
+      groups.push(selections.slice(i, i + tracksPerSlide));
     }
     return groups;
-  }, [selections]);
+  }, [selections, tracksPerSlide]);
 
   // Selected tracks for downloads/playlist
   const selectedTracks = useMemo(() => selections.map(s => s.track), [selections]);
@@ -912,6 +912,7 @@ export default function NewMusicFriday() {
               <CarouselPreviewPanel
                 selectedTracks={selectedTracks}
                 coverFeature={selections.find(s => s.isCoverFeature) || null}
+                onTracksPerSlideChange={setTracksPerSlide}
               />
 
               {/* Collapsible extras */}

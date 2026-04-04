@@ -23,9 +23,10 @@ const TRACKS_PER_SLIDE_OPTIONS = [
 interface Props {
   selectedTracks: TrackItem[];
   coverFeature: SelectionSlot | null;
+  onTracksPerSlideChange?: (n: number) => void;
 }
 
-export default function CarouselPreviewPanel({ selectedTracks, coverFeature }: Props) {
+export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onTracksPerSlideChange }: Props) {
   const [tracksPerSlide, setTracksPerSlide] = useState(8);
   const [platformId, setPlatformId] = useState('ig-post');
   const [gridTemplateId, setGridTemplateId] = useState(localStorage.getItem('nmf_template') || 'mmmc_classic');
@@ -182,7 +183,7 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature }: P
               {TRACKS_PER_SLIDE_OPTIONS.map(opt => (
                 <button
                   key={opt.value}
-                  onClick={() => setTracksPerSlide(opt.value)}
+                  onClick={() => { setTracksPerSlide(opt.value); onTracksPerSlideChange?.(opt.value); }}
                   className={`filter-pill ${tracksPerSlide === opt.value ? 'active' : ''}`}
                   style={{ fontSize: '0.75rem' }}
                 >

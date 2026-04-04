@@ -14,13 +14,17 @@ export default function TagBlocks({ slideGroups }: Props) {
   const [format, setFormat] = useState<TagFormat>('handles');
   const [copiedSlide, setCopiedSlide] = useState<number | null>(null);
 
-  // Get unique artist names across all slides
+  // Get unique artist names + IDs across all slides
   const allArtists = new Set<string>();
+  const artistIdMap = new Map<string, string>(); // name → spotify artist_id
   for (const group of slideGroups) {
     for (const slot of group) {
-      // Split comma-separated artist names for collabs
       for (const name of slot.track.artist_names.split(', ')) {
-        allArtists.add(name.trim());
+        const trimmed = name.trim();
+        allArtists.add(trimmed);
+        if (slot.track.artist_id && !artistIdMap.has(trimmed)) {
+          artistIdMap.set(trimmed, slot.track.artist_id);
+        }
       }
     }
   }
@@ -43,7 +47,7 @@ export default function TagBlocks({ slideGroups }: Props) {
     for (const name of allArtists) {
       if (handles.has(name) && !handles.get(name)!.loading) continue;
       try {
-        const result = await resolveInstagramHandle(name);
+        const result = await resolveInstagramHandle(name, artistIdMap.get(name));
         accumulated.set(name, result);
       } catch {
         accumulated.set(name, {
@@ -213,14 +217,14 @@ export default function TagBlocks({ slideGroups }: Props) {
                         />
                         <span style={{
                           fontSize: '0.55rem',
-                          color: result.source === 'nd' ? 'var(--steel)'
-                            : result.source === 'spotify' ? '#5E8EA8'
+                          color: result.source === 'nd' ? '#3DA877'
+                            : result.source === 'cache' ? 'var(--steel)'
                             : result.source === 'manual' ? 'var(--gold)'
                             : result.loading ? 'var(--steel)' : 'var(--text-muted)',
                         }}>
                           {result.loading ? 'searching...'
-                            : result.source === 'nd' ? '✓ ND'
-                            : result.source === 'spotify' ? '✓ Spotify'
+                            : result.source === 'nd' ? `✓ ND${result.verified ? ' ✓' : ''}`
+                            : result.source === 'cache' ? '✓ cached'
                             : result.source === 'manual' ? '✓ manual'
                             : result.pg_id ? 'in ND · add handle' : '+ add handle'}
                         </span>
