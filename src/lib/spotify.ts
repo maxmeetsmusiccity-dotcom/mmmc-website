@@ -144,18 +144,19 @@ async function enforceGap(): Promise<void> {
 }
 
 /**
- * Core Spotify API caller with corrected retry strategy:
- * - 429 (rate limit): throw RateLimitError immediately, do NOT retry
- *   (retrying extends Spotify's rate limit jail)
- * - 500/502/503/504 (server errors): retry up to 8 times with
- *   backoff matching Python (1.2^attempt + random(), capped at 30s)
- * - 401 (auth expired): throw immediately
- * - Network errors: retry up to 8 times (capped at 15s)
+ * Core Spotify API caller:
+ * - 429: throw RateLimitError immediately. Do NOT retry — each retry
+ *   EXTENDS the penalty. Retry-After can escalate to 13+ hours.
+ * - 5xx: retry THIS request only, 3 attempts max (1s/2s/4s backoff).
+ *   If still failing after 3, skip and continue.
+ * - 401: throw immediately.
+ * - Network errors: retry 3 times (1s/2s/4s).
  */
-async function callSpotify(url: string, token: string, maxRetries = 8): Promise<Response> {
+async function callSpotify(url: string, token: string): Promise<Response> {
+  const BACKOFFS = [1000, 2000, 4000]; // 3 attempts: 1s, 2s, 4s
   let lastError: Error | null = null;
 
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
+  for (let attempt = 0; attempt <= BACKOFFS.length; attempt++) {
     await enforceGap();
     try {
       const res = await fetch(url, {
@@ -175,12 +176,11 @@ async function callSpotify(url: string, token: string, maxRetries = 8): Promise<
         throw new RateLimitError(retryAfter);
       }
 
-      // 5xx: transient server error — retry with backoff
-      if (res.status >= 500) {
-        const base = Math.pow(1.2, attempt);
-        const wait = Math.min(30, base + Math.random());
-        console.warn(`[SCAN] HTTP ${res.status} attempt ${attempt + 1}/${maxRetries}, backing off ${wait.toFixed(1)}s`);
-        await new Promise(r => setTimeout(r, wait * 1000));
+      // 5xx: transient server error — retry up to 3 times
+      if (res.status >= 500 && attempt < BACKOFFS.length) {
+        const wait = BACKOFFS[attempt];
+        console.warn(`[SCAN] HTTP ${res.status} attempt ${attempt + 1}/3, retrying in ${wait}ms`);
+        await new Promise(r => setTimeout(r, wait));
         continue;
       }
 
@@ -194,39 +194,56 @@ async function callSpotify(url: string, token: string, maxRetries = 8): Promise<
       if (lastError.message === 'AUTH_EXPIRED') throw lastError;
       if (lastError instanceof RateLimitError) throw lastError;
 
-      // Network error — retry with backoff (capped at 15s)
-      const base = Math.pow(1.2, attempt);
-      const wait = Math.min(15, base + Math.random());
-      console.warn(`[SCAN] Network error attempt ${attempt + 1}/${maxRetries}: ${lastError.message}, backing off ${wait.toFixed(1)}s`);
-      await new Promise(r => setTimeout(r, wait * 1000));
+      // Network error — retry up to 3 times
+      if (attempt < BACKOFFS.length) {
+        const wait = BACKOFFS[attempt];
+        console.warn(`[SCAN] Network error attempt ${attempt + 1}/3: ${lastError.message}, retrying in ${wait}ms`);
+        await new Promise(r => setTimeout(r, wait));
+      }
     }
   }
 
-  throw lastError || new Error('Spotify call failed after retries');
+  throw lastError || new Error('Spotify call failed after 3 retries');
 }
 
 /**
- * Pre-scan health check. Hit GET /v1/me to verify token + rate limit status.
- * Returns: { ok: true } | { ok: false, retryAfter: number } | throws on 401
+ * Pre-scan health check. Hits GET /v1/me — the lightest endpoint.
+ *
+ * IMPORTANT: 200 only proves "not currently jailed." It does NOT mean
+ * the scan is safe. Spotify does NOT expose X-RateLimit-Remaining.
+ * You could be 1 request from the limit.
  */
-export async function checkScanHealth(token: string): Promise<{ ok: boolean; retryAfter?: number }> {
+export async function checkScanHealth(token: string): Promise<{
+  ok: boolean;
+  retryAfter?: number;
+  message: string;
+}> {
   try {
     const res = await fetch(`${API}/me`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    if (res.status === 200) return { ok: true };
+    if (res.status === 200) {
+      return {
+        ok: true,
+        message: 'Spotify responding. Rate limits cannot be pre-checked. CSV import is the safe path.',
+      };
+    }
     if (res.status === 429) {
       const retryAfter = parseInt(res.headers.get('Retry-After') || '60', 10);
-      return { ok: false, retryAfter };
+      return {
+        ok: false,
+        retryAfter,
+        message: `Rate limited. Retry after ${retryAfter}s. Use CSV import.`,
+      };
     }
     if (res.status === 401) {
       clearToken();
       throw new Error('AUTH_EXPIRED');
     }
-    return { ok: true }; // other status — try anyway
+    return { ok: true, message: 'Spotify status unknown. Proceed with caution.' };
   } catch (e) {
     if ((e as Error).message === 'AUTH_EXPIRED') throw e;
-    return { ok: true }; // network error — try anyway
+    return { ok: false, message: 'Cannot reach Spotify. Use CSV import.' };
   }
 }
 

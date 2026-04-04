@@ -154,11 +154,12 @@ export default function NewMusicFriday() {
       const health = await checkScanHealth(tkn);
       if (!health.ok) {
         setRateLimited(true);
-        const retryAfter = health.retryAfter || 60;
-        setError(`Spotify is rate limiting your app. Try again in ${retryAfter} seconds.`);
+        setError(health.message);
         setPhase('ready');
         return;
       }
+      // 200 does NOT guarantee safety — log the warning
+      console.log(`[SCAN] Health check: ${health.message}`);
 
       setScanStatus('Fetching followed artists...');
       const artists = await fetchFollowedArtists(tkn, (cur, tot) => {
