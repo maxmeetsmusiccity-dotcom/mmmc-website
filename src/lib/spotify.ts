@@ -121,34 +121,132 @@ export function groupIntoReleases(tracks: TrackItem[]): ReleaseCluster[] {
   return clusters;
 }
 
-async function apiFetch(url: string, token: string): Promise<Response> {
-  const res = await fetch(url, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-
-  if (res.status === 401) {
-    clearToken();
-    throw new Error('AUTH_EXPIRED');
-  }
-
-  if (res.status === 429) {
-    const retryAfter = parseInt(res.headers.get('Retry-After') || '60', 10);
-    console.error(`[429] Rate limited. Retry-After: ${retryAfter}s`);
-    throw new RateLimitError(retryAfter);
-  }
-
-  if (!res.ok) {
-    throw new Error(`Spotify API error: ${res.status}`);
-  }
-
-  return res;
+/**
+ * Parse Spotify release_date with known precisions.
+ * Matches Python _parse_release_date() exactly.
+ * Exported for unit testing.
+ */
+export function parseReleaseDate(releaseDate: string, precision?: string): string | null {
+  if (!releaseDate) return null;
+  try {
+    if (precision === 'day') return releaseDate; // already YYYY-MM-DD
+    if (precision === 'month') {
+      const [y, m] = releaseDate.split('-');
+      return `${y}-${m.padStart(2, '0')}-01`;
+    }
+    if (precision === 'year') return `${releaseDate}-01-01`;
+    // Fallback on string length when precision missing
+    if (releaseDate.length === 10) return releaseDate;
+    if (releaseDate.length === 7) return `${releaseDate}-01`;
+    if (releaseDate.length === 4) return `${releaseDate}-01-01`;
+  } catch { return null; }
+  return null;
 }
 
 export class RateLimitError extends Error {
   retryAfterSeconds: number;
   constructor(retryAfter: number) {
     super('RATE_LIMITED');
+    this.name = 'RateLimitError';
     this.retryAfterSeconds = retryAfter;
+  }
+}
+
+/** Minimum ms between Spotify API requests — safety floor */
+const MIN_GAP_MS = 150;
+let lastCallTime = 0;
+
+async function enforceGap(): Promise<void> {
+  const elapsed = Date.now() - lastCallTime;
+  if (elapsed < MIN_GAP_MS) {
+    await new Promise(r => setTimeout(r, MIN_GAP_MS - elapsed));
+  }
+}
+
+/**
+ * Core Spotify API caller with corrected retry strategy:
+ * - 429 (rate limit): throw RateLimitError immediately, do NOT retry
+ *   (retrying extends Spotify's rate limit jail)
+ * - 500/502/503/504 (server errors): retry up to 8 times with
+ *   backoff matching Python (1.2^attempt + random(), capped at 30s)
+ * - 401 (auth expired): throw immediately
+ * - Network errors: retry up to 8 times (capped at 15s)
+ */
+async function callSpotify(url: string, token: string, maxRetries = 8): Promise<Response> {
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    await enforceGap();
+    try {
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      lastCallTime = Date.now();
+
+      if (res.status === 401) {
+        clearToken();
+        throw new Error('AUTH_EXPIRED');
+      }
+
+      // 429: STOP. Do NOT retry — it extends the jail.
+      if (res.status === 429) {
+        const retryAfter = parseInt(res.headers.get('Retry-After') || '60', 10);
+        console.error(`[SCAN] 429 Rate limited. Retry-After: ${retryAfter}s. NOT retrying.`);
+        throw new RateLimitError(retryAfter);
+      }
+
+      // 5xx: transient server error — retry with backoff
+      if (res.status >= 500) {
+        const base = Math.pow(1.2, attempt);
+        const wait = Math.min(30, base + Math.random());
+        console.warn(`[SCAN] HTTP ${res.status} attempt ${attempt + 1}/${maxRetries}, backing off ${wait.toFixed(1)}s`);
+        await new Promise(r => setTimeout(r, wait * 1000));
+        continue;
+      }
+
+      if (!res.ok) {
+        throw new Error(`Spotify API error: ${res.status}`);
+      }
+
+      return res;
+    } catch (e) {
+      lastError = e as Error;
+      if (lastError.message === 'AUTH_EXPIRED') throw lastError;
+      if (lastError instanceof RateLimitError) throw lastError;
+
+      // Network error — retry with backoff (capped at 15s)
+      const base = Math.pow(1.2, attempt);
+      const wait = Math.min(15, base + Math.random());
+      console.warn(`[SCAN] Network error attempt ${attempt + 1}/${maxRetries}: ${lastError.message}, backing off ${wait.toFixed(1)}s`);
+      await new Promise(r => setTimeout(r, wait * 1000));
+    }
+  }
+
+  throw lastError || new Error('Spotify call failed after retries');
+}
+
+/**
+ * Pre-scan health check. Hit GET /v1/me to verify token + rate limit status.
+ * Returns: { ok: true } | { ok: false, retryAfter: number } | throws on 401
+ */
+export async function checkScanHealth(token: string): Promise<{ ok: boolean; retryAfter?: number }> {
+  try {
+    const res = await fetch(`${API}/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (res.status === 200) return { ok: true };
+    if (res.status === 429) {
+      const retryAfter = parseInt(res.headers.get('Retry-After') || '60', 10);
+      return { ok: false, retryAfter };
+    }
+    if (res.status === 401) {
+      clearToken();
+      throw new Error('AUTH_EXPIRED');
+    }
+    return { ok: true }; // other status — try anyway
+  } catch (e) {
+    if ((e as Error).message === 'AUTH_EXPIRED') throw e;
+    return { ok: true }; // network error — try anyway
   }
 }
 
@@ -191,7 +289,7 @@ export async function fetchFollowedArtists(
     const url = after
       ? `${API}/me/following?type=artist&limit=50&after=${after}`
       : `${API}/me/following?type=artist&limit=50`;
-    const res = await apiFetch(url, token);
+    const res = await callSpotify(url, token);
     const data = await res.json();
     const items = data.artists.items as SpotifyArtist[];
     artists.push(...items);
@@ -218,16 +316,28 @@ export interface ScanResult {
 
 export type ScanStatus = 'green' | 'yellow' | 'red';
 
+/** Max albums to scan per artist — configurable, default 20 (matching Max's Python config) */
+function getMaxAlbumsPerArtist(): number {
+  try {
+    const stored = localStorage.getItem('nmf_max_albums_per_artist');
+    if (stored) return Math.max(1, parseInt(stored, 10));
+  } catch {}
+  return 20;
+}
+
 /**
  * Scan for new releases — SEQUENTIAL, one artist at a time.
  *
- * Replicates the Python script (new_music_art.py) behavior exactly:
+ * Matches Python automation behavior:
  * - Process artists ONE AT A TIME in a simple for loop with await
- * - Natural HTTP latency (~100-200ms) provides pacing at ~5-7 req/s
- * - This is well within Spotify's rolling 30s window (~180 req/30s)
- * - No concurrency pool, no batching, no explicit delays
- * - Abort on first 429, cache partial results
+ * - 150ms minimum gap between requests
+ * - On 429: STOP immediately, cache partial results (do NOT retry — extends jail)
+ * - On 5xx: retry up to 8 times with 1.2^n backoff (transient server errors)
+ * - Never break early on old dates — scan up to maxAlbumsPerArtist
+ * - Precision-aware date parsing matching Python _parse_release_date()
+ * - Track deduplication via seenTrackIds set
  * - Stream results live via onReleasesFound callback
+ * - Progress logged every 50 artists
  */
 export async function fetchNewReleases(
   artists: SpotifyArtist[],
@@ -243,6 +353,8 @@ export async function fetchNewReleases(
   let retryAfterSeconds = 0;
   const allTracks: TrackItem[] = [];
   const seenAlbumIds = new Set<string>();
+  const seenTrackIds = new Set<string>();
+  const maxAlbums = getMaxAlbumsPerArtist();
 
   // Smart ordering: artists with recent scan hits go first
   const recentHits = new Set<string>(
@@ -254,7 +366,7 @@ export async function fetchNewReleases(
     return aHit - bHit;
   });
 
-  console.log(`[SCAN START] ${sorted.length} artists, cutoff=${cutoffDate}, mode=SEQUENTIAL`);
+  console.log(`[SCAN START] ${sorted.length} artists, cutoff=${cutoffDate}, maxAlbums=${maxAlbums}, mode=SEQUENTIAL`);
 
   // SEQUENTIAL: one artist at a time, just like the Python script
   for (let i = 0; i < sorted.length; i++) {
@@ -262,29 +374,35 @@ export async function fetchNewReleases(
 
     try {
       // Fetch this artist's albums — ONE request, await it
-      const res = await apiFetch(
-        `${API}/artists/${artist.id}/albums?include_groups=album,single&limit=20&market=US`,
+      const res = await callSpotify(
+        `${API}/artists/${artist.id}/albums?include_groups=album,single&limit=${Math.min(maxAlbums, 50)}&market=US`,
         token,
       );
       apiCalls++;
       const data = await res.json();
       const albums = (data.items || []) as (SpotifyAlbum & { release_date_precision?: string })[];
 
-      // Filter to releases within the date window
+      // Filter to releases within the date window — NO early break on old dates
       const newAlbums: SpotifyAlbum[] = [];
+      let albumsScanned = 0;
       for (const album of albums) {
+        albumsScanned++;
+        if (albumsScanned > maxAlbums) break;
         if (seenAlbumIds.has(album.id)) continue;
-        let normalized = album.release_date;
-        if (normalized.length === 4) normalized += '-01-01';
-        else if (normalized.length === 7) normalized += '-01';
+        const normalized = parseReleaseDate(album.release_date, album.release_date_precision);
+        if (!normalized) continue;
         if (normalized >= cutoffDate) {
           newAlbums.push(album);
           seenAlbumIds.add(album.id);
         }
+        // Do NOT break on older dates — Python scans full page
       }
 
       if (newAlbums.length === 0) {
         onProgress(i + 1, sorted.length, seenAlbumIds.size, 'green');
+        if ((i + 1) % 50 === 0) {
+          console.log(`[SCAN] Processed ${i + 1}/${sorted.length} artists, releases=${seenAlbumIds.size}`);
+        }
         continue;
       }
 
@@ -297,33 +415,37 @@ export async function fetchNewReleases(
 
         if (album.total_tracks === 1) {
           // Single — synthesize track, skip tracks API call
-          allTracks.push({
-            track_name: album.name,
-            track_number: 1,
-            track_uri: '',
-            track_spotify_url: album.external_urls.spotify,
-            track_id: `synth_${album.id}`,
-            duration_ms: 0,
-            explicit: false,
-            album_name: album.name,
-            artist_names: artistNames,
-            artist_id: artist.id,
-            artist_spotify_url: artist.external_urls.spotify,
-            artist_genres: artist.genres,
-            artist_followers: artist.followers.total,
-            album_type: album.album_type,
-            release_date: album.release_date,
-            total_tracks: 1,
-            album_spotify_url: album.external_urls.spotify,
-            album_spotify_id: album.id,
-            cover_art_640: img640,
-            cover_art_300: img300,
-            cover_art_64: img64,
-          });
+          const synthId = `synth_${album.id}`;
+          if (!seenTrackIds.has(synthId)) {
+            seenTrackIds.add(synthId);
+            allTracks.push({
+              track_name: album.name,
+              track_number: 1,
+              track_uri: '',
+              track_spotify_url: album.external_urls.spotify,
+              track_id: synthId,
+              duration_ms: 0,
+              explicit: false,
+              album_name: album.name,
+              artist_names: artistNames,
+              artist_id: artist.id,
+              artist_spotify_url: artist.external_urls.spotify,
+              artist_genres: artist.genres,
+              artist_followers: artist.followers.total,
+              album_type: album.album_type,
+              release_date: album.release_date,
+              total_tracks: 1,
+              album_spotify_url: album.external_urls.spotify,
+              album_spotify_id: album.id,
+              cover_art_640: img640,
+              cover_art_300: img300,
+              cover_art_64: img64,
+            });
+          }
         } else {
           // Multi-track — fetch track listing sequentially
           try {
-            const trackRes = await apiFetch(
+            const trackRes = await callSpotify(
               `${API}/albums/${album.id}/tracks?limit=50&market=US`,
               token,
             );
@@ -332,6 +454,8 @@ export async function fetchNewReleases(
             const tracks = (trackData.items || []) as SpotifyTrack[];
 
             for (const track of tracks) {
+              if (seenTrackIds.has(track.id)) continue;
+              seenTrackIds.add(track.id);
               allTracks.push({
                 track_name: track.name,
                 track_number: track.track_number,
@@ -359,40 +483,43 @@ export async function fetchNewReleases(
           } catch (e) {
             if (e instanceof RateLimitError) throw e;
             if ((e as Error).message === 'AUTH_EXPIRED') throw e;
-            // Skip this album's tracks on network error
+            // Skip this album's tracks on network/server error
           }
         }
 
-        // Stream results live to UI as each album is processed
+        // Stream results live to UI
         if (onReleasesFound) onReleasesFound([...allTracks]);
       }
 
       onProgress(i + 1, sorted.length, seenAlbumIds.size, 'green');
+      if ((i + 1) % 50 === 0) {
+        console.log(`[SCAN] Processed ${i + 1}/${sorted.length} artists, releases=${seenAlbumIds.size}`);
+      }
     } catch (e) {
       if (e instanceof RateLimitError) {
         rateLimited = true;
         retryAfterSeconds = e.retryAfterSeconds;
         onProgress(i + 1, sorted.length, seenAlbumIds.size, 'red');
         console.error(
-          `[SCAN ABORTED] 429 at artist ${i + 1}/${sorted.length}. ` +
+          `[SCAN STOPPED] 429 at artist ${i + 1}/${sorted.length}. ` +
           `Retry-After: ${retryAfterSeconds}s. ` +
-          `${apiCalls} API calls in ${((Date.now() - scanStart) / 1000).toFixed(1)}s`
+          `${apiCalls} API calls in ${((Date.now() - scanStart) / 1000).toFixed(1)}s. ` +
+          `Showing ${allTracks.length} tracks found so far.`
         );
         break;
       }
       if ((e as Error).message === 'AUTH_EXPIRED') throw e;
-      // Skip individual artist failures
       failCount++;
       onProgress(i + 1, sorted.length, seenAlbumIds.size, 'green');
     }
   }
 
-  // Backfill single track URIs for synthesized entries
+  // Backfill single track URIs (only if not rate limited)
   const synthTracks = allTracks.filter(t => t.track_id.startsWith('synth_'));
   if (synthTracks.length > 0 && !rateLimited) {
     for (const t of synthTracks) {
       try {
-        const res = await apiFetch(
+        const res = await callSpotify(
           `${API}/albums/${t.album_spotify_id}/tracks?limit=1&market=US`,
           token,
         );
@@ -408,8 +535,7 @@ export async function fetchNewReleases(
           t.explicit = real.explicit;
         }
       } catch (e) {
-        if (e instanceof RateLimitError) break; // stop backfill on rate limit
-        // Non-critical — skip
+        if (e instanceof RateLimitError) break;
       }
     }
   }
@@ -458,7 +584,7 @@ export async function replacePlaylistTracks(
   uris: string[],
 ): Promise<void> {
   // Clear playlist
-  await apiFetch(
+  await callSpotify(
     `${API}/playlists/${playlistId}/items`,
     token,
   ).then(() => {}); // just to check auth
@@ -511,13 +637,13 @@ export async function appendPlaylistTracks(
 }
 
 export async function getPlaylistName(token: string, playlistId: string): Promise<string> {
-  const res = await apiFetch(`${API}/playlists/${playlistId}?fields=name`, token);
+  const res = await callSpotify(`${API}/playlists/${playlistId}?fields=name`, token);
   const data = await res.json();
   return data.name;
 }
 
 export async function getCurrentUserId(token: string): Promise<string> {
-  const res = await apiFetch(`${API}/me`, token);
+  const res = await callSpotify(`${API}/me`, token);
   const data = await res.json();
   return data.id;
 }
