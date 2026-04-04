@@ -94,13 +94,67 @@ export default function CuratorProfile() {
           <div style={{ marginBottom: 32 }}>
             <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', marginBottom: 12 }}>Most Featured Artists</h3>
             {topArtists.map(([name, count]) => (
-              <div key={name} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--midnight-border)' }}>
+              <div key={name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid var(--midnight-border)' }}>
                 <span style={{ fontSize: '0.85rem' }}>{name}</span>
-                <span className="mono" style={{ fontSize: '0.75rem', color: 'var(--gold)' }}>{count}x</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span className="mono" style={{ fontSize: '0.75rem', color: 'var(--gold)' }}>{count}x</span>
+                  <a
+                    href={`https://nashvilledecoder.com/search?q=${encodeURIComponent(name)}`}
+                    target="_blank" rel="noopener noreferrer"
+                    style={{ fontSize: '0.6rem', color: 'var(--steel)', padding: '2px 6px', border: '1px solid var(--midnight-border)', borderRadius: 4 }}
+                  >
+                    ND
+                  </a>
+                </div>
               </div>
             ))}
           </div>
         )}
+
+        {/* Nashville Decoder Data Preview — blurred teaser */}
+        <div style={{ marginBottom: 32, position: 'relative' }}>
+          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', marginBottom: 12 }}>
+            Artist Intelligence <span style={{ fontSize: '0.7rem', color: 'var(--steel)' }}>via Nashville Decoder</span>
+          </h3>
+          <div style={{ position: 'relative', overflow: 'hidden', borderRadius: 12 }}>
+            <div style={{ filter: 'blur(6px)', pointerEvents: 'none', opacity: 0.5 }}>
+              <div className="card" style={{ marginBottom: 8 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: '0.8rem' }}>Credit Count</span>
+                  <span className="mono" style={{ color: 'var(--gold)' }}>247</span>
+                </div>
+              </div>
+              <div className="card" style={{ marginBottom: 8 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: '0.8rem' }}>Chart Trajectory</span>
+                  <span className="mono" style={{ color: '#3DA877' }}>Rising</span>
+                </div>
+              </div>
+              <div className="card">
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: '0.8rem' }}>Co-Writer Network</span>
+                  <span className="mono" style={{ color: 'var(--steel-light)' }}>18 connections</span>
+                </div>
+              </div>
+            </div>
+            <div style={{
+              position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
+              alignItems: 'center', justifyContent: 'center', background: 'rgba(15,27,51,0.6)',
+              borderRadius: 12,
+            }}>
+              <p style={{ fontWeight: 600, marginBottom: 8, fontSize: '0.9rem' }}>
+                Unlock with Nashville Decoder
+              </p>
+              <a
+                href="https://nashvilledecoder.com"
+                target="_blank" rel="noopener noreferrer"
+                className="btn btn-sm btn-gold"
+              >
+                Learn More
+              </a>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -12,6 +12,7 @@ export default function AuthGate({ children }: Props) {
   const [isSignUp, setIsSignUp] = useState(false);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [tosAccepted, setTosAccepted] = useState(false);
 
   if (loading) {
     return (
@@ -30,6 +31,10 @@ export default function AuthGate({ children }: Props) {
   if (user || isGuest || adminBypass) return <>{children}</>;
 
   const handleEmail = async () => {
+    if (isSignUp && !tosAccepted) {
+      setError('You must accept the Terms of Service to create an account.');
+      return;
+    }
     setError('');
     setSubmitting(true);
     try {
@@ -92,8 +97,16 @@ export default function AuthGate({ children }: Props) {
               className="search-input"
               onKeyDown={e => e.key === 'Enter' && handleEmail()}
             />
+            {isSignUp && (
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: '0.7rem', color: 'var(--text-secondary)', cursor: 'pointer' }}>
+                <input type="checkbox" checked={tosAccepted} onChange={e => setTosAccepted(e.target.checked)} style={{ marginTop: 2 }} />
+                <span>
+                  I agree to the <a href="/terms" target="_blank" style={{ color: 'var(--gold)' }}>Terms of Service</a> and <a href="/privacy" target="_blank" style={{ color: 'var(--gold)' }}>Privacy Policy</a>
+                </span>
+              </label>
+            )}
             {error && <p style={{ color: 'var(--mmmc-red)', fontSize: '0.75rem' }}>{error}</p>}
-            <button className="btn btn-sm btn-gold" onClick={handleEmail} disabled={submitting} style={{ width: '100%', justifyContent: 'center' }}>
+            <button className="btn btn-sm btn-gold" onClick={handleEmail} disabled={submitting || (isSignUp && !tosAccepted)} style={{ width: '100%', justifyContent: 'center' }}>
               {submitting ? '...' : isSignUp ? 'Create Account' : 'Sign In'}
             </button>
             <button onClick={() => { setIsSignUp(!isSignUp); setError(''); }} style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>
