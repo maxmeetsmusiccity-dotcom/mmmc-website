@@ -29,7 +29,7 @@ import ClusterCard from '../components/ClusterCard';
 import SlideGroup from '../components/SlideGroup';
 import FilterBar from '../components/FilterBar';
 import PlaylistCreate from '../components/PlaylistCreate';
-import CarouselPreview from '../components/CarouselPreview';
+import CarouselPreviewPanel from '../components/CarouselPreviewPanel';
 import TagBlocks from '../components/TagBlocks';
 import WeekHistory from '../components/WeekHistory';
 import EmbedWidget from '../components/EmbedWidget';
@@ -890,9 +890,9 @@ export default function NewMusicFriday() {
                     />
                   ))}
 
-                  {/* Carousel generation — prominent */}
-                  <CarouselPreview
-                    slideGroups={slideGroups}
+                  {/* Carousel generation — new unified panel */}
+                  <CarouselPreviewPanel
+                    selectedTracks={selectedTracks}
                     coverFeature={selections.find(s => s.isCoverFeature) || null}
                   />
 

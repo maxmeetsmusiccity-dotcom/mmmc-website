@@ -15,7 +15,6 @@ import { buildSlots } from '../lib/selection';
 
 interface Props {
   selectedTracks: TrackItem[];
-  allSelections: SelectionSlot[];
   coverFeature: SelectionSlot | null;
 }
 
