@@ -10,15 +10,55 @@ import SlideSplitter, { type SlideGroup } from './SlideSplitter';
 import type { SelectionSlot } from '../lib/selection';
 import { buildSlots } from '../lib/selection';
 
-/** Standard tracks-per-slide options */
-const TRACKS_PER_SLIDE_OPTIONS = [
-  { value: 4, label: '2×2', grid: '2x2' },
-  { value: 6, label: '2×3', grid: '2x3' },
-  { value: 8, label: '3×3 + Logo', grid: '3x3_logo', default: true },
-  { value: 9, label: '3×3', grid: '3x3' },
-  { value: 15, label: '4×4 + Logo', grid: '4x4_logo' },
-  { value: 16, label: '4×4', grid: '4x4' },
-];
+/** Compute valid tracks-per-slide options based on total selected tracks */
+function getTracksPerSlideOptions(totalTracks: number): { value: number; label: string }[] {
+  const options: { value: number; label: string }[] = [];
+  const seen = new Set<number>();
+
+  // Always include standard options
+  const standards = [
+    { value: 4, label: '2×2' },
+    { value: 6, label: '2×3' },
+    { value: 8, label: '3×3+Logo' },
+    { value: 9, label: '3×3' },
+    { value: 16, label: '4×4' },
+  ];
+
+  // Add divisors of totalTracks (≤16) for exact splits
+  if (totalTracks > 1) {
+    for (let d = 2; d <= Math.min(totalTracks, 16); d++) {
+      if (totalTracks % d === 0 && !seen.has(d)) {
+        seen.add(d);
+        // Find a label
+        const std = standards.find(s => s.value === d);
+        if (std) {
+          options.push(std);
+        } else {
+          // Generate label from factorization
+          const factors: string[] = [];
+          for (let c = 2; c <= Math.min(d, 10); c++) {
+            if (d % c === 0 && d / c <= 10) {
+              factors.push(`${c}×${d / c}`);
+              break;
+            }
+          }
+          options.push({ value: d, label: factors[0] || `${d}` });
+        }
+      }
+    }
+  }
+
+  // Always include standard options even if not exact divisors
+  for (const s of standards) {
+    if (!seen.has(s.value)) {
+      seen.add(s.value);
+      options.push(s);
+    }
+  }
+
+  options.sort((a, b) => a.value - b.value);
+  return options;
+}
 
 interface Props {
   selectedTracks: TrackItem[];
@@ -44,15 +84,10 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
 
   // Compute grid layout ID from tracks per slide
   const gridLayoutId = useMemo(() => {
-    const opt = TRACKS_PER_SLIDE_OPTIONS.find(o => o.value === tracksPerSlide);
-    if (opt) {
-      // Find matching grid
-      const opts = getGridsForCount(opt.value);
-      const match = [...opts.exact, ...opts.logo].find(g => g.id === opt.grid);
-      return match?.id || opts.exact[0]?.id || opts.logo[0]?.id || '';
-    }
     const opts = getGridsForCount(tracksPerSlide);
-    return opts.exact[0]?.id || opts.logo[0]?.id || '';
+    // Prefer logo variants (3x3+logo for 8), then exact fit
+    const best = opts.logo[0] || opts.exact.find(g => g.columns > 1 && g.rows > 1) || opts.exact[0];
+    return best?.id || '';
   }, [tracksPerSlide]);
 
   // Total slides
@@ -186,7 +221,7 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
           <div style={{ marginBottom: 20 }}>
             <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8 }}>Tracks per slide</p>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              {TRACKS_PER_SLIDE_OPTIONS.map(opt => (
+              {getTracksPerSlideOptions(selectedTracks.length).map(opt => (
                 <button
                   key={opt.value}
                   onClick={() => { setTracksPerSlide(opt.value); onTracksPerSlideChange?.(opt.value); }}

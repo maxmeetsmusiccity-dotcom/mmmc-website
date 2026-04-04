@@ -46,12 +46,19 @@ export function computeCellRects(
 ): CellRect[] {
   const colUnit = (gridWidth - gapPx * (config.columns + 1)) / config.columns;
   const rowUnit = (gridHeight - gapPx * (config.rows + 1)) / config.rows;
+  // Force square cells — use the smaller dimension
+  const cellSize = Math.min(colUnit, rowUnit);
+  // Center the grid if there's leftover space
+  const actualGridW = cellSize * config.columns + gapPx * (config.columns + 1);
+  const actualGridH = cellSize * config.rows + gapPx * (config.rows + 1);
+  const offsetX = originX + (gridWidth - actualGridW) / 2;
+  const offsetY = originY + (gridHeight - actualGridH) / 2;
 
   return config.cells.map((cell, i) => ({
-    x: originX + gapPx + cell.col * (colUnit + gapPx),
-    y: originY + gapPx + cell.row * (rowUnit + gapPx),
-    w: cell.colSpan * colUnit + (cell.colSpan - 1) * gapPx,
-    h: cell.rowSpan * rowUnit + (cell.rowSpan - 1) * gapPx,
+    x: offsetX + gapPx + cell.col * (cellSize + gapPx),
+    y: offsetY + gapPx + cell.row * (cellSize + gapPx),
+    w: cell.colSpan * cellSize + (cell.colSpan - 1) * gapPx,
+    h: cell.rowSpan * cellSize + (cell.rowSpan - 1) * gapPx,
     isLogo: i === config.logoIndex,
     isEmpty: i >= config.trackSlots + (config.hasLogo ? 1 : 0),
     cellIndex: i,
@@ -125,15 +132,20 @@ function generateExactGrids(trackCount: number): GridConfig[] {
   return grids;
 }
 
-/** Generate logo variants: NxM grids where NxM - 1 = trackCount */
+/** Generate logo variants: NxM grids where NxM - 1 = trackCount
+ * Logo only valid when it can go in the TRUE center:
+ * - Odd×odd grids (3×3, 5×5, 7×7): center cell exists
+ * - Even×even or mixed: NO logo (no true center)
+ */
 function generateLogoGrids(trackCount: number): GridConfig[] {
   const grids: GridConfig[] = [];
   const totalNeeded = trackCount + 1; // +1 for logo cell
 
   const pairs = factorize(totalNeeded);
   for (const [cols, rows] of pairs) {
-    if (cols < 2 || rows < 2) continue; // logo needs at least 2x2
-    // Logo in center (or near-center for even dimensions)
+    // Logo only for odd×odd grids where center cell is unambiguous
+    if (cols % 2 === 0 || rows % 2 === 0) continue;
+    if (cols < 3 || rows < 3) continue;
     const logoCellIndex = Math.floor(rows / 2) * cols + Math.floor(cols / 2);
     const cells = makeGrid(cols, rows);
 
