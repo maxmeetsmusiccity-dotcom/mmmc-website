@@ -33,6 +33,7 @@ import CarouselPreview from '../components/CarouselPreview';
 import TagBlocks from '../components/TagBlocks';
 import WeekHistory from '../components/WeekHistory';
 import EmbedWidget from '../components/EmbedWidget';
+import ProductNav from '../components/ProductNav';
 
 type Phase = 'auth' | 'ready' | 'scanning' | 'results';
 type FilterKey = 'all' | 'single' | 'album';
@@ -397,7 +398,7 @@ export default function NewMusicFriday() {
         flexWrap: 'wrap', gap: 12,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <Link to="/" style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>MMMC</Link>
+          <ProductNav />
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', fontWeight: 600 }}>
             New Music Friday
           </h1>

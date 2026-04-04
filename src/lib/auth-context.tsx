@@ -85,9 +85,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogle = async () => {
     if (!supabase) return;
+    // Redirect to current page so users land back where they started
+    const redirectTo = window.location.href;
     await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/newmusicfriday` },
+      options: { redirectTo },
     });
   };
 

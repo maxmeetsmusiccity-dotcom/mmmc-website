@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../lib/auth-context';
+import ProductNav from '../components/ProductNav';
 import { supabase } from '../lib/supabase';
 
 interface CuratorSummary {
@@ -62,7 +63,7 @@ export default function Dashboard() {
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <Link to="/" style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>MMMC</Link>
+          <ProductNav showAdmin={isAdmin} />
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', fontWeight: 600 }}>
             NMF <span style={{ color: 'var(--gold)' }}>Intelligence</span>
           </h1>
