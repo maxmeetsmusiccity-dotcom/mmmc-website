@@ -1,6 +1,7 @@
 import type { SelectionSlot } from './selection';
 import type { CarouselTemplate } from './carousel-templates';
 import { getTemplate } from './carousel-templates';
+import { type GridLayout, getLayout, computeCellRects } from './grid-layouts';
 
 const S = 1080;
 
@@ -316,11 +317,79 @@ function drawGrid(
   }
 }
 
+/** Layout-aware grid renderer — works with any GridLayout */
+function drawGridWithLayout(
+  ctx: CanvasRenderingContext2D, slots: SelectionSlot[],
+  images: (HTMLImageElement | null)[], logo: HTMLImageElement | null,
+  ox: number, oy: number, gridW: number, gridH: number,
+  t: CarouselTemplate, layout: GridLayout,
+) {
+  const gapPx = Math.max(2, Math.round(Math.min(gridW, gridH) * t.grid.gap));
+  const rects = computeCellRects(layout, ox, oy, gridW, gridH, gapPx);
+
+  let trackIdx = 0;
+  for (const rect of rects) {
+    if (rect.isLogo) {
+      // Draw logo
+      if (logo) {
+        ctx.drawImage(logo, rect.x, rect.y, rect.w, rect.h);
+      } else {
+        ctx.fillStyle = t.background;
+        ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
+        ctx.fillStyle = t.accent;
+        const fontSize = Math.round(Math.min(rect.w, rect.h) * 0.15);
+        ctx.font = `bold ${fontSize}px ${t.bodyFont}`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('MMMC', rect.x + rect.w / 2, rect.y + rect.h / 2);
+      }
+      continue;
+    }
+
+    if (trackIdx >= slots.length) continue;
+    const img = images[trackIdx];
+    trackIdx++;
+    if (!img) continue;
+
+    const rotDeg = t.grid.rotations[rect.cellIndex % t.grid.rotations.length] || 0;
+    const rot = (rotDeg * Math.PI) / 180;
+
+    ctx.save();
+    const cx = rect.x + rect.w / 2, cy = rect.y + rect.h / 2;
+    ctx.translate(cx, cy); ctx.rotate(rot); ctx.translate(-cx, -cy);
+
+    if (t.grid.cellShadow) {
+      ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 16;
+      ctx.shadowOffsetX = 3; ctx.shadowOffsetY = 4;
+      ctx.fillStyle = t.background;
+      ctx.fillRect(rect.x - 2, rect.y - 2, rect.w + 4, rect.h + 4);
+      ctx.shadowColor = 'transparent';
+    }
+
+    ctx.drawImage(img, rect.x, rect.y, rect.w, rect.h);
+
+    // Glass highlight
+    const hlGrad = ctx.createLinearGradient(rect.x, rect.y, rect.x, rect.y + rect.h * 0.3);
+    hlGrad.addColorStop(0, 'rgba(255,255,255,0.06)');
+    hlGrad.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = hlGrad;
+    ctx.fillRect(rect.x, rect.y, rect.w, rect.h * 0.3);
+
+    if (t.grid.cellBorder) {
+      ctx.strokeStyle = t.grid.cellBorderColor;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(rect.x + 1, rect.y + 1, rect.w - 2, rect.h - 2);
+    }
+
+    ctx.restore();
+  }
+}
+
 export async function generateGridSlide(
   slots: SelectionSlot[],
   weekDate: string,
   templateId = 'mmmc_classic',
   logoUrl = '/mmmc-logo.png',
+  layoutId?: string,
 ): Promise<Blob> {
   const t = getTemplate(templateId);
   await loadAllAssets(t);
@@ -343,7 +412,13 @@ export async function generateGridSlide(
   const logoPromise = loadImage(logoUrl);
   const [images, logo] = await Promise.all([Promise.all(imagePromises), logoPromise]);
 
-  drawGrid(ctx, slots, images, logo, 74, 90, 932, t);
+  // Use layout-aware renderer if layoutId provided, else legacy 3x3
+  if (layoutId) {
+    const layout = getLayout(layoutId);
+    drawGridWithLayout(ctx, slots, images, logo, 74, 90, 932, 932, t, layout);
+  } else {
+    drawGrid(ctx, slots, images, logo, 74, 90, 932, t);
+  }
 
   neonText(ctx, formatDate(weekDate), S / 2, 1028, `700 40px ${t.scriptFont}`, t);
 
@@ -394,6 +469,7 @@ export async function generateFullCarousel(
   onProgress?: (current: number, total: number) => void,
   templateId = 'mmmc_classic',
   logoUrl = '/mmmc-logo.png',
+  layoutId?: string,
 ): Promise<CarouselOutput> {
   const total = 1 + slideGroups.length;
   onProgress?.(0, total);
@@ -403,7 +479,7 @@ export async function generateFullCarousel(
 
   const gridSlides: Blob[] = [];
   for (let i = 0; i < slideGroups.length; i++) {
-    gridSlides.push(await generateGridSlide(slideGroups[i], weekDate, templateId, logoUrl));
+    gridSlides.push(await generateGridSlide(slideGroups[i], weekDate, templateId, logoUrl, layoutId));
     onProgress?.(2 + i, total);
   }
 

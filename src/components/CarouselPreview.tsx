@@ -3,6 +3,7 @@ import type { SelectionSlot } from '../lib/selection';
 import { generateFullCarousel, downloadBlob, type CarouselOutput } from '../lib/canvas-grid';
 import { getLastFriday } from '../lib/spotify';
 import TemplateSelector from './TemplateSelector';
+import GridLayoutSelector from './GridLayoutSelector';
 
 interface Props {
   slideGroups: SelectionSlot[][];
@@ -15,6 +16,7 @@ export default function CarouselPreview({ slideGroups, coverFeature }: Props) {
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState('');
   const [templateId, setTemplateId] = useState(localStorage.getItem('nmf_template') || 'mmmc_classic');
+  const [layoutId, setLayoutId] = useState(localStorage.getItem('nmf_layout') || '3x3_logo');
 
   const weekDate = getLastFriday();
 
@@ -23,14 +25,20 @@ export default function CarouselPreview({ slideGroups, coverFeature }: Props) {
   const handleTemplateChange = (id: string) => {
     setTemplateId(id);
     localStorage.setItem('nmf_template', id);
-    // Clear previous carousel so user regenerates with new template
+    setCarousel(null);
+    setPreviews([]);
+  };
+
+  const handleLayoutChange = (id: string) => {
+    setLayoutId(id);
+    localStorage.setItem('nmf_layout', id);
     setCarousel(null);
     setPreviews([]);
   };
 
   const handleGenerate = async () => {
     if (!coverFeature) {
-      setError('Set a cover feature first — click ★ on any selected card in Browse view');
+      setError('Set a cover feature first — click the star on any selected card in Browse view');
       return;
     }
     setGenerating(true);
@@ -39,7 +47,7 @@ export default function CarouselPreview({ slideGroups, coverFeature }: Props) {
     try {
       const result = await generateFullCarousel(slideGroups, coverFeature, weekDate, (cur, tot) => {
         setGenProgress({ current: cur, total: tot });
-      }, templateId);
+      }, templateId, '/mmmc-logo.png', layoutId);
       setCarousel(result);
       setGenProgress(null);
       const urls = result.allSlides.map(b => URL.createObjectURL(b));
@@ -96,6 +104,7 @@ export default function CarouselPreview({ slideGroups, coverFeature }: Props) {
       </h3>
 
       <TemplateSelector selected={templateId} onSelect={handleTemplateChange} />
+      <GridLayoutSelector selected={layoutId} onSelect={handleLayoutChange} />
 
       {error && (
         <p style={{ color: 'var(--mmmc-red)', fontSize: '0.8rem', marginBottom: 12 }}>{error}</p>
