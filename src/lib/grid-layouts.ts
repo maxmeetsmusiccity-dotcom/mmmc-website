@@ -1,65 +1,66 @@
 /**
- * Grid layout system — SEPARATE from visual templates.
- * Any template style works with any grid layout.
+ * Dynamic grid layout system.
+ * Generates ALL valid grid configurations for any track count 1-50.
+ * Grouped by: Exact Fit, Close Fit, Mosaic, Logo Variants.
  */
 
 export interface CellPosition {
-  col: number;      // 0-based column
-  row: number;      // 0-based row
-  colSpan: number;  // cells wide
-  rowSpan: number;  // cells tall
+  col: number;
+  row: number;
+  colSpan: number;
+  rowSpan: number;
 }
 
-export interface GridLayout {
+export interface GridConfig {
   id: string;
   name: string;
   columns: number;
   rows: number;
-  totalSlots: number;   // tracks + logo if applicable
-  trackSlots: number;   // just tracks
+  trackSlots: number;
   hasLogo: boolean;
-  logoIndex: number;    // index in cells array, -1 if no logo
+  logoIndex: number;       // -1 if no logo
   cells: CellPosition[];
-  /** Icon representation for selector (e.g. "2x2" grid of dots) */
-  icon: string;
+  emptyCount: number;      // 0 for exact fit
+  category: 'exact' | 'close' | 'mosaic' | 'logo';
 }
 
-/**
- * Given a grid layout and canvas dimensions, compute pixel rects for each cell.
- */
 export interface CellRect {
   x: number;
   y: number;
   w: number;
   h: number;
   isLogo: boolean;
+  isEmpty: boolean;
   cellIndex: number;
 }
 
+// ─── Cell rect computation ──────────────────────────────
+
 export function computeCellRects(
-  layout: GridLayout,
+  config: GridConfig,
   originX: number,
   originY: number,
   gridWidth: number,
   gridHeight: number,
   gapPx: number,
 ): CellRect[] {
-  const colUnit = (gridWidth - gapPx * (layout.columns + 1)) / layout.columns;
-  const rowUnit = (gridHeight - gapPx * (layout.rows + 1)) / layout.rows;
+  const colUnit = (gridWidth - gapPx * (config.columns + 1)) / config.columns;
+  const rowUnit = (gridHeight - gapPx * (config.rows + 1)) / config.rows;
 
-  return layout.cells.map((cell, i) => ({
+  return config.cells.map((cell, i) => ({
     x: originX + gapPx + cell.col * (colUnit + gapPx),
     y: originY + gapPx + cell.row * (rowUnit + gapPx),
     w: cell.colSpan * colUnit + (cell.colSpan - 1) * gapPx,
     h: cell.rowSpan * rowUnit + (cell.rowSpan - 1) * gapPx,
-    isLogo: i === layout.logoIndex,
+    isLogo: i === config.logoIndex,
+    isEmpty: i >= config.trackSlots + (config.hasLogo ? 1 : 0),
     cellIndex: i,
   }));
 }
 
-// ─── Layout definitions ─────────────────────────────────
+// ─── Grid generation helpers ────────────────────────────
 
-function grid(cols: number, rows: number): CellPosition[] {
+function makeGrid(cols: number, rows: number): CellPosition[] {
   const cells: CellPosition[] = [];
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
@@ -69,149 +70,284 @@ function grid(cols: number, rows: number): CellPosition[] {
   return cells;
 }
 
-export const GRID_LAYOUTS: GridLayout[] = [
-  // 1. 2x2 — 4 tracks, no logo
-  {
-    id: '2x2',
-    name: '2×2',
-    columns: 2, rows: 2,
-    totalSlots: 4, trackSlots: 4,
-    hasLogo: false, logoIndex: -1,
-    cells: grid(2, 2),
-    icon: '⊞',
-  },
-
-  // 2. 2x2 + Logo — 4 tracks + center logo (3x3 grid, corners only)
-  {
-    id: '2x2_logo',
-    name: '2×2 + Logo',
-    columns: 3, rows: 3,
-    totalSlots: 5, trackSlots: 4,
-    hasLogo: true, logoIndex: 4,
-    cells: [
-      { col: 0, row: 0, colSpan: 1, rowSpan: 1 }, // TL
-      { col: 2, row: 0, colSpan: 1, rowSpan: 1 }, // TR
-      { col: 0, row: 2, colSpan: 1, rowSpan: 1 }, // BL
-      { col: 2, row: 2, colSpan: 1, rowSpan: 1 }, // BR
-      { col: 1, row: 1, colSpan: 1, rowSpan: 1 }, // Center = logo
-    ],
-    icon: '⊡',
-  },
-
-  // 3. 3x3 + Logo — 8 tracks + center logo (the classic)
-  {
-    id: '3x3_logo',
-    name: '3×3 + Logo',
-    columns: 3, rows: 3,
-    totalSlots: 9, trackSlots: 8,
-    hasLogo: true, logoIndex: 4,
-    cells: [
-      { col: 0, row: 0, colSpan: 1, rowSpan: 1 },
-      { col: 1, row: 0, colSpan: 1, rowSpan: 1 },
-      { col: 2, row: 0, colSpan: 1, rowSpan: 1 },
-      { col: 0, row: 1, colSpan: 1, rowSpan: 1 },
-      { col: 1, row: 1, colSpan: 1, rowSpan: 1 }, // Center = logo
-      { col: 2, row: 1, colSpan: 1, rowSpan: 1 },
-      { col: 0, row: 2, colSpan: 1, rowSpan: 1 },
-      { col: 1, row: 2, colSpan: 1, rowSpan: 1 },
-      { col: 2, row: 2, colSpan: 1, rowSpan: 1 },
-    ],
-    icon: '▦',
-  },
-
-  // 4. 3x3 Full — 9 tracks, no logo
-  {
-    id: '3x3_full',
-    name: '3×3 Full',
-    columns: 3, rows: 3,
-    totalSlots: 9, trackSlots: 9,
-    hasLogo: false, logoIndex: -1,
-    cells: grid(3, 3),
-    icon: '▩',
-  },
-
-  // 5. 4x4 — 16 tracks, no logo
-  {
-    id: '4x4',
-    name: '4×4',
-    columns: 4, rows: 4,
-    totalSlots: 16, trackSlots: 16,
-    hasLogo: false, logoIndex: -1,
-    cells: grid(4, 4),
-    icon: '▧',
-  },
-
-  // 6. 4x4 + Logo — 15 tracks + center logo
-  {
-    id: '4x4_logo',
-    name: '4×4 + Logo',
-    columns: 4, rows: 4,
-    totalSlots: 16, trackSlots: 15,
-    hasLogo: true, logoIndex: 5,
-    cells: (() => {
-      const c = grid(4, 4);
-      // Logo replaces cell at row 1, col 1 (index 5)
-      return c;
-    })(),
-    icon: '▤',
-  },
-
-  // 7. Single Feature — 1 large image
-  {
-    id: 'single',
-    name: 'Single Feature',
-    columns: 1, rows: 1,
-    totalSlots: 1, trackSlots: 1,
-    hasLogo: false, logoIndex: -1,
-    cells: [{ col: 0, row: 0, colSpan: 1, rowSpan: 1 }],
-    icon: '■',
-  },
-
-  // 8. 2x3 Vertical — 6 tracks in 2 columns, 3 rows
-  {
-    id: '2x3',
-    name: '2×3 Vertical',
-    columns: 2, rows: 3,
-    totalSlots: 6, trackSlots: 6,
-    hasLogo: false, logoIndex: -1,
-    cells: grid(2, 3),
-    icon: '▥',
-  },
-
-  // 9. 1x4 Strip — 4 tracks in a horizontal strip
-  {
-    id: '1x4_strip',
-    name: '1×4 Strip',
-    columns: 4, rows: 1,
-    totalSlots: 4, trackSlots: 4,
-    hasLogo: false, logoIndex: -1,
-    cells: grid(4, 1),
-    icon: '▬',
-  },
-
-  // 10. Mosaic — 1 large (2x2) + 5 small (1x1)
-  {
-    id: 'mosaic',
-    name: 'Mosaic',
-    columns: 3, rows: 3,
-    totalSlots: 6, trackSlots: 6,
-    hasLogo: false, logoIndex: -1,
-    cells: [
-      { col: 0, row: 0, colSpan: 2, rowSpan: 2 }, // Large feature cell
-      { col: 2, row: 0, colSpan: 1, rowSpan: 1 },
-      { col: 2, row: 1, colSpan: 1, rowSpan: 1 },
-      { col: 0, row: 2, colSpan: 1, rowSpan: 1 },
-      { col: 1, row: 2, colSpan: 1, rowSpan: 1 },
-      { col: 2, row: 2, colSpan: 1, rowSpan: 1 },
-    ],
-    icon: '◫',
-  },
-];
-
-export function getLayout(id: string): GridLayout {
-  return GRID_LAYOUTS.find(l => l.id === id) || GRID_LAYOUTS[2]; // default: 3x3+logo
+function gridId(cols: number, rows: number, suffix = ''): string {
+  return `${cols}x${rows}${suffix}`;
 }
 
-export function getDefaultLayout(): GridLayout {
-  return GRID_LAYOUTS[2]; // 3x3+logo
+function gridName(cols: number, rows: number, suffix = ''): string {
+  return `${cols}×${rows}${suffix}`;
+}
+
+// ─── Dynamic grid generation ────────────────────────────
+
+/** Get ALL valid factorizations of N where both factors are 1-10 */
+function factorize(n: number): [number, number][] {
+  const pairs: [number, number][] = [];
+  for (let c = 1; c <= Math.min(n, 10); c++) {
+    if (n % c === 0) {
+      const r = n / c;
+      if (r >= 1 && r <= 10) {
+        pairs.push([c, r]);
+      }
+    }
+  }
+  return pairs;
+}
+
+/** Generate exact-fit grids for a track count */
+function generateExactGrids(trackCount: number): GridConfig[] {
+  const grids: GridConfig[] = [];
+
+  // Single feature (always available for count=1)
+  if (trackCount === 1) {
+    grids.push({
+      id: '1x1', name: '1×1 Feature', columns: 1, rows: 1,
+      trackSlots: 1, hasLogo: false, logoIndex: -1,
+      cells: [{ col: 0, row: 0, colSpan: 1, rowSpan: 1 }],
+      emptyCount: 0, category: 'exact',
+    });
+    return grids;
+  }
+
+  const pairs = factorize(trackCount);
+  for (const [cols, rows] of pairs) {
+    grids.push({
+      id: gridId(cols, rows),
+      name: gridName(cols, rows),
+      columns: cols, rows,
+      trackSlots: trackCount,
+      hasLogo: false, logoIndex: -1,
+      cells: makeGrid(cols, rows),
+      emptyCount: 0, category: 'exact',
+    });
+  }
+
+  return grids;
+}
+
+/** Generate logo variants: NxM grids where NxM - 1 = trackCount */
+function generateLogoGrids(trackCount: number): GridConfig[] {
+  const grids: GridConfig[] = [];
+  const totalNeeded = trackCount + 1; // +1 for logo cell
+
+  const pairs = factorize(totalNeeded);
+  for (const [cols, rows] of pairs) {
+    if (cols < 2 || rows < 2) continue; // logo needs at least 2x2
+    // Logo in center (or near-center for even dimensions)
+    const logoCellIndex = Math.floor(rows / 2) * cols + Math.floor(cols / 2);
+    const cells = makeGrid(cols, rows);
+
+    grids.push({
+      id: gridId(cols, rows, '_logo'),
+      name: gridName(cols, rows, ' + Logo'),
+      columns: cols, rows,
+      trackSlots: trackCount,
+      hasLogo: true,
+      logoIndex: logoCellIndex,
+      cells,
+      emptyCount: 0, category: 'logo',
+    });
+  }
+
+  return grids;
+}
+
+/** Generate close-fit grids: NxM where |NxM - trackCount| is 1-2 */
+function generateCloseGrids(trackCount: number): GridConfig[] {
+  const grids: GridConfig[] = [];
+  const seen = new Set<string>();
+
+  for (let total = trackCount + 1; total <= trackCount + 2; total++) {
+    const pairs = factorize(total);
+    for (const [cols, rows] of pairs) {
+      const key = `${cols}x${rows}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+
+      const empty = total - trackCount;
+      const cells = makeGrid(cols, rows);
+
+      grids.push({
+        id: gridId(cols, rows, `_close${empty}`),
+        name: `${gridName(cols, rows)} (${empty} empty)`,
+        columns: cols, rows,
+        trackSlots: trackCount,
+        hasLogo: false, logoIndex: -1,
+        cells,
+        emptyCount: empty, category: 'close',
+      });
+    }
+  }
+
+  // Also close-fit with logo: NxM - 1 (logo) close to trackCount
+  for (let total = trackCount + 2; total <= trackCount + 3; total++) {
+    const pairs = factorize(total);
+    for (const [cols, rows] of pairs) {
+      if (cols < 2 || rows < 2) continue;
+      const key = `${cols}x${rows}_logo_close`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+
+      const trackSlotsAvailable = total - 1; // minus logo
+      const empty = trackSlotsAvailable - trackCount;
+      if (empty < 1 || empty > 2) continue;
+
+      const logoCellIndex = Math.floor(rows / 2) * cols + Math.floor(cols / 2);
+      const cells = makeGrid(cols, rows);
+
+      grids.push({
+        id: gridId(cols, rows, `_logo_close${empty}`),
+        name: `${gridName(cols, rows)} + Logo (${empty} empty)`,
+        columns: cols, rows,
+        trackSlots: trackCount,
+        hasLogo: true,
+        logoIndex: logoCellIndex,
+        cells,
+        emptyCount: empty, category: 'close',
+      });
+    }
+  }
+
+  return grids;
+}
+
+/** Generate mosaic layouts: 1 large (2x2) + small cells */
+function generateMosaicGrids(trackCount: number): GridConfig[] {
+  const grids: GridConfig[] = [];
+
+  if (trackCount < 3) return grids;
+
+  // Pattern: 1 featured (2x2) + remaining small (1x1) on a 3-col grid
+  // Featured takes 4 cells (2x2), so remaining = total cells - 4 + 1 (featured counts as 1 track)
+  // For 3-col grid: try different row counts
+  for (let rows = 2; rows <= 6; rows++) {
+    const cols = 3;
+    const totalCells = cols * rows;
+    const smallCells = totalCells - 4; // 2x2 takes 4 cells
+    const tracksInLayout = 1 + smallCells; // 1 featured + small cells
+
+    if (tracksInLayout === trackCount) {
+      const cells: CellPosition[] = [
+        { col: 0, row: 0, colSpan: 2, rowSpan: 2 }, // featured
+      ];
+      // Fill remaining cells (skip cells occupied by the 2x2)
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          if (r < 2 && c < 2) continue; // skip featured area
+          cells.push({ col: c, row: r, colSpan: 1, rowSpan: 1 });
+        }
+      }
+
+      grids.push({
+        id: `mosaic_3x${rows}`,
+        name: `Mosaic 3×${rows}`,
+        columns: cols, rows,
+        trackSlots: trackCount,
+        hasLogo: false, logoIndex: -1,
+        cells,
+        emptyCount: 0, category: 'mosaic',
+      });
+    }
+  }
+
+  // Pattern: 1 featured (2x2) on 4-col grid
+  for (let rows = 2; rows <= 5; rows++) {
+    const cols = 4;
+    const totalCells = cols * rows;
+    const smallCells = totalCells - 4;
+    const tracksInLayout = 1 + smallCells;
+
+    if (tracksInLayout === trackCount) {
+      const cells: CellPosition[] = [
+        { col: 0, row: 0, colSpan: 2, rowSpan: 2 },
+      ];
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          if (r < 2 && c < 2) continue;
+          cells.push({ col: c, row: r, colSpan: 1, rowSpan: 1 });
+        }
+      }
+
+      grids.push({
+        id: `mosaic_4x${rows}`,
+        name: `Mosaic 4×${rows}`,
+        columns: cols, rows,
+        trackSlots: trackCount,
+        hasLogo: false, logoIndex: -1,
+        cells,
+        emptyCount: 0, category: 'mosaic',
+      });
+    }
+  }
+
+  return grids;
+}
+
+// ─── Public API ─────────────────────────────────────────
+
+export interface GridOptions {
+  exact: GridConfig[];
+  logo: GridConfig[];
+  close: GridConfig[];
+  mosaic: GridConfig[];
+}
+
+/**
+ * Generate ALL valid grid configurations for a track count.
+ * Returns grouped by category. No cap — all options shown.
+ */
+export function getGridsForCount(trackCount: number): GridOptions {
+  return {
+    exact: generateExactGrids(trackCount),
+    logo: generateLogoGrids(trackCount),
+    close: generateCloseGrids(trackCount),
+    mosaic: generateMosaicGrids(trackCount),
+  };
+}
+
+/** Total number of grid options available for a count */
+export function countGridOptions(trackCount: number): number {
+  const opts = getGridsForCount(trackCount);
+  return opts.exact.length + opts.logo.length + opts.close.length + opts.mosaic.length;
+}
+
+/** Get a specific grid by ID (searches all categories for the given count) */
+export function getGridById(trackCount: number, gridId: string): GridConfig | null {
+  const opts = getGridsForCount(trackCount);
+  const all = [...opts.exact, ...opts.logo, ...opts.close, ...opts.mosaic];
+  return all.find(g => g.id === gridId) || null;
+}
+
+/** Suggest a better track count if current count has few exact-fit options */
+export function suggestBetterCounts(trackCount: number): number[] {
+  const suggestions: number[] = [];
+  for (let delta = 1; delta <= 3; delta++) {
+    for (const candidate of [trackCount - delta, trackCount + delta]) {
+      if (candidate >= 1 && candidate <= 50) {
+        const opts = getGridsForCount(candidate);
+        if (opts.exact.length > 1) { // more than just 1xN
+          suggestions.push(candidate);
+        }
+      }
+    }
+  }
+  return [...new Set(suggestions)].sort((a, b) => a - b).slice(0, 4);
+}
+
+/**
+ * Auto-split tracks across minimum slides for a given grid.
+ * Returns array of track index ranges per slide.
+ */
+export function autoSplit(
+  trackCount: number,
+  tracksPerSlide: number,
+): { start: number; end: number }[] {
+  const slides: { start: number; end: number }[] = [];
+  for (let i = 0; i < trackCount; i += tracksPerSlide) {
+    slides.push({
+      start: i,
+      end: Math.min(i + tracksPerSlide, trackCount),
+    });
+  }
+  return slides;
 }

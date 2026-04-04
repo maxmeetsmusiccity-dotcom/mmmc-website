@@ -1,7 +1,7 @@
 import type { SelectionSlot } from './selection';
 import type { CarouselTemplate } from './carousel-templates';
 import { getTemplate } from './carousel-templates';
-import { type GridLayout, getLayout, computeCellRects } from './grid-layouts';
+import { type GridConfig, getGridById, computeCellRects } from './grid-layouts';
 
 const S = 1080;
 
@@ -317,12 +317,12 @@ function drawGrid(
   }
 }
 
-/** Layout-aware grid renderer — works with any GridLayout */
+/** Layout-aware grid renderer — works with any GridConfig */
 function drawGridWithLayout(
   ctx: CanvasRenderingContext2D, slots: SelectionSlot[],
   images: (HTMLImageElement | null)[], logo: HTMLImageElement | null,
   ox: number, oy: number, gridW: number, gridH: number,
-  t: CarouselTemplate, layout: GridLayout,
+  t: CarouselTemplate, layout: GridConfig,
 ) {
   const gapPx = Math.max(2, Math.round(Math.min(gridW, gridH) * t.grid.gap));
   const rects = computeCellRects(layout, ox, oy, gridW, gridH, gapPx);
@@ -414,8 +414,12 @@ export async function generateGridSlide(
 
   // Use layout-aware renderer if layoutId provided, else legacy 3x3
   if (layoutId) {
-    const layout = getLayout(layoutId);
-    drawGridWithLayout(ctx, slots, images, logo, 74, 90, 932, 932, t, layout);
+    const layout = getGridById(slots.length, layoutId);
+    if (layout) {
+      drawGridWithLayout(ctx, slots, images, logo, 74, 90, 932, 932, t, layout);
+    } else {
+      drawGrid(ctx, slots, images, logo, 74, 90, 932, t);
+    }
   } else {
     drawGrid(ctx, slots, images, logo, 74, 90, 932, t);
   }

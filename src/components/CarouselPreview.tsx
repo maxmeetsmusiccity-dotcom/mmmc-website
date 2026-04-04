@@ -104,7 +104,7 @@ export default function CarouselPreview({ slideGroups, coverFeature }: Props) {
       </h3>
 
       <TemplateSelector selected={templateId} onSelect={handleTemplateChange} />
-      <GridLayoutSelector selected={layoutId} onSelect={handleLayoutChange} />
+      <GridLayoutSelector trackCount={slideGroups.reduce((sum, g) => sum + g.length, 0) || 8} selected={layoutId} onSelect={handleLayoutChange} />
 
       {error && (
         <p style={{ color: 'var(--mmmc-red)', fontSize: '0.8rem', marginBottom: 12 }}>{error}</p>
