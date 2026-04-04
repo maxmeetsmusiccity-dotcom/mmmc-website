@@ -153,3 +153,110 @@ export async function saveHandle(handle: IGHandle): Promise<boolean> {
   if (error) { console.error('saveHandle error:', error); return false; }
   return true;
 }
+
+// ─── Supabase Storage: Carousel Uploads ─────────────────
+
+const CAROUSEL_BUCKET = 'carousels';
+
+/** Upload a carousel slide PNG to Supabase Storage */
+export async function uploadCarouselSlide(
+  weekDate: string,
+  slideIndex: number,
+  blob: Blob,
+  templateId: string,
+): Promise<string | null> {
+  if (!supabase) return null;
+  const path = `${weekDate}/${templateId}/slide-${slideIndex}.png`;
+
+  const { error } = await supabase.storage
+    .from(CAROUSEL_BUCKET)
+    .upload(path, blob, {
+      contentType: 'image/png',
+      upsert: true,
+    });
+
+  if (error) {
+    console.error('Upload carousel slide error:', error);
+    return null;
+  }
+
+  const { data: urlData } = supabase.storage
+    .from(CAROUSEL_BUCKET)
+    .getPublicUrl(path);
+
+  return urlData?.publicUrl || null;
+}
+
+/** Upload all carousel slides and return URLs */
+export async function uploadFullCarousel(
+  weekDate: string,
+  slides: Blob[],
+  templateId: string,
+  onProgress?: (current: number, total: number) => void,
+): Promise<string[]> {
+  const urls: string[] = [];
+  for (let i = 0; i < slides.length; i++) {
+    onProgress?.(i, slides.length);
+    const url = await uploadCarouselSlide(weekDate, i, slides[i], templateId);
+    if (url) urls.push(url);
+  }
+  onProgress?.(slides.length, slides.length);
+  return urls;
+}
+
+/** Get stored carousel URLs for a week */
+export async function getCarouselUrls(weekDate: string): Promise<string[]> {
+  if (!supabase) return [];
+
+  const { data, error } = await supabase.storage
+    .from(CAROUSEL_BUCKET)
+    .list(weekDate, { limit: 100, sortBy: { column: 'name', order: 'asc' } });
+
+  if (error || !data) return [];
+
+  const urls: string[] = [];
+  for (const folder of data) {
+    const { data: files } = await supabase.storage
+      .from(CAROUSEL_BUCKET)
+      .list(`${weekDate}/${folder.name}`, { limit: 20, sortBy: { column: 'name', order: 'asc' } });
+
+    if (files) {
+      for (const file of files) {
+        const { data: urlData } = supabase.storage
+          .from(CAROUSEL_BUCKET)
+          .getPublicUrl(`${weekDate}/${folder.name}/${file.name}`);
+        if (urlData?.publicUrl) urls.push(urlData.publicUrl);
+      }
+    }
+  }
+
+  return urls;
+}
+
+/** Upload a custom template asset (background or logo) */
+export async function uploadTemplateAsset(
+  userId: string,
+  filename: string,
+  blob: Blob,
+): Promise<string | null> {
+  if (!supabase) return null;
+  const path = `templates/${userId}/${filename}`;
+
+  const { error } = await supabase.storage
+    .from(CAROUSEL_BUCKET)
+    .upload(path, blob, {
+      contentType: blob.type || 'image/png',
+      upsert: true,
+    });
+
+  if (error) {
+    console.error('Upload template asset error:', error);
+    return null;
+  }
+
+  const { data } = supabase.storage
+    .from(CAROUSEL_BUCKET)
+    .getPublicUrl(path);
+
+  return data?.publicUrl || null;
+}
