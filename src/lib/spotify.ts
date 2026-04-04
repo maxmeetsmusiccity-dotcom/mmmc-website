@@ -1,4 +1,6 @@
 import { clearToken } from './auth';
+export { parseReleaseDate } from './scan-utils';
+import { parseReleaseDate } from './scan-utils';
 
 const API = 'https://api.spotify.com/v1';
 
@@ -119,28 +121,6 @@ export function groupIntoReleases(tracks: TrackItem[]): ReleaseCluster[] {
   });
 
   return clusters;
-}
-
-/**
- * Parse Spotify release_date with known precisions.
- * Matches Python _parse_release_date() exactly.
- * Exported for unit testing.
- */
-export function parseReleaseDate(releaseDate: string, precision?: string): string | null {
-  if (!releaseDate) return null;
-  try {
-    if (precision === 'day') return releaseDate; // already YYYY-MM-DD
-    if (precision === 'month') {
-      const [y, m] = releaseDate.split('-');
-      return `${y}-${m.padStart(2, '0')}-01`;
-    }
-    if (precision === 'year') return `${releaseDate}-01-01`;
-    // Fallback on string length when precision missing
-    if (releaseDate.length === 10) return releaseDate;
-    if (releaseDate.length === 7) return `${releaseDate}-01`;
-    if (releaseDate.length === 4) return `${releaseDate}-01-01`;
-  } catch { return null; }
-  return null;
 }
 
 export class RateLimitError extends Error {
