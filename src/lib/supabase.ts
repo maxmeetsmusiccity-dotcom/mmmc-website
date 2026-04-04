@@ -24,27 +24,23 @@ export interface NMFWeek {
   updated_at?: string;
 }
 
-export async function saveWeek(week: NMFWeek): Promise<NMFWeek | null> {
+export async function saveWeek(week: NMFWeek, userId?: string): Promise<NMFWeek | null> {
   if (!supabase) return null;
+  const row = { ...week, updated_at: new Date().toISOString(), ...(userId ? { user_id: userId } : {}) };
   const { data, error } = await supabase
     .from('nmf_weeks')
-    .upsert(
-      { ...week, updated_at: new Date().toISOString() },
-      { onConflict: 'week_date' },
-    )
+    .upsert(row, { onConflict: 'week_date' })
     .select()
     .single();
   if (error) { console.error('saveWeek error:', error); return null; }
   return data;
 }
 
-export async function getWeek(weekDate: string): Promise<NMFWeek | null> {
+export async function getWeek(weekDate: string, userId?: string): Promise<NMFWeek | null> {
   if (!supabase) return null;
-  const { data, error } = await supabase
-    .from('nmf_weeks')
-    .select('*')
-    .eq('week_date', weekDate)
-    .single();
+  let query = supabase.from('nmf_weeks').select('*').eq('week_date', weekDate);
+  if (userId) query = query.eq('user_id', userId);
+  const { data, error } = await query.single();
   if (error) return null;
   return data;
 }

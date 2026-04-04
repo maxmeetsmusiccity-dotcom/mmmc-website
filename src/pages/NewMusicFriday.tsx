@@ -34,6 +34,7 @@ import SourceSelector from '../components/SourceSelector';
 import ManualImport from '../components/ManualImport';
 import type { MusicSource } from '../lib/sources/types';
 import { checkScanHealth } from '../lib/spotify';
+import { useAuth } from '../lib/auth-context';
 
 type Phase = 'auth' | 'ready' | 'scanning' | 'results';
 type FilterKey = 'all' | 'single' | 'album';
@@ -111,6 +112,8 @@ function StepProgress({ selections, hasGridTemplate, hasTitleTemplate, hasPrevie
 /* ------------------------------------------------------------------ */
 
 export default function NewMusicFriday() {
+  const { user } = useAuth();
+  const userId = user?.id || null;
   const [searchParams, setSearchParams] = useSearchParams();
   const [token, setToken] = useState<string | null>(getToken());
   const [phase, setPhase] = useState<Phase>('auth');
@@ -161,9 +164,13 @@ export default function NewMusicFriday() {
     }
   }, [searchParams, setSearchParams]);
 
-  // On mount: try to load cached results. NEVER auto-scan.
+  // On mount: try to load cached results. Guests see empty state.
   useEffect(() => {
-    const cached = sessionStorage.getItem(`nmf_scan_${weekDate}`);
+    // Guests/admin-bypass: no cached data, start fresh
+    if (!userId) return;
+
+    const cacheKey = `nmf_scan_${weekDate}_${userId}`;
+    const cached = sessionStorage.getItem(cacheKey);
     if (cached) {
       try {
         const { tracks, timestamp } = JSON.parse(cached);
@@ -176,16 +183,16 @@ export default function NewMusicFriday() {
         }
       } catch { /* corrupted cache */ }
     }
-    // No session cache -- try Supabase
+    // No session cache — try Supabase (scoped by user_id)
     import('../lib/supabase').then(({ getWeek }) => {
-      getWeek(weekDate).then(week => {
+      getWeek(weekDate, userId).then(week => {
         if (week?.all_releases && Array.isArray(week.all_releases) && (week.all_releases as TrackItem[]).length > 0) {
           const tracks = week.all_releases as TrackItem[];
           setAllTracks(tracks);
           setReleases(groupIntoReleases(tracks));
           setPhase('results');
           setLastScanned(week.updated_at || week.created_at || null);
-          sessionStorage.setItem(`nmf_scan_${weekDate}`, JSON.stringify({ tracks, timestamp: week.updated_at }));
+          sessionStorage.setItem(cacheKey, JSON.stringify({ tracks, timestamp: week.updated_at }));
           if (week.selections && Array.isArray(week.selections)) {
             setSelections(buildSlots(week.selections as SelectionSlot[]));
           }
@@ -292,9 +299,9 @@ export default function NewMusicFriday() {
       // Only cache if results > 0
       if (tracks.length > 0) {
         try {
-          sessionStorage.setItem(`nmf_scan_${weekDate}`, JSON.stringify({ tracks, timestamp: now }));
+          sessionStorage.setItem(`nmf_scan_${weekDate}_${userId || 'guest'}`, JSON.stringify({ tracks, timestamp: now }));
         } catch { /* storage full, ignore */ }
-        saveWeek({ week_date: weekDate, all_releases: tracks, playlist_master_pushed: false, carousel_generated: false });
+        saveWeek({ week_date: weekDate, all_releases: tracks, playlist_master_pushed: false, carousel_generated: false }, userId || undefined);
       } else if (failCount > totalArtists * 0.5) {
         setError(`Spotify rate limit hit \u2014 ${failCount}/${totalArtists} artists failed. Wait 30-60 minutes and try again.`);
       } else {
@@ -433,7 +440,7 @@ export default function NewMusicFriday() {
       carousel_generated: false,
       ...extra,
     };
-    await saveWeek(week);
+    await saveWeek(week, userId || undefined);
     const features = selections.map(s => ({
       week_date: weekDate,
       spotify_artist_id: s.track.artist_id,
