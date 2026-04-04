@@ -368,3 +368,134 @@ export function downloadBlob(blob: Blob, filename: string): void {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
+
+// ─── TEMPLATE PREVIEW THUMBNAILS ────────────────────────
+
+const PREVIEW_COLORS = [
+  '#4A90D9', '#D35400', '#8E44AD', '#27AE60',
+  '#E74C3C', '#F39C12', '#1ABC9C', '#2C3E50',
+];
+
+/**
+ * Generate a small thumbnail preview of a template (200x200).
+ * Uses colored gradient squares instead of actual album art
+ * so it renders instantly with no network requests.
+ */
+export function generateTemplatePreview(
+  templateId: string,
+  size = 200,
+): string {
+  const t = getTemplate(templateId);
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d')!;
+
+  // Background
+  ctx.fillStyle = t.background;
+  ctx.fillRect(0, 0, size, size);
+
+  // Header text (simplified neon)
+  const headerH = Math.round(size * 0.13);
+  ctx.shadowColor = t.neon.outerGlow;
+  ctx.shadowBlur = Math.round(t.neon.outerBlur * size / S);
+  ctx.fillStyle = t.neon.coreColor;
+  ctx.font = `700 ${Math.round(size * 0.07)}px ${t.scriptFont}`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.fillText('New Music Friday', size / 2, Math.round(size * 0.02));
+  ctx.shadowColor = 'transparent';
+
+  // Gold rule
+  ctx.strokeStyle = `${t.accentGlow}0.5)`;
+  ctx.lineWidth = 0.5;
+  ctx.beginPath();
+  ctx.moveTo(size * 0.2, headerH);
+  ctx.lineTo(size * 0.8, headerH);
+  ctx.stroke();
+
+  // 3x3 grid with center logo
+  const gridTop = headerH + 2;
+  const gridSize = size - gridTop - Math.round(size * 0.08);
+  const gap = Math.max(1, Math.round(gridSize * t.grid.gap));
+  const cell = Math.floor((gridSize - gap * 4) / 3);
+  const ox = Math.round((size - (cell * 3 + gap * 4)) / 2);
+
+  const positions = [
+    { x: ox + gap, y: gridTop + gap },
+    { x: ox + gap + cell + gap, y: gridTop + gap },
+    { x: ox + gap + (cell + gap) * 2, y: gridTop + gap },
+    { x: ox + gap, y: gridTop + gap + cell + gap },
+    { x: ox + gap + (cell + gap) * 2, y: gridTop + gap + cell + gap },
+    { x: ox + gap, y: gridTop + gap + (cell + gap) * 2 },
+    { x: ox + gap + cell + gap, y: gridTop + gap + (cell + gap) * 2 },
+    { x: ox + gap + (cell + gap) * 2, y: gridTop + gap + (cell + gap) * 2 },
+  ];
+
+  // Draw 8 colored cells
+  for (let i = 0; i < 8; i++) {
+    const pos = positions[i];
+    const rot = (t.grid.rotations[i] * Math.PI) / 180;
+
+    ctx.save();
+    const cx = pos.x + cell / 2, cy = pos.y + cell / 2;
+    ctx.translate(cx, cy);
+    ctx.rotate(rot);
+    ctx.translate(-cx, -cy);
+
+    if (t.grid.cellShadow) {
+      ctx.shadowColor = 'rgba(0,0,0,0.3)';
+      ctx.shadowBlur = 3;
+    }
+
+    // Gradient fill simulating album art
+    const grad = ctx.createLinearGradient(pos.x, pos.y, pos.x + cell, pos.y + cell);
+    grad.addColorStop(0, PREVIEW_COLORS[i]);
+    grad.addColorStop(1, PREVIEW_COLORS[(i + 3) % 8]);
+    ctx.fillStyle = grad;
+    ctx.fillRect(pos.x, pos.y, cell, cell);
+    ctx.shadowColor = 'transparent';
+
+    if (t.grid.cellBorder) {
+      ctx.strokeStyle = t.grid.cellBorderColor;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(pos.x, pos.y, cell, cell);
+    }
+
+    ctx.restore();
+  }
+
+  // Center cell: logo placeholder
+  const logoX = ox + gap + cell + gap;
+  const logoY = gridTop + gap + cell + gap;
+  ctx.fillStyle = t.background;
+  ctx.fillRect(logoX, logoY, cell, cell);
+  ctx.fillStyle = t.accent;
+  ctx.font = `bold ${Math.round(cell * 0.25)}px ${t.bodyFont}`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('M', logoX + cell / 2, logoY + cell / 2);
+
+  // Date footer
+  ctx.shadowColor = t.neon.outerGlow;
+  ctx.shadowBlur = Math.round(t.neon.outerBlur * size / S * 0.5);
+  ctx.fillStyle = t.neon.coreColor;
+  ctx.font = `700 ${Math.round(size * 0.055)}px ${t.scriptFont}`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'bottom';
+  ctx.fillText('April 4, 2026', size / 2, size - 2);
+  ctx.shadowColor = 'transparent';
+
+  return canvas.toDataURL('image/png');
+}
+
+const previewCache = new Map<string, string>();
+
+/** Cached version — generates once per template ID */
+export function getTemplatePreview(templateId: string, size = 200): string {
+  const key = `${templateId}_${size}`;
+  if (!previewCache.has(key)) {
+    previewCache.set(key, generateTemplatePreview(templateId, size));
+  }
+  return previewCache.get(key)!;
+}
