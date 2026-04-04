@@ -74,33 +74,39 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
   // Live preview: render grid slide when template or tracks change
   useEffect(() => {
     if (selectedTracks.length === 0) return;
+    console.log('[PREVIEW] Rendering grid with template:', gridTemplateId, 'layout:', gridLayoutId);
     const firstSlice = selectedTracks.slice(0, tracksPerSlide);
     const slots = buildSlots(firstSlice.map((t, i) => ({
       track: t, albumId: t.album_spotify_id,
       selectionNumber: i + 1, slideGroup: 1,
       positionInSlide: i + 1, isCoverFeature: false,
     })));
+    // Clear previous preview immediately to show loading state
+    setGridPreview('');
     generateGridSlide(slots, weekDate, gridTemplateId, '/mmmc-logo.png', gridLayoutId)
       .then(blob => {
         const url = URL.createObjectURL(blob);
         setGridPreview(prev => { if (prev) URL.revokeObjectURL(prev); return url; });
       })
-      .catch(() => {});
+      .catch(e => console.error('[PREVIEW] Grid render error:', e));
   }, [gridTemplateId, gridLayoutId, selectedTracks, tracksPerSlide, weekDate]);
 
   // Live preview: render title slide when title template changes
+  // Uses titleTemplateId NOT gridTemplateId — they are independent
   useEffect(() => {
     if (!coverFeature || titleTemplateId === 'none') {
       setTitlePreview('');
       return;
     }
-    generateCoverSlide(coverFeature, weekDate, gridTemplateId)
+    // For now, use titleTemplateId as the template for the cover slide
+    // TODO: implement dedicated generateTitleSlide() using TitleSlideTemplate config
+    generateCoverSlide(coverFeature, weekDate, titleTemplateId === 'nashville_neon' ? 'mmmc_classic' : titleTemplateId.startsWith('vintage') ? 'editorial_mono' : titleTemplateId.startsWith('dust') ? 'mmmc_classic' : titleTemplateId.startsWith('studio') ? 'midnight_minimal' : titleTemplateId.startsWith('honky') ? 'concrete_jungle' : titleTemplateId.startsWith('chrome') ? 'midnight_minimal' : titleTemplateId.startsWith('editorial') ? 'editorial_mono' : titleTemplateId.startsWith('saturated') ? 'concrete_jungle' : titleTemplateId.startsWith('polaroid') ? 'editorial_mono' : titleTemplateId.startsWith('dark') ? 'midnight_minimal' : 'mmmc_classic')
       .then(blob => {
         const url = URL.createObjectURL(blob);
         setTitlePreview(prev => { if (prev) URL.revokeObjectURL(prev); return url; });
       })
       .catch(() => {});
-  }, [titleTemplateId, gridTemplateId, coverFeature, weekDate]);
+  }, [titleTemplateId, coverFeature, weekDate]);
 
   const handleGridTemplateChange = (id: string) => {
     setGridTemplateId(id);
