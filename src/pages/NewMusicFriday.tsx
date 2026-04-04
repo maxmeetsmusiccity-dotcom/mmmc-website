@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { startAuth, exchangeCode, getToken, clearToken } from '../lib/auth';
 import {
@@ -16,15 +16,12 @@ import {
 import {
   type SelectionSlot,
   buildSlots,
-  shuffleSlideGroup,
-  reorderInSlideGroup,
   getSlideGroup,
 } from '../lib/selection';
 import { downloadJSON, downloadCSV, downloadArt } from '../lib/downloads';
 import { saveWeek, saveFeatures, getFeatureCounts, type NMFWeek } from '../lib/supabase';
 import { batchResolveAppleMusic } from '../lib/apple-music';
 import ClusterCard from '../components/ClusterCard';
-import SlideGroup from '../components/SlideGroup';
 import FilterBar from '../components/FilterBar';
 import PlaylistCreate from '../components/PlaylistCreate';
 import CarouselPreviewPanel from '../components/CarouselPreviewPanel';
@@ -40,7 +37,6 @@ import { checkScanHealth } from '../lib/spotify';
 type Phase = 'auth' | 'ready' | 'scanning' | 'results';
 type FilterKey = 'all' | 'single' | 'album';
 type SortKey = 'date' | 'artist' | 'title';
-type ViewMode = 'browse' | 'selected' | 'history';
 
 const PLAYLIST_ID = '0ve1vYFkWoRaElCmfkw2IB';
 
@@ -55,6 +51,64 @@ const DEMO_TRACKS: TrackItem[] = [
   { track_id: 'demo8', track_uri: 'spotify:track:demo8', track_name: 'Take It Easy', track_number: 1, artist_names: 'Kelsea Ballerini', artist_id: '3RqBeV12Tt7A8xH3zBDMYa', artist_spotify_url: '', artist_genres: ['country'], artist_followers: 1000000, album_name: 'Take It Easy', album_spotify_id: 'demoalb8', album_type: 'single', album_spotify_url: '', cover_art_300: 'https://picsum.photos/seed/ballerini/300/300', cover_art_640: 'https://picsum.photos/seed/ballerini/640/640', cover_art_64: 'https://picsum.photos/seed/ballerini/64/64', release_date: '2026-04-04', total_tracks: 1, track_spotify_url: 'https://open.spotify.com/track/demo8', duration_ms: 195000, explicit: false },
 ];
 
+/* ------------------------------------------------------------------ */
+/*  Step Progress Breadcrumb                                          */
+/* ------------------------------------------------------------------ */
+
+interface StepProgressProps {
+  selections: SelectionSlot[];
+  hasGridTemplate: boolean;
+  hasTitleTemplate: boolean;
+  hasPreview: boolean;
+  onStepClick: (step: number) => void;
+}
+
+function StepProgress({ selections, hasGridTemplate, hasTitleTemplate, hasPreview, onStepClick }: StepProgressProps) {
+  const steps = [
+    { num: 1, label: 'Select Tracks', done: selections.length > 0 },
+    { num: 2, label: 'Configure Slides', done: selections.length >= 8 },
+    { num: 3, label: 'Grid Style', done: hasGridTemplate },
+    { num: 4, label: 'Title Style', done: hasTitleTemplate },
+    { num: 5, label: 'Export', done: hasPreview },
+  ];
+
+  const circled = ['\u2460', '\u2461', '\u2462', '\u2463', '\u2464'];
+
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap',
+      padding: '12px 24px',
+      background: 'var(--midnight)', border: '1px solid var(--midnight-border)',
+      borderRadius: 10, margin: '16px 24px 0',
+      fontSize: '0.8rem',
+    }}>
+      {steps.map((s, i) => (
+        <span key={s.num} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <button
+            onClick={() => onStepClick(s.num)}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+              color: s.done ? '#3DA877' : 'var(--text-muted)',
+              fontWeight: s.done ? 600 : 400,
+              fontSize: '0.8rem',
+              fontFamily: 'inherit',
+            }}
+          >
+            {s.done ? '\u2713' : circled[i]} {s.label}
+          </button>
+          {i < steps.length - 1 && (
+            <span style={{ color: 'var(--midnight-border)', margin: '0 2px' }}>{'\u2192'}</span>
+          )}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Main Component                                                    */
+/* ------------------------------------------------------------------ */
+
 export default function NewMusicFriday() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [token, setToken] = useState<string | null>(getToken());
@@ -68,7 +122,6 @@ export default function NewMusicFriday() {
   const [filter, setFilter] = useState<FilterKey>('all');
   const [sort, setSort] = useState<SortKey>('date');
   const [search, setSearch] = useState('');
-  const [viewMode, setViewMode] = useState<ViewMode>('browse');
   const [error, setError] = useState('');
   const [artDownloading, setArtDownloading] = useState(false);
   const [artistCount, setArtistCount] = useState(0);
@@ -79,6 +132,21 @@ export default function NewMusicFriday() {
   const [appleEnriching, setAppleEnriching] = useState(false);
   const [featureCounts, setFeatureCounts] = useState<Map<string, number>>(new Map());
   const [activeSource, setActiveSource] = useState<MusicSource['id']>('spotify');
+
+  // Step section refs for scroll-to
+  const step1Ref = useRef<HTMLElement>(null);
+  const step2Ref = useRef<HTMLElement>(null);
+  const step3Ref = useRef<HTMLElement>(null);
+  const step4Ref = useRef<HTMLElement>(null);
+  const step5Ref = useRef<HTMLElement>(null);
+
+  const weekDate = getLastFriday();
+
+  const scrollToStep = useCallback((step: number) => {
+    const refs = [step1Ref, step2Ref, step3Ref, step4Ref, step5Ref];
+    const ref = refs[step - 1];
+    ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, []);
 
   // Handle OAuth callback
   useEffect(() => {
@@ -106,7 +174,7 @@ export default function NewMusicFriday() {
         }
       } catch { /* corrupted cache */ }
     }
-    // No session cache — try Supabase
+    // No session cache -- try Supabase
     import('../lib/supabase').then(({ getWeek }) => {
       getWeek(weekDate).then(week => {
         if (week?.all_releases && Array.isArray(week.all_releases) && (week.all_releases as TrackItem[]).length > 0) {
@@ -147,7 +215,7 @@ export default function NewMusicFriday() {
     setRateLimited(false);
     const scanStart = Date.now();
     try {
-      // Pre-scan health check — detect rate limit before scanning
+      // Pre-scan health check
       setScanStatus('Checking Spotify status...');
       const health = await checkScanHealth(tkn);
       if (!health.ok) {
@@ -156,7 +224,6 @@ export default function NewMusicFriday() {
         setPhase('ready');
         return;
       }
-      // 200 does NOT guarantee safety — log the warning
       console.log(`[SCAN] Health check: ${health.message}`);
 
       setScanStatus('Fetching followed artists...');
@@ -172,18 +239,18 @@ export default function NewMusicFriday() {
       const result = await fetchNewReleases(artists, tkn, cutoff, (cur, tot, releasesFound, status) => {
         setScanProgress({ current: cur, total: tot });
         const elapsed = (Date.now() - scanStart) / 1000;
-        const statusDot = status === 'green' ? '🟢' : status === 'yellow' ? '🟡' : '🔴';
+        const statusDot = status === 'green' ? '\uD83D\uDFE2' : status === 'yellow' ? '\uD83D\uDFE1' : '\uD83D\uDD34';
         if (status === 'red') {
-          setScanStatus(`${statusDot} Rate limited — saving ${releasesFound} releases found so far`);
+          setScanStatus(`${statusDot} Rate limited \u2014 saving ${releasesFound} releases found so far`);
         } else if (cur >= 30 && cur < tot) {
           const rate = cur / elapsed;
           const remaining = (tot - cur) / rate;
           const eta = remaining < 10 ? 'Almost done...'
             : remaining < 60 ? `~${Math.round(remaining)}s remaining`
             : `~${Math.floor(remaining / 60)}m ${Math.round(remaining % 60)}s remaining`;
-          setScanStatus(`${statusDot} ${cur}/${tot} artists · ${releasesFound} releases · ${eta}`);
+          setScanStatus(`${statusDot} ${cur}/${tot} artists \u00B7 ${releasesFound} releases \u00B7 ${eta}`);
         } else {
-          setScanStatus(`${statusDot} ${cur}/${tot} artists · ${releasesFound} releases`);
+          setScanStatus(`${statusDot} ${cur}/${tot} artists \u00B7 ${releasesFound} releases`);
         }
       });
 
@@ -227,7 +294,7 @@ export default function NewMusicFriday() {
         } catch { /* storage full, ignore */ }
         saveWeek({ week_date: weekDate, all_releases: tracks, playlist_master_pushed: false, carousel_generated: false });
       } else if (failCount > totalArtists * 0.5) {
-        setError(`Spotify rate limit hit — ${failCount}/${totalArtists} artists failed. Wait 30-60 minutes and try again.`);
+        setError(`Spotify rate limit hit \u2014 ${failCount}/${totalArtists} artists failed. Wait 30-60 minutes and try again.`);
       } else {
         setError(`Scan found 0 releases since ${cutoff}. Try re-scanning.`);
       }
@@ -241,7 +308,7 @@ export default function NewMusicFriday() {
         setPhase('auth');
       }
     }
-  }, []);
+  }, [weekDate]);
 
   // Selection helpers
   const selectionByAlbum = useMemo(() => {
@@ -255,7 +322,7 @@ export default function NewMusicFriday() {
       // Already selected? Update track choice
       const existing = prev.findIndex(s => s.albumId === cluster.album_spotify_id);
       if (existing >= 0) {
-        if (!trackId) return prev; // same click, ignore
+        if (!trackId) return prev;
         const newTrack = cluster.tracks.find(t => t.track_id === trackId);
         if (!newTrack) return prev;
         const updated = [...prev];
@@ -284,14 +351,6 @@ export default function NewMusicFriday() {
     setSelections(prev => buildSlots(prev.filter(s => s.albumId !== albumId)));
   }, []);
 
-  const handleShuffle = useCallback((slideGroup: number) => {
-    setSelections(prev => shuffleSlideGroup(prev, slideGroup));
-  }, []);
-
-  const handleReorder = useCallback((slideGroup: number, fromPos: number, toPos: number) => {
-    setSelections(prev => reorderInSlideGroup(prev, slideGroup, fromPos, toPos));
-  }, []);
-
   const handleSetCoverFeature = useCallback((trackId: string) => {
     setSelections(prev => prev.map(s => ({
       ...s,
@@ -299,7 +358,7 @@ export default function NewMusicFriday() {
     })));
   }, []);
 
-  // Filtered releases for browse mode
+  // Filtered releases for browse
   const filteredReleases = useMemo(() => {
     let result = [...releases];
     if (filter === 'single') result = result.filter(r => r.isSingle);
@@ -321,7 +380,7 @@ export default function NewMusicFriday() {
   const singleCount = useMemo(() => releases.filter(r => r.isSingle).length, [releases]);
   const albumCount = useMemo(() => releases.filter(r => !r.isSingle).length, [releases]);
 
-  // Slide groups for selected view
+  // Slide groups for TagBlocks
   const slideGroups = useMemo(() => {
     const groups: SelectionSlot[][] = [];
     for (const slot of selections) {
@@ -333,8 +392,6 @@ export default function NewMusicFriday() {
 
   // Selected tracks for downloads/playlist
   const selectedTracks = useMemo(() => selections.map(s => s.track), [selections]);
-
-  const weekDate = getLastFriday();
 
   const handleDisconnect = () => {
     clearToken();
@@ -353,7 +410,6 @@ export default function NewMusicFriday() {
     } else {
       await appendPlaylistTracks(token, PLAYLIST_ID, uris);
     }
-    // Save to history
     await handleSaveWeek({ playlist_master_pushed: true });
   };
 
@@ -377,7 +433,6 @@ export default function NewMusicFriday() {
       ...extra,
     };
     await saveWeek(week);
-    // Save individual features for the archive
     const features = selections.map(s => ({
       week_date: weekDate,
       spotify_artist_id: s.track.artist_id,
@@ -401,8 +456,11 @@ export default function NewMusicFriday() {
       setReleases(groupIntoReleases(week.all_releases as TrackItem[]));
     }
     setPhase('results');
-    setViewMode('browse');
   };
+
+  /* ---------------------------------------------------------------- */
+  /*  Render                                                          */
+  /* ---------------------------------------------------------------- */
 
   return (
     <div style={{ minHeight: '100vh' }}>
@@ -515,7 +573,7 @@ export default function NewMusicFriday() {
         </div>
       )}
 
-      {/* Ready Phase — token received, waiting for explicit scan */}
+      {/* Ready Phase -- token received, waiting for explicit scan */}
       {phase === 'ready' && (
         <div style={{
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
@@ -569,7 +627,7 @@ export default function NewMusicFriday() {
                         cutoffDate: cutoff,
                         onProgress: (cur, tot, found) => {
                           setScanProgress({ current: cur, total: tot });
-                          setScanStatus(`Apple Music: ${cur}/${tot} artists · ${found} releases`);
+                          setScanStatus(`Apple Music: ${cur}/${tot} artists \u00B7 ${found} releases`);
                         },
                         onReleasesFound: (tracks) => {
                           setAllTracks(tracks);
@@ -615,7 +673,7 @@ export default function NewMusicFriday() {
           padding: '8px 24px', fontSize: '0.8rem', color: 'var(--gold)',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}>
-          <span>Demo mode — showing sample data. Connect Spotify and scan to see your real releases.</span>
+          <span>Demo mode -- showing sample data. Connect Spotify and scan to see your real releases.</span>
           <button
             className="btn btn-sm"
             onClick={() => { setIsDemoMode(false); setAllTracks([]); setReleases([]); setSelections([]); setPhase(token ? 'ready' : 'auth'); }}
@@ -648,13 +706,24 @@ export default function NewMusicFriday() {
         </div>
       )}
 
-      {/* Results Phase */}
+      {/* Results Phase -- single scrollable page with 5 steps */}
       {phase === 'results' && (
         <>
-          {/* Selection bar */}
-          <div className="selection-bar" style={{
+          {/* Breadcrumb Progress */}
+          <StepProgress
+            selections={selections}
+            hasGridTemplate={true}
+            hasTitleTemplate={true}
+            hasPreview={selections.length > 0}
+            onStepClick={scrollToStep}
+          />
+
+          {/* Selection counter bar */}
+          <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             flexWrap: 'wrap', gap: 12,
+            padding: '12px 24px',
+            borderBottom: '1px solid var(--midnight-border)',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
@@ -672,7 +741,7 @@ export default function NewMusicFriday() {
                 )}
               </div>
 
-              {/* Target count selector — 1 to 50 */}
+              {/* Target count selector */}
               <select
                 value={targetCount}
                 onChange={e => setTargetCount(Number(e.target.value))}
@@ -692,294 +761,209 @@ export default function NewMusicFriday() {
               <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>
                 {singleCount} singles, {albumCount} albums/EPs
               </span>
-              <button
-                className={`filter-pill ${viewMode === 'browse' ? 'active' : ''}`}
-                onClick={() => setViewMode('browse')}
-              >
-                Browse
-              </button>
-              <button
-                className={`filter-pill ${viewMode === 'selected' ? 'active' : ''}`}
-                onClick={() => setViewMode('selected')}
-              >
-                Selected ({selections.length})
-              </button>
-              <button
-                className={`filter-pill ${viewMode === 'history' ? 'active' : ''}`}
-                onClick={() => setViewMode('history')}
-              >
-                History
-              </button>
               <Link to="/newmusicfriday/archive" className="filter-pill" style={{ textDecoration: 'none' }}>
                 Archive
               </Link>
             </div>
           </div>
 
-          {/* Browse mode */}
-          {viewMode === 'browse' && (
-            <>
-              <FilterBar
-                filter={filter} sort={sort} search={search}
-                onFilterChange={setFilter} onSortChange={setSort} onSearchChange={setSearch}
-              />
-
-              {/* Download bar */}
-              <div style={{
-                padding: '12px 24px', borderBottom: '1px solid var(--midnight-border)',
-                display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center',
+          {/* ============================================================ */}
+          {/*  STEP 1: SELECT TRACKS                                       */}
+          {/* ============================================================ */}
+          <section ref={step1Ref} style={{ scrollMarginTop: 16 }}>
+            <div style={{
+              padding: '20px 24px 8px',
+              borderBottom: '1px solid var(--midnight-border)',
+            }}>
+              <h2 style={{
+                fontFamily: 'var(--font-display)', fontSize: '1.1rem', fontWeight: 600,
+                display: 'flex', alignItems: 'center', gap: 8,
               }}>
-                <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginRight: 8 }}>All:</span>
-                <button className="btn btn-sm" onClick={async () => { setArtDownloading(true); try { await downloadArt(allTracks); } finally { setArtDownloading(false); } }} disabled={artDownloading}>
-                  {artDownloading ? 'Downloading...' : 'Download All Art'}
-                </button>
-                <button className="btn btn-sm" onClick={() => downloadJSON(allTracks, 'nmf-all-tracks.json')}>JSON</button>
-                <button className="btn btn-sm" onClick={() => downloadCSV(allTracks, 'nmf-all-tracks.csv')}>CSV</button>
+                <span style={{ color: selections.length > 0 ? '#3DA877' : 'var(--gold)' }}>
+                  {selections.length > 0 ? '\u2713' : '\u2460'}
+                </span>
+                Select Tracks
+              </h2>
+            </div>
 
-                {selections.length > 0 && (
-                  <>
-                    <span style={{ color: 'var(--midnight-border)', margin: '0 4px' }}>|</span>
-                    <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginRight: 8 }}>Selected:</span>
-                    <button className="btn btn-sm" onClick={async () => { setArtDownloading(true); try { await downloadArt(selectedTracks); } finally { setArtDownloading(false); } }} disabled={artDownloading}>
-                      Download Selected Art
-                    </button>
-                    <button className="btn btn-sm" onClick={() => downloadJSON(selectedTracks, 'nmf-curated.json')}>JSON</button>
-                    <button className="btn btn-sm" onClick={() => downloadCSV(selectedTracks, 'nmf-curated.csv')}>CSV</button>
-                  </>
-                )}
-              </div>
+            <FilterBar
+              filter={filter} sort={sort} search={search}
+              onFilterChange={setFilter} onSortChange={setSort} onSearchChange={setSearch}
+            />
 
-              {/* Playlist management moved to Selected tab */}
+            {/* Download bar */}
+            <div style={{
+              padding: '12px 24px', borderBottom: '1px solid var(--midnight-border)',
+              display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center',
+            }}>
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginRight: 8 }}>All:</span>
+              <button className="btn btn-sm" onClick={async () => { setArtDownloading(true); try { await downloadArt(allTracks); } finally { setArtDownloading(false); } }} disabled={artDownloading}>
+                {artDownloading ? 'Downloading...' : 'Download All Art'}
+              </button>
+              <button className="btn btn-sm" onClick={() => downloadJSON(allTracks, 'nmf-all-tracks.json')}>JSON</button>
+              <button className="btn btn-sm" onClick={() => downloadCSV(allTracks, 'nmf-all-tracks.csv')}>CSV</button>
 
-              {/* Release grid */}
-              <div style={{ padding: 24, paddingBottom: selections.length > 0 ? 96 : 24 }}>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: 16 }}>
-                  <span className="mono">{filteredReleases.length}</span> releases
-                  {search && ` matching "${search}"`}
-                </p>
-                <div className="release-grid">
-                  {filteredReleases.map(cluster => (
-                    <ClusterCard
-                      key={cluster.album_spotify_id}
-                      cluster={cluster}
-                      selectionSlot={selectionByAlbum.get(cluster.album_spotify_id) || null}
-                      hasSelections={selections.length > 0}
-                      onSelectRelease={handleSelectRelease}
-                      onDeselect={handleDeselect}
-                      onSetCoverFeature={handleSetCoverFeature}
-                      featureCount={featureCounts.get(cluster.tracks[0]?.artist_id) || 0}
-                    />
-                  ))}
-                </div>
-                {filteredReleases.length === 0 && releases.length > 0 && (
-                  <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginTop: 48 }}>
-                    No releases match your filters.
-                  </p>
-                )}
-                {releases.length === 0 && (
-                  <div style={{ textAlign: 'center', padding: '48px 24px' }}>
-                    <div style={{ fontSize: 48, marginBottom: 16 }}>
-                      {rateLimited ? '429' : '🎵'}
-                    </div>
-                    <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', marginBottom: 8 }}>
-                      {rateLimited ? 'Spotify Rate Limited' : 'No releases found this week'}
-                    </h3>
-                    <p style={{ color: 'var(--text-secondary)', marginBottom: 24, maxWidth: 440, margin: '0 auto 24px', lineHeight: 1.6 }}>
-                      {rateLimited
-                        ? `Spotify throttled the scan — most artist checks failed. Wait 30-60 minutes and try again, or load a saved week from History.`
-                        : `Scanned ${artistCount || '~800'} followed artists for releases since last Friday. If this seems wrong, try re-scanning in a few minutes.`
-                      }
-                    </p>
-                    <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-                      {token && (
-                        <button className="btn btn-sm btn-gold" onClick={() => runScan(token)}>Re-scan</button>
-                      )}
-                      <button className="btn btn-sm" onClick={() => setViewMode('history')}>Load from History</button>
-                    </div>
-
-                    {/* Feature overview cards */}
-                    <div style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-                      gap: 16, marginTop: 48, opacity: 0.5, maxWidth: 800, margin: '48px auto 0',
-                    }}>
-                      {[
-                        { title: 'Scan Releases', desc: 'Finds new music from all your followed artists since last Friday' },
-                        { title: 'Build Carousel', desc: 'Generates 1080x1080 Instagram carousel slides automatically' },
-                        { title: 'Tag Blocks', desc: 'Auto-resolves Instagram handles for every artist featured' },
-                        { title: 'Push to Playlist', desc: 'Updates your NMF Spotify playlist with one click' },
-                      ].map(f => (
-                        <div key={f.title} className="card" style={{ textAlign: 'left' }}>
-                          <div style={{ fontWeight: 600, marginBottom: 4, fontSize: '0.85rem' }}>{f.title}</div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>{f.desc}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </>
-          )}
-
-          {/* Selected / Slide view */}
-          {viewMode === 'selected' && (
-            <div style={{ padding: 24 }}>
-              {selections.length === 0 ? (
-                <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginTop: 48 }}>
-                  No tracks selected yet. Switch to Browse to start selecting.
-                </p>
-              ) : (
+              {selections.length > 0 && (
                 <>
-                  {/* 3-step progress */}
-                  {(() => {
-                    const step1 = selections.length >= 8;
-                    const step2 = selections.some(s => s.isCoverFeature);
-                    return (
-                      <div style={{
-                        display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20,
-                        padding: '12px 16px', borderRadius: 10,
-                        background: 'var(--midnight)', border: '1px solid var(--midnight-border)',
-                        fontSize: '0.8rem', flexWrap: 'wrap',
-                      }}>
-                        <span style={{ color: step1 ? '#3DA877' : 'var(--text-muted)' }}>
-                          {step1 ? '✓' : '1.'} Select tracks
-                        </span>
-                        <span style={{ color: 'var(--midnight-border)' }}>→</span>
-                        <span style={{ color: step2 ? '#3DA877' : step1 ? 'var(--gold)' : 'var(--text-muted)' }}>
-                          {step2 ? '✓' : '★'} Set cover feature
-                        </span>
-                        <span style={{ color: 'var(--midnight-border)' }}>→</span>
-                        <span style={{ color: step1 && step2 ? 'var(--gold)' : 'var(--text-muted)' }}>
-                          3. Generate Carousel
-                        </span>
-                        {!step2 && step1 && (
-                          <span style={{ marginLeft: 'auto', fontSize: '0.7rem', color: 'var(--gold)', fontStyle: 'italic' }}>
-                            ★ Tap the star on any card in Browse to set a cover feature
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })()}
-
-                  {/* Download/export bar */}
-                  <div style={{
-                    display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 24,
-                  }}>
-                    <button className="btn btn-sm" onClick={async () => { setArtDownloading(true); try { await downloadArt(selectedTracks); } finally { setArtDownloading(false); } }} disabled={artDownloading}>
-                      Download Art
-                    </button>
-                    <button className="btn btn-sm" onClick={() => downloadJSON(selectedTracks, 'nmf-curated.json')}>JSON</button>
-                    <button className="btn btn-sm" onClick={() => downloadCSV(selectedTracks, 'nmf-curated.csv')}>CSV</button>
-                    <button className="btn btn-sm" onClick={async () => {
-                      await navigator.clipboard.writeText(JSON.stringify(selectedTracks, null, 2));
-                      setCopied(true); setTimeout(() => setCopied(false), 2000);
-                    }}>{copied ? 'Copied!' : 'Copy Manifest'}</button>
-                  </div>
-
-                  {/* Slide groups */}
-                  {slideGroups.map((slots, i) => (
-                    <SlideGroup
-                      key={i}
-                      slideNumber={i + 1}
-                      slots={slots}
-                      onShuffle={() => handleShuffle(i + 1)}
-                      onReorder={(from, to) => handleReorder(i + 1, from, to)}
-                      onSetCoverFeature={handleSetCoverFeature}
-                      onDeselect={handleDeselect}
-                    />
-                  ))}
-
-                  {/* Carousel generation — new unified panel */}
-                  <CarouselPreviewPanel
-                    selectedTracks={selectedTracks}
-                    coverFeature={selections.find(s => s.isCoverFeature) || null}
-                  />
-
-                  {/* Instagram tags — collapsible */}
-                  <details style={{ marginTop: 24, borderTop: '1px solid var(--midnight-border)', paddingTop: 16 }}>
-                    <summary style={{ cursor: 'pointer', color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 600 }}>
-                      Instagram Tags ▸
-                    </summary>
-                    <TagBlocks slideGroups={slideGroups} />
-                  </details>
-
-                  {/* Playlist push — collapsible */}
-                  <details style={{ marginTop: 16, borderTop: '1px solid var(--midnight-border)', paddingTop: 16 }}>
-                    <summary style={{ cursor: 'pointer', color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 600 }}>
-                      Push to Spotify ▸
-                    </summary>
-                    <div style={{ marginTop: 12 }}>
-                      {token ? (
-                        <PlaylistCreate
-                          selectedCount={selections.length}
-                          weekDate={weekDate}
-                          onCreateAndPush={handleCreateAndPush}
-                          onPushMaster={handlePlaylistPush}
-                          getPlaylistName={() => getPlaylistName(token, PLAYLIST_ID)}
-                        />
-                      ) : (
-                        <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Connect Spotify to push to playlist.</p>
-                      )}
-                    </div>
-                  </details>
-
-                  {/* Cross-platform export */}
-                  <details style={{ marginTop: 16, borderTop: '1px solid var(--midnight-border)', paddingTop: 16 }}>
-                    <summary style={{ cursor: 'pointer', color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 600 }}>
-                      Cross-Platform Export ▸
-                    </summary>
-                    <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                      {['twitter', 'tiktok', 'facebook'].map(p => (
-                        <button key={p} className="btn btn-sm" onClick={async () => {
-                          const { generatePlatformImage } = await import('../lib/cross-platform');
-                          const blob = await generatePlatformImage(selections.map(s => s), weekDate, p as 'twitter' | 'tiktok' | 'facebook');
-                          const { downloadBlob } = await import('../lib/canvas-grid');
-                          downloadBlob(blob, `nmf-${p}-${weekDate}.png`);
-                        }}>
-                          {p === 'twitter' ? 'Twitter/X (1200x675)' : p === 'tiktok' ? 'TikTok (1080x1920)' : 'Facebook (1200x630)'}
-                        </button>
-                      ))}
-                    </div>
-                  </details>
-
-                  {/* Embed widget */}
-                  <EmbedWidget />
-
-                  {/* Save to history */}
-                  <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid var(--midnight-border)' }}>
-                    <button className="btn btn-gold" onClick={() => handleSaveWeek()}>
-                      Save Week to History
-                    </button>
-                  </div>
+                  <span style={{ color: 'var(--midnight-border)', margin: '0 4px' }}>|</span>
+                  <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginRight: 8 }}>Selected:</span>
+                  <button className="btn btn-sm" onClick={async () => { setArtDownloading(true); try { await downloadArt(selectedTracks); } finally { setArtDownloading(false); } }} disabled={artDownloading}>
+                    Download Selected Art
+                  </button>
+                  <button className="btn btn-sm" onClick={() => downloadJSON(selectedTracks, 'nmf-curated.json')}>JSON</button>
+                  <button className="btn btn-sm" onClick={() => downloadCSV(selectedTracks, 'nmf-curated.csv')}>CSV</button>
+                  <button className="btn btn-sm" onClick={async () => {
+                    await navigator.clipboard.writeText(JSON.stringify(selectedTracks, null, 2));
+                    setCopied(true); setTimeout(() => setCopied(false), 2000);
+                  }}>{copied ? 'Copied!' : 'Copy Manifest'}</button>
                 </>
               )}
             </div>
-          )}
 
-          {/* History view */}
-          {viewMode === 'history' && (
-            <WeekHistory onLoadWeek={handleLoadWeek} currentWeekDate={weekDate} />
-          )}
-
-          {/* Floating action bar */}
-          {selections.length > 0 && viewMode === 'browse' && (
-            <div style={{
-              position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100,
-              background: 'linear-gradient(to top, var(--midnight) 70%, transparent)',
-              padding: '20px 32px',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            }}>
-              <div style={{ color: 'var(--gold)', fontWeight: 600, fontSize: '0.9rem' }}>
-                {selections.length} selected
-                {selections.length >= 8
-                  ? ` · ${Math.floor(selections.length / 8)} slide${Math.floor(selections.length / 8) > 1 ? 's' : ''} ready`
-                  : ` · ${8 - (selections.length % 8)} more for next slide`}
-                {!selections.some(s => s.isCoverFeature) && ' · ★ Set a cover feature'}
+            {/* Release grid */}
+            <div style={{ padding: 24 }}>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: 16 }}>
+                <span className="mono">{filteredReleases.length}</span> releases
+                {search && ` matching "${search}"`}
+                {selections.length > 0 && (
+                  <span style={{ marginLeft: 12, color: 'var(--gold)', fontWeight: 600 }}>
+                    {selections.length} selected
+                  </span>
+                )}
+              </p>
+              <div className="release-grid">
+                {filteredReleases.map(cluster => (
+                  <ClusterCard
+                    key={cluster.album_spotify_id}
+                    cluster={cluster}
+                    selectionSlot={selectionByAlbum.get(cluster.album_spotify_id) || null}
+                    hasSelections={selections.length > 0}
+                    onSelectRelease={handleSelectRelease}
+                    onDeselect={handleDeselect}
+                    onSetCoverFeature={handleSetCoverFeature}
+                    featureCount={featureCounts.get(cluster.tracks[0]?.artist_id) || 0}
+                  />
+                ))}
               </div>
-              <button className="btn btn-gold" onClick={() => setViewMode('selected')}>
-                Build Carousel ({selections.length}) →
-              </button>
+              {filteredReleases.length === 0 && releases.length > 0 && (
+                <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginTop: 48 }}>
+                  No releases match your filters.
+                </p>
+              )}
+              {releases.length === 0 && (
+                <div style={{ textAlign: 'center', padding: '48px 24px' }}>
+                  <div style={{ fontSize: 48, marginBottom: 16 }}>
+                    {rateLimited ? '429' : '\uD83C\uDFB5'}
+                  </div>
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', marginBottom: 8 }}>
+                    {rateLimited ? 'Spotify Rate Limited' : 'No releases found this week'}
+                  </h3>
+                  <p style={{ color: 'var(--text-secondary)', marginBottom: 24, maxWidth: 440, margin: '0 auto 24px', lineHeight: 1.6 }}>
+                    {rateLimited
+                      ? 'Spotify throttled the scan \u2014 most artist checks failed. Wait 30-60 minutes and try again, or load a saved week from History.'
+                      : `Scanned ${artistCount || '~800'} followed artists for releases since last Friday. If this seems wrong, try re-scanning in a few minutes.`
+                    }
+                  </p>
+                  <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+                    {token && (
+                      <button className="btn btn-sm btn-gold" onClick={() => runScan(token)}>Re-scan</button>
+                    )}
+                  </div>
+                  {/* Feature overview cards */}
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                    gap: 16, marginTop: 48, opacity: 0.5, maxWidth: 800, margin: '48px auto 0',
+                  }}>
+                    {[
+                      { title: 'Scan Releases', desc: 'Finds new music from all your followed artists since last Friday' },
+                      { title: 'Build Carousel', desc: 'Generates 1080x1080 Instagram carousel slides automatically' },
+                      { title: 'Tag Blocks', desc: 'Auto-resolves Instagram handles for every artist featured' },
+                      { title: 'Push to Playlist', desc: 'Updates your NMF Spotify playlist with one click' },
+                    ].map(f => (
+                      <div key={f.title} className="card" style={{ textAlign: 'left' }}>
+                        <div style={{ fontWeight: 600, marginBottom: 4, fontSize: '0.85rem' }}>{f.title}</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>{f.desc}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
+          </section>
+
+          {/* ============================================================ */}
+          {/*  STEPS 2-5: CAROUSEL BUILDER (CarouselPreviewPanel)          */}
+          {/*  Internally contains:                                        */}
+          {/*    Step 2 - Configure Slides (TrackCount, Platform, Grid,    */}
+          {/*             SlideSplitter)                                    */}
+          {/*    Step 3 - Grid Slide Style (TemplateSelector)              */}
+          {/*    Step 4 - Title Slide Style (TitleTemplatePicker)          */}
+          {/*    Step 5 - Preview & Export                                 */}
+          {/* ============================================================ */}
+          {selections.length > 0 && (
+            <section ref={step2Ref} style={{ scrollMarginTop: 16, padding: '0 24px 24px' }}>
+              {/* Provide anchor refs for steps 3-5 that the breadcrumb can scroll to */}
+              <div ref={step3Ref as React.RefObject<HTMLDivElement>} style={{ scrollMarginTop: 16 }} />
+              <div ref={step4Ref as React.RefObject<HTMLDivElement>} style={{ scrollMarginTop: 16 }} />
+              <div ref={step5Ref as React.RefObject<HTMLDivElement>} style={{ scrollMarginTop: 16 }} />
+
+              <CarouselPreviewPanel
+                selectedTracks={selectedTracks}
+                coverFeature={selections.find(s => s.isCoverFeature) || null}
+              />
+
+              {/* Collapsible extras */}
+              <details style={{ marginTop: 24, borderTop: '1px solid var(--midnight-border)', paddingTop: 16 }}>
+                <summary style={{ cursor: 'pointer', color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 600 }}>
+                  Instagram Tags
+                </summary>
+                <TagBlocks slideGroups={slideGroups} />
+              </details>
+
+              <details style={{ marginTop: 16, borderTop: '1px solid var(--midnight-border)', paddingTop: 16 }}>
+                <summary style={{ cursor: 'pointer', color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 600 }}>
+                  Push to Spotify
+                </summary>
+                <div style={{ marginTop: 12 }}>
+                  {token ? (
+                    <PlaylistCreate
+                      selectedCount={selections.length}
+                      weekDate={weekDate}
+                      onCreateAndPush={handleCreateAndPush}
+                      onPushMaster={handlePlaylistPush}
+                      getPlaylistName={() => getPlaylistName(token, PLAYLIST_ID)}
+                    />
+                  ) : (
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Connect Spotify to push to playlist.</p>
+                  )}
+                </div>
+              </details>
+
+              <details style={{ marginTop: 16, borderTop: '1px solid var(--midnight-border)', paddingTop: 16 }}>
+                <summary style={{ cursor: 'pointer', color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 600 }}>
+                  Embed Widget
+                </summary>
+                <div style={{ marginTop: 12 }}>
+                  <EmbedWidget />
+                </div>
+              </details>
+
+              <details style={{ marginTop: 16, borderTop: '1px solid var(--midnight-border)', paddingTop: 16 }}>
+                <summary style={{ cursor: 'pointer', color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 600 }}>
+                  Week History
+                </summary>
+                <div style={{ marginTop: 12 }}>
+                  <WeekHistory onLoadWeek={handleLoadWeek} currentWeekDate={weekDate} />
+                </div>
+              </details>
+
+              <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid var(--midnight-border)' }}>
+                <button className="btn btn-gold" onClick={() => handleSaveWeek()}>
+                  Save Week to History
+                </button>
+              </div>
+            </section>
           )}
         </>
       )}
