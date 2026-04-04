@@ -236,8 +236,132 @@ export const TEMPLATES: CarouselTemplate[] = [
     },
     decorations: { showNotes: false, showSparkles: false, noteSize: 0, sparkleSize: 0 },
   },
+  // --- NEW DIVERSE TEMPLATES ---
+
+  {
+    id: 'retro_vinyl',
+    name: 'Retro Vinyl',
+    description: 'Warm sepia & brown — 70s record store vibes',
+    background: '#2A1810',
+    textPrimary: '#E8D0A8',
+    textSecondary: '#C4A882',
+    accent: '#D4A060',
+    accentGlow: 'rgba(212, 160, 96, ',
+    scriptFont: '"Source Serif 4", Georgia, serif',
+    bodyFont: '"DM Sans", sans-serif',
+    neon: {
+      outerGlow: 'rgba(212, 160, 96, 0.15)', outerBlur: 30, outerAlpha: 0.2,
+      midGlow: 'rgba(212, 160, 96, 0.3)', midBlur: 14, midAlpha: 0.4,
+      coreColor: '#E8D0A8', coreBlur: 4,
+    },
+    grid: {
+      gap: 0.006, rotations: [-1.2, 0.8, -0.5, 1.0, 0, -0.9, 0.6, -0.7],
+      cellShadow: true, cellBorder: false, cellBorderColor: '',
+    },
+    cover: {
+      vinylOverlay: true, vinylOpacity: 0.6, grooveCount: 80, frameBorder: 18,
+      frameColor: '#F5E6D0', frameShadowBlur: 28,
+      showChevrons: false, showArtistName: true, showTrackName: true,
+      subtitleText: 'New Music Friday',
+    },
+    decorations: { showNotes: false, showSparkles: false, noteSize: 0, sparkleSize: 0 },
+  },
+  {
+    id: 'neon_city',
+    name: 'Neon City',
+    description: 'Cyan & magenta on black — synthwave aesthetic',
+    background: '#050510',
+    textPrimary: '#00FFD4',
+    textSecondary: '#FF00FF',
+    accent: '#00FFD4',
+    accentGlow: 'rgba(0, 255, 212, ',
+    scriptFont: '"DM Sans", sans-serif',
+    bodyFont: '"DM Sans", sans-serif',
+    neon: {
+      outerGlow: 'rgba(0, 255, 212, 0.3)', outerBlur: 55, outerAlpha: 0.35,
+      midGlow: 'rgba(255, 0, 255, 0.4)', midBlur: 25, midAlpha: 0.5,
+      coreColor: '#FFFFFF', coreBlur: 8,
+    },
+    grid: {
+      gap: 0.004, rotations: [0, 0, 0, 0, 0, 0, 0, 0],
+      cellShadow: false, cellBorder: true, cellBorderColor: 'rgba(0,255,212,0.3)',
+    },
+    cover: {
+      vinylOverlay: false, vinylOpacity: 0, grooveCount: 0, frameBorder: 3,
+      frameColor: '#00FFD4', frameShadowBlur: 40,
+      showChevrons: false, showArtistName: true, showTrackName: true,
+      subtitleText: 'New Music Friday',
+    },
+    decorations: { showNotes: false, showSparkles: true, noteSize: 0, sparkleSize: 24 },
+  },
+  {
+    id: 'earthy_acoustic',
+    name: 'Earthy Acoustic',
+    description: 'Forest green & cream — organic, handcrafted feel',
+    background: '#1A2E1A',
+    textPrimary: '#E8E0C8',
+    textSecondary: '#A8C4A0',
+    accent: '#7BA87A',
+    accentGlow: 'rgba(123, 168, 122, ',
+    scriptFont: '"Dancing Script", cursive',
+    bodyFont: '"DM Sans", sans-serif',
+    neon: {
+      outerGlow: 'rgba(123, 168, 122, 0.2)', outerBlur: 35, outerAlpha: 0.25,
+      midGlow: 'rgba(168, 196, 160, 0.4)', midBlur: 16, midAlpha: 0.5,
+      coreColor: '#E8E0C8', coreBlur: 5,
+    },
+    grid: {
+      gap: 0.007, rotations: [-0.3, 0.2, -0.4, 0.3, 0, -0.2, 0.4, -0.3],
+      cellShadow: true, cellBorder: false, cellBorderColor: '',
+    },
+    cover: {
+      vinylOverlay: false, vinylOpacity: 0, grooveCount: 0, frameBorder: 10,
+      frameColor: '#E8E0C8', frameShadowBlur: 20,
+      showChevrons: false, showArtistName: true, showTrackName: true,
+      subtitleText: 'New Music Friday',
+    },
+    decorations: { showNotes: true, showSparkles: false, noteSize: 40, sparkleSize: 0 },
+  },
+  {
+    id: 'stadium_lights',
+    name: 'Stadium Lights',
+    description: 'Dark navy & bright white — arena energy',
+    background: '#0A0E1E',
+    textPrimary: '#FFFFFF',
+    textSecondary: '#B0C4E8',
+    accent: '#FFFFFF',
+    accentGlow: 'rgba(255, 255, 255, ',
+    scriptFont: '"DM Sans", sans-serif',
+    bodyFont: '"DM Sans", sans-serif',
+    neon: {
+      outerGlow: 'rgba(255, 255, 255, 0.25)', outerBlur: 60, outerAlpha: 0.3,
+      midGlow: 'rgba(200, 220, 255, 0.5)', midBlur: 28, midAlpha: 0.6,
+      coreColor: '#FFFFFF', coreBlur: 10,
+    },
+    grid: {
+      gap: 0.003, rotations: [0, 0, 0, 0, 0, 0, 0, 0],
+      cellShadow: true, cellBorder: true, cellBorderColor: 'rgba(255,255,255,0.1)',
+    },
+    cover: {
+      vinylOverlay: false, vinylOpacity: 0, grooveCount: 0, frameBorder: 6,
+      frameColor: '#FFFFFF', frameShadowBlur: 50,
+      showChevrons: true, showArtistName: true, showTrackName: true,
+      subtitleText: 'New Music Friday',
+    },
+    decorations: { showNotes: false, showSparkles: true, noteSize: 0, sparkleSize: 44 },
+  },
 ];
+
+/** Templates that are exclusive to Max's account */
+export const MAX_ONLY_TEMPLATES = new Set(['mmmc_classic', 'neon_rose', 'golden_hour']);
 
 export function getTemplate(id: string): CarouselTemplate {
   return TEMPLATES.find(t => t.id === id) || TEMPLATES[0];
+}
+
+/** Get templates visible to a user (filters out Max-only for other users) */
+export function getVisibleTemplates(userEmail?: string): CarouselTemplate[] {
+  const isMax = userEmail === 'maxmeetsmusiccity@gmail.com' || userEmail === 'maxblachman@gmail.com';
+  if (isMax) return TEMPLATES;
+  return TEMPLATES.filter(t => !MAX_ONLY_TEMPLATES.has(t.id));
 }

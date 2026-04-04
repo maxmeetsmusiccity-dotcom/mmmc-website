@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { TEMPLATES, type CarouselTemplate } from '../lib/carousel-templates';
+import { TEMPLATES, type CarouselTemplate, getVisibleTemplates } from '../lib/carousel-templates';
 import { getTemplatePreview } from '../lib/canvas-grid';
 import TemplateBuilder from './TemplateBuilder';
+import { useAuth } from '../lib/auth-context';
 
 interface Props {
   selected: string;
@@ -22,11 +23,13 @@ function saveCustomTemplates(templates: CarouselTemplate[]) {
 }
 
 export default function TemplateSelector({ selected, onSelect }: Props) {
+  const { user } = useAuth();
   const [previews, setPreviews] = useState<Map<string, string>>(new Map());
   const [customTemplates, setCustomTemplates] = useState<CarouselTemplate[]>(loadCustomTemplates);
   const [showBuilder, setShowBuilder] = useState(false);
 
-  const allTemplates = [...TEMPLATES, ...customTemplates];
+  const visibleTemplates = getVisibleTemplates(user?.email || undefined);
+  const allTemplates = [...visibleTemplates, ...customTemplates];
 
   // Generate previews on mount and when custom templates change
   useEffect(() => {
