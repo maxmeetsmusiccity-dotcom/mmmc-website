@@ -34,6 +34,10 @@ import TagBlocks from '../components/TagBlocks';
 import WeekHistory from '../components/WeekHistory';
 import EmbedWidget from '../components/EmbedWidget';
 import ProductNav from '../components/ProductNav';
+import SourceSelector from '../components/SourceSelector';
+import ManualImport from '../components/ManualImport';
+import type { MusicSource } from '../lib/sources/types';
+import { checkScanHealth } from '../lib/spotify';
 
 type Phase = 'auth' | 'ready' | 'scanning' | 'results';
 type FilterKey = 'all' | 'single' | 'album';
@@ -76,6 +80,7 @@ export default function NewMusicFriday() {
   const [copied, setCopied] = useState(false);
   const [appleEnriching, setAppleEnriching] = useState(false);
   const [featureCounts, setFeatureCounts] = useState<Map<string, number>>(new Map());
+  const [activeSource, setActiveSource] = useState<MusicSource['id']>('spotify');
 
   // Handle OAuth callback
   useEffect(() => {
@@ -141,8 +146,20 @@ export default function NewMusicFriday() {
   const runScan = useCallback(async (tkn: string) => {
     setPhase('scanning');
     setError('');
+    setRateLimited(false);
     const scanStart = Date.now();
     try {
+      // Pre-scan health check — detect rate limit before scanning
+      setScanStatus('Checking Spotify status...');
+      const health = await checkScanHealth(tkn);
+      if (!health.ok) {
+        setRateLimited(true);
+        const retryAfter = health.retryAfter || 60;
+        setError(`Spotify is rate limiting your app. Try again in ${retryAfter} seconds.`);
+        setPhase('ready');
+        return;
+      }
+
       setScanStatus('Fetching followed artists...');
       const artists = await fetchFollowedArtists(tkn, (cur, tot) => {
         setScanProgress({ current: cur, total: tot });
@@ -505,21 +522,89 @@ export default function NewMusicFriday() {
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
           minHeight: '60vh', padding: 24, textAlign: 'center',
         }}>
-          <div className="animate-float-up" style={{ maxWidth: 480 }}>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.75rem', marginBottom: 12 }}>
+          <div className="animate-float-up" style={{ maxWidth: 560, width: '100%' }}>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.75rem', marginBottom: 16 }}>
               Ready to <span style={{ color: 'var(--gold)' }}>Scan</span>
             </h2>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: 32 }}>
-              Connected to Spotify. Click below to scan your followed artists for new releases since last Friday.
-            </p>
-            <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-              <button className="btn btn-gold" onClick={() => token && runScan(token)} style={{ fontSize: '1rem', padding: '14px 32px' }}>
-                Scan New Releases
-              </button>
-              <button className="btn" onClick={loadDemo}>
-                Try Demo
-              </button>
-            </div>
+
+            <SourceSelector
+              selected={activeSource}
+              onSelect={setActiveSource}
+              spotifyConnected={!!token}
+              appleMusicConnected={false}
+            />
+
+            {/* Spotify source */}
+            {activeSource === 'spotify' && (
+              <div style={{ marginTop: 16 }}>
+                <p style={{ color: 'var(--text-secondary)', marginBottom: 16, fontSize: '0.85rem' }}>
+                  Scan your followed artists for new releases since last Friday.
+                </p>
+                <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+                  <button className="btn btn-gold" onClick={() => token && runScan(token)} style={{ fontSize: '1rem', padding: '14px 32px' }}>
+                    Scan New Releases
+                  </button>
+                  <button className="btn" onClick={loadDemo}>
+                    Try Demo
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Apple Music source */}
+            {activeSource === 'apple-music' && (
+              <div style={{ marginTop: 16 }}>
+                <p style={{ color: 'var(--text-secondary)', marginBottom: 16, fontSize: '0.85rem' }}>
+                  Scan your Apple Music library for new releases.
+                </p>
+                <button
+                  className="btn"
+                  onClick={async () => {
+                    try {
+                      const { authorizeAppleMusic, scanAppleMusicLibrary } = await import('../lib/sources/apple-music');
+                      await authorizeAppleMusic();
+                      setPhase('scanning');
+                      setScanStatus('Scanning Apple Music library...');
+                      const cutoff = getLastFriday();
+                      const tracks = await scanAppleMusicLibrary({
+                        cutoffDate: cutoff,
+                        onProgress: (cur, tot, found) => {
+                          setScanProgress({ current: cur, total: tot });
+                          setScanStatus(`Apple Music: ${cur}/${tot} artists · ${found} releases`);
+                        },
+                        onReleasesFound: (tracks) => {
+                          setAllTracks(tracks);
+                          setReleases(groupIntoReleases(tracks));
+                        },
+                      });
+                      setAllTracks(tracks);
+                      setReleases(groupIntoReleases(tracks));
+                      setPhase('results');
+                      setLastScanned(new Date().toISOString());
+                    } catch (e) {
+                      setError(`Apple Music: ${(e as Error).message}`);
+                      setPhase('ready');
+                    }
+                  }}
+                  style={{ fontSize: '1rem', padding: '14px 32px' }}
+                >
+                  Connect Apple Music
+                </button>
+              </div>
+            )}
+
+            {/* Manual source */}
+            {activeSource === 'manual' && (
+              <div style={{ marginTop: 16, textAlign: 'left' }}>
+                <ManualImport onImport={(tracks) => {
+                  setAllTracks(tracks);
+                  setReleases(groupIntoReleases(tracks));
+                  setPhase('results');
+                  setLastScanned(new Date().toISOString());
+                  setIsDemoMode(false);
+                }} />
+              </div>
+            )}
           </div>
         </div>
       )}

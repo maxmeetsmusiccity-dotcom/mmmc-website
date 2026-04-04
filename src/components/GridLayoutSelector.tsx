@@ -45,6 +45,7 @@ export default function GridLayoutSelector({ selected, onSelect }: Props) {
           return (
             <button
               key={layout.id}
+              data-testid="grid-layout-button"
               onClick={() => onSelect(layout.id)}
               title={`${layout.name} — ${layout.trackSlots} tracks${layout.hasLogo ? ' + logo' : ''}`}
               style={{
