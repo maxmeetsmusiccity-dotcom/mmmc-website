@@ -152,29 +152,37 @@ export default function NewMusicFriday() {
       setScanStatus(`Scanning releases since ${cutoff}...`);
       setScanProgress({ current: 0, total: artists.length });
 
-      const result = await fetchNewReleases(artists, tkn, cutoff, (cur, tot) => {
+      const result = await fetchNewReleases(artists, tkn, cutoff, (cur, tot, releasesFound, status) => {
         setScanProgress({ current: cur, total: tot });
         const elapsed = (Date.now() - scanStart) / 1000;
-        if (cur >= 50 && cur < tot) {
+        const statusDot = status === 'green' ? '🟢' : status === 'yellow' ? '🟡' : '🔴';
+        if (status === 'red') {
+          setScanStatus(`${statusDot} Rate limited — saving ${releasesFound} releases found so far`);
+        } else if (cur >= 30 && cur < tot) {
           const rate = cur / elapsed;
           const remaining = (tot - cur) / rate;
           const eta = remaining < 10 ? 'Almost done...'
             : remaining < 60 ? `~${Math.round(remaining)}s remaining`
             : `~${Math.floor(remaining / 60)}m ${Math.round(remaining % 60)}s remaining`;
-          setScanStatus(`Scanning: ${cur}/${tot} artists — ${eta}`);
+          setScanStatus(`${statusDot} ${cur}/${tot} artists · ${releasesFound} releases · ${eta}`);
         } else {
-          setScanStatus(`Scanning: ${cur}/${tot} artists checked`);
+          setScanStatus(`${statusDot} ${cur}/${tot} artists · ${releasesFound} releases`);
         }
       });
 
-      const { tracks, failCount, totalArtists } = result;
+      const { tracks, failCount, totalArtists, rateLimited: wasRateLimited, retryAfterSeconds } = result;
       const now = new Date().toISOString();
       setAllTracks(tracks);
       setReleases(groupIntoReleases(tracks));
       setArtistCount(totalArtists);
       setLastScanned(now);
-      setRateLimited(failCount > totalArtists * 0.5);
+      setRateLimited(wasRateLimited);
       setPhase('results');
+
+      if (wasRateLimited) {
+        const mins = Math.ceil(retryAfterSeconds / 60);
+        setError(`Rate limited after ${result.completedArtists}/${totalArtists} artists. Found ${tracks.length} releases. Try again in ~${mins} min.`);
+      }
 
       // Background: query feature counts for "Previously Featured" badges
       const artistIds = [...new Set(tracks.map(t => t.artist_id).filter(Boolean))];
