@@ -259,6 +259,18 @@ export function getLastFriday(): string {
   return friday.toISOString().split('T')[0];
 }
 
+/**
+ * Scan cutoff: Friday minus 6 days — matches Python's 7-day window.
+ * Python: since = target - timedelta(days=days_back), days_back=6
+ * Window: [cutoff, friday] inclusive — catches the full week of releases.
+ */
+export function getScanCutoff(daysBack = 6): string {
+  const friday = getLastFriday();
+  const d = new Date(friday + 'T12:00:00');
+  d.setDate(d.getDate() - daysBack);
+  return d.toISOString().split('T')[0];
+}
+
 export async function fetchFollowedArtists(
   token: string,
   onProgress: (current: number, total: number) => void,

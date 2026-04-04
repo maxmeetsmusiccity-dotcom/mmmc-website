@@ -36,3 +36,15 @@ export function computeLastFriday(now: Date = new Date()): string {
   friday.setHours(0, 0, 0, 0);
   return friday.toISOString().split('T')[0];
 }
+
+/**
+ * Compute the scan window start date — matches Python's behavior.
+ * Python: since = target - timedelta(days=days_back)
+ * Default days_back = 6, so window = [Friday-6days, Friday] inclusive.
+ * This catches releases from the full week, not just Friday.
+ */
+export function computeScanCutoff(targetFriday: string, daysBack = 6): string {
+  const d = new Date(targetFriday + 'T12:00:00');
+  d.setDate(d.getDate() - daysBack);
+  return d.toISOString().split('T')[0];
+}

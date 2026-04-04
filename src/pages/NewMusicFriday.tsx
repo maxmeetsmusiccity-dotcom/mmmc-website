@@ -5,6 +5,7 @@ import {
   fetchFollowedArtists,
   fetchNewReleases,
   getLastFriday,
+  getScanCutoff,
   groupIntoReleases,
   replacePlaylistTracks,
   appendPlaylistTracks,
@@ -232,7 +233,7 @@ export default function NewMusicFriday() {
         setScanStatus(`Loaded ${cur} artists...`);
       });
 
-      const cutoff = getLastFriday();
+      const cutoff = getScanCutoff();
       setScanStatus(`Scanning releases since ${cutoff}...`);
       setScanProgress({ current: 0, total: artists.length });
 
@@ -241,16 +242,16 @@ export default function NewMusicFriday() {
         const elapsed = (Date.now() - scanStart) / 1000;
         const statusDot = status === 'green' ? '\uD83D\uDFE2' : status === 'yellow' ? '\uD83D\uDFE1' : '\uD83D\uDD34';
         if (status === 'red') {
-          setScanStatus(`${statusDot} Rate limited \u2014 saving ${releasesFound} releases found so far`);
+          setScanStatus(`${statusDot} Rate limited \u2014 saving ${releasesFound} release${releasesFound !== 1 ? 's' : ''} found so far`);
         } else if (cur >= 30 && cur < tot) {
           const rate = cur / elapsed;
           const remaining = (tot - cur) / rate;
           const eta = remaining < 10 ? 'Almost done...'
             : remaining < 60 ? `~${Math.round(remaining)}s remaining`
             : `~${Math.floor(remaining / 60)}m ${Math.round(remaining % 60)}s remaining`;
-          setScanStatus(`${statusDot} ${cur}/${tot} artists \u00B7 ${releasesFound} releases \u00B7 ${eta}`);
+          setScanStatus(`${statusDot} ${cur}/${tot} artists \u00B7 ${releasesFound} release${releasesFound !== 1 ? 's' : ''} \u00B7 ${eta}`);
         } else {
-          setScanStatus(`${statusDot} ${cur}/${tot} artists \u00B7 ${releasesFound} releases`);
+          setScanStatus(`${statusDot} ${cur}/${tot} artists \u00B7 ${releasesFound} release${releasesFound !== 1 ? 's' : ''}`);
         }
       });
 
@@ -622,12 +623,12 @@ export default function NewMusicFriday() {
                       await authorizeAppleMusic();
                       setPhase('scanning');
                       setScanStatus('Scanning Apple Music library...');
-                      const cutoff = getLastFriday();
+                      const cutoff = getScanCutoff();
                       const tracks = await scanAppleMusicLibrary({
                         cutoffDate: cutoff,
                         onProgress: (cur, tot, found) => {
                           setScanProgress({ current: cur, total: tot });
-                          setScanStatus(`Apple Music: ${cur}/${tot} artists \u00B7 ${found} releases`);
+                          setScanStatus(`Apple Music: ${cur}/${tot} artists \u00B7 ${found} release${found !== 1 ? 's' : ''}`);
                         },
                         onReleasesFound: (tracks) => {
                           setAllTracks(tracks);
