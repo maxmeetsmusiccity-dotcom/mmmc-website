@@ -1,8 +1,6 @@
 import { clearToken } from './auth';
 
 const API = 'https://api.spotify.com/v1';
-const MAX_CONCURRENT = 10;
-const PER_REQUEST_DELAY_MS = 300; // ~3 req/sec effective rate
 
 export interface SpotifyArtist {
   id: string;
@@ -154,10 +152,6 @@ export class RateLimitError extends Error {
   }
 }
 
-function sleep(ms: number): Promise<void> {
-  return new Promise(r => setTimeout(r, ms));
-}
-
 export function getLastFriday(): string {
   const now = new Date();
   const day = now.getDay(); // 0=Sun, 5=Fri
@@ -224,6 +218,17 @@ export interface ScanResult {
 
 export type ScanStatus = 'green' | 'yellow' | 'red';
 
+/**
+ * Scan for new releases — SEQUENTIAL, one artist at a time.
+ *
+ * Replicates the Python script (new_music_art.py) behavior exactly:
+ * - Process artists ONE AT A TIME in a simple for loop with await
+ * - Natural HTTP latency (~100-200ms) provides pacing at ~5-7 req/s
+ * - This is well within Spotify's rolling 30s window (~180 req/30s)
+ * - No concurrency pool, no batching, no explicit delays
+ * - Abort on first 429, cache partial results
+ * - Stream results live via onReleasesFound callback
+ */
 export async function fetchNewReleases(
   artists: SpotifyArtist[],
   token: string,
@@ -233,228 +238,218 @@ export async function fetchNewReleases(
 ): Promise<ScanResult> {
   const scanStart = Date.now();
   let apiCalls = 0;
-  const albumMap = new Map<string, { album: SpotifyAlbum; triggerArtist: SpotifyArtist }>();
   let failCount = 0;
-  let completed = 0;
   let rateLimited = false;
   let retryAfterSeconds = 0;
+  const allTracks: TrackItem[] = [];
+  const seenAlbumIds = new Set<string>();
 
   // Smart ordering: artists with recent scan hits go first
-  const recentHits = new Set<string>(JSON.parse(localStorage.getItem('nmf_recent_release_artists') || '[]'));
+  const recentHits = new Set<string>(
+    JSON.parse(localStorage.getItem('nmf_recent_release_artists') || '[]')
+  );
   const sorted = [...artists].sort((a, b) => {
     const aHit = recentHits.has(a.id) ? 0 : 1;
     const bHit = recentHits.has(b.id) ? 0 : 1;
     return aHit - bHit;
   });
 
-  console.log(`[SCAN START] ${sorted.length} artists, cutoff=${cutoffDate}, rate=~${(1000 / PER_REQUEST_DELAY_MS).toFixed(1)} req/s max`);
+  console.log(`[SCAN START] ${sorted.length} artists, cutoff=${cutoffDate}, mode=SEQUENTIAL`);
 
-  // Paced scanning: 10 concurrent slots, 300ms between each request start
-  // ABORT ON FIRST 429
-  const semaphore = { active: 0, aborted: false };
+  // SEQUENTIAL: one artist at a time, just like the Python script
+  for (let i = 0; i < sorted.length; i++) {
+    const artist = sorted[i];
 
-  for (let i = 0; i < sorted.length && !semaphore.aborted; i += MAX_CONCURRENT) {
-    const batch = sorted.slice(i, i + MAX_CONCURRENT);
-    const batchPromises = batch.map(async (artist, batchIdx) => {
-      // Stagger starts within batch: 300ms apart
-      await sleep(batchIdx * PER_REQUEST_DELAY_MS);
-      if (semaphore.aborted) return;
+    try {
+      // Fetch this artist's albums — ONE request, await it
+      const res = await apiFetch(
+        `${API}/artists/${artist.id}/albums?include_groups=album,single&limit=20&market=US`,
+        token,
+      );
+      apiCalls++;
+      const data = await res.json();
+      const albums = (data.items || []) as (SpotifyAlbum & { release_date_precision?: string })[];
 
-      const reqStart = Date.now();
-      try {
-        semaphore.active++;
-        const res = await apiFetch(
-          `${API}/artists/${artist.id}/albums?include_groups=album,single&limit=10&market=US`,
-          token,
-        );
-        apiCalls++;
-        const reqTime = Date.now() - reqStart;
-        const data = await res.json();
+      // Filter to releases within the date window
+      const newAlbums: SpotifyAlbum[] = [];
+      for (const album of albums) {
+        if (seenAlbumIds.has(album.id)) continue;
+        let normalized = album.release_date;
+        if (normalized.length === 4) normalized += '-01-01';
+        else if (normalized.length === 7) normalized += '-01';
+        if (normalized >= cutoffDate) {
+          newAlbums.push(album);
+          seenAlbumIds.add(album.id);
+        }
+      }
 
-        for (const album of (data.items as (SpotifyAlbum & { release_date_precision?: string })[])) {
-          if (album.release_date_precision === 'day' && album.release_date < cutoffDate) break;
-          let normalized = album.release_date;
-          if (normalized.length === 4) normalized += '-01-01';
-          else if (normalized.length === 7) normalized += '-01';
-          if (normalized >= cutoffDate && !albumMap.has(album.id)) {
-            albumMap.set(album.id, { album, triggerArtist: artist });
+      if (newAlbums.length === 0) {
+        onProgress(i + 1, sorted.length, seenAlbumIds.size, 'green');
+        continue;
+      }
+
+      // For each new album, fetch tracks — SEQUENTIALLY
+      for (const album of newAlbums) {
+        const img640 = album.images.find(im => im.width === 640)?.url || album.images[0]?.url || '';
+        const img300 = album.images.find(im => im.width === 300)?.url || album.images[1]?.url || '';
+        const img64 = album.images.find(im => im.width === 64)?.url || album.images[2]?.url || '';
+        const artistNames = album.artists.map(a => a.name).join(', ');
+
+        if (album.total_tracks === 1) {
+          // Single — synthesize track, skip tracks API call
+          allTracks.push({
+            track_name: album.name,
+            track_number: 1,
+            track_uri: '',
+            track_spotify_url: album.external_urls.spotify,
+            track_id: `synth_${album.id}`,
+            duration_ms: 0,
+            explicit: false,
+            album_name: album.name,
+            artist_names: artistNames,
+            artist_id: artist.id,
+            artist_spotify_url: artist.external_urls.spotify,
+            artist_genres: artist.genres,
+            artist_followers: artist.followers.total,
+            album_type: album.album_type,
+            release_date: album.release_date,
+            total_tracks: 1,
+            album_spotify_url: album.external_urls.spotify,
+            album_spotify_id: album.id,
+            cover_art_640: img640,
+            cover_art_300: img300,
+            cover_art_64: img64,
+          });
+        } else {
+          // Multi-track — fetch track listing sequentially
+          try {
+            const trackRes = await apiFetch(
+              `${API}/albums/${album.id}/tracks?limit=50&market=US`,
+              token,
+            );
+            apiCalls++;
+            const trackData = await trackRes.json();
+            const tracks = (trackData.items || []) as SpotifyTrack[];
+
+            for (const track of tracks) {
+              allTracks.push({
+                track_name: track.name,
+                track_number: track.track_number,
+                track_uri: track.uri,
+                track_spotify_url: track.external_urls.spotify,
+                track_id: track.id,
+                duration_ms: track.duration_ms,
+                explicit: track.explicit,
+                album_name: album.name,
+                artist_names: artistNames,
+                artist_id: artist.id,
+                artist_spotify_url: artist.external_urls.spotify,
+                artist_genres: artist.genres,
+                artist_followers: artist.followers.total,
+                album_type: album.album_type,
+                release_date: album.release_date,
+                total_tracks: album.total_tracks,
+                album_spotify_url: album.external_urls.spotify,
+                album_spotify_id: album.id,
+                cover_art_640: img640,
+                cover_art_300: img300,
+                cover_art_64: img64,
+              });
+            }
+          } catch (e) {
+            if (e instanceof RateLimitError) throw e;
+            if ((e as Error).message === 'AUTH_EXPIRED') throw e;
+            // Skip this album's tracks on network error
           }
         }
 
-        const status: ScanStatus = reqTime > 2000 ? 'yellow' : 'green';
-        completed++;
-        onProgress(completed, sorted.length, albumMap.size, status);
-      } catch (e) {
-        if (e instanceof RateLimitError) {
-          // RULE 1: Abort everything on first 429
-          semaphore.aborted = true;
-          rateLimited = true;
-          retryAfterSeconds = e.retryAfterSeconds;
-          onProgress(completed, sorted.length, albumMap.size, 'red');
-          console.error(`[SCAN ABORTED] 429 at artist ${completed}/${sorted.length}. Retry-After: ${retryAfterSeconds}s`);
-          return;
-        }
-        if ((e as Error).message === 'AUTH_EXPIRED') throw e;
-        failCount++;
-        completed++;
-        onProgress(completed, sorted.length, albumMap.size, 'green');
-      } finally {
-        semaphore.active--;
+        // Stream results live to UI as each album is processed
+        if (onReleasesFound) onReleasesFound([...allTracks]);
       }
-    });
 
-    await Promise.all(batchPromises);
-    // No extra delay needed — the stagger within each batch provides pacing
-  }
-
-  // Phase 2: fetch tracks — only for multi-track releases
-  // Singles already have all data from the album endpoint
-  const albums = Array.from(albumMap.values());
-  const allTracks: TrackItem[] = [];
-
-  // For singles, build TrackItem directly from album data (no extra API call)
-  const multiTrackAlbums: typeof albums = [];
-  for (const { album, triggerArtist } of albums) {
-    const img640 = album.images.find(i => i.width === 640)?.url || album.images[0]?.url || '';
-    const img300 = album.images.find(i => i.width === 300)?.url || album.images[1]?.url || '';
-    const img64 = album.images.find(i => i.width === 64)?.url || album.images[2]?.url || '';
-    const artistNames = album.artists.map(a => a.name).join(', ');
-
-    if (album.total_tracks === 1) {
-      // Single — synthesize track from album data, skip tracks API call
-      allTracks.push({
-        track_name: album.name,
-        track_number: 1,
-        track_uri: '', // will be filled if user selects it
-        track_spotify_url: album.external_urls.spotify,
-        track_id: `synth_${album.id}`,
-        duration_ms: 0,
-        explicit: false,
-        album_name: album.name,
-        artist_names: artistNames,
-        artist_id: triggerArtist.id,
-        artist_spotify_url: triggerArtist.external_urls.spotify,
-        artist_genres: triggerArtist.genres,
-        artist_followers: triggerArtist.followers.total,
-        album_type: album.album_type,
-        release_date: album.release_date,
-        total_tracks: 1,
-        album_spotify_url: album.external_urls.spotify,
-        album_spotify_id: album.id,
-        cover_art_640: img640,
-        cover_art_300: img300,
-        cover_art_64: img64,
-      });
-    } else {
-      multiTrackAlbums.push({ album, triggerArtist });
-    }
-  }
-
-  // Fetch tracks only for multi-track releases
-  const trackTasks = multiTrackAlbums.map(({ album, triggerArtist }) => async () => {
-    try {
-      const res = await apiFetch(
-        `${API}/albums/${album.id}/tracks?limit=50&market=US`,
-        token,
-      );
-      const data = await res.json();
-      const tracks = data.items as SpotifyTrack[];
-      const img640 = album.images.find(i => i.width === 640)?.url || album.images[0]?.url || '';
-      const img300 = album.images.find(i => i.width === 300)?.url || album.images[1]?.url || '';
-      const img64 = album.images.find(i => i.width === 64)?.url || album.images[2]?.url || '';
-      const artistNames = album.artists.map(a => a.name).join(', ');
-
-      for (const track of tracks) {
-        allTracks.push({
-          track_name: track.name,
-          track_number: track.track_number,
-          track_uri: track.uri,
-          track_spotify_url: track.external_urls.spotify,
-          track_id: track.id,
-          duration_ms: track.duration_ms,
-          explicit: track.explicit,
-          album_name: album.name,
-          artist_names: artistNames,
-          artist_id: triggerArtist.id,
-          artist_spotify_url: triggerArtist.external_urls.spotify,
-          artist_genres: triggerArtist.genres,
-          artist_followers: triggerArtist.followers.total,
-          album_type: album.album_type,
-          release_date: album.release_date,
-          total_tracks: album.total_tracks,
-          album_spotify_url: album.external_urls.spotify,
-          album_spotify_id: album.id,
-          cover_art_640: img640,
-          cover_art_300: img300,
-          cover_art_64: img64,
-        });
-      }
+      onProgress(i + 1, sorted.length, seenAlbumIds.size, 'green');
     } catch (e) {
+      if (e instanceof RateLimitError) {
+        rateLimited = true;
+        retryAfterSeconds = e.retryAfterSeconds;
+        onProgress(i + 1, sorted.length, seenAlbumIds.size, 'red');
+        console.error(
+          `[SCAN ABORTED] 429 at artist ${i + 1}/${sorted.length}. ` +
+          `Retry-After: ${retryAfterSeconds}s. ` +
+          `${apiCalls} API calls in ${((Date.now() - scanStart) / 1000).toFixed(1)}s`
+        );
+        break;
+      }
       if ((e as Error).message === 'AUTH_EXPIRED') throw e;
-    }
-  });
-
-  if (trackTasks.length > 0 && !semaphore.aborted) {
-    for (let i = 0; i < trackTasks.length && !semaphore.aborted; i++) {
-      await trackTasks[i]();
-      apiCalls++;
-      await sleep(PER_REQUEST_DELAY_MS);
+      // Skip individual artist failures
+      failCount++;
+      onProgress(i + 1, sorted.length, seenAlbumIds.size, 'green');
     }
   }
 
-  // Backfill single track URIs — immutable: build a replacement map, then create new array
-  const synthIds = new Set(allTracks.filter(t => t.track_id.startsWith('synth_')).map(t => t.track_id));
-  const backfills = new Map<string, Partial<TrackItem>>();
-  if (synthIds.size > 0) {
-    const synthList = allTracks.filter(t => synthIds.has(t.track_id));
-    const backfillTasks = synthList.map((t) => async () => {
+  // Backfill single track URIs for synthesized entries
+  const synthTracks = allTracks.filter(t => t.track_id.startsWith('synth_'));
+  if (synthTracks.length > 0 && !rateLimited) {
+    for (const t of synthTracks) {
       try {
-        const res = await apiFetch(`${API}/albums/${t.album_spotify_id}/tracks?limit=1&market=US`, token);
+        const res = await apiFetch(
+          `${API}/albums/${t.album_spotify_id}/tracks?limit=1&market=US`,
+          token,
+        );
+        apiCalls++;
         const data = await res.json();
         const real = data.items?.[0] as SpotifyTrack | undefined;
         if (real) {
-          backfills.set(t.track_id, {
-            track_id: real.id,
-            track_uri: real.uri,
-            track_name: real.name,
-            track_spotify_url: real.external_urls.spotify,
-            duration_ms: real.duration_ms,
-            explicit: real.explicit,
-          });
+          t.track_id = real.id;
+          t.track_uri = real.uri;
+          t.track_name = real.name;
+          t.track_spotify_url = real.external_urls.spotify;
+          t.duration_ms = real.duration_ms;
+          t.explicit = real.explicit;
         }
-      } catch { /* non-critical */ }
-    });
-    for (let i = 0; i < backfillTasks.length && !semaphore.aborted; i++) {
-      await backfillTasks[i]();
-      apiCalls++;
-      await sleep(PER_REQUEST_DELAY_MS);
+      } catch (e) {
+        if (e instanceof RateLimitError) break; // stop backfill on rate limit
+        // Non-critical — skip
+      }
     }
   }
 
-  // Apply backfills immutably
-  const finalTracks = backfills.size > 0
-    ? allTracks.map(t => backfills.has(t.track_id) ? { ...t, ...backfills.get(t.track_id)! } : t)
-    : allTracks;
-
-  finalTracks.sort((a, b) => {
+  // Sort results
+  allTracks.sort((a, b) => {
     const dateComp = b.release_date.localeCompare(a.release_date);
     if (dateComp !== 0) return dateComp;
     return a.artist_names.localeCompare(b.artist_names);
   });
 
   // Save artists with releases for smart ordering next time
-  const releaseArtistIds = [...new Set(finalTracks.map(t => t.artist_id))];
-  try { localStorage.setItem('nmf_recent_release_artists', JSON.stringify(releaseArtistIds)); } catch {}
+  const releaseArtistIds = [...new Set(allTracks.map(t => t.artist_id))];
+  try {
+    localStorage.setItem('nmf_recent_release_artists', JSON.stringify(releaseArtistIds));
+  } catch { /* storage full */ }
 
   const elapsed = (Date.now() - scanStart) / 1000;
-  console.log(`[SCAN COMPLETE] ${apiCalls} API calls in ${elapsed.toFixed(1)}s (${(apiCalls / elapsed).toFixed(1)} req/s). Albums: ${albumMap.size}, Tracks: ${finalTracks.length}, Fails: ${failCount}, RateLimited: ${rateLimited}`);
+  console.log(
+    `[SCAN COMPLETE] ${apiCalls} API calls in ${elapsed.toFixed(1)}s ` +
+    `(${(apiCalls / elapsed).toFixed(1)} req/s). ` +
+    `Albums: ${seenAlbumIds.size}, Tracks: ${allTracks.length}, ` +
+    `Fails: ${failCount}, RateLimited: ${rateLimited}`
+  );
 
-  // Stream final results
-  if (onReleasesFound && finalTracks.length > 0) {
-    onReleasesFound(finalTracks);
+  // Final stream of sorted results
+  if (onReleasesFound && allTracks.length > 0) {
+    onReleasesFound(allTracks);
   }
 
-  return { tracks: finalTracks, failCount, totalArtists: artists.length, rateLimited, retryAfterSeconds, completedArtists: completed };
+  return {
+    tracks: allTracks,
+    failCount,
+    totalArtists: artists.length,
+    rateLimited,
+    retryAfterSeconds,
+    completedArtists: rateLimited
+      ? sorted.findIndex(a => allTracks.some(t => t.artist_id === a.id)) + 1
+      : sorted.length,
+  };
 }
 
 export async function replacePlaylistTracks(
