@@ -15,8 +15,6 @@ import {
 } from '../lib/spotify';
 import {
   type SelectionSlot,
-  type TargetCount,
-  TARGET_COUNTS,
   buildSlots,
   shuffleSlideGroup,
   reorderInSlideGroup,
@@ -64,7 +62,7 @@ export default function NewMusicFriday() {
   const [allTracks, setAllTracks] = useState<TrackItem[]>([]);
   const [releases, setReleases] = useState<ReleaseCluster[]>([]);
   const [selections, setSelections] = useState<SelectionSlot[]>([]);
-  const [targetCount, setTargetCount] = useState<TargetCount>(32);
+  const [targetCount, setTargetCount] = useState(32);
   const [scanStatus, setScanStatus] = useState('');
   const [scanProgress, setScanProgress] = useState({ current: 0, total: 0 });
   const [filter, setFilter] = useState<FilterKey>('all');
@@ -674,18 +672,18 @@ export default function NewMusicFriday() {
                 )}
               </div>
 
-              {/* Target count selector */}
+              {/* Target count selector — 1 to 50 */}
               <select
                 value={targetCount}
-                onChange={e => setTargetCount(Number(e.target.value) as TargetCount)}
+                onChange={e => setTargetCount(Number(e.target.value))}
                 style={{
                   background: 'var(--midnight)', border: '1px solid var(--midnight-border)',
                   borderRadius: 8, color: 'var(--text-secondary)', padding: '4px 8px',
                   fontSize: '0.75rem', fontFamily: 'var(--font-mono)',
                 }}
               >
-                {TARGET_COUNTS.map(n => (
-                  <option key={n} value={n}>{n} tracks ({n / 8} slides)</option>
+                {Array.from({ length: 50 }, (_, i) => i + 1).map(n => (
+                  <option key={n} value={n}>{n} track{n !== 1 ? 's' : ''}</option>
                 ))}
               </select>
             </div>
