@@ -43,22 +43,55 @@ function neonText(ctx: CanvasRenderingContext2D, text: string, x: number, y: num
   ctx.font = font;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
-  // Pass 1: wide outer glow
+  // Pass 1: ultra-wide atmospheric glow
+  ctx.shadowColor = t.neon.outerGlow;
+  ctx.shadowBlur = t.neon.outerBlur * 1.5;
+  ctx.fillStyle = `${t.accentGlow}${t.neon.outerAlpha * 0.4})`;
+  ctx.fillText(text, x, y);
+  // Pass 2: wide outer glow
   ctx.shadowColor = t.neon.outerGlow;
   ctx.shadowBlur = t.neon.outerBlur;
   ctx.fillStyle = `${t.accentGlow}${t.neon.outerAlpha})`;
   ctx.fillText(text, x, y);
-  // Pass 2: medium glow
+  // Pass 3: medium glow
   ctx.shadowColor = t.neon.midGlow;
   ctx.shadowBlur = t.neon.midBlur;
   ctx.fillStyle = `${t.accentGlow}${t.neon.midAlpha})`;
   ctx.fillText(text, x, y);
-  // Pass 3: bright core
+  // Pass 4: tight bright glow
+  ctx.shadowColor = `${t.accentGlow}0.9)`;
+  ctx.shadowBlur = t.neon.coreBlur * 2;
+  ctx.fillStyle = `${t.accentGlow}0.85)`;
+  ctx.fillText(text, x, y);
+  // Pass 5: crisp core
   ctx.shadowColor = `${t.accentGlow}0.8)`;
   ctx.shadowBlur = t.neon.coreBlur;
   ctx.fillStyle = t.neon.coreColor;
   ctx.fillText(text, x, y);
   ctx.shadowColor = 'transparent';
+}
+
+/** Subtle noise texture overlay for depth */
+function drawNoiseTexture(ctx: CanvasRenderingContext2D, opacity: number) {
+  const imageData = ctx.getImageData(0, 0, S, S);
+  const data = imageData.data;
+  const strength = opacity * 12;
+  for (let i = 0; i < data.length; i += 4) {
+    const noise = (Math.random() - 0.5) * strength;
+    data[i] += noise;
+    data[i + 1] += noise;
+    data[i + 2] += noise;
+  }
+  ctx.putImageData(imageData, 0, 0);
+}
+
+/** Vignette effect — darkens edges for premium feel */
+function drawVignette(ctx: CanvasRenderingContext2D, strength: number) {
+  const grad = ctx.createRadialGradient(S / 2, S / 2, S * 0.3, S / 2, S / 2, S * 0.75);
+  grad.addColorStop(0, 'rgba(0,0,0,0)');
+  grad.addColorStop(1, `rgba(0,0,0,${strength})`);
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, S, S);
 }
 
 function goldRule(ctx: CanvasRenderingContext2D, y: number, t: CarouselTemplate) {
@@ -203,6 +236,10 @@ export async function generateCoverSlide(
   if (t.decorations.showNotes) drawNotes(ctx, t.decorations.noteSize);
   if (t.decorations.showSparkles) drawSparkles(ctx, [[160, 160], [920, 900]], t.decorations.sparkleSize);
 
+  // Premium finishing: vignette + subtle noise
+  drawVignette(ctx, 0.25);
+  drawNoiseTexture(ctx, 0.15);
+
   return new Promise(resolve => canvas.toBlob(b => resolve(b!), 'image/png'));
 }
 
@@ -238,14 +275,23 @@ function drawGrid(
     ctx.translate(cx, cy); ctx.rotate(rot); ctx.translate(-cx, -cy);
 
     if (t.grid.cellShadow) {
-      ctx.shadowColor = 'rgba(0,0,0,0.4)'; ctx.shadowBlur = 12;
-      ctx.shadowOffsetX = 2; ctx.shadowOffsetY = 2;
+      // Multi-layer shadow for depth
+      ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 16;
+      ctx.shadowOffsetX = 3; ctx.shadowOffsetY = 4;
       ctx.fillStyle = t.background;
       ctx.fillRect(pos.x - 2, pos.y - 2, cell + 4, cell + 4);
       ctx.shadowColor = 'transparent';
     }
 
+    // Draw album art
     ctx.drawImage(img, pos.x, pos.y, cell, cell);
+
+    // Subtle inner highlight on top edge for glass effect
+    const hlGrad = ctx.createLinearGradient(pos.x, pos.y, pos.x, pos.y + cell * 0.3);
+    hlGrad.addColorStop(0, 'rgba(255,255,255,0.06)');
+    hlGrad.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = hlGrad;
+    ctx.fillRect(pos.x, pos.y, cell, cell * 0.3);
 
     if (t.grid.cellBorder) {
       ctx.strokeStyle = t.grid.cellBorderColor;
@@ -303,6 +349,10 @@ export async function generateGridSlide(
 
   if (t.decorations.showSparkles) drawSparkles(ctx, [[28, 28], [1052, 28], [28, 1052], [1052, 1052]], t.decorations.sparkleSize);
   if (t.decorations.showNotes) drawNotes(ctx, t.decorations.noteSize);
+
+  // Premium finishing
+  drawVignette(ctx, 0.2);
+  drawNoiseTexture(ctx, 0.12);
 
   return new Promise(resolve => canvas.toBlob(b => resolve(b!), 'image/png'));
 }
