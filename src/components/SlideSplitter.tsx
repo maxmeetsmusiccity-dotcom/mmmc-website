@@ -186,6 +186,11 @@ export default function SlideSplitter({ tracks, defaultTracksPerSlide, onSplitCh
           const isDivider = dividers.includes(i + 1);
           const slideNum = groups.findIndex(g => g.tracks.some(t => t.track_id === track.track_id)) + 1;
           const isDragOver = dragOverIdx === i;
+          // Is this the last track in its slide group?
+          const nextSlideNum = i < orderedTracks.length - 1
+            ? groups.findIndex(g => g.tracks.some(t => t.track_id === orderedTracks[i + 1].track_id)) + 1
+            : -1;
+          const isLastInGroup = nextSlideNum !== slideNum;
 
           return (
             <div key={track.track_id || i}>
@@ -205,7 +210,6 @@ export default function SlideSplitter({ tracks, defaultTracksPerSlide, onSplitCh
                   transition: 'background 0.1s',
                 }}
               >
-                {/* Drag handle */}
                 <span style={{ color: 'var(--midnight-border)', fontSize: '0.7rem', cursor: 'grab', userSelect: 'none' }}>
                   &#x2630;
                 </span>
@@ -223,92 +227,63 @@ export default function SlideSplitter({ tracks, defaultTracksPerSlide, onSplitCh
                 </span>
               </div>
 
-              {/* Divider zone */}
-              {i < orderedTracks.length - 1 && (
-                <div
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 4,
-                    margin: isDivider ? '2px 0' : '0',
-                  }}
-                >
-                  <div
-                    onClick={() => isDivider ? removeDivider(i + 1) : addDivider(i + 1)}
-                    onDragOver={(e) => { e.preventDefault(); setDragOverIdx(i + 0.5); }}
-                    onDrop={() => handleDrop(i + 1)}
+              {/* Shuffle button after last track in each group */}
+              {isLastInGroup && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', padding: '4px 8px' }}>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); shuffleSlide(slideNum - 1); }}
+                    title={`Randomize track order in Slide ${slideNum}`}
                     style={{
-                      flex: 1,
-                      height: isDivider ? 24 : 8,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      cursor: 'pointer', marginLeft: 28,
-                      borderTop: isDivider ? '2px solid var(--gold)' : '1px dashed transparent',
-                      transition: 'all 0.15s',
+                      fontSize: '0.7rem', color: 'var(--gold)', cursor: 'pointer',
+                      padding: '2px 8px', borderRadius: 4,
+                      background: 'rgba(212,168,67,0.1)',
+                      border: '1px solid rgba(212,168,67,0.2)',
+                      whiteSpace: 'nowrap',
                     }}
-                    title={isDivider ? 'Click to remove slide break' : 'Click to add slide break here'}
                   >
-                    {isDivider && (
-                      <span style={{
-                        fontSize: '0.65rem', color: 'var(--gold)', fontWeight: 600,
-                        background: 'var(--midnight)', padding: '0 6px',
-                      }}>
-                        Slide {slideNum} /{groups[slideNum - 1]?.tracks.length || 0}
-                      </span>
-                    )}
-                  </div>
-                  {isDivider && (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); shuffleSlide(slideNum - 1); }}
-                      title={`Shuffle Slide ${slideNum}`}
-                      style={{
-                        fontSize: '0.7rem', color: 'var(--gold)', cursor: 'pointer',
-                        padding: '2px 6px', borderRadius: 4,
-                        background: 'rgba(212,168,67,0.1)',
-                        border: '1px solid rgba(212,168,67,0.2)',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      Shuffle &#x21C4;
-                    </button>
-                  )}
+                    Shuffle Slide {slideNum}
+                  </button>
                 </div>
+              )}
+
+              {/* Divider zone — slide break labels */}
+              {i < orderedTracks.length - 1 && isDivider && (
+                <div
+                  onClick={() => removeDivider(i + 1)}
+                  onDragOver={(e) => { e.preventDefault(); setDragOverIdx(i + 0.5); }}
+                  onDrop={() => handleDrop(i + 1)}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    margin: '2px 0', marginLeft: 28, height: 24, cursor: 'pointer',
+                    borderTop: '2px solid var(--gold)',
+                    transition: 'all 0.15s',
+                  }}
+                  title="Click to remove slide break"
+                >
+                  <span style={{
+                    fontSize: '0.65rem', color: 'var(--gold)', fontWeight: 600,
+                    background: 'var(--midnight)', padding: '0 6px',
+                  }}>
+                    Slide {slideNum} of {groups.length} ({groups[slideNum - 1]?.tracks.length || 0} tracks)
+                  </span>
+                </div>
+              )}
+              {i < orderedTracks.length - 1 && !isDivider && (
+                <div
+                  onClick={() => addDivider(i + 1)}
+                  onDragOver={(e) => { e.preventDefault(); setDragOverIdx(i + 0.5); }}
+                  onDrop={() => handleDrop(i + 1)}
+                  style={{
+                    height: 8, marginLeft: 28, cursor: 'pointer',
+                    borderTop: '1px dashed transparent',
+                    transition: 'all 0.15s',
+                  }}
+                  title="Click to add slide break here"
+                />
               )}
             </div>
           );
         })}
-        {/* Shuffle button for the last slide */}
-        {groups.length > 0 && (
-          <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '4px 0' }}>
-            <button
-              onClick={() => shuffleSlide(groups.length - 1)}
-              title={`Shuffle Slide ${groups.length}`}
-              style={{
-                fontSize: '0.7rem', color: 'var(--gold)', cursor: 'pointer',
-                padding: '2px 6px', borderRadius: 4,
-                background: 'rgba(212,168,67,0.1)',
-                border: '1px solid rgba(212,168,67,0.2)',
-              }}
-            >
-              Shuffle Slide {groups.length} &#x21C4;
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Group summary */}
-      <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-        {groups.map((group, i) => (
-          <button
-            key={i}
-            onClick={() => shuffleSlide(i)}
-            className="badge"
-            style={{
-              background: 'rgba(212,168,67,0.12)', color: 'var(--gold)',
-              fontSize: '0.75rem', cursor: 'pointer', border: 'none',
-            }}
-            title={`Shuffle tracks in Slide ${i + 1}`}
-          >
-            Slide {i + 1}: {group.tracks.length} track{group.tracks.length !== 1 ? 's' : ''} &#x21C4;
-          </button>
-        ))}
       </div>
     </div>
   );

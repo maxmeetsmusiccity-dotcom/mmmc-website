@@ -391,48 +391,57 @@ export async function generateTitleSlide(
     ctx.strokeRect(inset, inset, W - tt.frameWidth, H - tt.frameWidth);
   }
 
-  // Helper: text with glow
-  const glowText = (text: string, x: number, y: number, font: string, color: string) => {
-    ctx.font = font;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
+  // Helper: text with glow — uses neonText compositing for templates with glow,
+  // plain text for templates without (e.g. Editorial, Studio Clean)
+  const ttAsCarousel: CarouselTemplate = {
+    id: tt.id, name: tt.name, description: tt.description,
+    background: tt.background, textPrimary: tt.textPrimary,
+    textSecondary: tt.textSecondary, accent: tt.accent,
+    accentGlow: `rgba(${tt.accent === '#FFFFFF' ? '255,255,255' : '128,128,128'}, `,
+    scriptFont: tt.headlineFont, bodyFont: tt.subtitleFont,
+    neon: {
+      outerGlow: tt.glow.color, outerBlur: tt.glow.blur, outerAlpha: 0.3,
+      midGlow: tt.glow.color, midBlur: Math.round(tt.glow.blur * 0.5), midAlpha: 0.6,
+      coreColor: tt.textPrimary, coreBlur: Math.round(tt.glow.blur * 0.15),
+    },
+    grid: { gap: 0, rotations: [], cellShadow: false, cellBorder: false, cellBorderColor: '' },
+    cover: { vinylOverlay: false, vinylOpacity: 0, grooveCount: 0, frameBorder: 0, frameColor: '', frameShadowBlur: 0, showChevrons: false, showArtistName: false, showTrackName: false, subtitleText: '' },
+    decorations: { showNotes: false, showSparkles: false, noteSize: 0, sparkleSize: 0 },
+  };
+  const glowText = (text: string, x: number, y: number, font: string, _color: string) => {
     if (tt.glow.passes > 0 && tt.glow.blur > 0) {
-      for (let p = tt.glow.passes; p > 0; p--) {
-        const scale = p / tt.glow.passes;
-        ctx.shadowColor = tt.glow.color;
-        ctx.shadowBlur = tt.glow.blur * scale;
-        ctx.fillStyle = tt.glow.color;
-        ctx.fillText(text, x, y);
-      }
+      neonText(ctx, text, x, y, font, ttAsCarousel);
+    } else {
+      ctx.font = font;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.fillStyle = _color;
+      ctx.fillText(text, x, y);
     }
-    ctx.shadowColor = 'transparent';
-    ctx.fillStyle = color;
-    ctx.fillText(text, x, y);
   };
 
-  // Headline
-  const rawHeadline = 'New Music Friday';
-  const headline = tt.headlineCase === 'uppercase' ? rawHeadline.toUpperCase() : rawHeadline;
-  glowText(
-    headline,
-    W / 2,
-    Math.round(H * tt.headlineY),
-    `${tt.headlineWeight} ${Math.round(W * tt.headlineSize)}px ${tt.headlineFont}`,
-    tt.textPrimary,
-  );
+  // Headline + divider — skipped for vinyl_classic (it renders its own header)
+  if (!tt.vinylRecord) {
+    const rawHeadline = 'New Music Friday';
+    const headline = tt.headlineCase === 'uppercase' ? rawHeadline.toUpperCase() : rawHeadline;
+    glowText(
+      headline,
+      W / 2,
+      Math.round(H * tt.headlineY),
+      `${tt.headlineWeight} ${Math.round(W * tt.headlineSize)}px ${tt.headlineFont}`,
+      tt.textPrimary,
+    );
 
-  // Divider between headline and subtitle
-  if (tt.showDivider) {
-    ctx.strokeStyle = tt.dividerColor;
-    ctx.lineWidth = 1;
-    const divY = Math.round(H * (tt.subtitleY - 0.01));
-    ctx.beginPath();
-    ctx.moveTo(W * 0.18, divY);
-    ctx.lineTo(W * 0.82, divY);
-    ctx.stroke();
+    if (tt.showDivider) {
+      ctx.strokeStyle = tt.dividerColor;
+      ctx.lineWidth = 1;
+      const divY = Math.round(H * (tt.subtitleY - 0.01));
+      ctx.beginPath();
+      ctx.moveTo(W * 0.18, divY);
+      ctx.lineTo(W * 0.82, divY);
+      ctx.stroke();
+    }
   }
-
-  // Subtitle (removed — was "curated by @maxmeetsmusiccity")
 
   // Vinyl Classic rendering — faithful port of the original generateCoverSlide()
   // Uses the mmmc_classic CarouselTemplate for neon style, vinyl overlay, etc.
@@ -470,9 +479,9 @@ export async function generateTitleSlide(
       // Artist name below image — neon glow
       const textY = imgY + imgSize + border + 20;
       neonText(ctx, coverFeature.track.artist_names, W / 2, textY, `700 38px ${t.scriptFont}`, t);
-      // Song name — italic, in quotes
+      // Song name — italic script, in quotes
       ctx.fillStyle = t.textSecondary;
-      ctx.font = `italic 500 26px ${t.bodyFont}`;
+      ctx.font = `italic 500 26px ${t.scriptFont}`;
       ctx.textAlign = 'center'; ctx.textBaseline = 'top';
       ctx.fillText(`\u201C${coverFeature.track.track_name}\u201D`, W / 2, textY + 50);
     }
