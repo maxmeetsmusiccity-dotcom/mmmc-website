@@ -7,6 +7,7 @@ import { getPlatform, PLATFORMS } from '../lib/platforms';
 import { generatePlatformImage, PLATFORM_LIST, type PlatformId } from '../lib/cross-platform';
 import TemplateSelector from './TemplateSelector';
 import TitleTemplatePicker from './TitleTemplatePicker';
+import GridLayoutSelector from './GridLayoutSelector';
 import SlideSplitter, { type SlideGroup } from './SlideSplitter';
 import ResizablePanel from './ResizablePanel';
 import type { SelectionSlot } from '../lib/selection';
@@ -99,13 +100,17 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
     }
   }, [user?.email]);
 
-  // Compute grid layout ID from tracks per slide
-  const gridLayoutId = useMemo(() => {
+  // Grid layout: auto-computed but user-overridable
+  const autoLayoutId = useMemo(() => {
     const opts = getGridsForCount(tracksPerSlide);
-    // Prefer logo variants (3x3+logo for 8), then exact fit
     const best = opts.logo[0] || opts.exact.find(g => g.columns > 1 && g.rows > 1) || opts.exact[0];
     return best?.id || '';
   }, [tracksPerSlide]);
+  const [gridLayoutId, setGridLayoutId] = useState(autoLayoutId);
+  const hasUserChangedLayout = useRef(false);
+  useEffect(() => {
+    if (!hasUserChangedLayout.current) setGridLayoutId(autoLayoutId);
+  }, [autoLayoutId]);
 
   // Total slides
   const slideCount = Math.ceil(selectedTracks.length / tracksPerSlide);
@@ -302,6 +307,13 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
               )}
             </p>
           </div>
+
+          {/* Grid Layout Picker */}
+          <GridLayoutSelector
+            trackCount={tracksPerSlide}
+            selected={gridLayoutId}
+            onSelect={(id) => { hasUserChangedLayout.current = true; setGridLayoutId(id); setAllPreviews([]); }}
+          />
 
           {/* Platform / Aspect Ratio */}
           <div style={{ marginBottom: 20 }}>

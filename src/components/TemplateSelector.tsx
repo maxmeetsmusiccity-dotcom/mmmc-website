@@ -3,6 +3,7 @@ import { type CarouselTemplate, getVisibleTemplates } from '../lib/carousel-temp
 import { generateTemplatePreview } from '../lib/canvas-grid';
 import { saveCustomTemplate, getCustomTemplates } from '../lib/supabase';
 import TemplateBuilder from './TemplateBuilder';
+import TemplateImporter from './TemplateImporter';
 import { useAuth } from '../lib/auth-context';
 
 interface Props {
@@ -25,6 +26,7 @@ function saveLocalTemplates(templates: CarouselTemplate[]) {
 
 export default function TemplateSelector({ selected, onSelect }: Props) {
   const { user } = useAuth();
+  const [showImporter, setShowImporter] = useState(false);
   const [previews, setPreviews] = useState<Map<string, string>>(new Map());
   const [customTemplates, setCustomTemplates] = useState<CarouselTemplate[]>(loadLocalTemplates);
   const [showBuilder, setShowBuilder] = useState(false);
@@ -153,10 +155,28 @@ export default function TemplateSelector({ selected, onSelect }: Props) {
         </button>
       </div>
 
+      {/* Import from image link */}
+      <button
+        onClick={() => setShowImporter(true)}
+        style={{
+          marginTop: 6, fontSize: 'var(--fs-xs)', color: 'var(--gold)',
+          cursor: 'pointer', textDecoration: 'underline',
+        }}
+        title="Upload an existing carousel image and extract a reusable template"
+      >
+        Import template from image
+      </button>
+
       {showBuilder && (
         <TemplateBuilder
           onSave={handleSaveCustom}
           onCancel={() => setShowBuilder(false)}
+        />
+      )}
+      {showImporter && (
+        <TemplateImporter
+          onImport={(t) => { handleSaveCustom(t); setShowImporter(false); }}
+          onCancel={() => setShowImporter(false)}
         />
       )}
     </div>
