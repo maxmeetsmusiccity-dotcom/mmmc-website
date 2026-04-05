@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import type { TrackItem } from '../lib/spotify';
 import { autoSplit, getGridsForCount } from '../lib/grid-layouts';
 
@@ -13,13 +13,28 @@ interface Props {
   onSplitChange: (groups: SlideGroup[]) => void;
 }
 
+function computeAutoDividers(trackCount: number, tracksPerSlide: number): number[] {
+  const splits = autoSplit(trackCount, tracksPerSlide);
+  return splits.slice(0, -1).map(s => s.end);
+}
+
 export default function SlideSplitter({ tracks, defaultTracksPerSlide, onSplitChange }: Props) {
+  const isManual = useRef(false);
+
   // Divider positions (indices where a slide break occurs)
-  const [dividers, setDividers] = useState<number[]>(() => {
-    const splits = autoSplit(tracks.length, defaultTracksPerSlide);
-    // Dividers are at the end of each group except the last
-    return splits.slice(0, -1).map(s => s.end);
-  });
+  const [dividers, setDividers] = useState<number[]>(() =>
+    computeAutoDividers(tracks.length, defaultTracksPerSlide),
+  );
+
+  // Reset dividers when tracksPerSlide or track count changes (unless manual)
+  useEffect(() => {
+    if (isManual.current) {
+      // If track count changed, clamp dividers to new range
+      setDividers(prev => prev.filter(d => d > 0 && d < tracks.length));
+    } else {
+      setDividers(computeAutoDividers(tracks.length, defaultTracksPerSlide));
+    }
+  }, [tracks.length, defaultTracksPerSlide]);
 
   // Compute groups from dividers
   const groups = useMemo(() => {
@@ -61,17 +76,18 @@ export default function SlideSplitter({ tracks, defaultTracksPerSlide, onSplitCh
 
   const addDivider = (afterIndex: number) => {
     if (dividers.includes(afterIndex)) return;
+    isManual.current = true;
     updateDividers([...dividers, afterIndex]);
   };
 
   const removeDivider = (atIndex: number) => {
+    isManual.current = true;
     updateDividers(dividers.filter(d => d !== atIndex));
   };
 
   const resetToAuto = () => {
-    const splits = autoSplit(tracks.length, defaultTracksPerSlide);
-    const newDividers = splits.slice(0, -1).map(s => s.end);
-    updateDividers(newDividers);
+    isManual.current = false;
+    updateDividers(computeAutoDividers(tracks.length, defaultTracksPerSlide));
   };
 
   return (

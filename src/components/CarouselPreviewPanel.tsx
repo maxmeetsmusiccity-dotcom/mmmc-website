@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import type { TrackItem } from '../lib/spotify';
 import { getLastFriday } from '../lib/spotify';
 import { generateGridSlide, generateTitleSlide, downloadBlob } from '../lib/canvas-grid';
@@ -72,6 +72,7 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
   const [gridTemplateId, setGridTemplateId] = useState(localStorage.getItem('nmf_template') || 'mmmc_classic');
   const [titleTemplateId, setTitleTemplateId] = useState('nashville_neon');
   const [slideGroups, setSlideGroups] = useState<SlideGroup[]>([]);
+  const manualSplit = useRef(false);
   const [gridPreview, setGridPreview] = useState<string>('');
   const [titlePreview, setTitlePreview] = useState<string>('');
   const [allPreviews, setAllPreviews] = useState<string[]>([]);
@@ -94,8 +95,9 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
   const slideCount = Math.ceil(selectedTracks.length / tracksPerSlide);
   const totalSlides = (titleTemplateId !== 'none' ? 1 : 0) + slideCount;
 
-  // Auto-update slide groups when tracks or tracksPerSlide change
+  // Auto-update slide groups when tracks or tracksPerSlide change (skip if user made manual splits)
   useEffect(() => {
+    if (manualSplit.current) return;
     const groups: SlideGroup[] = [];
     for (let i = 0; i < selectedTracks.length; i += tracksPerSlide) {
       groups.push({
@@ -147,6 +149,7 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
   };
 
   const handleSplitChange = useCallback((groups: SlideGroup[]) => {
+    manualSplit.current = true;
     setSlideGroups(groups);
     setAllPreviews([]);
   }, []);
@@ -221,7 +224,7 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
               {getTracksPerSlideOptions(selectedTracks.length).map(opt => (
                 <button
                   key={opt.value}
-                  onClick={() => { setTracksPerSlide(opt.value); onTracksPerSlideChange?.(opt.value); }}
+                  onClick={() => { manualSplit.current = false; setTracksPerSlide(opt.value); onTracksPerSlideChange?.(opt.value); }}
                   className={`filter-pill ${tracksPerSlide === opt.value ? 'active' : ''}`}
                   style={{ fontSize: '0.75rem' }}
                 >
