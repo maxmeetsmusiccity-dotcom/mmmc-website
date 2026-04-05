@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import type { TrackItem } from '../lib/spotify';
 import { autoSplit, getGridsForCount } from '../lib/grid-layouts';
 
@@ -18,60 +18,63 @@ function computeAutoDividers(trackCount: number, tracksPerSlide: number): number
   return splits.slice(0, -1).map(s => s.end);
 }
 
+function buildGroups(orderedTracks: TrackItem[], dividers: number[]): SlideGroup[] {
+  const sorted = [0, ...dividers.sort((a, b) => a - b), orderedTracks.length];
+  const result: SlideGroup[] = [];
+  for (let i = 0; i < sorted.length - 1; i++) {
+    const start = sorted[i];
+    const end = sorted[i + 1];
+    const groupTracks = orderedTracks.slice(start, end);
+    if (groupTracks.length === 0) continue;
+    const opts = getGridsForCount(groupTracks.length);
+    const bestGrid = opts.exact[0] || opts.logo[0] || opts.close[0] || opts.mosaic[0];
+    result.push({ tracks: groupTracks, gridId: bestGrid?.id || '1x1' });
+  }
+  return result;
+}
+
 export default function SlideSplitter({ tracks, defaultTracksPerSlide, onSplitChange }: Props) {
   const isManual = useRef(false);
+  const [orderedTracks, setOrderedTracks] = useState<TrackItem[]>(tracks);
+  const dragIdx = useRef<number>(-1);
+  const [dragOverIdx, setDragOverIdx] = useState<number>(-1);
 
-  // Divider positions (indices where a slide break occurs)
   const [dividers, setDividers] = useState<number[]>(() =>
     computeAutoDividers(tracks.length, defaultTracksPerSlide),
   );
 
-  // Reset dividers when tracksPerSlide or track count changes (unless manual)
+  // Sync ordered tracks when parent tracks change (new selections)
+  useEffect(() => {
+    setOrderedTracks(prev => {
+      // Keep existing order for tracks that still exist, append new ones
+      const existingIds = new Set(prev.map(t => t.track_id));
+      const newIds = new Set(tracks.map(t => t.track_id));
+      const kept = prev.filter(t => newIds.has(t.track_id));
+      const added = tracks.filter(t => !existingIds.has(t.track_id));
+      return [...kept, ...added];
+    });
+  }, [tracks]);
+
   useEffect(() => {
     if (isManual.current) {
-      // If track count changed, clamp dividers to new range
-      setDividers(prev => prev.filter(d => d > 0 && d < tracks.length));
+      setDividers(prev => prev.filter(d => d > 0 && d < orderedTracks.length));
     } else {
-      setDividers(computeAutoDividers(tracks.length, defaultTracksPerSlide));
+      setDividers(computeAutoDividers(orderedTracks.length, defaultTracksPerSlide));
     }
-  }, [tracks.length, defaultTracksPerSlide]);
+  }, [orderedTracks.length, defaultTracksPerSlide]);
 
-  // Compute groups from dividers
-  const groups = useMemo(() => {
-    const sortedDividers = [0, ...dividers.sort((a, b) => a - b), tracks.length];
-    const result: SlideGroup[] = [];
-    for (let i = 0; i < sortedDividers.length - 1; i++) {
-      const start = sortedDividers[i];
-      const end = sortedDividers[i + 1];
-      const groupTracks = tracks.slice(start, end);
-      if (groupTracks.length === 0) continue;
-      // Pick best grid for this group's track count
-      const opts = getGridsForCount(groupTracks.length);
-      const bestGrid = opts.exact[0] || opts.logo[0] || opts.close[0] || opts.mosaic[0];
-      result.push({
-        tracks: groupTracks,
-        gridId: bestGrid?.id || '1x1',
-      });
-    }
-    return result;
-  }, [tracks, dividers]);
+  const groups = useMemo(
+    () => buildGroups(orderedTracks, dividers),
+    [orderedTracks, dividers],
+  );
 
-  // Notify parent of changes
+  const notifyParent = useCallback((newTracks: TrackItem[], newDividers: number[]) => {
+    onSplitChange(buildGroups(newTracks, newDividers));
+  }, [onSplitChange]);
+
   const updateDividers = (newDividers: number[]) => {
     setDividers(newDividers);
-    // Recompute and notify (will happen via effect below)
-    const sortedDividers = [0, ...newDividers.sort((a, b) => a - b), tracks.length];
-    const result: SlideGroup[] = [];
-    for (let i = 0; i < sortedDividers.length - 1; i++) {
-      const start = sortedDividers[i];
-      const end = sortedDividers[i + 1];
-      const groupTracks = tracks.slice(start, end);
-      if (groupTracks.length === 0) continue;
-      const opts = getGridsForCount(groupTracks.length);
-      const bestGrid = opts.exact[0] || opts.logo[0] || opts.close[0] || opts.mosaic[0];
-      result.push({ tracks: groupTracks, gridId: bestGrid?.id || '1x1' });
-    }
-    onSplitChange(result);
+    notifyParent(orderedTracks, newDividers);
   };
 
   const addDivider = (afterIndex: number) => {
@@ -87,7 +90,47 @@ export default function SlideSplitter({ tracks, defaultTracksPerSlide, onSplitCh
 
   const resetToAuto = () => {
     isManual.current = false;
-    updateDividers(computeAutoDividers(tracks.length, defaultTracksPerSlide));
+    setOrderedTracks(tracks);
+    const newDividers = computeAutoDividers(tracks.length, defaultTracksPerSlide);
+    setDividers(newDividers);
+    onSplitChange(buildGroups(tracks, newDividers));
+  };
+
+  // Drag and drop handlers
+  const handleDragStart = (idx: number) => {
+    dragIdx.current = idx;
+  };
+
+  const handleDragOver = (e: React.DragEvent, idx: number) => {
+    e.preventDefault();
+    setDragOverIdx(idx);
+  };
+
+  const handleDrop = (targetIdx: number) => {
+    const fromIdx = dragIdx.current;
+    if (fromIdx < 0 || fromIdx === targetIdx) {
+      dragIdx.current = -1;
+      setDragOverIdx(-1);
+      return;
+    }
+
+    isManual.current = true;
+    const newTracks = [...orderedTracks];
+    const [moved] = newTracks.splice(fromIdx, 1);
+    newTracks.splice(targetIdx, 0, moved);
+    setOrderedTracks(newTracks);
+
+    // Adjust dividers: keep them at the same positions relative to the new order
+    // (dividers mark positions between tracks, the tracks moved but dividers stay)
+    notifyParent(newTracks, dividers);
+
+    dragIdx.current = -1;
+    setDragOverIdx(-1);
+  };
+
+  const handleDragEnd = () => {
+    dragIdx.current = -1;
+    setDragOverIdx(-1);
   };
 
   return (
@@ -95,6 +138,7 @@ export default function SlideSplitter({ tracks, defaultTracksPerSlide, onSplitCh
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
         <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
           Slide Split <span className="mono" style={{ color: 'var(--gold)' }}>({groups.length} slide{groups.length !== 1 ? 's' : ''})</span>
+          <span style={{ fontSize: '0.55rem', color: 'var(--text-muted)', marginLeft: 8 }}>Drag to reorder</span>
         </p>
         <button
           onClick={resetToAuto}
@@ -109,23 +153,38 @@ export default function SlideSplitter({ tracks, defaultTracksPerSlide, onSplitCh
         background: 'var(--midnight)', borderRadius: 8, padding: 8,
         border: '1px solid var(--midnight-border)',
       }}>
-        {tracks.map((track, i) => {
+        {orderedTracks.map((track, i) => {
           const isDivider = dividers.includes(i + 1);
-          const slideNum = groups.findIndex(g => g.tracks.includes(track)) + 1;
+          const slideNum = groups.findIndex(g => g.tracks.some(t => t.track_id === track.track_id)) + 1;
+          const isDragOver = dragOverIdx === i;
 
           return (
             <div key={track.track_id || i}>
-              {/* Track row */}
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: 8,
-                padding: '4px 8px', borderRadius: 4,
-                fontSize: '0.7rem',
-              }}>
+              {/* Track row — draggable */}
+              <div
+                draggable
+                onDragStart={() => handleDragStart(i)}
+                onDragOver={(e) => handleDragOver(e, i)}
+                onDrop={() => handleDrop(i)}
+                onDragEnd={handleDragEnd}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  padding: '4px 8px', borderRadius: 4,
+                  fontSize: '0.7rem', cursor: 'grab',
+                  background: isDragOver ? 'rgba(212,168,67,0.1)' : 'transparent',
+                  borderTop: isDragOver ? '2px solid var(--gold)' : '2px solid transparent',
+                  transition: 'background 0.1s',
+                }}
+              >
+                {/* Drag handle */}
+                <span style={{ color: 'var(--midnight-border)', fontSize: '0.7rem', cursor: 'grab', userSelect: 'none' }}>
+                  &#x2630;
+                </span>
                 <span className="mono" style={{ color: 'var(--gold)', width: 20, textAlign: 'right', fontSize: '0.6rem' }}>
                   {i + 1}
                 </span>
                 {track.cover_art_64 && (
-                  <img src={track.cover_art_64} alt="" style={{ width: 20, height: 20, borderRadius: 2 }} />
+                  <img src={track.cover_art_64} alt="" style={{ width: 20, height: 20, borderRadius: 2 }} draggable={false} />
                 )}
                 <span style={{ flex: 1, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {track.artist_names} — {track.track_name}
@@ -135,10 +194,12 @@ export default function SlideSplitter({ tracks, defaultTracksPerSlide, onSplitCh
                 </span>
               </div>
 
-              {/* Divider zone (clickable area between tracks) */}
-              {i < tracks.length - 1 && (
+              {/* Divider zone */}
+              {i < orderedTracks.length - 1 && (
                 <div
                   onClick={() => isDivider ? removeDivider(i + 1) : addDivider(i + 1)}
+                  onDragOver={(e) => { e.preventDefault(); setDragOverIdx(i + 0.5); }}
+                  onDrop={() => handleDrop(i + 1)}
                   style={{
                     height: isDivider ? 24 : 8,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -153,7 +214,7 @@ export default function SlideSplitter({ tracks, defaultTracksPerSlide, onSplitCh
                       fontSize: '0.5rem', color: 'var(--gold)', fontWeight: 600,
                       background: 'var(--midnight)', padding: '0 6px',
                     }}>
-                      ── Slide Break ──
+                      -- Slide Break --
                     </span>
                   )}
                 </div>
