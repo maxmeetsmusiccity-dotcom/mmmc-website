@@ -15,17 +15,22 @@ export default function TagBlocks({ slideGroups }: Props) {
   const [copiedSlide, setCopiedSlide] = useState<number | null>(null);
 
   // Get unique artist names + IDs across all slides
+  // IMPORTANT: artist_id on a track is only the PRIMARY artist's ID.
+  // For collabs like "Brandon Lake, Lainey Wilson", only map the ID to
+  // the first name — otherwise the second artist gets the wrong handle.
   const allArtists = new Set<string>();
   const artistIdMap = new Map<string, string>(); // name → spotify artist_id
   for (const group of slideGroups) {
     for (const slot of group) {
-      for (const name of slot.track.artist_names.split(', ')) {
-        const trimmed = name.trim();
+      const names = slot.track.artist_names.split(', ');
+      names.forEach((raw, i) => {
+        const trimmed = raw.trim();
         allArtists.add(trimmed);
-        if (slot.track.artist_id && !artistIdMap.has(trimmed)) {
+        // Only assign the track's artist_id to the FIRST (primary) artist
+        if (i === 0 && slot.track.artist_id && !artistIdMap.has(trimmed)) {
           artistIdMap.set(trimmed, slot.track.artist_id);
         }
-      }
+      });
     }
   }
 
