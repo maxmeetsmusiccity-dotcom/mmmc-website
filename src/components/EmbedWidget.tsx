@@ -44,17 +44,34 @@ export default function EmbedWidget() {
       }}>
         {embedCode}
       </div>
-      <button
-        className="btn btn-sm"
-        style={{ marginTop: 8 }}
-        onClick={async () => {
-          await navigator.clipboard.writeText(embedCode);
-          setCopied(true);
-          setTimeout(() => setCopied(false), 2000);
-        }}
-      >
-        {copied ? 'Copied!' : 'Copy Embed Code'}
-      </button>
+      <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+        <button
+          className="btn btn-sm"
+          onClick={async () => {
+            await navigator.clipboard.writeText(embedCode);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+          }}
+        >
+          {copied ? 'Copied!' : 'Copy Embed Code'}
+        </button>
+      </div>
+
+      {/* Live preview */}
+      <div style={{ marginTop: 16 }}>
+        <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)', marginBottom: 6 }}>Preview</p>
+        <iframe
+          src={embedUrl}
+          style={{
+            width: '100%', height: 360, border: '1px solid var(--midnight-border)',
+            borderRadius: 8, background: 'var(--midnight)',
+          }}
+          title="Embed preview"
+        />
+        <p style={{ fontSize: 'var(--fs-3xs)', color: 'var(--text-muted)', marginTop: 4, textAlign: 'center' }}>
+          Powered by NMF Curator Studio
+        </p>
+      </div>
     </div>
   );
 }

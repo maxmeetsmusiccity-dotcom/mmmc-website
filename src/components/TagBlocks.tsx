@@ -18,18 +18,24 @@ export default function TagBlocks({ slideGroups }: Props) {
   // IMPORTANT: artist_id on a track is only the PRIMARY artist's ID.
   // For collabs like "Brandon Lake, Lainey Wilson", only map the ID to
   // the first name — otherwise the second artist gets the wrong handle.
+  // Parse ALL artist names from featured artist separators
   const allArtists = new Set<string>();
   const artistIdMap = new Map<string, string>(); // name → spotify artist_id
   for (const group of slideGroups) {
     for (const slot of group) {
-      const names = slot.track.artist_names.split(', ');
-      names.forEach((raw, i) => {
-        const trimmed = raw.trim();
-        allArtists.add(trimmed);
-        // Only assign the track's artist_id to the FIRST (primary) artist
-        if (i === 0 && slot.track.artist_id && !artistIdMap.has(trimmed)) {
-          artistIdMap.set(trimmed, slot.track.artist_id);
+      // Split on common featured artist separators: ", ", " feat. ", " ft. ", " x ", " & "
+      const raw = slot.track.artist_names;
+      const names = raw
+        .split(/,\s*|\s+feat\.?\s+|\s+ft\.?\s+|\s+x\s+|\s+&\s+/i)
+        .map(n => n.trim())
+        .filter(n => n.length > 0);
+      names.forEach((name, i) => {
+        allArtists.add(name);
+        // Primary artist gets the track's artist_id for direct ND lookup
+        if (i === 0 && slot.track.artist_id && !artistIdMap.has(name)) {
+          artistIdMap.set(name, slot.track.artist_id);
         }
+        // Featured artists get resolved by name only (no artist_id needed)
       });
     }
   }
