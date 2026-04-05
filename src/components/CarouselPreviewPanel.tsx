@@ -259,13 +259,14 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
             </p>
           </div>
 
-          {/* Platform export */}
+          {/* Platform / Aspect Ratio */}
           <div style={{ marginBottom: 20 }}>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8 }}>
-              Export for Platform <span style={{ fontSize: '0.6rem' }}>({platform.width}x{platform.height}, max {platform.maxSlides} slides)</span>
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 6 }}>
+              Size <span style={{ fontSize: '0.6rem', color: 'var(--gold)' }}>{platform.width}x{platform.height} ({platform.aspectLabel})</span>
             </p>
-            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-              {PLATFORMS.map(p => {
+            {/* Social presets */}
+            <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap', marginBottom: 4 }}>
+              {PLATFORMS.filter(p => p.category === 'social').map(p => {
                 const isActive = platformId === p.id;
                 const overLimit = totalSlides > p.maxSlides;
                 return (
@@ -274,12 +275,28 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
                     onClick={() => setPlatformId(p.id)}
                     className={`filter-pill ${isActive ? 'active' : ''}`}
                     style={{
-                      fontSize: '0.65rem', padding: '4px 8px',
+                      fontSize: '0.6rem', padding: '3px 7px',
                       borderColor: overLimit && isActive ? 'var(--mmmc-red)' : undefined,
                       color: overLimit && isActive ? 'var(--mmmc-red)' : undefined,
                     }}
                   >
-                    {p.icon} {p.name.replace('Instagram ', 'IG ')}
+                    {p.icon} {p.name}
+                  </button>
+                );
+              })}
+            </div>
+            {/* Aspect ratio presets */}
+            <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+              {PLATFORMS.filter(p => p.category === 'ratio').map(p => {
+                const isActive = platformId === p.id;
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => setPlatformId(p.id)}
+                    className={`filter-pill ${isActive ? 'active' : ''}`}
+                    style={{ fontSize: '0.55rem', padding: '2px 6px' }}
+                  >
+                    {p.aspectLabel}
                   </button>
                 );
               })}
