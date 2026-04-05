@@ -797,6 +797,34 @@ export default function NewMusicFriday() {
                     <option key={n} value={n}>{n} track{n !== 1 ? 's' : ''}</option>
                   ))}
                 </select>
+                {/* Select All / Clear */}
+                <button
+                  onClick={() => {
+                    haptic();
+                    const newSelections: typeof selections = [];
+                    for (const cluster of filteredReleases) {
+                      const track = cluster.tracks.find(t => t.track_id === cluster.titleTrackId) || cluster.tracks[0];
+                      if (!selections.some(s => s.track.track_id === track.track_id)) {
+                        newSelections.push({
+                          track, albumId: cluster.album_spotify_id,
+                          selectionNumber: 0, slideGroup: 0, positionInSlide: 0, isCoverFeature: false,
+                        });
+                      }
+                    }
+                    setSelections(prev => buildSlots([...prev, ...newSelections]));
+                  }}
+                  style={{ fontSize: '0.6rem', color: 'var(--steel)', cursor: 'pointer', padding: '2px 6px' }}
+                >
+                  Select All
+                </button>
+                {selections.length > 0 && (
+                  <button
+                    onClick={() => { haptic(5); setSelections([]); }}
+                    style={{ fontSize: '0.6rem', color: 'var(--mmmc-red)', cursor: 'pointer', padding: '2px 6px' }}
+                  >
+                    Clear
+                  </button>
+                )}
                 <span style={{ color: 'var(--midnight-border)', margin: '0 2px' }}>|</span>
                 <FilterBar
                   filter={filter} sort={sort} search={search}
