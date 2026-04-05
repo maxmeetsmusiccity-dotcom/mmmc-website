@@ -32,6 +32,7 @@ import EmbedWidget from '../components/EmbedWidget';
 import ProductNav from '../components/ProductNav';
 import SourceSelector from '../components/SourceSelector';
 import ManualImport from '../components/ManualImport';
+import NashvilleReleases from '../components/NashvilleReleases';
 import CaptionGenerator from '../components/CaptionGenerator';
 import type { MusicSource } from '../lib/sources/types';
 import { checkScanHealth } from '../lib/spotify';
@@ -814,6 +815,19 @@ export default function NewMusicFriday() {
                 >
                   Coming Soon
                 </button>
+              </div>
+            )}
+
+            {/* Nashville releases source — zero-login experience */}
+            {activeSource === 'nashville' && (
+              <div style={{ marginTop: 16, textAlign: 'left' }}>
+                <NashvilleReleases onImport={(tracks) => {
+                  setAllTracks(tracks);
+                  setReleases(groupIntoReleases(tracks));
+                  setPhase('results');
+                  setLastScanned(new Date().toISOString());
+                  setIsDemoMode(false);
+                }} />
               </div>
             )}
 

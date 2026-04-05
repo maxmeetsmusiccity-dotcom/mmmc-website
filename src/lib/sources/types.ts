@@ -5,7 +5,7 @@
  */
 
 export interface MusicSource {
-  id: 'spotify' | 'apple-music' | 'manual';
+  id: 'spotify' | 'apple-music' | 'manual' | 'nashville';
   name: string;
   icon: string;
   description: string;
@@ -13,6 +13,13 @@ export interface MusicSource {
 }
 
 export const SOURCES: MusicSource[] = [
+  {
+    id: 'nashville',
+    name: 'Nashville',
+    icon: '🎸',
+    description: "This week's Nashville releases",
+    requiresAuth: false,
+  },
   {
     id: 'spotify',
     name: 'Spotify',
