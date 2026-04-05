@@ -210,10 +210,10 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
         ② Configure & Preview
       </h3>
 
-      {/* TWO-COLUMN LAYOUT: controls left, larger previews right */}
+      {/* TWO-COLUMN LAYOUT: controls left, capped previews right */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'minmax(280px, 2fr) minmax(350px, 3fr)',
+        gridTemplateColumns: '1fr minmax(280px, 420px)',
         gap: 24,
       }}>
         {/* LEFT COLUMN: Selectors */}
