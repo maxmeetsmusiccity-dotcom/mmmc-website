@@ -140,12 +140,11 @@ const CATEGORIES = [
 
 /** Fetch a batch of ND profiles by searching common names */
 async function fetchArtistBatch(query: string, limit = 50): Promise<NDProfile['profile'][]> {
-  const token = generateNDToken();
-  const url = `${ND_API}/api/search?q=${encodeURIComponent(query)}&limit=${limit}`;
+  const token = await generateNDToken();
+  const authParam = token ? `&token=${token}` : '';
+  const url = `${ND_API}/api/search?q=${encodeURIComponent(query)}&limit=${limit}${authParam}`;
   try {
-    const res = await fetch(url, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
+    const res = await fetch(url);
     if (!res.ok) return [];
     const data = await res.json();
     const results = data.results || [];
@@ -154,15 +153,13 @@ async function fetchArtistBatch(query: string, limit = 50): Promise<NDProfile['p
     const profiles: NDProfile['profile'][] = [];
     for (const r of results.slice(0, limit)) {
       try {
-        const profileRes = await fetch(`${ND_API}/api/profile/${r.pg_id}`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        });
+        const profileUrl = `${ND_API}/api/profile/${r.pg_id}${token ? `?token=${token}` : ''}`;
+        const profileRes = await fetch(profileUrl);
         if (profileRes.ok) {
           const profileData = await profileRes.json() as NDProfile;
           if (profileData.profile) profiles.push(profileData.profile);
         }
       } catch { /* skip */ }
-      // Small delay to be nice to the API
       await new Promise(r => setTimeout(r, 50));
     }
     return profiles;
@@ -171,15 +168,20 @@ async function fetchArtistBatch(query: string, limit = 50): Promise<NDProfile['p
   }
 }
 
-function generateNDToken(): string | null {
+async function generateNDToken(): Promise<string | null> {
   const secret = process.env.ND_AUTH_TOKEN_SECRET;
   const username = process.env.ND_AUTH_USERNAME;
   if (!secret || !username) return null;
 
-  const crypto = require('crypto');
   const today = new Date().toISOString().split('T')[0];
-  const raw = `${username}:${secret}:${today}`;
-  return crypto.createHash('sha256').update(raw).digest('hex');
+  const payload = `${today}:${username.toLowerCase()}`;
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    'raw', encoder.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'],
+  );
+  const sig = await crypto.subtle.sign('HMAC', key, encoder.encode(payload));
+  return [...new Uint8Array(sig)].map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 16);
 }
 
 function profileToBrowseArtist(p: NDProfile['profile']): BrowseArtist {
