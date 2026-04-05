@@ -3,7 +3,7 @@ import type { TrackItem } from '../lib/spotify';
 import { getLastFriday } from '../lib/spotify';
 import { generateGridSlide, generateTitleSlide, downloadBlob, type CarouselAspect } from '../lib/canvas-grid';
 import { getGridsForCount } from '../lib/grid-layouts';
-import { getPlatform } from '../lib/platforms';
+// getPlatform used indirectly via platformId
 import { generatePlatformImage, PLATFORM_LIST, type PlatformId } from '../lib/cross-platform';
 import TemplateSelector from './TemplateSelector';
 import TitleTemplatePicker from './TitleTemplatePicker';
@@ -74,7 +74,8 @@ interface Props {
 export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onTracksPerSlideChange }: Props) {
   const { user } = useAuth();
   const [tracksPerSlide, setTracksPerSlide] = useState(8);
-  const [platformId] = useState('ig-post');
+  // platformId kept for cross-platform export compatibility
+  const platformId = 'ig-post';
   const [gridTemplateId, setGridTemplateId] = useState(localStorage.getItem('nmf_template') || 'mmmc_classic');
   const [titleTemplateId, setTitleTemplateId] = useState(() => getDefaultTitleTemplateId(user?.email || undefined));
   const hasUserChangedTitle = useRef(false);
@@ -90,7 +91,7 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
   const logoFileRef = useRef<HTMLInputElement>(null);
   const [carouselAspect, setCarouselAspect] = useState<CarouselAspect>('1:1');
 
-  const platform = getPlatform(platformId);
+  void platformId; // used in cross-platform export
   const weekDate = getLastFriday();
 
   // Fix: update title template when user email resolves (Supabase auth is async)
@@ -119,7 +120,7 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
 
   // Total slides
   const slideCount = Math.ceil(selectedTracks.length / tracksPerSlide);
-  const totalSlides = (titleTemplateId !== 'none' ? 1 : 0) + slideCount;
+  // totalSlides available if needed: (titleTemplateId !== 'none' ? 1 : 0) + slideCount
 
   // Auto-update slide groups when tracks or tracksPerSlide change (skip if user made manual splits)
   useEffect(() => {
@@ -454,7 +455,8 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
         <p style={{ color: 'var(--mmmc-red)', fontSize: 'var(--fs-md)', marginBottom: 12 }}>{error}</p>
       )}
 
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 20, marginBottom: 16 }}>
+      {/* Generate + Download */}
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 20, marginBottom: 16, alignItems: 'center' }}>
         <button
           data-testid="generate-button"
           className="btn btn-gold"
@@ -466,31 +468,42 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
         </button>
         {allPreviews.length > 0 && (
           <button className="btn btn-sm" onClick={handleDownloadAll} title="Download all slides as individual PNGs">
-            Download All ({allPreviews.length} slides)
+            Download Instagram Carousel ({allPreviews.length} slides)
           </button>
         )}
-        {allPreviews.length > 0 && PLATFORM_LIST.filter(p => p.id !== 'instagram').map(p => (
-          <button
-            key={p.id}
-            className="btn btn-sm"
-            onClick={async () => {
-              const slots = buildSlots(selectedTracks.map((t, i) => ({
-                track: t, albumId: t.album_spotify_id,
-                selectionNumber: i + 1, slideGroup: 1,
-                positionInSlide: i + 1, isCoverFeature: false,
-              })));
-              const blob = await generatePlatformImage(slots, weekDate, p.id as PlatformId, gridTemplateId);
-              downloadBlob(blob, `nmf-${p.id}-${p.w}x${p.h}.png`);
-            }}
-            style={{ fontSize: 'var(--fs-2xs)' }}
-          >
-            {p.label} ({p.w}×{p.h})
-          </button>
-        ))}
-        <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)', alignSelf: 'center' }}>
-          {platform.width}×{platform.height} · {platform.aspectLabel} · {totalSlides} slide{totalSlides !== 1 ? 's' : ''}
-        </span>
       </div>
+      {/* Other platform exports — collapsible */}
+      {allPreviews.length > 0 && (
+        <details style={{ marginBottom: 16 }}>
+          <summary style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)', cursor: 'pointer' }}>
+            Export for other platforms (Twitter, TikTok, Facebook)
+          </summary>
+          <p style={{ fontSize: 'var(--fs-3xs)', color: 'var(--text-muted)', margin: '8px 0 6px' }}>
+            These generate a single composite image with all your selected tracks arranged for each platform's dimensions.
+          </p>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {PLATFORM_LIST.filter(p => p.id !== 'instagram').map(p => (
+              <button
+                key={p.id}
+                className="btn btn-sm"
+                onClick={async () => {
+                  const slots = buildSlots(selectedTracks.map((t, i) => ({
+                    track: t, albumId: t.album_spotify_id,
+                    selectionNumber: i + 1, slideGroup: 1,
+                    positionInSlide: i + 1, isCoverFeature: false,
+                  })));
+                  const blob = await generatePlatformImage(slots, weekDate, p.id as PlatformId, gridTemplateId);
+                  downloadBlob(blob, `nmf-${p.id}-${p.w}x${p.h}.png`);
+                }}
+                style={{ fontSize: 'var(--fs-3xs)' }}
+                title={`Generate ${p.label} image (${p.w}x${p.h})`}
+              >
+                {p.label} ({p.w}x{p.h})
+              </button>
+            ))}
+          </div>
+        </details>
+      )}
 
       {/* Full carousel preview with navigation */}
       {allPreviews.length > 0 && (

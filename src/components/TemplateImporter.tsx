@@ -8,15 +8,22 @@ interface Props {
   onCancel: () => void;
 }
 
-type Step = 'upload' | 'grid' | 'colors' | 'save';
+type Step = 'upload' | 'grid' | 'save';
 
 const GRID_PRESETS = [
   { label: '2x2', cols: 2, rows: 2 },
   { label: '2x3', cols: 2, rows: 3 },
+  { label: '3x2', cols: 3, rows: 2 },
   { label: '3x3', cols: 3, rows: 3 },
-  { label: '3x3 + Logo', cols: 3, rows: 3, logo: true },
-  { label: '4x4', cols: 4, rows: 4 },
+  { label: '3x3+Logo', cols: 3, rows: 3, logo: true },
   { label: '3x4', cols: 3, rows: 4 },
+  { label: '4x3', cols: 4, rows: 3 },
+  { label: '4x4', cols: 4, rows: 4 },
+  { label: '4x2', cols: 4, rows: 2 },
+  { label: '2x4', cols: 2, rows: 4 },
+  { label: '5x2', cols: 5, rows: 2 },
+  { label: '1x3', cols: 1, rows: 3 },
+  { label: '1x4', cols: 1, rows: 4 },
 ];
 
 function sampleColor(ctx: CanvasRenderingContext2D, x: number, y: number, radius = 3): string {
@@ -53,9 +60,7 @@ export default function TemplateImporter({ onImport, onCancel }: Props) {
   const [name, setName] = useState('Imported Template');
   const [saving, setSaving] = useState(false);
 
-  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const processFile = (file: File) => {
     const url = URL.createObjectURL(file);
     setImageUrl(url);
     const img = new Image();
@@ -63,8 +68,21 @@ export default function TemplateImporter({ onImport, onCancel }: Props) {
       imageRef.current = img;
       setImageDimensions({ w: img.width, h: img.height });
       setStep('grid');
+      // Trigger draw after React renders the canvas
+      requestAnimationFrame(() => drawOverlay());
     };
     img.src = url;
+  };
+
+  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) processFile(file);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) processFile(file);
   };
 
   // Draw image + grid overlay on canvas
@@ -150,7 +168,7 @@ export default function TemplateImporter({ onImport, onCancel }: Props) {
     // Accent: sample from header area (top 10% center)
     setAccentColor(sampleColor(ctx, Math.round(w / 2), Math.round(h * 0.05)));
 
-    setStep('colors');
+    // Colors are now inline in the grid step — no separate step needed
   };
 
   const handleSave = async () => {
@@ -216,31 +234,51 @@ export default function TemplateImporter({ onImport, onCancel }: Props) {
           <button className="btn btn-sm" onClick={onCancel}>Cancel</button>
         </div>
 
-        {/* Step indicator */}
+        {/* Clickable step indicator */}
         <div style={{ display: 'flex', gap: 4, marginBottom: 16 }}>
-          {(['upload', 'grid', 'colors', 'save'] as Step[]).map((s, i) => (
-            <div key={s} style={{
-              flex: 1, height: 3, borderRadius: 2,
-              background: i <= ['upload', 'grid', 'colors', 'save'].indexOf(step) ? 'var(--gold)' : 'var(--midnight-border)',
-            }} />
-          ))}
+          {(['upload', 'grid', 'save'] as Step[]).map((s, i) => {
+            const labels = ['Upload', 'Configure', 'Save'];
+            const currentIdx = ['upload', 'grid', 'save'].indexOf(step);
+            const isCompleted = i < currentIdx;
+            const isCurrent = i === currentIdx;
+            return (
+              <button
+                key={s}
+                onClick={() => { if (isCompleted) setStep(s); }}
+                style={{
+                  flex: 1, height: 24, borderRadius: 4, border: 'none', cursor: isCompleted ? 'pointer' : 'default',
+                  background: isCurrent ? 'var(--gold)' : isCompleted ? 'var(--gold-dark)' : 'var(--midnight-border)',
+                  color: isCurrent || isCompleted ? 'var(--midnight)' : 'var(--text-muted)',
+                  fontSize: 'var(--fs-3xs)', fontWeight: 600,
+                }}
+              >
+                {labels[i]}
+              </button>
+            );
+          })}
         </div>
 
-        {/* Step 1: Upload */}
+        {/* Step 1: Upload (click or drag-and-drop) */}
         {step === 'upload' && (
-          <div style={{ textAlign: 'center', padding: 40 }}>
-            <p style={{ fontSize: 'var(--fs-md)', color: 'var(--text-secondary)', marginBottom: 16 }}>
-              Upload an existing carousel slide image. We'll help you extract a reusable template from it.
+          <div
+            onDragOver={e => { e.preventDefault(); e.currentTarget.style.borderColor = 'var(--gold)'; }}
+            onDragLeave={e => { e.currentTarget.style.borderColor = 'var(--midnight-border)'; }}
+            onDrop={handleDrop}
+            onClick={() => document.getElementById('importer-file-input')?.click()}
+            style={{
+              textAlign: 'center', padding: 48, cursor: 'pointer',
+              border: '2px dashed var(--midnight-border)', borderRadius: 12,
+              transition: 'border-color 0.2s',
+            }}
+          >
+            <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>&#128444;</div>
+            <p style={{ fontSize: 'var(--fs-md)', color: 'var(--text-secondary)', marginBottom: 8 }}>
+              Drag an image here or click to browse
             </p>
-            <label style={{
-              display: 'inline-flex', alignItems: 'center', gap: 8,
-              padding: '14px 28px', borderRadius: 10, cursor: 'pointer',
-              background: 'var(--gold)', color: 'var(--midnight)',
-              fontWeight: 600, fontSize: 'var(--fs-md)',
-            }}>
-              Choose Image
-              <input type="file" accept="image/png,image/jpeg,image/webp" onChange={handleUpload} style={{ display: 'none' }} />
-            </label>
+            <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)' }}>
+              Upload an existing carousel slide. We'll extract a reusable template from it.
+            </p>
+            <input id="importer-file-input" type="file" accept="image/png,image/jpeg,image/webp" onChange={handleUpload} style={{ display: 'none' }} />
           </div>
         )}
 
@@ -265,61 +303,51 @@ export default function TemplateImporter({ onImport, onCancel }: Props) {
 
             <canvas ref={canvasRef} style={{ width: '100%', borderRadius: 8, border: '1px solid var(--midnight-border)' }} />
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, marginTop: 12 }}>
-              <label style={sliderLabel}>
-                Left: {Math.round(gridX * 100)}%
-                <input type="range" min="0" max="0.3" step="0.01" value={gridX}
-                  onChange={e => setGridX(parseFloat(e.target.value))} style={{ width: '100%' }} />
+            {/* Grid position — simplified controls */}
+            <div style={{ display: 'flex', gap: 12, marginTop: 10, alignItems: 'flex-end' }}>
+              <label style={{ ...sliderLabel, flex: 1 }}>
+                Inset: {Math.round(gridX * 100)}%
+                <input type="range" min="0" max="0.25" step="0.01" value={gridX}
+                  onChange={e => { const v = parseFloat(e.target.value); setGridX(v); setGridY(v); setGridW(1 - v * 2); setGridH(1 - v * 2); }}
+                  style={{ width: '100%' }} />
               </label>
-              <label style={sliderLabel}>
-                Top: {Math.round(gridY * 100)}%
-                <input type="range" min="0" max="0.3" step="0.01" value={gridY}
-                  onChange={e => setGridY(parseFloat(e.target.value))} style={{ width: '100%' }} />
-              </label>
-              <label style={sliderLabel}>
-                Width: {Math.round(gridW * 100)}%
-                <input type="range" min="0.5" max="1" step="0.01" value={gridW}
-                  onChange={e => setGridW(parseFloat(e.target.value))} style={{ width: '100%' }} />
-              </label>
-              <label style={sliderLabel}>
-                Height: {Math.round(gridH * 100)}%
-                <input type="range" min="0.5" max="1" step="0.01" value={gridH}
-                  onChange={e => setGridH(parseFloat(e.target.value))} style={{ width: '100%' }} />
-              </label>
+              <button
+                className="btn btn-sm"
+                onClick={() => { setGridX(0.05); setGridY(0.05); setGridW(0.9); setGridH(0.9); }}
+                style={{ fontSize: 'var(--fs-3xs)', whiteSpace: 'nowrap' }}
+              >
+                Reset
+              </button>
             </div>
 
-            <button className="btn btn-gold" onClick={handleSampleColors} style={{ marginTop: 16, width: '100%', justifyContent: 'center' }}>
-              Sample Colors &amp; Continue
-            </button>
-          </div>
-        )}
-
-        {/* Step 3: Review colors */}
-        {step === 'colors' && (
-          <div>
-            <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)', marginBottom: 12 }}>
-              Sampled colors from your image. Adjust if needed.
-            </p>
-            <div style={{ display: 'flex', gap: 16, marginBottom: 16 }}>
-              <label style={{ ...sliderLabel, flex: 1 }}>
-                Background
-                <input type="color" value={bgColor} onChange={e => setBgColor(e.target.value)}
-                  style={{ width: '100%', height: 36, cursor: 'pointer' }} />
-              </label>
-              <label style={{ ...sliderLabel, flex: 1 }}>
-                Border/Gap
-                <input type="color" value={borderColor} onChange={e => setBorderColor(e.target.value)}
-                  style={{ width: '100%', height: 36, cursor: 'pointer' }} />
-              </label>
-              <label style={{ ...sliderLabel, flex: 1 }}>
-                Accent/Text
-                <input type="color" value={accentColor} onChange={e => setAccentColor(e.target.value)}
-                  style={{ width: '100%', height: 36, cursor: 'pointer' }} />
-              </label>
+            {/* Inline color sampling */}
+            <div style={{ marginTop: 12 }}>
+              <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)', marginBottom: 6 }}>Sampled Colors (auto-detected, click to adjust)</p>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <label style={{ ...sliderLabel, flex: 1 }}>
+                  Background
+                  <input type="color" value={bgColor} onChange={e => setBgColor(e.target.value)}
+                    style={{ width: '100%', height: 28, cursor: 'pointer' }} />
+                </label>
+                <label style={{ ...sliderLabel, flex: 1 }}>
+                  Border
+                  <input type="color" value={borderColor} onChange={e => setBorderColor(e.target.value)}
+                    style={{ width: '100%', height: 28, cursor: 'pointer' }} />
+                </label>
+                <label style={{ ...sliderLabel, flex: 1 }}>
+                  Accent
+                  <input type="color" value={accentColor} onChange={e => setAccentColor(e.target.value)}
+                    style={{ width: '100%', height: 28, cursor: 'pointer' }} />
+                </label>
+              </div>
             </div>
-            <button className="btn btn-gold" onClick={() => setStep('save')} style={{ width: '100%', justifyContent: 'center' }}>
-              Continue to Save
-            </button>
+
+            <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+              <button className="btn btn-sm" onClick={() => setStep('upload')}>Back</button>
+              <button className="btn btn-gold" onClick={() => { handleSampleColors(); setStep('save'); }} style={{ flex: 1, justifyContent: 'center' }}>
+                Continue to Save
+              </button>
+            </div>
           </div>
         )}
 

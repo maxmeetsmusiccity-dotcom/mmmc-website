@@ -880,6 +880,38 @@ export default function NewMusicFriday() {
                     <option key={n} value={n}>{n} track{n !== 1 ? 's' : ''}</option>
                   ))}
                 </select>
+                {/* Source switcher — add more tracks from any source */}
+                <details style={{ position: 'relative', display: 'inline-block' }}>
+                  <summary style={{
+                    fontSize: 'var(--fs-2xs)', color: 'var(--gold)', cursor: 'pointer',
+                    padding: '2px 8px', borderRadius: 6,
+                    border: '1px solid var(--gold-dark)', background: 'rgba(212,168,67,0.08)',
+                    listStyle: 'none',
+                  }} title="Add more tracks from Spotify, CSV, or artist browser">
+                    + Add Tracks
+                  </summary>
+                  <div style={{
+                    position: 'absolute', top: '100%', left: 0, marginTop: 4, zIndex: 100,
+                    background: 'var(--midnight-raised)', border: '1px solid var(--midnight-border)',
+                    borderRadius: 8, padding: 12, minWidth: 280, maxHeight: '60vh', overflow: 'auto',
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+                  }}>
+                    <ManualImport onImport={(tracks) => {
+                      setAllTracks(prev => {
+                        const existing = new Set(prev.map(t => t.track_id));
+                        const newTracks = tracks.filter(t => !existing.has(t.track_id));
+                        return [...prev, ...newTracks];
+                      });
+                      setReleases(groupIntoReleases([...allTracks, ...tracks]));
+                    }} />
+                    {token && (
+                      <button className="btn btn-sm btn-spotify" onClick={() => runScan(token)} style={{ width: '100%', marginTop: 8, justifyContent: 'center' }}>
+                        Re-scan Spotify
+                      </button>
+                    )}
+                  </div>
+                </details>
+                <span style={{ color: 'var(--midnight-border)', margin: '0 2px' }}>|</span>
                 {/* Select All / Clear */}
                 <button
                   onClick={() => {

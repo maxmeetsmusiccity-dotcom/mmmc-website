@@ -432,7 +432,12 @@ export function getTitleTemplate(id: string): TitleSlideTemplate {
 /** Get title templates visible to a user (filters out Max-only for other users) */
 export function getVisibleTitleTemplates(userEmail?: string): TitleSlideTemplate[] {
   const isMax = userEmail === 'maxmeetsmusiccity@gmail.com' || userEmail === 'maxblachman@gmail.com';
-  if (isMax) return TITLE_TEMPLATES;
+  if (isMax) {
+    // Max-only templates first, then the rest
+    const maxOnly = TITLE_TEMPLATES.filter(t => MAX_ONLY_TITLE_TEMPLATES.has(t.id));
+    const rest = TITLE_TEMPLATES.filter(t => !MAX_ONLY_TITLE_TEMPLATES.has(t.id));
+    return [...maxOnly, ...rest];
+  }
   return TITLE_TEMPLATES.filter(t => !MAX_ONLY_TITLE_TEMPLATES.has(t.id));
 }
 

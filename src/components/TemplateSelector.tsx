@@ -46,7 +46,7 @@ export default function TemplateSelector({ selected, onSelect }: Props) {
 
   const visibleTemplates = getVisibleTemplates(user?.email || undefined);
   const allTemplates = useMemo(
-    () => [...visibleTemplates, ...customTemplates],
+    () => [...customTemplates, ...visibleTemplates],
     [visibleTemplates, customTemplates],
   );
 
