@@ -952,6 +952,9 @@ export default function NewMusicFriday() {
                       });
                       setReleases(groupIntoReleases([...allTracks, ...tracks]));
                     }} />
+                    <button className="btn btn-sm" onClick={() => { setPhase('ready'); setActiveSource('nashville'); }} style={{ width: '100%', marginTop: 8, justifyContent: 'center' }}>
+                      Nashville Releases
+                    </button>
                     <Link to="/artists" className="btn btn-sm" style={{ width: '100%', marginTop: 8, justifyContent: 'center', textDecoration: 'none', display: 'flex' }}>
                       Browse Artists (A-Z)
                     </Link>
@@ -1375,6 +1378,7 @@ export default function NewMusicFriday() {
                 selectedTracks={selectedTracks}
                 coverFeature={selections.find(s => s.isCoverFeature) || null}
                 onTracksPerSlideChange={setTracksPerSlide}
+                onCarouselGenerated={() => handleSaveWeek({ carousel_generated: true })}
               />
 
               {/* Collapsible extras */}

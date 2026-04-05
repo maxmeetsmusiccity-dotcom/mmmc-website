@@ -44,6 +44,29 @@ export default function TitleTemplatePicker({ selected, onSelect, onHover }: Pro
           </span>
         </button>
 
+        {/* Create New — placeholder for custom title templates */}
+        <button
+          onClick={() => {
+            // For now, select the first visible template as starting point
+            const first = visibleTemplates[0];
+            if (first) onSelect(first.id);
+          }}
+          style={{
+            flexShrink: 0, width: 90, padding: 6, borderRadius: 8, cursor: 'pointer',
+            border: '2px dashed var(--gold)',
+            background: 'rgba(212,168,67,0.04)',
+            display: 'flex', flexDirection: 'column', alignItems: 'center',
+            justifyContent: 'center', gap: 4,
+            transition: 'all 0.15s',
+          }}
+          title="Custom title template builder coming soon"
+        >
+          <span style={{ fontSize: 'var(--fs-xl)', color: 'var(--gold)', lineHeight: 1 }}>+</span>
+          <span style={{ fontSize: 'var(--fs-3xs)', fontWeight: 600, color: 'var(--gold)', textAlign: 'center' }}>
+            Create New
+          </span>
+        </button>
+
         {visibleTemplates.map(t => {
           const isActive = selected === t.id;
           return (

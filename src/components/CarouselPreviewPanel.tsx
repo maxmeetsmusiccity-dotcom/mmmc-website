@@ -69,9 +69,10 @@ interface Props {
   selectedTracks: TrackItem[];
   coverFeature: SelectionSlot | null;
   onTracksPerSlideChange?: (n: number) => void;
+  onCarouselGenerated?: () => void;
 }
 
-export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onTracksPerSlideChange }: Props) {
+export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onTracksPerSlideChange, onCarouselGenerated }: Props) {
   const { user } = useAuth();
   const [tracksPerSlide, setTracksPerSlide] = useState(8);
   // platformId kept for cross-platform export compatibility
@@ -219,6 +220,7 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
 
       setAllPreviews(prev => { prev.forEach(URL.revokeObjectURL); return urls; });
       setActivePreview(0);
+      onCarouselGenerated?.();
     } catch (e) {
       setError(`Generation failed: ${(e as Error).message}`);
     } finally {
