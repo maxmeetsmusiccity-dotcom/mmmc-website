@@ -13,9 +13,10 @@ interface Props {
   onDeselect: (albumId: string, trackId?: string) => void;
   onSetCoverFeature: (trackId: string) => void;
   featureCount?: number;
+  onHover?: (cluster: ReleaseCluster | null) => void;
 }
 
-export default memo(function ClusterCard({ cluster, selectionSlot, selectedSlots, hasSelections, onSelectRelease, onDeselect, onSetCoverFeature, featureCount }: Props) {
+export default memo(function ClusterCard({ cluster, selectionSlot, selectedSlots, hasSelections, onSelectRelease, onDeselect, onSetCoverFeature, featureCount, onHover }: Props) {
   const [showModal, setShowModal] = useState(false);
   const allSlots = selectedSlots || (selectionSlot ? [selectionSlot] : []);
   const isSelected = allSlots.length > 0;
@@ -57,6 +58,9 @@ export default memo(function ClusterCard({ cluster, selectionSlot, selectedSlots
       <div
         className={`card selectable ${isSelected ? 'selected' : ''} ${hasSelections && !isSelected ? 'has-selections' : ''}`}
         style={{ padding: 0, overflow: 'hidden', position: 'relative' }}
+        data-album-id={cluster.album_spotify_id}
+        onMouseEnter={() => onHover?.(cluster)}
+        onMouseLeave={() => onHover?.(null)}
       >
         {/* Selection badges */}
         {isSelected && primarySlot && (

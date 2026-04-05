@@ -32,6 +32,7 @@ import EmbedWidget from '../components/EmbedWidget';
 import ProductNav from '../components/ProductNav';
 import SourceSelector from '../components/SourceSelector';
 import ManualImport from '../components/ManualImport';
+import CaptionGenerator from '../components/CaptionGenerator';
 import type { MusicSource } from '../lib/sources/types';
 import { checkScanHealth } from '../lib/spotify';
 import { useAuth } from '../lib/auth-context';
@@ -123,6 +124,14 @@ export default function NewMusicFriday() {
 
   // Undo stack for selections (last 20 states)
   const selectionHistory = useRef<SelectionSlot[][]>([]);
+
+  // Quick Look: spacebar preview
+  const [quickLookAlbum, setQuickLookAlbum] = useState<ReleaseCluster | null>(null);
+  const hoveredCluster = useRef<ReleaseCluster | null>(null);
+
+  // Rubber-band drag select
+  const [rubberBand, setRubberBand] = useState<{ startX: number; startY: number; endX: number; endY: number } | null>(null);
+  const gridContainerRef = useRef<HTMLDivElement>(null);
   const pushSelectionHistory = useCallback((prev: SelectionSlot[]) => {
     selectionHistory.current = [...selectionHistory.current.slice(-19), prev];
   }, []);
@@ -474,10 +483,19 @@ export default function NewMusicFriday() {
         const prev = selectionHistory.current.pop();
         if (prev) setSelections(prev);
       }
+      // Space — Quick Look preview of hovered album
+      if (e.key === ' ' && !meta && hoveredCluster.current) {
+        e.preventDefault();
+        setQuickLookAlbum(prev => prev ? null : hoveredCluster.current);
+      }
+      // Escape — dismiss Quick Look
+      if (e.key === 'Escape' && quickLookAlbum) {
+        setQuickLookAlbum(null);
+      }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [phase, releases, pushSelectionHistory]);
+  }, [phase, releases, pushSelectionHistory, quickLookAlbum]);
 
   // Filtered releases for browse
   const filteredReleases = useMemo(() => {
@@ -1026,7 +1044,78 @@ export default function NewMusicFriday() {
 
               {/* ---- ALBUM VIEW (default) ---- */}
               {viewMode === 'releases' && (
-                <div className="release-grid" data-testid="track-grid" style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${cardSize}px, 1fr))` }}>
+                <div
+                  ref={gridContainerRef}
+                  className="release-grid"
+                  data-testid="track-grid"
+                  style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${cardSize}px, 1fr))`, position: 'relative' }}
+                  onMouseDown={(e) => {
+                    if (!e.shiftKey) return;
+                    const rect = gridContainerRef.current?.getBoundingClientRect();
+                    if (!rect) return;
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    setRubberBand({ startX: x, startY: y, endX: x, endY: y });
+                    const onMove = (ev: MouseEvent) => {
+                      if (!rect) return;
+                      setRubberBand(prev => prev ? { ...prev, endX: ev.clientX - rect.left, endY: ev.clientY - rect.top } : null);
+                    };
+                    const onUp = () => {
+                      // Select all cards within the rubber band
+                      if (gridContainerRef.current && rubberBand) {
+                        const cards = gridContainerRef.current.querySelectorAll('[data-album-id]');
+                        const containerRect = gridContainerRef.current.getBoundingClientRect();
+                        const selRect = {
+                          left: Math.min(rubberBand.startX, rubberBand.endX),
+                          top: Math.min(rubberBand.startY, rubberBand.endY),
+                          right: Math.max(rubberBand.startX, rubberBand.endX),
+                          bottom: Math.max(rubberBand.startY, rubberBand.endY),
+                        };
+                        const newSelections: SelectionSlot[] = [];
+                        cards.forEach(card => {
+                          const cardRect = card.getBoundingClientRect();
+                          const cx = cardRect.left - containerRect.left + cardRect.width / 2;
+                          const cy = cardRect.top - containerRect.top + cardRect.height / 2;
+                          if (cx >= selRect.left && cx <= selRect.right && cy >= selRect.top && cy <= selRect.bottom) {
+                            const albumId = card.getAttribute('data-album-id');
+                            if (albumId) {
+                              const cluster = filteredReleases.find(r => r.album_spotify_id === albumId);
+                              if (cluster && !selections.some(s => s.albumId === albumId)) {
+                                const track = cluster.tracks.find(t => t.track_id === cluster.titleTrackId) || cluster.tracks[0];
+                                newSelections.push({
+                                  track, albumId,
+                                  selectionNumber: 0, slideGroup: 0, positionInSlide: 0, isCoverFeature: false,
+                                });
+                              }
+                            }
+                          }
+                        });
+                        if (newSelections.length > 0) {
+                          pushSelectionHistory(selections);
+                          setSelections(prev => buildSlots([...prev, ...newSelections]));
+                        }
+                      }
+                      setRubberBand(null);
+                      document.removeEventListener('mousemove', onMove);
+                      document.removeEventListener('mouseup', onUp);
+                    };
+                    document.addEventListener('mousemove', onMove);
+                    document.addEventListener('mouseup', onUp);
+                  }}
+                >
+                  {/* Rubber band selection overlay */}
+                  {rubberBand && (
+                    <div style={{
+                      position: 'absolute', zIndex: 10, pointerEvents: 'none',
+                      left: Math.min(rubberBand.startX, rubberBand.endX),
+                      top: Math.min(rubberBand.startY, rubberBand.endY),
+                      width: Math.abs(rubberBand.endX - rubberBand.startX),
+                      height: Math.abs(rubberBand.endY - rubberBand.startY),
+                      background: 'rgba(212,168,67,0.15)',
+                      border: '1px solid var(--gold)',
+                      borderRadius: 2,
+                    }} />
+                  )}
                   {filteredReleases.map((cluster, idx) => (
                     <ClusterCard
                       key={cluster.album_spotify_id}
@@ -1064,6 +1153,7 @@ export default function NewMusicFriday() {
                       onDeselect={handleDeselect}
                       onSetCoverFeature={handleSetCoverFeature}
                       featureCount={featureCounts.get(cluster.tracks[0]?.artist_id) || 0}
+                      onHover={(c) => { hoveredCluster.current = c; }}
                     />
                   ))}
                 </div>
@@ -1250,6 +1340,7 @@ export default function NewMusicFriday() {
                   Instagram Tags
                 </summary>
                 <TagBlocks slideGroups={slideGroups} />
+                <CaptionGenerator selections={selections} handles={new Map()} weekDate={weekDate} />
               </details>
 
               <details style={{ marginTop: 16, borderTop: '1px solid var(--midnight-border)', paddingTop: 16 }}>
@@ -1358,6 +1449,32 @@ export default function NewMusicFriday() {
             </section>
           )}
         </>
+      )}
+
+      {/* Quick Look modal (spacebar preview) */}
+      {quickLookAlbum && (
+        <div
+          className="modal-overlay"
+          onClick={() => setQuickLookAlbum(null)}
+          style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        >
+          <div onClick={e => e.stopPropagation()} style={{ maxWidth: 500, textAlign: 'center' }}>
+            <img
+              src={quickLookAlbum.cover_art_640}
+              alt={quickLookAlbum.album_name}
+              style={{ width: '100%', maxWidth: 480, borderRadius: 12, boxShadow: '0 20px 60px rgba(0,0,0,0.6)' }}
+            />
+            <p style={{ fontSize: 'var(--fs-xl)', fontWeight: 600, marginTop: 16, color: 'var(--text-primary)' }}>
+              {quickLookAlbum.album_name}
+            </p>
+            <p style={{ fontSize: 'var(--fs-md)', color: 'var(--text-secondary)' }}>
+              {quickLookAlbum.artist_names}
+            </p>
+            <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)', marginTop: 4 }}>
+              Press Space or Escape to close
+            </p>
+          </div>
+        </div>
       )}
 
       {/* Status bar — Lightroom-style bottom bar */}

@@ -6,10 +6,10 @@ async function guestBypass(page: import('@playwright/test').Page) {
   await page.evaluate(() => localStorage.setItem('nmf_guest_mode', '1'));
 }
 
-test('home page loads with two product cards', async ({ page }) => {
+test('home page loads', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByText('NMF Curator')).toBeVisible();
-  await expect(page.getByText('NMF Intelligence')).toBeVisible();
+  await expect(page.locator('h1')).toBeVisible();
+  await expect(page.getByText('Max Meets')).toBeVisible();
 });
 
 test('NMF page loads with guest mode', async ({ page }) => {
