@@ -99,7 +99,7 @@ export default function CarouselPreview({ slideGroups, coverFeature }: Props) {
     <div style={{
       padding: '16px 0', borderTop: '1px solid var(--midnight-border)', marginTop: 24,
     }}>
-      <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', marginBottom: 16 }}>
+      <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-xl)', marginBottom: 16 }}>
         Instagram Carousel
       </h3>
 
@@ -107,7 +107,7 @@ export default function CarouselPreview({ slideGroups, coverFeature }: Props) {
       <GridLayoutSelector trackCount={slideGroups.reduce((sum, g) => sum + g.length, 0) || 8} selected={layoutId} onSelect={handleLayoutChange} />
 
       {error && (
-        <p style={{ color: 'var(--mmmc-red)', fontSize: '0.8rem', marginBottom: 12 }}>{error}</p>
+        <p style={{ color: 'var(--mmmc-red)', fontSize: 'var(--fs-md)', marginBottom: 12 }}>{error}</p>
       )}
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
@@ -127,7 +127,7 @@ export default function CarouselPreview({ slideGroups, coverFeature }: Props) {
           </button>
         )}
         {!coverFeature && (
-          <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', alignSelf: 'center' }}>
+          <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-sm)', alignSelf: 'center' }}>
             Set a cover feature first
           </span>
         )}
@@ -138,7 +138,7 @@ export default function CarouselPreview({ slideGroups, coverFeature }: Props) {
         <div className="carousel-preview-row" style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
           {previews.map((url, i) => (
             <div key={i} style={{ textAlign: 'center' }}>
-              <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: 4 }}>
+              <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)', marginBottom: 4 }}>
                 {i === 0 ? 'Cover' : `Slide ${i}`}
               </p>
               <img

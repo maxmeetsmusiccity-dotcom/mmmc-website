@@ -38,10 +38,10 @@ export default function SlideGroup({ slideNumber, slots, onShuffle, onReorder, o
         borderBottom: '1px solid var(--midnight-border)',
       }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem' }}>
+          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-xl)' }}>
             Slide {slideNumber}
           </h3>
-          <span className="mono" style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+          <span className="mono" style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)' }}>
             {slots.length}/8
           </span>
         </div>
@@ -66,7 +66,7 @@ export default function SlideGroup({ slideNumber, slots, onShuffle, onReorder, o
                 background: 'var(--midnight)',
                 border: '1px solid var(--midnight-border)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '0.6rem', color: 'var(--text-muted)', fontWeight: 600,
+                fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)', fontWeight: 600,
               }}>
                 MMMC
               </div>
@@ -114,7 +114,7 @@ export default function SlideGroup({ slideNumber, slots, onShuffle, onReorder, o
                 width: 18, height: 18, borderRadius: '50%',
                 background: slot.isCoverFeature ? 'var(--mmmc-red)' : 'var(--gold)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '0.55rem', fontWeight: 700, color: 'var(--midnight)',
+                fontSize: 'var(--fs-3xs)', fontWeight: 700, color: 'var(--midnight)',
                 fontFamily: 'var(--font-mono)',
               }}>
                 {slot.selectionNumber}
@@ -126,7 +126,7 @@ export default function SlideGroup({ slideNumber, slots, onShuffle, onReorder, o
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
               }}>
                 <span style={{
-                  fontSize: '0.5rem', color: '#fff',
+                  fontSize: 'var(--fs-3xs)', color: '#fff',
                   overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1,
                 }}>
                   {slot.track.track_name}
@@ -136,7 +136,7 @@ export default function SlideGroup({ slideNumber, slots, onShuffle, onReorder, o
                     <button
                       onClick={(e) => { e.stopPropagation(); onSetCoverFeature(slot.track.track_id); }}
                       title="Set as cover feature"
-                      style={{ fontSize: '0.5rem', color: 'var(--mmmc-red)', padding: '0 2px' }}
+                      style={{ fontSize: 'var(--fs-3xs)', color: 'var(--mmmc-red)', padding: '0 2px' }}
                     >
                       ★
                     </button>
@@ -144,7 +144,7 @@ export default function SlideGroup({ slideNumber, slots, onShuffle, onReorder, o
                   <button
                     onClick={(e) => { e.stopPropagation(); onDeselect(slot.albumId); }}
                     title="Remove"
-                    style={{ fontSize: '0.5rem', color: 'var(--text-muted)', padding: '0 2px' }}
+                    style={{ fontSize: 'var(--fs-3xs)', color: 'var(--text-muted)', padding: '0 2px' }}
                   >
                     ✕
                   </button>
@@ -160,7 +160,7 @@ export default function SlideGroup({ slideNumber, slots, onShuffle, onReorder, o
         {slots.map(slot => (
           <div key={slot.track.track_id} style={{
             display: 'flex', alignItems: 'center', gap: 8,
-            padding: '4px 0', fontSize: '0.7rem',
+            padding: '4px 0', fontSize: 'var(--fs-xs)',
           }}>
             <span className="mono" style={{ color: 'var(--gold)', width: 20, textAlign: 'right' }}>
               {slot.selectionNumber}
@@ -169,7 +169,7 @@ export default function SlideGroup({ slideNumber, slots, onShuffle, onReorder, o
               {slot.track.artist_names} — {slot.track.track_name}
             </span>
             {slot.isCoverFeature && (
-              <span style={{ color: 'var(--mmmc-red)', fontSize: '0.6rem', fontWeight: 600 }}>COVER</span>
+              <span style={{ color: 'var(--mmmc-red)', fontSize: 'var(--fs-2xs)', fontWeight: 600 }}>COVER</span>
             )}
           </div>
         ))}

@@ -25,7 +25,7 @@ export default function FilterBar({ filter, sort, search, onFilterChange, onSort
             key={key}
             className={`filter-pill ${filter === key ? 'active' : ''}`}
             onClick={() => onFilterChange(key)}
-            style={{ fontSize: '0.7rem', padding: '3px 10px' }}
+            style={{ fontSize: 'var(--fs-xs)', padding: '3px 10px' }}
           >
             {label}
           </button>
@@ -42,7 +42,7 @@ export default function FilterBar({ filter, sort, search, onFilterChange, onSort
           borderRadius: 6,
           color: 'var(--text-secondary)',
           padding: '3px 8px',
-          fontSize: '0.7rem',
+          fontSize: 'var(--fs-xs)',
           fontFamily: 'var(--font-body)',
         }}
       >
@@ -58,7 +58,7 @@ export default function FilterBar({ filter, sort, search, onFilterChange, onSort
         placeholder="Search..."
         value={search}
         onChange={(e) => onSearchChange(e.target.value)}
-        style={{ maxWidth: 200, flex: '1 1 140px', fontSize: '0.7rem', padding: '4px 10px' }}
+        style={{ maxWidth: 200, flex: '1 1 140px', fontSize: 'var(--fs-xs)', padding: '4px 10px' }}
       />
     </div>
   );

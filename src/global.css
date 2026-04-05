@@ -19,6 +19,17 @@
   --font-body: 'DM Sans', system-ui, sans-serif;
   --font-display: 'Source Serif 4', Georgia, serif;
   --font-mono: 'JetBrains Mono', monospace;
+
+  /* Font scale — tune all UI text sizes here, not in components */
+  --fs-3xs: 0.65rem;
+  --fs-2xs: 0.75rem;
+  --fs-xs:  0.85rem;
+  --fs-sm:  0.95rem;
+  --fs-md:  1.05rem;
+  --fs-lg:  1.2rem;
+  --fs-xl:  1.4rem;
+  --fs-2xl: 1.65rem;
+  --fs-3xl: 2.0rem;
 }
 
 *, *::before, *::after {

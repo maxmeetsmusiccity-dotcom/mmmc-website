@@ -13,7 +13,7 @@ export default function TitleTemplatePicker({ selected, onSelect, onHover }: Pro
 
   return (
     <div data-testid="title-template-picker" style={{ marginBottom: 16 }}>
-      <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8 }}>Title Slide Template</p>
+      <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginBottom: 8 }}>Title Slide Template</p>
       <div style={{
         display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 8,
         WebkitOverflowScrolling: 'touch',
@@ -35,11 +35,11 @@ export default function TitleTemplatePicker({ selected, onSelect, onHover }: Pro
             width: '100%', height: 60, borderRadius: 4,
             background: 'var(--midnight-border)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '1.2rem', color: 'var(--text-muted)',
+            fontSize: 'var(--fs-2xl)', color: 'var(--text-muted)',
           }}>
             ✕
           </div>
-          <span style={{ fontSize: '0.6rem', fontWeight: 600, color: selected === 'none' ? 'var(--gold)' : 'var(--text-muted)' }}>
+          <span style={{ fontSize: 'var(--fs-2xs)', fontWeight: 600, color: selected === 'none' ? 'var(--gold)' : 'var(--text-muted)' }}>
             No Title
           </span>
         </button>
@@ -69,7 +69,7 @@ export default function TitleTemplatePicker({ selected, onSelect, onHover }: Pro
                 position: 'relative',
               }}>
                 <span style={{
-                  color: t.textPrimary, fontSize: '0.4rem', fontWeight: t.headlineWeight,
+                  color: t.textPrimary, fontSize: 'var(--fs-3xs)', fontWeight: t.headlineWeight,
                   fontFamily: t.headlineFont, textTransform: t.headlineCase,
                   textShadow: t.glow.passes > 0 ? `0 0 ${t.glow.blur * 0.3}px ${t.glow.color}` : 'none',
                 }}>
@@ -82,7 +82,7 @@ export default function TitleTemplatePicker({ selected, onSelect, onHover }: Pro
                 }} />
               </div>
               <span style={{
-                fontSize: '0.55rem', fontWeight: 600,
+                fontSize: 'var(--fs-3xs)', fontWeight: 600,
                 color: isActive ? t.accent : 'var(--text-secondary)',
                 overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                 maxWidth: 80,

@@ -50,8 +50,8 @@ export default function CuratorProfile() {
   return (
     <div style={{ minHeight: '100vh' }}>
       <header style={{ padding: '16px 24px', borderBottom: '1px solid var(--midnight-border)', display: 'flex', alignItems: 'center', gap: 16 }}>
-        <Link to="/" style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>MMMC</Link>
-        <Link to="/newmusicfriday/archive" style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Archive</Link>
+        <Link to="/" style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-md)' }}>MMMC</Link>
+        <Link to="/newmusicfriday/archive" style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-md)' }}>Archive</Link>
       </header>
 
       <div style={{ maxWidth: 700, margin: '0 auto', padding: 32 }}>
@@ -59,28 +59,28 @@ export default function CuratorProfile() {
           {profile.avatar_url ? (
             <img src={profile.avatar_url} alt="" style={{ width: 64, height: 64, borderRadius: '50%' }} />
           ) : (
-            <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--midnight-raised)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', fontWeight: 700, color: 'var(--gold)' }}>
+            <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--midnight-raised)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--fs-3xl)', fontWeight: 700, color: 'var(--gold)' }}>
               {(profile.display_name || '?')[0].toUpperCase()}
             </div>
           )}
           <div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem' }}>{profile.display_name}</h1>
-            {profile.bio && <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: 4 }}>{profile.bio}</p>}
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-3xl)' }}>{profile.display_name}</h1>
+            {profile.bio && <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--fs-md)', marginTop: 4 }}>{profile.bio}</p>}
           </div>
         </div>
 
         <div style={{ display: 'flex', gap: 24, marginBottom: 32 }}>
           <div className="card" style={{ flex: 1, textAlign: 'center' }}>
-            <p className="mono" style={{ fontSize: '1.5rem', color: 'var(--gold)' }}>{weekCount}</p>
-            <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Weeks</p>
+            <p className="mono" style={{ fontSize: 'var(--fs-3xl)', color: 'var(--gold)' }}>{weekCount}</p>
+            <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)' }}>Weeks</p>
           </div>
           <div className="card" style={{ flex: 1, textAlign: 'center' }}>
-            <p className="mono" style={{ fontSize: '1.5rem', color: 'var(--gold)' }}>{features.length}</p>
-            <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Tracks Featured</p>
+            <p className="mono" style={{ fontSize: 'var(--fs-3xl)', color: 'var(--gold)' }}>{features.length}</p>
+            <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)' }}>Tracks Featured</p>
           </div>
           <div className="card" style={{ flex: 1, textAlign: 'center' }}>
-            <p className="mono" style={{ fontSize: '1.5rem', color: 'var(--gold)' }}>{artistCounts.size}</p>
-            <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Unique Artists</p>
+            <p className="mono" style={{ fontSize: 'var(--fs-3xl)', color: 'var(--gold)' }}>{artistCounts.size}</p>
+            <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)' }}>Unique Artists</p>
           </div>
         </div>
 
@@ -92,16 +92,16 @@ export default function CuratorProfile() {
 
         {topArtists.length > 0 && (
           <div style={{ marginBottom: 32 }}>
-            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', marginBottom: 12 }}>Most Featured Artists</h3>
+            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-lg)', marginBottom: 12 }}>Most Featured Artists</h3>
             {topArtists.map(([name, count]) => (
               <div key={name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid var(--midnight-border)' }}>
-                <span style={{ fontSize: '0.85rem' }}>{name}</span>
+                <span style={{ fontSize: 'var(--fs-md)' }}>{name}</span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span className="mono" style={{ fontSize: '0.75rem', color: 'var(--gold)' }}>{count}x</span>
+                  <span className="mono" style={{ fontSize: 'var(--fs-sm)', color: 'var(--gold)' }}>{count}x</span>
                   <a
                     href={`https://nashvilledecoder.com/search?q=${encodeURIComponent(name)}`}
                     target="_blank" rel="noopener noreferrer"
-                    style={{ fontSize: '0.6rem', color: 'var(--steel)', padding: '2px 6px', border: '1px solid var(--midnight-border)', borderRadius: 4 }}
+                    style={{ fontSize: 'var(--fs-2xs)', color: 'var(--steel)', padding: '2px 6px', border: '1px solid var(--midnight-border)', borderRadius: 4 }}
                   >
                     ND
                   </a>
@@ -113,26 +113,26 @@ export default function CuratorProfile() {
 
         {/* Nashville Decoder Data Preview — blurred teaser */}
         <div style={{ marginBottom: 32, position: 'relative' }}>
-          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', marginBottom: 12 }}>
-            Artist Intelligence <span style={{ fontSize: '0.7rem', color: 'var(--steel)' }}>via Nashville Decoder</span>
+          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-lg)', marginBottom: 12 }}>
+            Artist Intelligence <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--steel)' }}>via Nashville Decoder</span>
           </h3>
           <div style={{ position: 'relative', overflow: 'hidden', borderRadius: 12 }}>
             <div style={{ filter: 'blur(6px)', pointerEvents: 'none', opacity: 0.5 }}>
               <div className="card" style={{ marginBottom: 8 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '0.8rem' }}>Credit Count</span>
+                  <span style={{ fontSize: 'var(--fs-md)' }}>Credit Count</span>
                   <span className="mono" style={{ color: 'var(--gold)' }}>247</span>
                 </div>
               </div>
               <div className="card" style={{ marginBottom: 8 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '0.8rem' }}>Chart Trajectory</span>
+                  <span style={{ fontSize: 'var(--fs-md)' }}>Chart Trajectory</span>
                   <span className="mono" style={{ color: '#3DA877' }}>Rising</span>
                 </div>
               </div>
               <div className="card">
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '0.8rem' }}>Co-Writer Network</span>
+                  <span style={{ fontSize: 'var(--fs-md)' }}>Co-Writer Network</span>
                   <span className="mono" style={{ color: 'var(--steel-light)' }}>18 connections</span>
                 </div>
               </div>
@@ -142,7 +142,7 @@ export default function CuratorProfile() {
               alignItems: 'center', justifyContent: 'center', background: 'rgba(15,27,51,0.6)',
               borderRadius: 12,
             }}>
-              <p style={{ fontWeight: 600, marginBottom: 8, fontSize: '0.9rem' }}>
+              <p style={{ fontWeight: 600, marginBottom: 8, fontSize: 'var(--fs-lg)' }}>
                 Unlock with Nashville Decoder
               </p>
               <a

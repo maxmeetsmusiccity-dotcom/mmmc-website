@@ -40,7 +40,7 @@ export default function Embed() {
   if (loading) {
     return (
       <div style={containerStyle}>
-        <p style={{ color: '#6B7F95', fontSize: '0.8rem' }}>Loading...</p>
+        <p style={{ color: '#6B7F95', fontSize: 'var(--fs-md)' }}>Loading...</p>
       </div>
     );
   }
@@ -51,10 +51,10 @@ export default function Embed() {
         <h2 style={titleStyle}>
           New Music <span style={{ color: '#D4A843' }}>Friday</span>
         </h2>
-        <p style={{ color: '#6B7F95', fontSize: '0.8rem', marginTop: 12 }}>
+        <p style={{ color: '#6B7F95', fontSize: 'var(--fs-md)', marginTop: 12 }}>
           No carousel generated for this week yet.
         </p>
-        <p style={{ color: '#4A5568', fontSize: '0.65rem', marginTop: 8 }}>
+        <p style={{ color: '#4A5568', fontSize: 'var(--fs-2xs)', marginTop: 8 }}>
           {weekDate}
         </p>
       </div>
@@ -100,14 +100,14 @@ export default function Embed() {
 
       {/* Branding */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
-        <span style={{ fontSize: '0.55rem', color: '#6B7F95' }}>
+        <span style={{ fontSize: 'var(--fs-3xs)', color: '#6B7F95' }}>
           {weekDate}
         </span>
         <a
           href="https://maxmeetsmusiccity.com/newmusicfriday"
           target="_blank"
           rel="noopener noreferrer"
-          style={{ fontSize: '0.55rem', color: '#D4A843', textDecoration: 'none' }}
+          style={{ fontSize: 'var(--fs-3xs)', color: '#D4A843', textDecoration: 'none' }}
         >
           Max Meets Music City
         </a>
@@ -130,5 +130,5 @@ const containerStyle: React.CSSProperties = {
 
 const titleStyle: React.CSSProperties = {
   fontFamily: '"Source Serif 4", Georgia, serif',
-  fontSize: '1.1rem',
+  fontSize: 'var(--fs-xl)',
 };

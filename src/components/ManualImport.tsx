@@ -117,21 +117,21 @@ export default function ManualImport({ onImport }: Props) {
         <button
           className={`filter-pill ${tab === 'browse' ? 'active' : ''}`}
           onClick={() => setTab('browse')}
-          style={{ fontSize: '0.75rem' }}
+          style={{ fontSize: 'var(--fs-sm)' }}
         >
           Browse Artists
         </button>
         <button
           className={`filter-pill ${tab === 'artists' ? 'active' : ''}`}
           onClick={() => setTab('artists')}
-          style={{ fontSize: '0.75rem' }}
+          style={{ fontSize: 'var(--fs-sm)' }}
         >
           Paste Names
         </button>
         <button
           className={`filter-pill ${tab === 'csv' ? 'active' : ''}`}
           onClick={() => setTab('csv')}
-          style={{ fontSize: '0.75rem' }}
+          style={{ fontSize: 'var(--fs-sm)' }}
         >
           Upload CSV
         </button>
@@ -179,7 +179,7 @@ export default function ManualImport({ onImport }: Props) {
       {/* Artist Names tab */}
       {tab === 'artists' && (
         <div>
-          <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: 8 }}>
+          <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)', marginBottom: 8 }}>
             Paste artist names (one per line). We'll search Spotify's catalog for their new releases since last Friday — no Spotify login needed.
           </p>
           <textarea
@@ -191,7 +191,7 @@ export default function ManualImport({ onImport }: Props) {
               width: '100%', padding: 12, borderRadius: 8,
               background: 'var(--midnight)', border: '1px solid var(--midnight-border)',
               color: 'var(--text-primary)', fontFamily: 'var(--font-body)',
-              fontSize: '0.8rem', resize: 'vertical',
+              fontSize: 'var(--fs-md)', resize: 'vertical',
             }}
           />
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8 }}>
@@ -199,16 +199,16 @@ export default function ManualImport({ onImport }: Props) {
               className="btn btn-gold"
               onClick={handleArtistScan}
               disabled={scanning || !artistText.trim()}
-              style={{ fontSize: '0.85rem', padding: '10px 24px' }}
+              style={{ fontSize: 'var(--fs-md)', padding: '10px 24px' }}
             >
               {scanning ? 'Scanning...' : 'Scan for New Releases'}
             </button>
-            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+            <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)' }}>
               {artistText.trim() ? `${artistText.split('\n').filter(s => s.trim()).length} artists` : ''}
               {scanStatus && ` · ${scanStatus}`}
             </span>
           </div>
-          <p style={{ fontSize: '0.6rem', color: 'var(--text-muted)', marginTop: 6 }}>
+          <p style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)', marginTop: 6 }}>
             No Spotify account needed. Uses server-side catalog search. Max 200 artists per scan.
           </p>
         </div>
@@ -232,10 +232,10 @@ export default function ManualImport({ onImport }: Props) {
             <div style={{ fontSize: '2rem', marginBottom: 8 }}>
               {summary ? '\u2713' : '\uD83D\uDCC4'}
             </div>
-            <p style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: 4 }}>
+            <p style={{ fontSize: 'var(--fs-md)', fontWeight: 600, marginBottom: 4 }}>
               {summary ? `${summary.tracks} tracks imported` : 'Drop manifest.csv here'}
             </p>
-            <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
+            <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-secondary)' }}>
               {summary
                 ? `${summary.artists} artists \u00B7 ${summary.albums} releases \u00B7 Zero API calls`
                 : 'or click to browse \u2014 Python NMF manifest format'}
@@ -244,12 +244,12 @@ export default function ManualImport({ onImport }: Props) {
           </div>
 
           <details style={{ marginTop: 12 }}>
-            <summary style={{ fontSize: '0.65rem', color: 'var(--text-muted)', cursor: 'pointer' }}>
+            <summary style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)', cursor: 'pointer' }}>
               Expected CSV format
             </summary>
             <pre style={{
               marginTop: 6, padding: 8, borderRadius: 6,
-              background: 'var(--midnight-raised)', fontSize: '0.55rem',
+              background: 'var(--midnight-raised)', fontSize: 'var(--fs-3xs)',
               color: 'var(--text-secondary)', overflow: 'auto',
               fontFamily: 'var(--font-mono)',
             }}>
@@ -266,13 +266,13 @@ track_uri,cover_url,cover_path`}
         <div style={{
           marginTop: 12, padding: '8px 12px', borderRadius: 6,
           background: 'rgba(61,168,119,0.1)', border: '1px solid rgba(61,168,119,0.3)',
-          fontSize: '0.75rem', color: '#3DA877',
+          fontSize: 'var(--fs-sm)', color: '#3DA877',
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         }}>
           <span>{summary.tracks} tracks from {summary.albums} releases ready for selection</span>
           <button
             onClick={() => { setSummary(null); setError(''); setScanStatus(''); if (fileRef.current) fileRef.current.value = ''; }}
-            style={{ color: 'var(--text-muted)', fontSize: '0.65rem', cursor: 'pointer' }}
+            style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-2xs)', cursor: 'pointer' }}
           >
             Clear
           </button>
@@ -283,7 +283,7 @@ track_uri,cover_url,cover_path`}
         <div style={{
           marginTop: 12, padding: '8px 12px', borderRadius: 6,
           background: 'rgba(204,53,53,0.1)', border: '1px solid rgba(204,53,53,0.3)',
-          fontSize: '0.75rem', color: 'var(--mmmc-red)',
+          fontSize: 'var(--fs-sm)', color: 'var(--mmmc-red)',
         }}>
           {error}
         </div>

@@ -62,7 +62,7 @@ export default memo(function ClusterCard({ cluster, selectionSlot, selectedSlots
               background: s.isCoverFeature ? 'var(--mmmc-red)' : 'var(--gold)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
-              fontFamily: 'var(--font-mono)', fontSize: '0.6rem', fontWeight: 700,
+              fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-2xs)', fontWeight: 700,
               color: 'var(--midnight)',
             }}>
               {s.selectionNumber}
@@ -115,13 +115,13 @@ export default memo(function ClusterCard({ cluster, selectionSlot, selectedSlots
       {/* Info */}
       <div style={{ padding: '12px' }}>
         <p style={{
-          fontSize: '0.85rem', fontWeight: 600, lineHeight: 1.3, marginBottom: 4,
+          fontSize: 'var(--fs-md)', fontWeight: 600, lineHeight: 1.3, marginBottom: 4,
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
         }}>
           {isSelected && allSlots.length === 1 ? primarySlot!.track.track_name : cluster.album_name}
         </p>
         <p style={{
-          fontSize: '0.75rem', color: 'var(--text-secondary)',
+          fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)',
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 8,
         }}>
           {cluster.artist_names}
@@ -130,7 +130,7 @@ export default memo(function ClusterCard({ cluster, selectionSlot, selectedSlots
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
           <span className={`badge ${badgeClass}`}>{badgeLabel}</span>
           {featureCount && featureCount > 0 ? (
-            <span className="badge" style={{ background: 'rgba(212,168,67,0.15)', color: 'var(--gold)', fontSize: '0.6rem' }}>
+            <span className="badge" style={{ background: 'rgba(212,168,67,0.15)', color: 'var(--gold)', fontSize: 'var(--fs-2xs)' }}>
               Featured {featureCount}x
             </span>
           ) : null}
@@ -140,7 +140,7 @@ export default memo(function ClusterCard({ cluster, selectionSlot, selectedSlots
             </span>
           )}
           {allSlots.length > 1 && (
-            <span className="badge" style={{ background: 'rgba(212,168,67,0.2)', color: 'var(--gold)', fontSize: '0.6rem' }}>
+            <span className="badge" style={{ background: 'rgba(212,168,67,0.2)', color: 'var(--gold)', fontSize: 'var(--fs-2xs)' }}>
               {allSlots.length} picked
             </span>
           )}
@@ -151,7 +151,7 @@ export default memo(function ClusterCard({ cluster, selectionSlot, selectedSlots
           <button
             onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
             style={{
-              marginTop: 8, fontSize: '0.7rem', color: 'var(--gold)',
+              marginTop: 8, fontSize: 'var(--fs-xs)', color: 'var(--gold)',
               display: 'flex', alignItems: 'center', gap: 4,
             }}
           >
@@ -182,16 +182,16 @@ export default memo(function ClusterCard({ cluster, selectionSlot, selectedSlots
                       width: 18, height: 18, borderRadius: '50%', flexShrink: 0,
                       background: 'var(--gold)', color: 'var(--midnight)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontFamily: 'var(--font-mono)', fontSize: '0.55rem', fontWeight: 700,
+                      fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-3xs)', fontWeight: 700,
                     }}>
                       {trackSlot.selectionNumber}
                     </span>
                   )}
-                  <span className="mono" style={{ fontSize: '0.65rem', color: 'var(--text-muted)', width: 16, textAlign: 'right' }}>
+                  <span className="mono" style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)', width: 16, textAlign: 'right' }}>
                     {track.track_number}
                   </span>
                   <span style={{
-                    fontSize: '0.75rem', flex: 1,
+                    fontSize: 'var(--fs-sm)', flex: 1,
                     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                     color: isThisTrackSelected ? 'var(--gold)' : 'var(--text-primary)',
                     fontWeight: isThisTrackSelected ? 600 : 400,
@@ -199,7 +199,7 @@ export default memo(function ClusterCard({ cluster, selectionSlot, selectedSlots
                     {track.track_name}
                   </span>
                   {track.explicit && <span className="badge badge-explicit">E</span>}
-                  <span className="mono" style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>
+                  <span className="mono" style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)' }}>
                     {formatDuration(track.duration_ms)}
                   </span>
                 </div>
@@ -216,7 +216,7 @@ export default memo(function ClusterCard({ cluster, selectionSlot, selectedSlots
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
             style={{
-              fontSize: '0.65rem', color: 'var(--spotify-green)',
+              fontSize: 'var(--fs-2xs)', color: 'var(--spotify-green)',
               padding: '2px 8px', border: '1px solid rgba(29,185,84,0.3)', borderRadius: 6,
             }}
           >

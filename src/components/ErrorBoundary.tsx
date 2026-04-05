@@ -17,8 +17,8 @@ export default class ErrorBoundary extends React.Component<{ children: React.Rea
           minHeight: '100vh', background: 'var(--midnight)',
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
         }}>
-          <h2 style={{ fontSize: '1.5rem', marginBottom: 16 }}>Something went wrong</h2>
-          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: 24, maxWidth: 500, textAlign: 'center' }}>
+          <h2 style={{ fontSize: 'var(--fs-3xl)', marginBottom: 16 }}>Something went wrong</h2>
+          <p style={{ fontSize: 'var(--fs-md)', color: 'var(--text-secondary)', marginBottom: 24, maxWidth: 500, textAlign: 'center' }}>
             {this.state.error.message}
           </p>
           <button

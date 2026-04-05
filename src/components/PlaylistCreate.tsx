@@ -49,7 +49,7 @@ export default function PlaylistCreate({
     }}>
       {/* Master playlist push */}
       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 12 }}>
-        <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Master:</span>
+        <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-md)' }}>Master:</span>
         <div style={{ display: 'flex', gap: 4 }}>
           <button className={`filter-pill ${masterMode === 'replace' ? 'active' : ''}`} onClick={() => setMasterMode('replace')}>Replace</button>
           <button className={`filter-pill ${masterMode === 'append' ? 'active' : ''}`} onClick={() => setMasterMode('append')}>Append</button>
@@ -57,13 +57,13 @@ export default function PlaylistCreate({
         <button className="btn btn-sm btn-gold" onClick={() => setShowConfirm(true)} disabled={pushing}>
           {pushing ? 'Pushing...' : `Push ${selectedCount} to ${masterName || 'playlist'}`}
         </button>
-        {masterResult === 'success' && <span style={{ color: '#3DA877', fontSize: '0.8rem', fontWeight: 600 }}>Done!</span>}
-        {masterResult === 'error' && <span style={{ color: 'var(--mmmc-red)', fontSize: '0.8rem' }}>Failed</span>}
+        {masterResult === 'success' && <span style={{ color: '#3DA877', fontSize: 'var(--fs-md)', fontWeight: 600 }}>Done!</span>}
+        {masterResult === 'error' && <span style={{ color: 'var(--mmmc-red)', fontSize: 'var(--fs-md)' }}>Failed</span>}
       </div>
 
       {/* Create new playlist */}
       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-        <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>New:</span>
+        <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-md)' }}>New:</span>
         <input
           type="text"
           value={newName}
@@ -71,13 +71,13 @@ export default function PlaylistCreate({
           style={{
             background: 'var(--midnight)', border: '1px solid var(--midnight-border)',
             borderRadius: 8, padding: '6px 12px', color: 'var(--text-primary)',
-            fontSize: '0.8rem', fontFamily: 'var(--font-body)', width: 280,
+            fontSize: 'var(--fs-md)', fontFamily: 'var(--font-body)', width: 280,
           }}
         />
         <button
           className={`filter-pill ${isPublic ? 'active' : ''}`}
           onClick={() => setIsPublic(!isPublic)}
-          style={{ fontSize: '0.7rem' }}
+          style={{ fontSize: 'var(--fs-xs)' }}
         >
           {isPublic ? 'Public' : 'Private'}
         </button>
@@ -85,21 +85,21 @@ export default function PlaylistCreate({
           {creating ? 'Creating...' : 'Create & Add Tracks'}
         </button>
         {newResult && newResult !== 'error' && (
-          <a href={newResult.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.75rem', color: 'var(--spotify-green)' }}>
+          <a href={newResult.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 'var(--fs-sm)', color: 'var(--spotify-green)' }}>
             Open playlist
           </a>
         )}
-        {newResult === 'error' && <span style={{ color: 'var(--mmmc-red)', fontSize: '0.8rem' }}>Failed</span>}
+        {newResult === 'error' && <span style={{ color: 'var(--mmmc-red)', fontSize: 'var(--fs-md)' }}>Failed</span>}
       </div>
 
       {/* Confirm modal */}
       {showConfirm && (
         <div className="modal-overlay" onClick={() => setShowConfirm(false)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
-            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', marginBottom: 16 }}>
+            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-2xl)', marginBottom: 16 }}>
               Confirm Playlist Update
             </h3>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: 16 }}>
+            <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--fs-lg)', marginBottom: 16 }}>
               {masterMode === 'replace' ? (
                 <>Replace all tracks in <em>{masterName}</em> with {selectedCount} selected tracks?</>
               ) : (
@@ -107,7 +107,7 @@ export default function PlaylistCreate({
               )}
             </p>
             {masterMode === 'replace' && (
-              <p style={{ color: 'var(--mmmc-red)', fontSize: '0.8rem', marginBottom: 16 }}>
+              <p style={{ color: 'var(--mmmc-red)', fontSize: 'var(--fs-md)', marginBottom: 16 }}>
                 This removes all existing tracks.
               </p>
             )}

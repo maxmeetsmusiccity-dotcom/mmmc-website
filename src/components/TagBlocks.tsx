@@ -135,9 +135,9 @@ export default function TagBlocks({ slideGroups }: Props) {
       padding: '16px 0', borderTop: '1px solid var(--midnight-border)', marginTop: 24,
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
-        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem' }}>
+        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-xl)' }}>
           Instagram Tags
-          {resolving && <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginLeft: 8 }}>Resolving...</span>}
+          {resolving && <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)', marginLeft: 8 }}>Resolving...</span>}
         </h3>
         <div style={{ display: 'flex', gap: 4 }}>
           {([['handles', 'Handles'], ['with_titles', 'With Titles'], ['newline', 'One Per Line']] as const).map(([key, label]) => (
@@ -145,7 +145,7 @@ export default function TagBlocks({ slideGroups }: Props) {
               key={key}
               className={`filter-pill ${format === key ? 'active' : ''}`}
               onClick={() => setFormat(key)}
-              style={{ fontSize: '0.7rem', padding: '4px 10px' }}
+              style={{ fontSize: 'var(--fs-xs)', padding: '4px 10px' }}
             >
               {label}
             </button>
@@ -163,8 +163,8 @@ export default function TagBlocks({ slideGroups }: Props) {
           }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, flexWrap: 'wrap', gap: 8 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>Slide {i + 1}</span>
-                <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
+                <span style={{ fontSize: 'var(--fs-md)', fontWeight: 600 }}>Slide {i + 1}</span>
+                <span style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)' }}>
                   {counts.confirmed > 0 && <span style={{ color: 'var(--steel)' }}>{counts.confirmed} confirmed</span>}
                   {counts.needsHandle > 0 && <span> · {counts.needsHandle} need handle</span>}
                 </span>
@@ -172,13 +172,13 @@ export default function TagBlocks({ slideGroups }: Props) {
               <button
                 className="btn btn-sm"
                 onClick={() => copyToClipboard(tagBlock, i)}
-                style={{ fontSize: '0.65rem', padding: '3px 10px' }}
+                style={{ fontSize: 'var(--fs-2xs)', padding: '3px 10px' }}
               >
                 {copiedSlide === i ? 'Copied!' : 'Copy'}
               </button>
             </div>
             <pre style={{
-              fontSize: '0.75rem', color: 'var(--text-secondary)',
+              fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)',
               whiteSpace: 'pre-wrap', wordBreak: 'break-all',
               lineHeight: 1.6,
             }}>
@@ -196,7 +196,7 @@ export default function TagBlocks({ slideGroups }: Props) {
                     return (
                       <div key={`${slot.track.track_id}-${name}`} style={{
                         display: 'flex', alignItems: 'center', gap: 8,
-                        fontSize: '0.65rem', padding: '2px 0',
+                        fontSize: 'var(--fs-2xs)', padding: '2px 0',
                       }}>
                         <span style={{ color: 'var(--text-muted)', width: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {name.trim()}
@@ -209,11 +209,11 @@ export default function TagBlocks({ slideGroups }: Props) {
                           style={{
                             background: 'var(--midnight-raised)', border: '1px solid var(--midnight-border)',
                             borderRadius: 4, padding: '2px 6px', color: 'var(--text-primary)',
-                            fontSize: '0.65rem', width: 140, fontFamily: 'var(--font-mono)',
+                            fontSize: 'var(--fs-2xs)', width: 140, fontFamily: 'var(--font-mono)',
                           }}
                         />
                         <span style={{
-                          fontSize: '0.55rem',
+                          fontSize: 'var(--fs-3xs)',
                           color: result.source === 'nd' ? '#3DA877'
                             : result.source === 'cache' ? 'var(--steel)'
                             : result.source === 'manual' ? 'var(--gold)'

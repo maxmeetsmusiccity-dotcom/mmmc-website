@@ -4,12 +4,12 @@ export default function Privacy() {
   return (
     <div style={{ minHeight: '100vh' }}>
       <header style={{ padding: '16px 24px', borderBottom: '1px solid var(--midnight-border)', display: 'flex', alignItems: 'center', gap: 16 }}>
-        <Link to="/" style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>MMMC</Link>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', fontWeight: 600 }}>Privacy Policy</h1>
+        <Link to="/" style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-md)' }}>MMMC</Link>
+        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-2xl)', fontWeight: 600 }}>Privacy Policy</h1>
       </header>
 
-      <div style={{ maxWidth: 700, margin: '0 auto', padding: 32, color: 'var(--text-secondary)', lineHeight: 1.8, fontSize: '0.9rem' }}>
-        <div style={{ background: 'rgba(212,168,67,0.1)', border: '1px solid var(--gold-dark)', borderRadius: 8, padding: '12px 16px', marginBottom: 24, color: 'var(--gold)', fontSize: '0.8rem' }}>
+      <div style={{ maxWidth: 700, margin: '0 auto', padding: 32, color: 'var(--text-secondary)', lineHeight: 1.8, fontSize: 'var(--fs-lg)' }}>
+        <div style={{ background: 'rgba(212,168,67,0.1)', border: '1px solid var(--gold-dark)', borderRadius: 8, padding: '12px 16px', marginBottom: 24, color: 'var(--gold)', fontSize: 'var(--fs-md)' }}>
           DRAFT — PENDING LEGAL REVIEW. This policy is not yet in effect.
         </div>
 
@@ -28,7 +28,7 @@ export default function Privacy() {
         <h2 style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)', marginTop: 24, marginBottom: 8 }}>Data Security</h2>
         <p>All data is encrypted in transit (TLS) and at rest (Supabase). Authentication tokens are stored in session storage only. No passwords are stored in plaintext. Spotify and Apple Music tokens are never persisted beyond the browser session.</p>
 
-        <p style={{ marginTop: 32, color: 'var(--text-muted)', fontSize: '0.75rem' }}>Last updated: April 2026. Contact: privacy@maxmeetsmusiccity.com</p>
+        <p style={{ marginTop: 32, color: 'var(--text-muted)', fontSize: 'var(--fs-sm)' }}>Last updated: April 2026. Contact: privacy@maxmeetsmusiccity.com</p>
       </div>
     </div>
   );

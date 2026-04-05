@@ -192,20 +192,22 @@ function drawVignette(ctx: CanvasRenderingContext2D, strength: number) {
 }
 
 function goldRule(ctx: CanvasRenderingContext2D, y: number, t: CarouselTemplate) {
+  const cw = ctx.canvas.width;
   ctx.strokeStyle = `${t.accentGlow}0.5)`;
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(S / 2 - 190, y);
-  ctx.lineTo(S / 2 + 190, y);
+  ctx.moveTo(cw / 2 - 190, y);
+  ctx.lineTo(cw / 2 + 190, y);
   ctx.stroke();
 }
 
 function drawNotes(ctx: CanvasRenderingContext2D, size: number) {
   const n = imageCache;
+  const cw = ctx.canvas.width, ch = ctx.canvas.height;
   n.get(ASSETS.noteTL) && ctx.drawImage(n.get(ASSETS.noteTL)!, 52, 52, size * 0.7, size);
-  n.get(ASSETS.noteTR) && ctx.drawImage(n.get(ASSETS.noteTR)!, S - 52 - size * 0.65, 52, size * 0.65, size);
-  n.get(ASSETS.noteBL) && ctx.drawImage(n.get(ASSETS.noteBL)!, 52, S - 52 - size * 0.85, size * 0.85, size);
-  n.get(ASSETS.noteBR) && ctx.drawImage(n.get(ASSETS.noteBR)!, S - 52 - size * 0.85, S - 52 - size * 0.85, size * 0.85, size);
+  n.get(ASSETS.noteTR) && ctx.drawImage(n.get(ASSETS.noteTR)!, cw - 52 - size * 0.65, 52, size * 0.65, size);
+  n.get(ASSETS.noteBL) && ctx.drawImage(n.get(ASSETS.noteBL)!, 52, ch - 52 - size * 0.85, size * 0.85, size);
+  n.get(ASSETS.noteBR) && ctx.drawImage(n.get(ASSETS.noteBR)!, cw - 52 - size * 0.85, ch - 52 - size * 0.85, size * 0.85, size);
 }
 
 function drawSparkles(ctx: CanvasRenderingContext2D, positions: [number, number][], sz: number) {
@@ -218,24 +220,26 @@ function drawSparkles(ctx: CanvasRenderingContext2D, positions: [number, number]
 
 function vinylGrooves(ctx: CanvasRenderingContext2D, t: CarouselTemplate) {
   if (!t.cover.vinylOverlay) return;
-  const cx = S / 2, cy = S / 2;
-  const grad = ctx.createRadialGradient(cx, cy, 80, cx, cy, 520);
+  const cw = ctx.canvas.width, ch = ctx.canvas.height;
+  const cx = cw / 2, cy = ch / 2;
+  const scale = Math.min(cw, ch) / 1080; // scale relative to 1080 base
+  const grad = ctx.createRadialGradient(cx, cy, 80 * scale, cx, cy, 520 * scale);
   grad.addColorStop(0, 'rgba(30, 36, 51, 0.4)');
   grad.addColorStop(1, 'rgba(10, 15, 30, 0.3)');
   ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, S, S);
+  ctx.fillRect(0, 0, cw, ch);
   const step = Math.max(4, Math.floor(420 / t.cover.grooveCount));
   for (let r = 80; r <= 520; r += step) {
     ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.arc(cx, cy, r * scale, 0, Math.PI * 2);
     ctx.strokeStyle = r % (step * 2) === 0 ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.15)';
     ctx.lineWidth = 0.8;
     ctx.stroke();
   }
   ctx.beginPath();
-  ctx.arc(cx - 60, cy - 60, 380, -0.9, -0.3);
+  ctx.arc(cx - 60 * scale, cy - 60 * scale, 380 * scale, -0.9, -0.3);
   ctx.strokeStyle = 'rgba(255,255,255,0.06)';
-  ctx.lineWidth = 40;
+  ctx.lineWidth = 40 * scale;
   ctx.stroke();
 }
 

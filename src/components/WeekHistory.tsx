@@ -15,16 +15,16 @@ export default function WeekHistory({ onLoadWeek, currentWeekDate }: Props) {
   }, []);
 
   if (loading) {
-    return <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', padding: 16 }}>Loading history...</p>;
+    return <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-md)', padding: 16 }}>Loading history...</p>;
   }
 
   if (weeks.length === 0) {
-    return <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', padding: 16 }}>No saved weeks yet. Complete a scan and finalize to save.</p>;
+    return <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-md)', padding: 16 }}>No saved weeks yet. Complete a scan and finalize to save.</p>;
   }
 
   return (
     <div style={{ padding: 24 }}>
-      <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', marginBottom: 16 }}>
+      <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-2xl)', marginBottom: 16 }}>
         Week History
       </h2>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12 }}>
@@ -51,7 +51,7 @@ export default function WeekHistory({ onLoadWeek, currentWeekDate }: Props) {
                   <span className="badge badge-single">Current</span>
                 )}
               </div>
-              <div style={{ display: 'flex', gap: 12, fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+              <div style={{ display: 'flex', gap: 12, fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)' }}>
                 <span className="mono">{selections.length} tracks</span>
                 {week.playlist_master_pushed && (
                   <span style={{ color: 'var(--spotify-green)' }}>Playlist pushed</span>

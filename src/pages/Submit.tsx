@@ -39,15 +39,15 @@ export default function Submit() {
         padding: '16px 24px', borderBottom: '1px solid var(--midnight-border)',
         display: 'flex', alignItems: 'center', gap: 16,
       }}>
-        <Link to="/" style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>MMMC</Link>
-        <Link to="/newmusicfriday" style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>NMF</Link>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', fontWeight: 600 }}>Submit a Track</h1>
+        <Link to="/" style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-md)' }}>MMMC</Link>
+        <Link to="/newmusicfriday" style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-md)' }}>NMF</Link>
+        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-2xl)', fontWeight: 600 }}>Submit a Track</h1>
       </header>
 
       <div style={{ maxWidth: 520, margin: '0 auto', padding: 32 }}>
         {submitted ? (
           <div style={{ textAlign: 'center', padding: '48px 0' }}>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', marginBottom: 12, color: 'var(--gold)' }}>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-3xl)', marginBottom: 12, color: 'var(--gold)' }}>
               Submitted!
             </h2>
             <p style={{ color: 'var(--text-secondary)', marginBottom: 24 }}>
@@ -70,7 +70,7 @@ export default function Submit() {
               <input className="search-input" type="email" placeholder="Your email *" value={email} onChange={e => setEmail(e.target.value)} required />
               <input className="search-input" type="text" placeholder="Label (optional)" value={label} onChange={e => setLabel(e.target.value)} />
 
-              {error && <p style={{ color: 'var(--mmmc-red)', fontSize: '0.8rem' }}>{error}</p>}
+              {error && <p style={{ color: 'var(--mmmc-red)', fontSize: 'var(--fs-md)' }}>{error}</p>}
 
               <button className="btn btn-gold" type="submit" disabled={submitting} style={{ width: '100%', justifyContent: 'center', marginTop: 8 }}>
                 {submitting ? 'Submitting...' : 'Submit Track'}

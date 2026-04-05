@@ -76,6 +76,7 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
   const [platformId, setPlatformId] = useState('ig-post');
   const [gridTemplateId, setGridTemplateId] = useState(localStorage.getItem('nmf_template') || 'mmmc_classic');
   const [titleTemplateId, setTitleTemplateId] = useState(() => getDefaultTitleTemplateId(user?.email || undefined));
+  const hasUserChangedTitle = useRef(false);
   const [slideGroups, setSlideGroups] = useState<SlideGroup[]>([]);
   const manualSplit = useRef(false);
   const [gridPreview, setGridPreview] = useState<string>('');
@@ -90,6 +91,13 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
 
   const platform = getPlatform(platformId);
   const weekDate = getLastFriday();
+
+  // Fix: update title template when user email resolves (Supabase auth is async)
+  useEffect(() => {
+    if (user?.email && !hasUserChangedTitle.current) {
+      setTitleTemplateId(getDefaultTitleTemplateId(user.email));
+    }
+  }, [user?.email]);
 
   // Compute grid layout ID from tracks per slide
   const gridLayoutId = useMemo(() => {
@@ -213,7 +221,7 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
     <div data-testid="carousel-preview-panel" style={{
       padding: '24px 0', borderTop: '1px solid var(--midnight-border)', marginTop: 24,
     }}>
-      <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', marginBottom: 20 }}>
+      <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-2xl)', marginBottom: 20 }}>
         ② Configure & Preview
       </h3>
 
@@ -222,7 +230,7 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
         left={<div>
           {/* Carousel Shape */}
           <div style={{ marginBottom: 20 }}>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8 }}>Carousel Shape</p>
+            <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginBottom: 8 }}>Carousel Shape</p>
             <div style={{ display: 'flex', gap: 8 }}>
               {([
                 { value: '1:1' as CarouselAspect, label: 'Square', sub: '1080×1080', icon: '◻' },
@@ -239,14 +247,14 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
                     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
                   }}
                 >
-                  <span style={{ fontSize: '1.4rem' }}>{opt.icon}</span>
+                  <span style={{ fontSize: 'var(--fs-2xl)' }}>{opt.icon}</span>
                   <span style={{
-                    fontSize: '0.8rem', fontWeight: 600,
+                    fontSize: 'var(--fs-md)', fontWeight: 600,
                     color: carouselAspect === opt.value ? 'var(--gold)' : 'var(--text-secondary)',
                   }}>
                     {opt.label}
                   </span>
-                  <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>
+                  <span style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)' }}>
                     {opt.sub}
                   </span>
                 </button>
@@ -256,20 +264,20 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
 
           {/* Tracks per slide */}
           <div style={{ marginBottom: 20 }}>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8 }}>Tracks per slide</p>
+            <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginBottom: 8 }}>Tracks per slide</p>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               {getTracksPerSlideOptions(selectedTracks.length).map(opt => (
                 <button
                   key={opt.value}
                   onClick={() => { manualSplit.current = false; setTracksPerSlide(opt.value); onTracksPerSlideChange?.(opt.value); }}
                   className={`filter-pill ${tracksPerSlide === opt.value ? 'active' : ''}`}
-                  style={{ fontSize: '0.75rem' }}
+                  style={{ fontSize: 'var(--fs-sm)' }}
                 >
                   {opt.value} ({opt.label})
                 </button>
               ))}
             </div>
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 6 }}>
+            <p style={{ fontSize: 'var(--fs-md)', color: 'var(--text-muted)', marginTop: 6 }}>
               {selectedTracks.length} tracks → {slideCount} slide{slideCount !== 1 ? 's' : ''}
               {titleTemplateId !== 'none' ? ' + title slide' : ''}
               {slideGroups.length > 0 && (
@@ -287,7 +295,7 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
                     setSlideGroups(shuffled);
                     setAllPreviews([]);
                   }}
-                  style={{ marginLeft: 8, fontSize: '0.75rem', color: 'var(--steel)', cursor: 'pointer', textDecoration: 'underline' }}
+                  style={{ marginLeft: 8, fontSize: 'var(--fs-sm)', color: 'var(--steel)', cursor: 'pointer', textDecoration: 'underline' }}
                 >
                   Shuffle All
                 </button>
@@ -297,8 +305,8 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
 
           {/* Platform / Aspect Ratio */}
           <div style={{ marginBottom: 20 }}>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 6 }}>
-              Size <span style={{ fontSize: '0.6rem', color: 'var(--gold)' }}>{platform.width}x{platform.height} ({platform.aspectLabel})</span>
+            <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginBottom: 6 }}>
+              Size <span style={{ fontSize: 'var(--fs-2xs)', color: 'var(--gold)' }}>{platform.width}x{platform.height} ({platform.aspectLabel})</span>
             </p>
             {/* Social presets */}
             <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap', marginBottom: 4 }}>
@@ -311,7 +319,7 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
                     onClick={() => setPlatformId(p.id)}
                     className={`filter-pill ${isActive ? 'active' : ''}`}
                     style={{
-                      fontSize: '0.6rem', padding: '3px 7px',
+                      fontSize: 'var(--fs-2xs)', padding: '3px 7px',
                       borderColor: overLimit && isActive ? 'var(--mmmc-red)' : undefined,
                       color: overLimit && isActive ? 'var(--mmmc-red)' : undefined,
                     }}
@@ -330,7 +338,7 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
                     key={p.id}
                     onClick={() => setPlatformId(p.id)}
                     className={`filter-pill ${isActive ? 'active' : ''}`}
-                    style={{ fontSize: '0.55rem', padding: '2px 6px' }}
+                    style={{ fontSize: 'var(--fs-3xs)', padding: '2px 6px' }}
                   >
                     {p.aspectLabel}
                   </button>
@@ -338,7 +346,7 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
               })}
             </div>
             {totalSlides > platform.maxSlides && (
-              <p style={{ fontSize: '0.6rem', color: 'var(--mmmc-red)', marginTop: 4 }}>
+              <p style={{ fontSize: 'var(--fs-2xs)', color: 'var(--mmmc-red)', marginTop: 4 }}>
                 {platform.name} max {platform.maxSlides} slides. You have {totalSlides}.
               </p>
             )}
@@ -346,7 +354,7 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
             {!platformId.startsWith('ig-') && selectedTracks.length > 0 && (
               <button
                 className="btn btn-sm"
-                style={{ marginTop: 8, fontSize: '0.7rem' }}
+                style={{ marginTop: 8, fontSize: 'var(--fs-xs)' }}
                 onClick={async () => {
                   const mapped: Record<string, PlatformId> = {
                     'tiktok': 'tiktok', 'facebook': 'facebook', 'twitter': 'twitter', 'linkedin': 'facebook',
@@ -369,7 +377,7 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
 
           {/* Center Logo */}
           <div style={{ marginBottom: 20 }}>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 6 }}>Center Logo</p>
+            <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginBottom: 6 }}>Center Logo</p>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <img
                 src={logoUrl}
@@ -380,7 +388,7 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
               <button
                 className="btn btn-sm"
                 onClick={() => logoFileRef.current?.click()}
-                style={{ fontSize: '0.65rem' }}
+                style={{ fontSize: 'var(--fs-2xs)' }}
               >
                 Upload Logo
               </button>
@@ -388,7 +396,7 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
                 <button
                   className="btn btn-sm"
                   onClick={() => { setLogoUrl('/mmmc-logo.png'); localStorage.removeItem('nmf_logo_url'); setAllPreviews([]); }}
-                  style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}
+                  style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)' }}
                 >
                   Reset
                 </button>
@@ -412,16 +420,16 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
 
           {/* Grid Slide Style */}
           <div style={{ marginBottom: 20 }}>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8 }}>Grid Slide Style</p>
+            <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginBottom: 8 }}>Grid Slide Style</p>
             <TemplateSelector selected={gridTemplateId} onSelect={handleGridTemplateChange} />
           </div>
 
           {/* Title Slide Style */}
           <div style={{ marginBottom: 20 }}>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8 }}>Title Slide Style</p>
+            <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginBottom: 8 }}>Title Slide Style</p>
             <TitleTemplatePicker
               selected={titleTemplateId}
-              onSelect={id => { setTitleTemplateId(id); setAllPreviews([]); }}
+              onSelect={id => { hasUserChangedTitle.current = true; setTitleTemplateId(id); setAllPreviews([]); }}
             />
           </div>
 
@@ -435,7 +443,7 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
         right={<div style={{ position: 'sticky', top: 80 }}>
           {/* Grid slide preview */}
           <div style={{ marginBottom: 16 }}>
-            <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: 6 }}>
+            <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)', marginBottom: 6 }}>
               Grid Slide Preview
             </p>
             {gridPreview ? (
@@ -454,7 +462,7 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
                 borderRadius: 8, background: 'var(--midnight)',
                 border: '1px solid var(--midnight-border)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: 'var(--text-muted)', fontSize: '0.8rem',
+                color: 'var(--text-muted)', fontSize: 'var(--fs-md)',
               }}>
                 Select tracks to see preview
               </div>
@@ -464,7 +472,7 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
           {/* Title slide preview */}
           {titleTemplateId !== 'none' && (
             <div style={{ marginBottom: 16 }}>
-              <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: 6 }}>
+              <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)', marginBottom: 6 }}>
                 Title Slide Preview
               </p>
               {titlePreview ? (
@@ -483,7 +491,7 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
                   borderRadius: 8, background: 'var(--midnight)',
                   border: '1px solid var(--midnight-border)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: 'var(--text-muted)', fontSize: '0.8rem',
+                  color: 'var(--text-muted)', fontSize: 'var(--fs-md)',
                 }}>
                   {coverFeature ? 'Rendering...' : 'Set a cover feature (★) to preview'}
                 </div>
@@ -495,7 +503,7 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
 
       {/* GENERATE + EXPORT (full width below the two columns) */}
       {error && (
-        <p style={{ color: 'var(--mmmc-red)', fontSize: '0.8rem', marginBottom: 12 }}>{error}</p>
+        <p style={{ color: 'var(--mmmc-red)', fontSize: 'var(--fs-md)', marginBottom: 12 }}>{error}</p>
       )}
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 20, marginBottom: 16 }}>
@@ -525,12 +533,12 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
               const blob = await generatePlatformImage(slots, weekDate, p.id as PlatformId, gridTemplateId);
               downloadBlob(blob, `nmf-${p.id}-${p.w}x${p.h}.png`);
             }}
-            style={{ fontSize: '0.6rem' }}
+            style={{ fontSize: 'var(--fs-2xs)' }}
           >
             {p.label} ({p.w}×{p.h})
           </button>
         ))}
-        <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', alignSelf: 'center' }}>
+        <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)', alignSelf: 'center' }}>
           {platform.width}×{platform.height} · {platform.aspectLabel} · {totalSlides} slide{totalSlides !== 1 ? 's' : ''}
         </span>
       </div>
@@ -556,7 +564,7 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
             <button
               onClick={() => setActivePreview(Math.max(0, activePreview - 1))}
               disabled={activePreview === 0}
-              style={{ fontSize: '1.5rem', color: activePreview === 0 ? 'var(--midnight-border)' : 'var(--gold)', cursor: 'pointer', alignSelf: 'center' }}
+              style={{ fontSize: 'var(--fs-3xl)', color: activePreview === 0 ? 'var(--midnight-border)' : 'var(--gold)', cursor: 'pointer', alignSelf: 'center' }}
             >
               ‹
             </button>
@@ -569,7 +577,7 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
               <span style={{
                 position: 'absolute', bottom: 8, right: 8,
                 background: 'rgba(0,0,0,0.7)', padding: '2px 8px',
-                borderRadius: 4, fontSize: '0.6rem', color: '#fff', fontFamily: 'var(--font-mono)',
+                borderRadius: 4, fontSize: 'var(--fs-2xs)', color: '#fff', fontFamily: 'var(--font-mono)',
               }}>
                 {activePreview + 1}/{allPreviews.length}
               </span>
@@ -580,7 +588,7 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
                   const blob = await res.blob();
                   downloadBlob(blob, `nmf-${platformId}-slide-${activePreview + 1}.png`);
                 }}
-                style={{ position: 'absolute', top: 8, right: 8, fontSize: '0.6rem', padding: '3px 8px' }}
+                style={{ position: 'absolute', top: 8, right: 8, fontSize: 'var(--fs-2xs)', padding: '3px 8px' }}
               >
                 Download
               </button>
@@ -588,7 +596,7 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
             <button
               onClick={() => setActivePreview(Math.min(allPreviews.length - 1, activePreview + 1))}
               disabled={activePreview === allPreviews.length - 1}
-              style={{ fontSize: '1.5rem', color: activePreview === allPreviews.length - 1 ? 'var(--midnight-border)' : 'var(--gold)', cursor: 'pointer', alignSelf: 'center' }}
+              style={{ fontSize: 'var(--fs-3xl)', color: activePreview === allPreviews.length - 1 ? 'var(--midnight-border)' : 'var(--gold)', cursor: 'pointer', alignSelf: 'center' }}
             >
               ›
             </button>

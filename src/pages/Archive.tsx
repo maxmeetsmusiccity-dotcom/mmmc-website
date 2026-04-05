@@ -51,9 +51,9 @@ export default function Archive() {
         padding: '16px 24px', borderBottom: '1px solid var(--midnight-border)',
         display: 'flex', alignItems: 'center', gap: 16,
       }}>
-        <Link to="/" style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>MMMC</Link>
-        <Link to="/newmusicfriday" style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>NMF</Link>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', fontWeight: 600 }}>
+        <Link to="/" style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-md)' }}>MMMC</Link>
+        <Link to="/newmusicfriday" style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-md)' }}>NMF</Link>
+        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-2xl)', fontWeight: 600 }}>
           Archive
         </h1>
       </header>
@@ -87,12 +87,12 @@ export default function Archive() {
               <p style={{ color: 'var(--text-muted)', textAlign: 'center' }}>Searching...</p>
             ) : features.length > 0 ? (
               <>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: 16 }}>
+                <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-md)', marginBottom: 16 }}>
                   <span className="mono">{features.length}</span> results for "{search}"
                 </p>
                 {Array.from(featuresByWeek.entries()).map(([weekDate, weekFeatures]) => (
                   <div key={weekDate} style={{ marginBottom: 16 }}>
-                    <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', color: 'var(--gold)', marginBottom: 8 }}>
+                    <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-lg)', color: 'var(--gold)', marginBottom: 8 }}>
                       {formatDate(weekDate)}
                     </h3>
                     {weekFeatures.map(f => (
@@ -101,14 +101,14 @@ export default function Archive() {
                         padding: '8px 12px', borderRadius: 8,
                         background: 'var(--midnight-raised)', marginBottom: 4,
                       }}>
-                        <span style={{ fontSize: '0.85rem', fontWeight: 500 }}>{f.track_name}</span>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{f.artist_name}</span>
+                        <span style={{ fontSize: 'var(--fs-md)', fontWeight: 500 }}>{f.track_name}</span>
+                        <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)' }}>{f.artist_name}</span>
                         {f.was_cover_feature && (
                           <span className="badge" style={{ background: 'rgba(204,53,53,0.15)', color: 'var(--mmmc-red)' }}>
                             Cover
                           </span>
                         )}
-                        <span className="mono" style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginLeft: 'auto' }}>
+                        <span className="mono" style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)', marginLeft: 'auto' }}>
                           Slide {f.slide_number}, Pos {f.slide_position}
                         </span>
                       </div>
@@ -143,16 +143,16 @@ export default function Archive() {
                       onClick={() => setExpandedWeek(isExpanded ? null : week.week_date)}
                     >
                       <div>
-                        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem' }}>
+                        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-xl)' }}>
                           {formatDate(week.week_date)}
                         </h3>
-                        <div style={{ display: 'flex', gap: 12, fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: 4 }}>
+                        <div style={{ display: 'flex', gap: 12, fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)', marginTop: 4 }}>
                           <span className="mono">{selections.length} tracks</span>
                           {week.playlist_master_pushed && <span style={{ color: 'var(--spotify-green)' }}>Playlist</span>}
                           {week.carousel_generated && <span style={{ color: 'var(--gold)' }}>Carousel</span>}
                         </div>
                       </div>
-                      <span style={{ color: 'var(--text-muted)', fontSize: '1.2rem' }}>
+                      <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-2xl)' }}>
                         {isExpanded ? '▾' : '▸'}
                       </span>
                     </div>
@@ -173,10 +173,10 @@ export default function Archive() {
                               />
                             )}
                             <div style={{ overflow: 'hidden', flex: 1 }}>
-                              <p style={{ fontSize: '0.75rem', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              <p style={{ fontSize: 'var(--fs-sm)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                 {sel.track.track_name}
                               </p>
-                              <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              <p style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                 {sel.track.artist_names}
                               </p>
                             </div>
@@ -184,7 +184,7 @@ export default function Archive() {
                               href={sel.track.track_spotify_url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              style={{ fontSize: '0.55rem', color: 'var(--spotify-green)' }}
+                              style={{ fontSize: 'var(--fs-3xs)', color: 'var(--spotify-green)' }}
                               onClick={e => e.stopPropagation()}
                             >
                               Spotify

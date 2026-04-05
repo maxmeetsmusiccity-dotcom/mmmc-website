@@ -106,7 +106,7 @@ export default function ArtistBrowser({ onScanArtists, scanning }: Props) {
           placeholder="Search artists by name..."
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
-          style={{ width: '100%', fontSize: '0.8rem', padding: '8px 12px' }}
+          style={{ width: '100%', fontSize: 'var(--fs-md)', padding: '8px 12px' }}
         />
       </div>
 
@@ -120,7 +120,7 @@ export default function ArtistBrowser({ onScanArtists, scanning }: Props) {
               key={cat.id}
               className={`filter-pill ${activeCategory === cat.id ? 'active' : ''}`}
               onClick={() => setActiveCategory(activeCategory === cat.id ? null : cat.id)}
-              style={{ fontSize: '0.7rem', padding: '5px 12px' }}
+              style={{ fontSize: 'var(--fs-xs)', padding: '5px 12px' }}
               title={cat.description}
             >
               {cat.emoji} {cat.name}
@@ -131,20 +131,20 @@ export default function ArtistBrowser({ onScanArtists, scanning }: Props) {
 
       {/* Category description */}
       {activeCategory && !searchQuery && (
-        <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: 12 }}>
+        <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)', marginBottom: 12 }}>
           {categories.find(c => c.id === activeCategory)?.description}
         </p>
       )}
 
       {/* Artist grid */}
       {loading && (
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textAlign: 'center', padding: 24 }}>
+        <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-md)', textAlign: 'center', padding: 24 }}>
           Loading artists...
         </p>
       )}
 
       {error && (
-        <p style={{ color: 'var(--mmmc-red)', fontSize: '0.75rem', marginBottom: 12 }}>{error}</p>
+        <p style={{ color: 'var(--mmmc-red)', fontSize: 'var(--fs-sm)', marginBottom: 12 }}>{error}</p>
       )}
 
       {displayArtists.length > 0 && (
@@ -153,7 +153,7 @@ export default function ArtistBrowser({ onScanArtists, scanning }: Props) {
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
             marginBottom: 8,
           }}>
-            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+            <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)' }}>
               {displayArtists.length} artists
               {selectedNames.size > 0 && (
                 <span style={{ color: 'var(--gold)', fontWeight: 600, marginLeft: 8 }}>
@@ -164,7 +164,7 @@ export default function ArtistBrowser({ onScanArtists, scanning }: Props) {
             {!searchQuery && artists.length > 0 && (
               <button
                 onClick={selectAll}
-                style={{ fontSize: '0.65rem', color: 'var(--steel)', cursor: 'pointer' }}
+                style={{ fontSize: 'var(--fs-2xs)', color: 'var(--steel)', cursor: 'pointer' }}
               >
                 Select All
               </button>
@@ -197,21 +197,21 @@ export default function ArtistBrowser({ onScanArtists, scanning }: Props) {
                     border: isSelected ? '2px solid var(--gold)' : '2px solid var(--midnight-border)',
                     background: isSelected ? 'var(--gold)' : 'transparent',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: 'var(--midnight)', fontSize: '0.6rem', fontWeight: 700,
+                    color: 'var(--midnight)', fontSize: 'var(--fs-2xs)', fontWeight: 700,
                   }}>
                     {isSelected ? '\u2713' : ''}
                   </div>
 
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{
-                      fontSize: '0.8rem', fontWeight: 600,
+                      fontSize: 'var(--fs-md)', fontWeight: 600,
                       color: isSelected ? 'var(--gold)' : 'var(--text-primary)',
                       overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                     }}>
                       {artist.name}
                     </div>
                     <div style={{
-                      fontSize: '0.6rem', color: 'var(--text-muted)',
+                      fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)',
                       display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 2,
                     }}>
                       <span>{artist.tier_display.split(' (')[0]}</span>
@@ -237,13 +237,13 @@ export default function ArtistBrowser({ onScanArtists, scanning }: Props) {
             className="btn btn-gold"
             onClick={() => onScanArtists([...selectedNames])}
             disabled={scanning}
-            style={{ fontSize: '0.85rem', padding: '10px 24px' }}
+            style={{ fontSize: 'var(--fs-md)', padding: '10px 24px' }}
           >
             {scanning ? 'Scanning...' : `Scan ${selectedNames.size} Artists for New Releases`}
           </button>
           <button
             onClick={() => setSelectedNames(new Set())}
-            style={{ fontSize: '0.65rem', color: 'var(--text-muted)', cursor: 'pointer' }}
+            style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)', cursor: 'pointer' }}
           >
             Clear
           </button>
@@ -254,11 +254,11 @@ export default function ArtistBrowser({ onScanArtists, scanning }: Props) {
       {!loading && !searchQuery && !activeCategory && categories.length > 0 && (
         <div style={{
           textAlign: 'center', padding: '24px 16px',
-          color: 'var(--text-muted)', fontSize: '0.8rem',
+          color: 'var(--text-muted)', fontSize: 'var(--fs-md)',
         }}>
           Pick a category above or search for artists to build your follow list.
           <br />
-          <span style={{ fontSize: '0.7rem' }}>No Spotify login required.</span>
+          <span style={{ fontSize: 'var(--fs-xs)' }}>No Spotify login required.</span>
         </div>
       )}
     </div>

@@ -124,7 +124,7 @@ export default function Dashboard() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <ProductNav showAdmin={isAdmin} />
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', fontWeight: 600 }}>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-2xl)', fontWeight: 600 }}>
             NMF <span style={{ color: 'var(--gold)' }}>Intelligence</span>
           </h1>
         </div>
@@ -171,13 +171,13 @@ export default function Dashboard() {
                 style={{
                   background: 'var(--midnight)', border: '1px solid var(--midnight-border)',
                   borderRadius: 8, color: 'var(--text-secondary)', padding: '8px 12px',
-                  fontSize: '0.8rem',
+                  fontSize: 'var(--fs-md)',
                 }}
               >
                 <option value="">All Genres</option>
                 {allGenres.map(g => <option key={g} value={g}>{g}</option>)}
               </select>
-              <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>
+              <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-sm)' }}>
                 {filteredCurators.length} curator{filteredCurators.length !== 1 ? 's' : ''}
               </span>
             </div>
@@ -202,11 +202,11 @@ export default function Dashboard() {
                         </div>
                       )}
                       <div style={{ flex: 1 }}>
-                        <p style={{ fontWeight: 600, fontSize: '0.9rem' }}>{c.display_name || c.username}</p>
+                        <p style={{ fontWeight: 600, fontSize: 'var(--fs-lg)' }}>{c.display_name || c.username}</p>
                         {c.genre_focus?.length > 0 && (
                           <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 4 }}>
                             {c.genre_focus.slice(0, 3).map(g => (
-                              <span key={g} className="badge" style={{ background: 'rgba(94,142,168,0.15)', color: 'var(--steel-light)', fontSize: '0.55rem', padding: '1px 6px' }}>
+                              <span key={g} className="badge" style={{ background: 'rgba(94,142,168,0.15)', color: 'var(--steel-light)', fontSize: 'var(--fs-3xs)', padding: '1px 6px' }}>
                                 {g}
                               </span>
                             ))}
@@ -225,7 +225,7 @@ export default function Dashboard() {
         {tab === 'submissions' && (
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem' }}>My Submissions</h2>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-2xl)' }}>My Submissions</h2>
               <Link to="/newmusicfriday/submit" className="btn btn-sm btn-gold">Submit New Track</Link>
             </div>
 
@@ -233,15 +233,15 @@ export default function Dashboard() {
             <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
               {Object.entries(statusCounts).map(([status, count]) => (
                 <div key={status} className="card" style={{ flex: 1, textAlign: 'center', padding: 12 }}>
-                  <p className="mono" style={{ fontSize: '1.25rem', color: status === 'accepted' ? '#3DA877' : status === 'skipped' ? 'var(--mmmc-red)' : 'var(--gold)' }}>{count}</p>
-                  <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'capitalize' }}>{status}</p>
+                  <p className="mono" style={{ fontSize: 'var(--fs-2xl)', color: status === 'accepted' ? '#3DA877' : status === 'skipped' ? 'var(--mmmc-red)' : 'var(--gold)' }}>{count}</p>
+                  <p style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)', textTransform: 'capitalize' }}>{status}</p>
                 </div>
               ))}
             </div>
 
             {!hasTier('submissions') && (
               <div className="card" style={{ marginBottom: 16, borderColor: 'var(--gold-dark)' }}>
-                <p style={{ color: 'var(--gold)', fontSize: '0.85rem' }}>
+                <p style={{ color: 'var(--gold)', fontSize: 'var(--fs-md)' }}>
                   Upgrade to Submissions tier ($199/mo) to see curator response rates and get match recommendations.
                 </p>
               </div>
@@ -254,8 +254,8 @@ export default function Dashboard() {
                 {submissions.map(s => (
                   <div key={s.id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
-                      <p style={{ fontSize: '0.85rem', fontWeight: 500 }}>{s.artist_name || s.track_url}</p>
-                      {s.pitch && <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: 2 }}>{s.pitch.slice(0, 100)}{s.pitch.length > 100 ? '...' : ''}</p>}
+                      <p style={{ fontSize: 'var(--fs-md)', fontWeight: 500 }}>{s.artist_name || s.track_url}</p>
+                      {s.pitch && <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-secondary)', marginTop: 2 }}>{s.pitch.slice(0, 100)}{s.pitch.length > 100 ? '...' : ''}</p>}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <span className="badge" style={{
@@ -264,7 +264,7 @@ export default function Dashboard() {
                       }}>
                         {s.status}
                       </span>
-                      <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>
+                      <span style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)' }}>
                         {new Date(s.created_at).toLocaleDateString()}
                       </span>
                     </div>
@@ -278,7 +278,7 @@ export default function Dashboard() {
         {/* Intelligence */}
         {tab === 'intelligence' && (
           <div>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', marginBottom: 16 }}>Weekly Intelligence</h2>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-2xl)', marginBottom: 16 }}>Weekly Intelligence</h2>
             {!hasTier('intelligence') ? (
               <div className="card" style={{ textAlign: 'center', padding: 48 }}>
                 <h3 style={{ color: 'var(--gold)', marginBottom: 12 }}>Intelligence Tier Required</h3>
@@ -286,7 +286,7 @@ export default function Dashboard() {
                   The Weekly Intelligence Report shows which tracks are gaining traction across curators,
                   breakout picks, genre trends, and curator activity patterns.
                 </p>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Starting at $99/month</p>
+                <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-md)' }}>Starting at $99/month</p>
               </div>
             ) : (
               <div>
@@ -304,23 +304,23 @@ export default function Dashboard() {
         {/* Admin */}
         {tab === 'admin' && isAdmin && (
           <div>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', marginBottom: 16 }}>Admin Panel</h2>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-2xl)', marginBottom: 16 }}>Admin Panel</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 12, marginBottom: 24 }}>
               <div className="card" style={{ textAlign: 'center' }}>
-                <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Total Curators</p>
-                <p className="mono" style={{ fontSize: '1.5rem', color: 'var(--gold)' }}>{curators.length}</p>
+                <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)' }}>Total Curators</p>
+                <p className="mono" style={{ fontSize: 'var(--fs-3xl)', color: 'var(--gold)' }}>{curators.length}</p>
               </div>
               <div className="card" style={{ textAlign: 'center' }}>
-                <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Total Submissions</p>
-                <p className="mono" style={{ fontSize: '1.5rem', color: 'var(--gold)' }}>{submissions.length}</p>
+                <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)' }}>Total Submissions</p>
+                <p className="mono" style={{ fontSize: 'var(--fs-3xl)', color: 'var(--gold)' }}>{submissions.length}</p>
               </div>
               <div className="card" style={{ textAlign: 'center' }}>
-                <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Usage Events</p>
-                <p className="mono" style={{ fontSize: '1.5rem', color: 'var(--gold)' }}>{usageStats.total_events}</p>
+                <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)' }}>Usage Events</p>
+                <p className="mono" style={{ fontSize: 'var(--fs-3xl)', color: 'var(--gold)' }}>{usageStats.total_events}</p>
               </div>
               <div className="card" style={{ textAlign: 'center' }}>
-                <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Genres Tracked</p>
-                <p className="mono" style={{ fontSize: '1.5rem', color: 'var(--gold)' }}>{allGenres.length}</p>
+                <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)' }}>Genres Tracked</p>
+                <p className="mono" style={{ fontSize: 'var(--fs-3xl)', color: 'var(--gold)' }}>{allGenres.length}</p>
               </div>
             </div>
 
@@ -333,11 +333,11 @@ export default function Dashboard() {
                 { name: 'Priority', price: '$499/mo', features: ['Priority placement', 'Direct curator access', 'ND data preview'] },
               ].map(t => (
                 <div key={t.name} className="card" style={{ padding: 16 }}>
-                  <p style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: 4 }}>{t.name}</p>
-                  <p style={{ color: 'var(--gold)', fontSize: '0.85rem', marginBottom: 8 }}>{t.price}</p>
+                  <p style={{ fontWeight: 600, fontSize: 'var(--fs-lg)', marginBottom: 4 }}>{t.name}</p>
+                  <p style={{ color: 'var(--gold)', fontSize: 'var(--fs-md)', marginBottom: 8 }}>{t.price}</p>
                   <ul style={{ listStyle: 'none', padding: 0 }}>
                     {t.features.map(f => (
-                      <li key={f} style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginBottom: 2 }}>
+                      <li key={f} style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-secondary)', marginBottom: 2 }}>
                         {f}
                       </li>
                     ))}

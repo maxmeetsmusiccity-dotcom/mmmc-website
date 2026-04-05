@@ -9,7 +9,7 @@ interface Props {
 export default function PlatformTabs({ selected, onSelect, totalSlides }: Props) {
   return (
     <div data-testid="platform-tabs" style={{ marginBottom: 16 }}>
-      <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8 }}>Platform</p>
+      <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginBottom: 8 }}>Platform</p>
       <div style={{
         display: 'flex', gap: 4, overflowX: 'auto', paddingBottom: 4,
       }}>
@@ -32,16 +32,16 @@ export default function PlatformTabs({ selected, onSelect, totalSlides }: Props)
                 display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
               }}
             >
-              <span style={{ fontSize: '1rem' }}>{platform.icon}</span>
+              <span style={{ fontSize: 'var(--fs-lg)' }}>{platform.icon}</span>
               <span style={{
-                fontSize: '0.65rem', fontWeight: 600,
+                fontSize: 'var(--fs-2xs)', fontWeight: 600,
                 color: isActive ? 'var(--text-primary)' : 'var(--text-muted)',
                 whiteSpace: 'nowrap',
               }}>
                 {platform.name}
               </span>
               <span style={{
-                fontSize: '0.5rem',
+                fontSize: 'var(--fs-3xs)',
                 color: overLimit && isActive ? 'var(--mmmc-red)' : 'var(--text-muted)',
               }}>
                 {platform.aspectLabel} · {platform.maxSlides} max
@@ -59,7 +59,7 @@ export default function PlatformTabs({ selected, onSelect, totalSlides }: Props)
             <div style={{
               marginTop: 8, padding: '6px 10px', borderRadius: 6,
               background: 'rgba(204,53,53,0.1)', border: '1px solid var(--mmmc-red)',
-              fontSize: '0.7rem', color: 'var(--mmmc-red)',
+              fontSize: 'var(--fs-xs)', color: 'var(--mmmc-red)',
             }}>
               {platform.name} allows max {platform.maxSlides} slides. You have {totalSlides}. Remove slides or choose a different platform.
             </div>

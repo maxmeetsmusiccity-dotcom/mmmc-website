@@ -1,4 +1,8 @@
 {
+  "redirects": [
+    { "source": "/nmf", "destination": "/newmusicfriday", "statusCode": 301 },
+    { "source": "/nmf/:path*", "destination": "/newmusicfriday/:path*", "statusCode": 301 }
+  ],
   "headers": [
     {
       "source": "/(.*)",

@@ -2,9 +2,11 @@ import { Link, useLocation } from 'react-router-dom';
 
 interface Props {
   showAdmin?: boolean;
+  backTo?: string;
+  backLabel?: string;
 }
 
-export default function ProductNav({ showAdmin }: Props) {
+export default function ProductNav({ showAdmin, backTo, backLabel }: Props) {
   const { pathname } = useLocation();
   const isNMF = pathname.startsWith('/newmusicfriday');
   const isAdmin = pathname.startsWith('/admin');
@@ -13,8 +15,16 @@ export default function ProductNav({ showAdmin }: Props) {
     <div style={{
       display: 'flex', alignItems: 'center', gap: 8,
     }}>
+      {backTo && (
+        <Link to={backTo} style={{
+          color: 'var(--text-muted)', fontSize: 'var(--fs-md)',
+          textDecoration: 'none', marginRight: 4,
+        }} title={backLabel || 'Go back'}>
+          &larr;
+        </Link>
+      )}
       <Link to="/" style={{
-        color: 'var(--text-muted)', fontSize: '0.75rem',
+        color: 'var(--text-muted)', fontSize: 'var(--fs-sm)',
         fontFamily: 'var(--font-display)', fontWeight: 600,
         textDecoration: 'none', letterSpacing: '0.02em',
       }}>
@@ -23,7 +33,7 @@ export default function ProductNav({ showAdmin }: Props) {
       <Link
         to="/newmusicfriday"
         style={{
-          fontSize: '0.7rem', padding: '4px 12px',
+          fontSize: 'var(--fs-xs)', padding: '4px 12px',
           textDecoration: 'none', borderRadius: 6,
           fontWeight: 600, letterSpacing: '0.03em',
           background: isNMF ? 'var(--gold)' : 'transparent',
@@ -31,14 +41,15 @@ export default function ProductNav({ showAdmin }: Props) {
           border: isNMF ? '1px solid var(--gold)' : '1px solid var(--midnight-border)',
           transition: 'all 0.2s',
         }}
+        title="NMF Curator Studio"
       >
-        NMF Curator
+        NMF Curator Studio
       </Link>
       {showAdmin && (
         <Link
           to="/admin"
           className={`filter-pill ${isAdmin ? 'active' : ''}`}
-          style={{ fontSize: '0.7rem', padding: '4px 10px', textDecoration: 'none' }}
+          style={{ fontSize: 'var(--fs-xs)', padding: '4px 10px', textDecoration: 'none' }}
         >
           Admin
         </Link>

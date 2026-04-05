@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import Home from './pages/Home';
 import NewMusicFriday from './pages/NewMusicFriday';
 import Archive from './pages/Archive';
@@ -26,6 +26,8 @@ export default function App() {
         <Route path="/curator/:username" element={<CuratorProfile />} />
         <Route path="/terms" element={<Terms />} />
         <Route path="/privacy" element={<Privacy />} />
+        <Route path="/nmf" element={<Navigate to="/newmusicfriday" replace />} />
+        <Route path="/nmf/*" element={<Navigate to="/newmusicfriday" replace />} />
       </Routes>
     </ErrorBoundary>
   );

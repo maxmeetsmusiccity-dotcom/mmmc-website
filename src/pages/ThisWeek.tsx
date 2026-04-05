@@ -41,9 +41,9 @@ export default function ThisWeek() {
         padding: '16px 24px', borderBottom: '1px solid var(--midnight-border)',
         display: 'flex', alignItems: 'center', gap: 16,
       }}>
-        <Link to="/" style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>MMMC</Link>
-        <Link to="/newmusicfriday" style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>NMF</Link>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', fontWeight: 600 }}>This Week in New Music</h1>
+        <Link to="/" style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-md)' }}>MMMC</Link>
+        <Link to="/newmusicfriday" style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-md)' }}>NMF</Link>
+        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-2xl)', fontWeight: 600 }}>This Week in New Music</h1>
       </header>
 
       <div style={{ maxWidth: 800, margin: '0 auto', padding: 24 }}>
@@ -51,7 +51,7 @@ export default function ThisWeek() {
           <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.5rem, 4vw, 2rem)', marginBottom: 8 }}>
             Week of <span style={{ color: 'var(--gold)' }}>{new Date(weekDate + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
           </h2>
-          <div style={{ display: 'flex', gap: 24, justifyContent: 'center', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+          <div style={{ display: 'flex', gap: 24, justifyContent: 'center', color: 'var(--text-secondary)', fontSize: 'var(--fs-lg)' }}>
             <span className="mono">{features.length} tracks featured</span>
             <span className="mono">{uniqueCurators} curator{uniqueCurators !== 1 ? 's' : ''}</span>
           </div>
@@ -62,7 +62,7 @@ export default function ThisWeek() {
         ) : trackCounts.length === 0 ? (
           <div style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>
             <p>No picks published for this week yet.</p>
-            <p style={{ fontSize: '0.8rem', marginTop: 8 }}>Curators publish their picks every Friday.</p>
+            <p style={{ fontSize: 'var(--fs-md)', marginTop: 8 }}>Curators publish their picks every Friday.</p>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -74,17 +74,17 @@ export default function ThisWeek() {
                 border: i < 3 ? '1px solid var(--gold-dark)' : '1px solid var(--midnight-border)',
               }}>
                 <span className="mono" style={{
-                  fontSize: '0.8rem', fontWeight: 700, width: 28, textAlign: 'right',
+                  fontSize: 'var(--fs-md)', fontWeight: 700, width: 28, textAlign: 'right',
                   color: i < 3 ? 'var(--gold)' : 'var(--text-muted)',
                 }}>
                   {i + 1}
                 </span>
                 <div style={{ flex: 1 }}>
-                  <p style={{ fontSize: '0.9rem', fontWeight: 600 }}>{track.track_name}</p>
-                  <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{track.artist_name}</p>
+                  <p style={{ fontSize: 'var(--fs-lg)', fontWeight: 600 }}>{track.track_name}</p>
+                  <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)' }}>{track.artist_name}</p>
                 </div>
                 {count > 1 && (
-                  <span className="badge badge-single" style={{ fontSize: '0.65rem' }}>
+                  <span className="badge badge-single" style={{ fontSize: 'var(--fs-2xs)' }}>
                     {count} picks
                   </span>
                 )}

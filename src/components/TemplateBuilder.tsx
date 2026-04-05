@@ -119,7 +119,7 @@ export default function TemplateBuilder({ onSave, onCancel, initial }: Props) {
     <div className="modal-overlay" onClick={onCancel}>
       <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 680, maxHeight: '90vh', overflow: 'auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem' }}>
+          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-2xl)' }}>
             Template Builder
           </h3>
           <button className="btn btn-sm" onClick={onCancel}>Cancel</button>
@@ -237,7 +237,7 @@ export default function TemplateBuilder({ onSave, onCancel, initial }: Props) {
             <div>
               <p style={sectionLabel}>Background Frame (optional 1080x1080 PNG)</p>
               <input ref={fileRef} type="file" accept="image/png,image/jpeg"
-                onChange={handleBgUpload} style={{ fontSize: '0.75rem' }} />
+                onChange={handleBgUpload} style={{ fontSize: 'var(--fs-sm)' }} />
               {bgFrameUrl && (
                 <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
                   <img src={bgFrameUrl} alt="Background frame" style={{ width: 48, height: 48, borderRadius: 4, objectFit: 'cover' }} />
@@ -281,17 +281,17 @@ function hexToRgb(hex: string): string {
 
 const labelStyle: React.CSSProperties = {
   display: 'flex', flexDirection: 'column', gap: 4,
-  fontSize: '0.7rem', color: 'var(--text-muted)',
+  fontSize: 'var(--fs-xs)', color: 'var(--text-muted)',
 };
 
 const sectionLabel: React.CSSProperties = {
-  fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: 6, fontWeight: 600,
+  fontSize: 'var(--fs-xs)', color: 'var(--text-muted)', marginBottom: 6, fontWeight: 600,
 };
 
 const inputStyle: React.CSSProperties = {
   background: 'var(--midnight)', border: '1px solid var(--midnight-border)',
   borderRadius: 6, padding: '6px 10px', color: 'var(--text-primary)',
-  fontSize: '0.8rem', fontFamily: 'var(--font-body)',
+  fontSize: 'var(--fs-md)', fontFamily: 'var(--font-body)',
 };
 
 const selectStyle: React.CSSProperties = {
@@ -304,5 +304,5 @@ const swatchStyle: React.CSSProperties = {
 
 const toggleStyle: React.CSSProperties = {
   display: 'flex', alignItems: 'center', gap: 6,
-  fontSize: '0.75rem', color: 'var(--text-secondary)', cursor: 'pointer',
+  fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)', cursor: 'pointer',
 };

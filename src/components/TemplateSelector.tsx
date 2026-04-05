@@ -72,11 +72,11 @@ export default function TemplateSelector({ selected, onSelect }: Props) {
   return (
     <div style={{ marginBottom: 16 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Template</p>
+        <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)' }}>Template</p>
         <button
           className="btn btn-sm"
           onClick={() => setShowBuilder(true)}
-          style={{ fontSize: '0.65rem', padding: '3px 10px' }}
+          style={{ fontSize: 'var(--fs-2xs)', padding: '3px 10px' }}
         >
           + Custom
         </button>
@@ -103,7 +103,7 @@ export default function TemplateSelector({ selected, onSelect }: Props) {
               {isCustom && (
                 <span style={{
                   position: 'absolute', top: 4, right: 4,
-                  fontSize: '0.45rem', background: 'var(--gold)', color: 'var(--midnight)',
+                  fontSize: 'var(--fs-3xs)', background: 'var(--gold)', color: 'var(--midnight)',
                   padding: '1px 4px', borderRadius: 4, fontWeight: 700,
                 }}>
                   CUSTOM
@@ -121,19 +121,19 @@ export default function TemplateSelector({ selected, onSelect }: Props) {
                     width: '100%', height: '100%', background: t.background,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}>
-                    <span style={{ color: t.accent, fontSize: '0.55rem', fontWeight: 700 }}>NMF</span>
+                    <span style={{ color: t.accent, fontSize: 'var(--fs-3xs)', fontWeight: 700 }}>NMF</span>
                   </div>
                 )}
               </div>
               <p style={{
-                fontSize: '0.7rem', fontWeight: 600,
+                fontSize: 'var(--fs-xs)', fontWeight: 600,
                 color: selected === t.id ? t.accent : 'var(--text-secondary)',
                 overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
               }}>
                 {t.name}
               </p>
               <p style={{
-                fontSize: '0.5rem', color: 'var(--text-muted)',
+                fontSize: 'var(--fs-3xs)', color: 'var(--text-muted)',
                 overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
               }}>
                 {t.description}

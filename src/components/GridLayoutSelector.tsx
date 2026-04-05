@@ -52,7 +52,7 @@ function GridSection({ title, grids, selected, onSelect }: {
   if (grids.length === 0) return null;
   return (
     <div style={{ marginBottom: 12 }}>
-      <p style={{ fontSize: '0.6rem', color: 'var(--text-muted)', marginBottom: 4, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+      <p style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)', marginBottom: 4, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
         {title} ({grids.length})
       </p>
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -75,7 +75,7 @@ function GridSection({ title, grids, selected, onSelect }: {
             >
               <LayoutIcon config={config} size={32} active={isActive} />
               <span style={{
-                fontSize: '0.45rem', fontWeight: 600,
+                fontSize: 'var(--fs-3xs)', fontWeight: 600,
                 color: isActive ? 'var(--gold)' : 'var(--text-muted)',
                 whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                 maxWidth: 50,
@@ -97,7 +97,7 @@ export default function GridLayoutSelector({ trackCount, selected, onSelect, onC
 
   return (
     <div style={{ marginBottom: 16 }}>
-      <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8 }}>
+      <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginBottom: 8 }}>
         Grid Layout <span className="mono" style={{ color: 'var(--gold)' }}>({trackCount} tracks)</span>
       </p>
 
@@ -111,7 +111,7 @@ export default function GridLayoutSelector({ trackCount, selected, onSelect, onC
         <div style={{
           marginTop: 8, padding: '6px 10px', borderRadius: 6,
           background: 'rgba(212,168,67,0.08)', border: '1px solid var(--gold-dark)',
-          fontSize: '0.7rem', color: 'var(--text-secondary)',
+          fontSize: 'var(--fs-xs)', color: 'var(--text-secondary)',
         }}>
           Or feature{' '}
           {betterCounts.map((c, i) => (

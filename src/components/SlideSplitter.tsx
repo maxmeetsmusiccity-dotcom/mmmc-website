@@ -163,17 +163,17 @@ export default function SlideSplitter({ tracks, defaultTracksPerSlide, onSplitCh
   return (
     <div data-testid="slide-splitter" style={{ marginBottom: 16 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+        <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)' }}>
           Slide Split <span className="mono" style={{ color: 'var(--gold)' }}>({groups.length} slide{groups.length !== 1 ? 's' : ''})</span>
         </p>
         <button
           onClick={resetToAuto}
-          style={{ fontSize: '0.6rem', color: 'var(--steel)', cursor: 'pointer' }}
+          style={{ fontSize: 'var(--fs-2xs)', color: 'var(--steel)', cursor: 'pointer' }}
         >
           Reset to Auto
         </button>
       </div>
-      <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: 8, lineHeight: 1.4 }}>
+      <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)', marginBottom: 8, lineHeight: 1.4 }}>
         Drag tracks to reorder within or across slides. Click between tracks to add/remove slide breaks.
       </p>
 
@@ -204,16 +204,16 @@ export default function SlideSplitter({ tracks, defaultTracksPerSlide, onSplitCh
                 style={{
                   display: 'flex', alignItems: 'center', gap: 8,
                   padding: '6px 8px', borderRadius: 4,
-                  fontSize: '0.8rem', cursor: 'grab',
+                  fontSize: 'var(--fs-md)', cursor: 'grab',
                   background: isDragOver ? 'rgba(212,168,67,0.1)' : 'transparent',
                   borderTop: isDragOver ? '2px solid var(--gold)' : '2px solid transparent',
                   transition: 'background 0.1s',
                 }}
               >
-                <span style={{ color: 'var(--midnight-border)', fontSize: '0.7rem', cursor: 'grab', userSelect: 'none' }}>
+                <span style={{ color: 'var(--midnight-border)', fontSize: 'var(--fs-xs)', cursor: 'grab', userSelect: 'none' }}>
                   &#x2630;
                 </span>
-                <span className="mono" style={{ color: 'var(--gold)', width: 20, textAlign: 'right', fontSize: '0.75rem' }}>
+                <span className="mono" style={{ color: 'var(--gold)', width: 20, textAlign: 'right', fontSize: 'var(--fs-sm)' }}>
                   {i + 1}
                 </span>
                 {track.cover_art_64 && (
@@ -222,7 +222,7 @@ export default function SlideSplitter({ tracks, defaultTracksPerSlide, onSplitCh
                 <span style={{ flex: 1, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {track.artist_names} — {track.track_name}
                 </span>
-                <span className="mono" style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
+                <span className="mono" style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)' }}>
                   S{slideNum}
                 </span>
               </div>
@@ -234,7 +234,7 @@ export default function SlideSplitter({ tracks, defaultTracksPerSlide, onSplitCh
                     onClick={(e) => { e.stopPropagation(); shuffleSlide(slideNum - 1); }}
                     title={`Randomize track order in Slide ${slideNum}`}
                     style={{
-                      fontSize: '0.7rem', color: 'var(--gold)', cursor: 'pointer',
+                      fontSize: 'var(--fs-xs)', color: 'var(--gold)', cursor: 'pointer',
                       padding: '2px 8px', borderRadius: 4,
                       background: 'rgba(212,168,67,0.1)',
                       border: '1px solid rgba(212,168,67,0.2)',
@@ -261,7 +261,7 @@ export default function SlideSplitter({ tracks, defaultTracksPerSlide, onSplitCh
                   title="Click to remove slide break"
                 >
                   <span style={{
-                    fontSize: '0.65rem', color: 'var(--gold)', fontWeight: 600,
+                    fontSize: 'var(--fs-2xs)', color: 'var(--gold)', fontWeight: 600,
                     background: 'var(--midnight)', padding: '0 6px',
                   }}>
                     Slide {slideNum} of {groups.length} ({groups[slideNum - 1]?.tracks.length || 0} tracks)

@@ -25,7 +25,7 @@ export default function Home() {
 
         <p style={{
           color: 'var(--text-secondary)',
-          fontSize: '1.05rem',
+          fontSize: 'var(--fs-lg)',
           marginBottom: 12,
           lineHeight: 1.6,
         }}>
@@ -34,7 +34,7 @@ export default function Home() {
 
         <p style={{
           color: 'var(--text-muted)',
-          fontSize: '0.8rem',
+          fontSize: 'var(--fs-md)',
           marginBottom: 40,
           lineHeight: 1.6,
           maxWidth: 440,
@@ -46,13 +46,13 @@ export default function Home() {
         {/* Main CTA */}
         <Link to="/newmusicfriday" style={{ textDecoration: 'none' }}>
           <div className="card card-hover" style={{ padding: 28, textAlign: 'center', maxWidth: 400, margin: '0 auto 24px' }}>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.3rem', marginBottom: 8 }}>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-2xl)', marginBottom: 8 }}>
               New Music <span style={{ color: 'var(--gold)' }}>Friday</span>
             </h2>
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: 12 }}>
+            <p style={{ fontSize: 'var(--fs-md)', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: 12 }}>
               Scan every new release from the artists you follow. Build a carousel in your style. Tag everyone. Push your playlist. All in one session, every Friday.
             </p>
-            <span className="badge badge-single" style={{ fontSize: '0.7rem' }}>Free for Curators</span>
+            <span className="badge badge-single" style={{ fontSize: 'var(--fs-xs)' }}>Free for Curators</span>
           </div>
         </Link>
 
@@ -71,13 +71,13 @@ export default function Home() {
           border: '1px solid rgba(212,168,67,0.15)',
           textAlign: 'left', maxWidth: 440, margin: '0 auto 32px',
         }}>
-          <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+          <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
             This platform is built with deep respect for the curators, bloggers, and music journalists
             who do the work of discovery every week &mdash; the indie playlist makers, the Instagram
             tastemakers, the newsletter writers, and the legacy publications that have been championing
             artists for decades. You are the bridge between the music and the people. Thank you.
           </p>
-          <p style={{ fontSize: '0.65rem', color: 'var(--gold)', marginTop: 8 }}>
+          <p style={{ fontSize: 'var(--fs-2xs)', color: 'var(--gold)', marginTop: 8 }}>
             &mdash; Max Blachman, @maxmeetsmusiccity
           </p>
         </div>
@@ -96,9 +96,9 @@ export default function Home() {
         <div style={{
           display: 'flex', gap: 24, justifyContent: 'center', flexWrap: 'wrap',
         }}>
-          <Link to="/terms" style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>Terms</Link>
-          <Link to="/privacy" style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>Privacy</Link>
-          <a href="https://instagram.com/maxmeetsmusiccity" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>Instagram</a>
+          <Link to="/terms" style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)' }}>Terms</Link>
+          <Link to="/privacy" style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)' }}>Privacy</Link>
+          <a href="https://instagram.com/maxmeetsmusiccity" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)' }}>Instagram</a>
         </div>
       </div>
     </div>

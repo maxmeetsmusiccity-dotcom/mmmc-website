@@ -539,13 +539,13 @@ export default function NewMusicFriday() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <ProductNav />
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', fontWeight: 600 }}>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-2xl)', fontWeight: 600 }}>
             New Music Friday
           </h1>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           {lastScanned && (
-            <span style={{ color: 'var(--text-muted)', fontSize: '0.6rem' }}>
+            <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-2xs)' }}>
               {new Date(lastScanned).toLocaleString()}
             </span>
           )}
@@ -556,7 +556,7 @@ export default function NewMusicFriday() {
                 <>
                   <button className="btn btn-sm" onClick={() => runScan(token)}>Re-scan</button>
                   <button className="btn btn-sm" onClick={() => { localStorage.removeItem('nmf_followed_artists'); runScan(token); }}>Refresh Follows</button>
-                  <button className="btn btn-sm btn-danger" onClick={handleDisconnect} style={{ fontSize: '0.65rem' }}>Disconnect Spotify</button>
+                  <button className="btn btn-sm btn-danger" onClick={handleDisconnect} style={{ fontSize: 'var(--fs-2xs)' }}>Disconnect Spotify</button>
                 </>
               ) : (
                 <button className="btn btn-sm" onClick={() => setPhase(token ? 'ready' : 'auth')}>New Scan</button>
@@ -566,12 +566,12 @@ export default function NewMusicFriday() {
           {/* Account */}
           {user && (
             <>
-              <span style={{ color: 'var(--text-muted)', fontSize: '0.55rem' }}>{user.email}</span>
-              <button className="btn btn-sm" onClick={signOut} style={{ fontSize: '0.6rem' }}>Sign Out</button>
+              <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-3xs)' }}>{user.email}</span>
+              <button className="btn btn-sm" onClick={signOut} style={{ fontSize: 'var(--fs-2xs)' }}>Sign Out</button>
             </>
           )}
           {!user && isGuest && (
-            <button className="btn btn-sm" onClick={signOut} style={{ fontSize: '0.6rem' }}>Sign Out</button>
+            <button className="btn btn-sm" onClick={signOut} style={{ fontSize: 'var(--fs-2xs)' }}>Sign Out</button>
           )}
         </div>
       </header>
@@ -579,7 +579,7 @@ export default function NewMusicFriday() {
       {error && (
         <div style={{
           padding: '12px 24px', background: 'rgba(204, 53, 53, 0.1)',
-          borderBottom: '1px solid var(--mmmc-red)', color: '#E04A4A', fontSize: '0.875rem',
+          borderBottom: '1px solid var(--mmmc-red)', color: '#E04A4A', fontSize: 'var(--fs-md)',
         }}>
           {error}
         </div>
@@ -588,7 +588,7 @@ export default function NewMusicFriday() {
       {appleEnriching && (
         <div style={{
           padding: '6px 24px', background: 'rgba(94,142,168,0.1)',
-          borderBottom: '1px solid var(--steel-dark)', color: 'var(--steel)', fontSize: '0.75rem',
+          borderBottom: '1px solid var(--steel-dark)', color: 'var(--steel)', fontSize: 'var(--fs-sm)',
         }}>
           Adding Apple Music links...
         </div>
@@ -601,7 +601,7 @@ export default function NewMusicFriday() {
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
           flexWrap: 'wrap',
         }}>
-          <span style={{ color: 'var(--gold)', fontSize: '0.8rem' }}>
+          <span style={{ color: 'var(--gold)', fontSize: 'var(--fs-md)' }}>
             Showing cached results{lastScanned ? ` from ${new Date(lastScanned).toLocaleString()}` : ''}.
           </span>
           <button
@@ -611,7 +611,7 @@ export default function NewMusicFriday() {
               if (token) runScan(token);
               else setPhase(token ? 'ready' : 'auth');
             }}
-            style={{ fontSize: '0.75rem', padding: '6px 16px' }}
+            style={{ fontSize: 'var(--fs-sm)', padding: '6px 16px' }}
           >
             Re-scan for latest releases
           </button>
@@ -631,18 +631,18 @@ export default function NewMusicFriday() {
             <p style={{ color: 'var(--text-secondary)', marginBottom: 32 }}>
               Scan your followed artists for new releases since last Friday.
             </p>
-            <button className="btn btn-spotify" onClick={startAuth} style={{ fontSize: '1rem', padding: '14px 32px' }}>
+            <button className="btn btn-spotify" onClick={startAuth} style={{ fontSize: 'var(--fs-lg)', padding: '14px 32px' }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
               </svg>
               Connect Spotify
             </button>
-            <button className="btn" onClick={loadDemo} style={{ fontSize: '1rem', padding: '14px 32px' }}>
+            <button className="btn" onClick={loadDemo} style={{ fontSize: 'var(--fs-lg)', padding: '14px 32px' }}>
               Try Demo
             </button>
             <div style={{ marginTop: 32 }}>
               <details style={{ textAlign: 'left' }}>
-                <summary style={{ color: 'var(--text-muted)', fontSize: '0.8rem', cursor: 'pointer' }}>
+                <summary style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-md)', cursor: 'pointer' }}>
                   Manual token entry (if redirect fails)
                 </summary>
                 <div style={{ marginTop: 12 }}>
@@ -668,7 +668,7 @@ export default function NewMusicFriday() {
                       }
                     }}
                   />
-                  <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', marginTop: 8 }}>
+                  <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)', marginTop: 8 }}>
                     Press Enter to submit. Accepts a full redirect URL with code= or a raw access token.
                   </p>
                 </div>
@@ -699,11 +699,11 @@ export default function NewMusicFriday() {
             {/* Spotify source */}
             {activeSource === 'spotify' && (
               <div style={{ marginTop: 16 }}>
-                <p style={{ color: 'var(--text-secondary)', marginBottom: 16, fontSize: '0.85rem' }}>
+                <p style={{ color: 'var(--text-secondary)', marginBottom: 16, fontSize: 'var(--fs-md)' }}>
                   Scan your followed artists for new releases since last Friday.
                 </p>
                 <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-                  <button data-testid="scan-button" className="btn btn-gold" onClick={() => token && runScan(token)} style={{ fontSize: '1rem', padding: '14px 32px' }}>
+                  <button data-testid="scan-button" className="btn btn-gold" onClick={() => token && runScan(token)} style={{ fontSize: 'var(--fs-lg)', padding: '14px 32px' }}>
                     Scan New Releases
                   </button>
                   <button className="btn" onClick={loadDemo}>
@@ -716,13 +716,13 @@ export default function NewMusicFriday() {
             {/* Apple Music source — coming soon */}
             {activeSource === 'apple-music' && (
               <div style={{ marginTop: 16 }}>
-                <p style={{ color: 'var(--text-secondary)', marginBottom: 16, fontSize: '0.85rem' }}>
+                <p style={{ color: 'var(--text-secondary)', marginBottom: 16, fontSize: 'var(--fs-md)' }}>
                   Apple Music library scanning is coming soon. In the meantime, use Spotify or import a CSV manifest.
                 </p>
                 <button
                   className="btn"
                   disabled
-                  style={{ fontSize: '1rem', padding: '14px 32px', opacity: 0.5, cursor: 'not-allowed' }}
+                  style={{ fontSize: 'var(--fs-lg)', padding: '14px 32px', opacity: 0.5, cursor: 'not-allowed' }}
                 >
                   Coming Soon
                 </button>
@@ -749,14 +749,14 @@ export default function NewMusicFriday() {
       {isDemoMode && (
         <div style={{
           background: 'rgba(212,168,67,0.12)', borderBottom: '1px solid var(--gold-dark)',
-          padding: '8px 24px', fontSize: '0.8rem', color: 'var(--gold)',
+          padding: '8px 24px', fontSize: 'var(--fs-md)', color: 'var(--gold)',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}>
           <span>Demo mode -- showing sample data. Connect Spotify and scan to see your real releases.</span>
           <button
             className="btn btn-sm"
             onClick={() => { setIsDemoMode(false); setAllTracks([]); setReleases([]); setSelections([]); setPhase(token ? 'ready' : 'auth'); }}
-            style={{ fontSize: '0.7rem' }}
+            style={{ fontSize: 'var(--fs-xs)' }}
           >
             Exit Demo
           </button>
@@ -770,7 +770,7 @@ export default function NewMusicFriday() {
           minHeight: '60vh', padding: 24, textAlign: 'center',
         }}>
           <div style={{ maxWidth: 480, width: '100%' }}>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', marginBottom: 24 }}>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-3xl)', marginBottom: 24 }}>
               Scanning<span style={{ color: 'var(--gold)' }}>...</span>
             </h2>
             <div className="progress-bar" style={{ marginBottom: 16 }}>
@@ -778,7 +778,7 @@ export default function NewMusicFriday() {
                 width: scanProgress.total > 0 ? `${(scanProgress.current / scanProgress.total) * 100}%` : '0%',
               }} />
             </div>
-            <p className="mono" style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+            <p className="mono" style={{ color: 'var(--text-secondary)', fontSize: 'var(--fs-lg)' }}>
               {scanStatus}
             </p>
           </div>
@@ -803,14 +803,14 @@ export default function NewMusicFriday() {
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <span className="mono" style={{
-                  fontSize: '1.4rem', fontWeight: 700,
+                  fontSize: 'var(--fs-2xl)', fontWeight: 700,
                   color: selections.length > targetCount ? 'var(--mmmc-red)' : selections.length > 0 ? 'var(--gold)' : 'var(--text-muted)',
                 }}>
                   {selections.length}
                 </span>
-                <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>/ {targetCount}</span>
+                <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-md)' }}>/ {targetCount}</span>
                 {selections.length > targetCount && (
-                  <span style={{ color: 'var(--mmmc-red)', fontSize: '0.7rem', fontWeight: 600 }}>Over limit!</span>
+                  <span style={{ color: 'var(--mmmc-red)', fontSize: 'var(--fs-xs)', fontWeight: 600 }}>Over limit!</span>
                 )}
                 <select
                   value={targetCount}
@@ -818,7 +818,7 @@ export default function NewMusicFriday() {
                   style={{
                     background: 'var(--midnight)', border: '1px solid var(--midnight-border)',
                     borderRadius: 6, color: 'var(--text-secondary)', padding: '3px 6px',
-                    fontSize: '0.7rem', fontFamily: 'var(--font-mono)',
+                    fontSize: 'var(--fs-xs)', fontFamily: 'var(--font-mono)',
                   }}
                 >
                   {Array.from({ length: 50 }, (_, i) => i + 1).map(n => (
@@ -841,14 +841,14 @@ export default function NewMusicFriday() {
                     }
                     setSelections(prev => buildSlots([...prev, ...newSelections]));
                   }}
-                  style={{ fontSize: '0.6rem', color: 'var(--steel)', cursor: 'pointer', padding: '2px 6px' }}
+                  style={{ fontSize: 'var(--fs-2xs)', color: 'var(--steel)', cursor: 'pointer', padding: '2px 6px' }}
                 >
                   Select All
                 </button>
                 {selections.length > 0 && (
                   <button
                     onClick={() => { haptic(5); setSelections([]); }}
-                    style={{ fontSize: '0.6rem', color: 'var(--mmmc-red)', cursor: 'pointer', padding: '2px 6px' }}
+                    style={{ fontSize: 'var(--fs-2xs)', color: 'var(--mmmc-red)', cursor: 'pointer', padding: '2px 6px' }}
                   >
                     Clear
                   </button>
@@ -860,7 +860,7 @@ export default function NewMusicFriday() {
                 />
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>
+                <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)' }}>
                   {viewMode === 'releases'
                     ? `${filteredReleases.length} releases (${allTracks.length} tracks)`
                     : `${allTracks.length} tracks`}
@@ -868,14 +868,14 @@ export default function NewMusicFriday() {
                 <button
                   className={`filter-pill ${viewMode === 'releases' ? 'active' : ''}`}
                   onClick={() => setViewMode('releases')}
-                  style={{ fontSize: '0.6rem', padding: '2px 8px' }}
+                  style={{ fontSize: 'var(--fs-2xs)', padding: '2px 8px' }}
                 >Albums</button>
                 <button
                   className={`filter-pill ${viewMode === 'tracks' ? 'active' : ''}`}
                   onClick={() => setViewMode('tracks')}
-                  style={{ fontSize: '0.6rem', padding: '2px 8px' }}
+                  style={{ fontSize: 'var(--fs-2xs)', padding: '2px 8px' }}
                 >Tracks</button>
-                <Link to="/newmusicfriday/archive" className="filter-pill" style={{ textDecoration: 'none', fontSize: '0.6rem', padding: '2px 8px' }}>
+                <Link to="/newmusicfriday/archive" className="filter-pill" style={{ textDecoration: 'none', fontSize: 'var(--fs-2xs)', padding: '2px 8px' }}>
                   Archive
                 </Link>
               </div>
@@ -885,20 +885,20 @@ export default function NewMusicFriday() {
             <div style={{
               padding: '4px 24px 8px',
               display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center',
-              fontSize: '0.7rem',
+              fontSize: 'var(--fs-xs)',
             }}>
-              <button className="btn btn-sm" style={{ fontSize: '0.65rem', padding: '3px 8px' }} onClick={() => downloadCSV(allTracks, 'nmf-all-tracks.csv')}>CSV</button>
-              <button className="btn btn-sm" style={{ fontSize: '0.65rem', padding: '3px 8px' }} onClick={() => downloadJSON(allTracks, 'nmf-all-tracks.json')}>JSON</button>
-              <button className="btn btn-sm" style={{ fontSize: '0.65rem', padding: '3px 8px' }} onClick={async () => { setArtDownloading(true); try { await downloadArt(allTracks); } finally { setArtDownloading(false); } }} disabled={artDownloading}>
+              <button className="btn btn-sm" style={{ fontSize: 'var(--fs-2xs)', padding: '3px 8px' }} onClick={() => downloadCSV(allTracks, 'nmf-all-tracks.csv')}>CSV</button>
+              <button className="btn btn-sm" style={{ fontSize: 'var(--fs-2xs)', padding: '3px 8px' }} onClick={() => downloadJSON(allTracks, 'nmf-all-tracks.json')}>JSON</button>
+              <button className="btn btn-sm" style={{ fontSize: 'var(--fs-2xs)', padding: '3px 8px' }} onClick={async () => { setArtDownloading(true); try { await downloadArt(allTracks); } finally { setArtDownloading(false); } }} disabled={artDownloading}>
                 {artDownloading ? '...' : 'Art ZIP'}
               </button>
               {selections.length > 0 && (
                 <>
                   <span style={{ color: 'var(--midnight-border)' }}>|</span>
                   <span style={{ color: 'var(--gold)', fontWeight: 600 }}>{selections.length} selected:</span>
-                  <button className="btn btn-sm" style={{ fontSize: '0.65rem', padding: '3px 8px' }} onClick={() => downloadCSV(selectedTracks, 'nmf-curated.csv')}>CSV</button>
-                  <button className="btn btn-sm" style={{ fontSize: '0.65rem', padding: '3px 8px' }} onClick={() => downloadJSON(selectedTracks, 'nmf-curated.json')}>JSON</button>
-                  <button className="btn btn-sm" style={{ fontSize: '0.65rem', padding: '3px 8px' }} onClick={async () => {
+                  <button className="btn btn-sm" style={{ fontSize: 'var(--fs-2xs)', padding: '3px 8px' }} onClick={() => downloadCSV(selectedTracks, 'nmf-curated.csv')}>CSV</button>
+                  <button className="btn btn-sm" style={{ fontSize: 'var(--fs-2xs)', padding: '3px 8px' }} onClick={() => downloadJSON(selectedTracks, 'nmf-curated.json')}>JSON</button>
+                  <button className="btn btn-sm" style={{ fontSize: 'var(--fs-2xs)', padding: '3px 8px' }} onClick={async () => {
                     await navigator.clipboard.writeText(JSON.stringify(selectedTracks, null, 2));
                     setCopied(true); setTimeout(() => setCopied(false), 2000);
                   }}>{copied ? 'Copied!' : 'Manifest'}</button>
@@ -913,7 +913,7 @@ export default function NewMusicFriday() {
           <section ref={step1Ref} style={{ scrollMarginTop: 120 }}>
             {/* Contextual guidance */}
             <div style={{
-              padding: '12px 24px', fontSize: '0.75rem', color: 'var(--text-secondary)',
+              padding: '12px 24px', fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)',
               lineHeight: 1.6, borderBottom: '1px solid var(--midnight-border)',
               background: 'rgba(212,168,67,0.04)',
             }}>
@@ -1031,7 +1031,7 @@ export default function NewMusicFriday() {
                         >
                           {/* Selection number or track number */}
                           <span className="mono" style={{
-                            width: 24, textAlign: 'right', fontSize: '0.7rem', fontWeight: 600,
+                            width: 24, textAlign: 'right', fontSize: 'var(--fs-xs)', fontWeight: 600,
                             color: isSelected ? 'var(--gold)' : 'var(--text-muted)',
                           }}>
                             {slot ? slot.selectionNumber : ''}
@@ -1041,23 +1041,23 @@ export default function NewMusicFriday() {
                           )}
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{
-                              fontSize: '0.8rem', fontWeight: isSelected ? 600 : 400,
+                              fontSize: 'var(--fs-md)', fontWeight: isSelected ? 600 : 400,
                               color: isSelected ? 'var(--gold)' : 'var(--text-primary)',
                               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                             }}>
                               {track.track_name}
                             </div>
                             <div style={{
-                              fontSize: '0.65rem', color: 'var(--text-muted)',
+                              fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)',
                               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                             }}>
                               {track.artist_names} — {track.album_name}
                             </div>
                           </div>
-                          <span className={`badge ${track.album_type === 'single' && track.total_tracks === 1 ? 'badge-single' : 'badge-album'}`} style={{ fontSize: '0.5rem' }}>
+                          <span className={`badge ${track.album_type === 'single' && track.total_tracks === 1 ? 'badge-single' : 'badge-album'}`} style={{ fontSize: 'var(--fs-3xs)' }}>
                             {track.album_type === 'single' && track.total_tracks === 1 ? 'Single' : track.album_type === 'album' ? 'Album' : 'EP'}
                           </span>
-                          <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)', width: 65, textAlign: 'right' }}>
+                          <span style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)', width: 65, textAlign: 'right' }}>
                             {track.release_date}
                           </span>
                         </div>
@@ -1076,7 +1076,7 @@ export default function NewMusicFriday() {
                   <div style={{ fontSize: 48, marginBottom: 16 }}>
                     {rateLimited ? '429' : '\uD83C\uDFB5'}
                   </div>
-                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', marginBottom: 8 }}>
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-2xl)', marginBottom: 8 }}>
                     {rateLimited ? 'Spotify Rate Limited' : 'No releases found this week'}
                   </h3>
                   <p style={{ color: 'var(--text-secondary)', marginBottom: 24, maxWidth: 440, margin: '0 auto 24px', lineHeight: 1.6 }}>
@@ -1103,8 +1103,8 @@ export default function NewMusicFriday() {
                       { title: 'Push to Playlist', desc: 'Updates your NMF Spotify playlist with one click' },
                     ].map(f => (
                       <div key={f.title} className="card" style={{ textAlign: 'left' }}>
-                        <div style={{ fontWeight: 600, marginBottom: 4, fontSize: '0.85rem' }}>{f.title}</div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>{f.desc}</div>
+                        <div style={{ fontWeight: 600, marginBottom: 4, fontSize: 'var(--fs-md)' }}>{f.title}</div>
+                        <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', lineHeight: 1.5 }}>{f.desc}</div>
                       </div>
                     ))}
                   </div>
@@ -1131,7 +1131,7 @@ export default function NewMusicFriday() {
 
               {/* Carousel builder guidance */}
               <div style={{
-                padding: '12px 0 16px', fontSize: '0.75rem', color: 'var(--text-secondary)',
+                padding: '12px 0 16px', fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)',
                 lineHeight: 1.6, borderBottom: '1px solid var(--midnight-border)', marginBottom: 16,
               }}>
                 {!selections.some(s => s.isCoverFeature) ? (
@@ -1149,14 +1149,14 @@ export default function NewMusicFriday() {
 
               {/* Collapsible extras */}
               <details style={{ marginTop: 24, borderTop: '1px solid var(--midnight-border)', paddingTop: 16 }}>
-                <summary style={{ cursor: 'pointer', color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 600 }}>
+                <summary style={{ cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 'var(--fs-lg)', fontWeight: 600 }}>
                   Instagram Tags
                 </summary>
                 <TagBlocks slideGroups={slideGroups} />
               </details>
 
               <details style={{ marginTop: 16, borderTop: '1px solid var(--midnight-border)', paddingTop: 16 }}>
-                <summary style={{ cursor: 'pointer', color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 600 }}>
+                <summary style={{ cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 'var(--fs-lg)', fontWeight: 600 }}>
                   Push to Spotify
                 </summary>
                 <div style={{ marginTop: 12 }}>
@@ -1170,7 +1170,7 @@ export default function NewMusicFriday() {
                     />
                   ) : (
                     <>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Connect Spotify to push to a Spotify playlist.</p>
+                    <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-md)' }}>Connect Spotify to push to a Spotify playlist.</p>
                     <button
                       className="btn btn-sm"
                       style={{ marginTop: 8 }}
@@ -1216,7 +1216,7 @@ export default function NewMusicFriday() {
               </details>
 
               <details style={{ marginTop: 16, borderTop: '1px solid var(--midnight-border)', paddingTop: 16 }}>
-                <summary style={{ cursor: 'pointer', color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 600 }}>
+                <summary style={{ cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 'var(--fs-lg)', fontWeight: 600 }}>
                   Embed Widget
                 </summary>
                 <div style={{ marginTop: 12 }}>
@@ -1225,7 +1225,7 @@ export default function NewMusicFriday() {
               </details>
 
               <details style={{ marginTop: 16, borderTop: '1px solid var(--midnight-border)', paddingTop: 16 }}>
-                <summary style={{ cursor: 'pointer', color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 600 }}>
+                <summary style={{ cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 'var(--fs-lg)', fontWeight: 600 }}>
                   Import CSV Manifest
                 </summary>
                 <div style={{ marginTop: 12 }}>
@@ -1238,14 +1238,14 @@ export default function NewMusicFriday() {
                       return merged;
                     });
                   }} />
-                  <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: 4 }}>
+                  <p style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)', marginTop: 4 }}>
                     Import additional tracks from a CSV manifest. Duplicates are skipped.
                   </p>
                 </div>
               </details>
 
               <details style={{ marginTop: 16, borderTop: '1px solid var(--midnight-border)', paddingTop: 16 }}>
-                <summary style={{ cursor: 'pointer', color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 600 }}>
+                <summary style={{ cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 'var(--fs-lg)', fontWeight: 600 }}>
                   Week History
                 </summary>
                 <div style={{ marginTop: 12 }}>
