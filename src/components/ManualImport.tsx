@@ -2,15 +2,16 @@ import { useState, useRef, useCallback } from 'react';
 import { parseManifestCSV } from '../lib/sources/manual';
 import { groupIntoReleases } from '../lib/spotify';
 import type { TrackItem } from '../lib/spotify';
+import ArtistBrowser from './ArtistBrowser';
 
 interface Props {
   onImport: (tracks: TrackItem[]) => void;
 }
 
-type Tab = 'artists' | 'csv';
+type Tab = 'browse' | 'artists' | 'csv';
 
 export default function ManualImport({ onImport }: Props) {
-  const [tab, setTab] = useState<Tab>('artists');
+  const [tab, setTab] = useState<Tab>('browse');
   const [error, setError] = useState('');
   const [summary, setSummary] = useState<{ tracks: number; artists: number; albums: number } | null>(null);
   const [dragging, setDragging] = useState(false);
@@ -114,11 +115,18 @@ export default function ManualImport({ onImport }: Props) {
       {/* Tab switcher */}
       <div style={{ display: 'flex', gap: 4, marginBottom: 12 }}>
         <button
+          className={`filter-pill ${tab === 'browse' ? 'active' : ''}`}
+          onClick={() => setTab('browse')}
+          style={{ fontSize: '0.75rem' }}
+        >
+          Browse Artists
+        </button>
+        <button
           className={`filter-pill ${tab === 'artists' ? 'active' : ''}`}
           onClick={() => setTab('artists')}
           style={{ fontSize: '0.75rem' }}
         >
-          Paste Artist Names
+          Paste Names
         </button>
         <button
           className={`filter-pill ${tab === 'csv' ? 'active' : ''}`}
@@ -128,6 +136,45 @@ export default function ManualImport({ onImport }: Props) {
           Upload CSV
         </button>
       </div>
+
+      {/* Browse Artists tab (ND-powered) */}
+      {tab === 'browse' && (
+        <ArtistBrowser
+          onScanArtists={async (names) => {
+            setScanning(true);
+            setError('');
+            setSummary(null);
+            setScanStatus(`Scanning ${names.length} artists...`);
+            try {
+              const res = await fetch('/api/scan-artists', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ artistNames: names }),
+              });
+              if (!res.ok) {
+                const err = await res.json().catch(() => ({ error: res.statusText }));
+                throw new Error(err.error || `Scan failed: ${res.status}`);
+              }
+              const data = await res.json();
+              const tracks = data.tracks as TrackItem[];
+              if (tracks.length === 0) {
+                setError(`No new releases found from ${data.scannedArtists} artists since last Friday.`);
+              } else {
+                const releases = groupIntoReleases(tracks);
+                setSummary({ tracks: tracks.length, artists: data.scannedArtists, albums: releases.length });
+                setScanStatus(`Found ${tracks.length} tracks from ${releases.length} releases`);
+                onImport(tracks);
+              }
+            } catch (err) {
+              setError((err as Error).message);
+            } finally {
+              setScanning(false);
+              setScanStatus('');
+            }
+          }}
+          scanning={scanning}
+        />
+      )}
 
       {/* Artist Names tab */}
       {tab === 'artists' && (
