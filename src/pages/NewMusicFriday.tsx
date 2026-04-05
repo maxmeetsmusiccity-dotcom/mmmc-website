@@ -228,22 +228,29 @@ export default function NewMusicFriday() {
       setScanStatus(`Scanning releases since ${cutoff}...`);
       setScanProgress({ current: 0, total: artists.length });
 
-      const result = await fetchNewReleases(artists, activeToken, cutoff, (cur, tot, releasesFound, status) => {
+      let liveTrackCount = 0;
+      const result = await fetchNewReleases(artists, activeToken, cutoff, (cur, tot, albumsFound, status) => {
         setScanProgress({ current: cur, total: tot });
         const elapsed = (Date.now() - scanStart) / 1000;
         const statusDot = status === 'green' ? '\uD83D\uDFE2' : status === 'yellow' ? '\uD83D\uDFE1' : '\uD83D\uDD34';
+        const countLabel = `${albumsFound} album${albumsFound !== 1 ? 's' : ''} \u00B7 ${liveTrackCount} track${liveTrackCount !== 1 ? 's' : ''}`;
         if (status === 'red') {
-          setScanStatus(`${statusDot} Rate limited \u2014 saving ${releasesFound} release${releasesFound !== 1 ? 's' : ''} found so far`);
+          setScanStatus(`${statusDot} Rate limited \u2014 saving ${countLabel} found so far`);
         } else if (cur >= 30 && cur < tot) {
           const rate = cur / elapsed;
           const remaining = (tot - cur) / rate;
           const eta = remaining < 10 ? 'Almost done...'
             : remaining < 60 ? `~${Math.round(remaining)}s remaining`
             : `~${Math.floor(remaining / 60)}m ${Math.round(remaining % 60)}s remaining`;
-          setScanStatus(`${statusDot} ${cur}/${tot} artists \u00B7 ${releasesFound} release${releasesFound !== 1 ? 's' : ''} \u00B7 ${eta}`);
+          setScanStatus(`${statusDot} ${cur}/${tot} artists \u00B7 ${countLabel} \u00B7 ${eta}`);
         } else {
-          setScanStatus(`${statusDot} ${cur}/${tot} artists \u00B7 ${releasesFound} release${releasesFound !== 1 ? 's' : ''}`);
+          setScanStatus(`${statusDot} ${cur}/${tot} artists \u00B7 ${countLabel}`);
         }
+      }, (tracks) => {
+        // Live track count update from onReleasesFound callback
+        liveTrackCount = tracks.length;
+        setAllTracks(tracks);
+        setReleases(groupIntoReleases(tracks));
       });
 
       const { tracks, failCount, totalArtists, rateLimited: wasRateLimited, retryAfterSeconds } = result;
