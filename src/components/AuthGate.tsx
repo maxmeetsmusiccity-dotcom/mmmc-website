@@ -22,8 +22,6 @@ export default function AuthGate({ children }: Props) {
     );
   }
 
-  // Authenticated or guest — show the app. Admin status is determined by
-  // email allowlist in auth-context.tsx (no URL-param bypass).
   if (user || isGuest) return <>{children}</>;
 
   const handleEmail = async () => {
@@ -49,15 +47,19 @@ export default function AuthGate({ children }: Props) {
       alignItems: 'center', justifyContent: 'center',
       background: 'var(--midnight)', padding: 24, textAlign: 'center',
     }}>
-      <div className="animate-float-up" style={{ maxWidth: 400, width: '100%' }}>
+      <div className="animate-float-up" style={{ maxWidth: 440, width: '100%' }}>
         <h1 style={{
           fontFamily: 'var(--font-display)', fontSize: 'clamp(2rem, 5vw, 2.75rem)',
           fontWeight: 700, marginBottom: 8, lineHeight: 1.15,
         }}>
           New Music <span style={{ color: 'var(--gold)' }}>Friday</span>
         </h1>
-        <p style={{ color: 'var(--text-secondary)', marginBottom: 36, fontSize: '1rem', lineHeight: 1.5 }}>
-          Discover new releases, build Instagram carousels, push to Spotify playlists.
+
+        <p style={{ color: 'var(--text-secondary)', fontSize: '1rem', lineHeight: 1.6, marginBottom: 8 }}>
+          Built for the curators, bloggers, and tastemakers who put new artists on the map every single week.
+        </p>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', lineHeight: 1.5, marginBottom: 32 }}>
+          This tool exists because your work matters. You listen to everything, you find the gems, and you share them with the world. We're here to save you time so you can focus on what you do best.
         </p>
 
         {/* Continue as Guest */}
@@ -66,7 +68,7 @@ export default function AuthGate({ children }: Props) {
           onClick={continueAsGuest}
           style={{ width: '100%', justifyContent: 'center', fontSize: '1rem', padding: '14px 0', marginBottom: 12 }}
         >
-          Continue as Guest
+          Jump In
         </button>
 
         {/* Google Sign-In */}
@@ -111,23 +113,27 @@ export default function AuthGate({ children }: Props) {
           </div>
         </details>
 
-        {/* Feature cards */}
+        {/* What this does */}
         <div style={{
           display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)',
-          gap: 12, marginTop: 40, opacity: 0.5, textAlign: 'left',
+          gap: 12, marginTop: 40, textAlign: 'left',
         }}>
           {[
-            { title: 'Scan Releases', desc: 'Find new music from your followed artists' },
-            { title: 'Build Carousel', desc: 'Instagram-ready 1080x1080 slides' },
-            { title: 'Tag Blocks', desc: 'Auto-resolve Instagram handles' },
-            { title: 'Push to Playlist', desc: 'One-click Spotify playlist update' },
+            { title: 'Scan 800+ Artists', desc: 'Every release from every artist you follow, since last Friday' },
+            { title: 'Build Your Carousel', desc: 'Beautiful Instagram slides in your style, in seconds' },
+            { title: 'Auto-Tag Everyone', desc: 'Instagram handles resolved automatically via Nashville Decoder' },
+            { title: 'One-Click Playlist', desc: 'Push your curated picks straight to Spotify' },
           ].map(f => (
-            <div key={f.title} className="card" style={{ padding: 12 }}>
-              <div style={{ fontWeight: 600, fontSize: '0.8rem', marginBottom: 2 }}>{f.title}</div>
-              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{f.desc}</div>
+            <div key={f.title} className="card" style={{ padding: 12, opacity: 0.7 }}>
+              <div style={{ fontWeight: 600, fontSize: '0.8rem', marginBottom: 2, color: 'var(--gold)' }}>{f.title}</div>
+              <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>{f.desc}</div>
             </div>
           ))}
         </div>
+
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.6rem', marginTop: 32, lineHeight: 1.5 }}>
+          Free forever for curators. Built with love in Nashville by <a href="https://instagram.com/maxmeetsmusiccity" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--gold)' }}>@maxmeetsmusiccity</a>.
+        </p>
       </div>
     </div>
   );

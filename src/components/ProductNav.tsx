@@ -11,15 +11,28 @@ export default function ProductNav({ showAdmin }: Props) {
 
   return (
     <div style={{
-      display: 'flex', alignItems: 'center', gap: 6,
+      display: 'flex', alignItems: 'center', gap: 8,
     }}>
-      <Link to="/" style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginRight: 4 }}>MMMC</Link>
+      <Link to="/" style={{
+        color: 'var(--text-muted)', fontSize: '0.75rem',
+        fontFamily: 'var(--font-display)', fontWeight: 600,
+        textDecoration: 'none', letterSpacing: '0.02em',
+      }}>
+        MMMC
+      </Link>
       <Link
         to="/newmusicfriday"
-        className={`filter-pill ${isNMF ? 'active' : ''}`}
-        style={{ fontSize: '0.7rem', padding: '4px 10px', textDecoration: 'none' }}
+        style={{
+          fontSize: '0.7rem', padding: '4px 12px',
+          textDecoration: 'none', borderRadius: 6,
+          fontWeight: 600, letterSpacing: '0.03em',
+          background: isNMF ? 'var(--gold)' : 'transparent',
+          color: isNMF ? 'var(--midnight)' : 'var(--text-muted)',
+          border: isNMF ? '1px solid var(--gold)' : '1px solid var(--midnight-border)',
+          transition: 'all 0.2s',
+        }}
       >
-        Curator
+        NMF Curator
       </Link>
       {showAdmin && (
         <Link

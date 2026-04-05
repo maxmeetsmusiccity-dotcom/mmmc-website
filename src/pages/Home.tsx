@@ -11,7 +11,7 @@ export default function Home() {
       padding: '24px',
       textAlign: 'center',
     }}>
-      <div className="animate-float-up" style={{ maxWidth: 520 }}>
+      <div className="animate-float-up" style={{ maxWidth: 560 }}>
         <h1 style={{
           fontFamily: 'var(--font-display)',
           fontSize: 'clamp(2rem, 6vw, 3.5rem)',
@@ -25,52 +25,65 @@ export default function Home() {
 
         <p style={{
           color: 'var(--text-secondary)',
-          fontSize: '1.1rem',
-          marginBottom: 40,
+          fontSize: '1.05rem',
+          marginBottom: 12,
           lineHeight: 1.6,
         }}>
-          Tools &amp; intelligence for Nashville's music industry.
+          Tools for the people who break new music every week.
         </p>
 
-        {/* Two products */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
-          <Link to="/newmusicfriday" style={{ textDecoration: 'none' }}>
-            <div className="card card-hover" style={{ padding: 20, textAlign: 'center' }}>
-              <div style={{ fontSize: '1.5rem', marginBottom: 8 }}>&#9835;</div>
-              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', marginBottom: 4 }}>
-                NMF <span style={{ color: 'var(--gold)' }}>Curator</span>
-              </h2>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                Scan releases, build carousels, push playlists
-              </p>
-              <span className="badge badge-single" style={{ marginTop: 8 }}>Free</span>
-            </div>
-          </Link>
+        <p style={{
+          color: 'var(--text-muted)',
+          fontSize: '0.8rem',
+          marginBottom: 40,
+          lineHeight: 1.6,
+          maxWidth: 440,
+          margin: '0 auto 40px',
+        }}>
+          Whether you run an Instagram page, a blog, a newsletter, or a playlist &mdash; if you're out here putting new artists in front of ears that need to hear them, this is for you.
+        </p>
 
-          <Link to="/dashboard" style={{ textDecoration: 'none' }}>
-            <div className="card card-hover" style={{ padding: 20, textAlign: 'center' }}>
-              <div style={{ fontSize: '1.5rem', marginBottom: 8 }}>&#9878;</div>
-              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', marginBottom: 4 }}>
-                NMF <span style={{ color: 'var(--steel-light)' }}>Intelligence</span>
-              </h2>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                Curator directory, submissions, analytics
-              </p>
-              <span className="badge badge-album" style={{ marginTop: 8 }}>For Labels</span>
-            </div>
-          </Link>
-        </div>
+        {/* Main CTA */}
+        <Link to="/newmusicfriday" style={{ textDecoration: 'none' }}>
+          <div className="card card-hover" style={{ padding: 28, textAlign: 'center', maxWidth: 400, margin: '0 auto 24px' }}>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.3rem', marginBottom: 8 }}>
+              New Music <span style={{ color: 'var(--gold)' }}>Friday</span>
+            </h2>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: 12 }}>
+              Scan every new release from the artists you follow. Build a carousel in your style. Tag everyone. Push your playlist. All in one session, every Friday.
+            </p>
+            <span className="badge badge-single" style={{ fontSize: '0.7rem' }}>Free for Curators</span>
+          </div>
+        </Link>
 
         <div style={{
-          display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center', marginBottom: 24,
+          display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center', marginBottom: 32,
         }}>
           <Link to="/newmusicfriday/thisweek" className="btn btn-sm">This Week's Picks</Link>
           <Link to="/newmusicfriday/archive" className="btn btn-sm">Archive</Link>
           <Link to="/newmusicfriday/submit" className="btn btn-sm">Submit a Track</Link>
         </div>
 
+        {/* Community shoutout */}
         <div style={{
-          display: 'flex', gap: 20, marginTop: 12, flexWrap: 'wrap', justifyContent: 'center',
+          padding: '20px 24px', borderRadius: 12,
+          background: 'rgba(212,168,67,0.05)',
+          border: '1px solid rgba(212,168,67,0.15)',
+          textAlign: 'left', maxWidth: 440, margin: '0 auto 32px',
+        }}>
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+            This platform is built with deep respect for the curators, bloggers, and music journalists
+            who do the work of discovery every week &mdash; the indie playlist makers, the Instagram
+            tastemakers, the newsletter writers, and the legacy publications that have been championing
+            artists for decades. You are the bridge between the music and the people. Thank you.
+          </p>
+          <p style={{ fontSize: '0.65rem', color: 'var(--gold)', marginTop: 8 }}>
+            &mdash; Max Blachman, @maxmeetsmusiccity
+          </p>
+        </div>
+
+        <div style={{
+          display: 'flex', gap: 20, flexWrap: 'wrap', justifyContent: 'center', marginBottom: 32,
         }}>
           <a href="https://nashvilledecoder.com" className="btn btn-sm" target="_blank" rel="noopener noreferrer">
             Nashville Decoder
@@ -81,12 +94,11 @@ export default function Home() {
         </div>
 
         <div style={{
-          marginTop: 48, display: 'flex', gap: 24, justifyContent: 'center', flexWrap: 'wrap',
+          display: 'flex', gap: 24, justifyContent: 'center', flexWrap: 'wrap',
         }}>
-          <Link to="/terms" style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>Terms</Link>
-          <Link to="/privacy" style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>Privacy</Link>
-          <a href="https://github.com/maxmeetsmusiccity-dotcom" style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>GitHub</a>
-          <a href="https://x.com/maxblachman" style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>X / Twitter</a>
+          <Link to="/terms" style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>Terms</Link>
+          <Link to="/privacy" style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>Privacy</Link>
+          <a href="https://instagram.com/maxmeetsmusiccity" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>Instagram</a>
         </div>
       </div>
     </div>
