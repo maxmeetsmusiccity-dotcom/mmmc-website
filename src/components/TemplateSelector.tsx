@@ -30,6 +30,7 @@ export default function TemplateSelector({ selected, onSelect }: Props) {
   const [previews, setPreviews] = useState<Map<string, string>>(new Map());
   const [customTemplates, setCustomTemplates] = useState<CarouselTemplate[]>(loadLocalTemplates);
   const [showBuilder, setShowBuilder] = useState(false);
+  const [editTemplate, setEditTemplate] = useState<CarouselTemplate | null>(null);
 
   // Load custom templates from Supabase for authenticated users
   useEffect(() => {
@@ -75,37 +76,71 @@ export default function TemplateSelector({ selected, onSelect }: Props) {
     <div style={{ marginBottom: 16 }}>
       <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginBottom: 8 }}>Template</p>
       <div style={{
-        display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 8,
+        display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 8,
         WebkitOverflowScrolling: 'touch', scrollSnapType: 'x mandatory',
       }}>
+        {/* Create Your Own — FIRST in row */}
+        <button
+          onClick={() => { setEditTemplate(null); setShowBuilder(true); }}
+          title="Create a custom template from scratch"
+          style={{
+            flexShrink: 0, scrollSnapAlign: 'start',
+            width: 100, padding: 8, borderRadius: 10, cursor: 'pointer',
+            border: '2px dashed var(--gold)',
+            background: 'rgba(212,168,67,0.04)',
+            display: 'flex', flexDirection: 'column', alignItems: 'center',
+            justifyContent: 'center', gap: 4,
+            transition: 'all 0.2s',
+          }}
+        >
+          <span style={{ fontSize: 'var(--fs-xl)', color: 'var(--gold)', lineHeight: 1 }}>+</span>
+          <span style={{ fontSize: 'var(--fs-3xs)', fontWeight: 600, color: 'var(--gold)', textAlign: 'center' }}>
+            Create New
+          </span>
+        </button>
+
         {allTemplates.map(t => {
           const preview = previews.get(t.id);
           const isCustom = customTemplates.some(ct => ct.id === t.id);
           return (
-            <button
+            <div
               key={t.id}
-              onClick={() => onSelect(t.id)}
               style={{
                 flexShrink: 0, scrollSnapAlign: 'start',
-                width: 120, padding: 8, borderRadius: 10, cursor: 'pointer',
+                width: 100, borderRadius: 10, cursor: 'pointer',
                 background: selected === t.id ? 'var(--midnight-hover)' : 'var(--midnight)',
                 border: selected === t.id ? `2px solid ${t.accent}` : '2px solid var(--midnight-border)',
-                transition: 'all 0.2s', position: 'relative',
+                transition: 'all 0.2s', position: 'relative', padding: 6,
               }}
             >
+              {/* Edit pencil icon */}
+              <button
+                onClick={(e) => { e.stopPropagation(); setEditTemplate(t); setShowBuilder(true); }}
+                title={`Edit ${t.name} — save as a new custom template`}
+                style={{
+                  position: 'absolute', top: 3, right: 3, zIndex: 2,
+                  width: 20, height: 20, borderRadius: '50%',
+                  background: 'rgba(0,0,0,0.6)', color: 'var(--text-muted)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '10px', cursor: 'pointer', border: 'none',
+                }}
+              >&#9998;</button>
               {isCustom && (
                 <span style={{
-                  position: 'absolute', top: 4, right: 4,
-                  fontSize: 'var(--fs-3xs)', background: 'var(--gold)', color: 'var(--midnight)',
-                  padding: '1px 4px', borderRadius: 4, fontWeight: 700,
+                  position: 'absolute', top: 3, left: 3, zIndex: 2,
+                  fontSize: '8px', background: 'var(--gold)', color: 'var(--midnight)',
+                  padding: '1px 3px', borderRadius: 3, fontWeight: 700,
                 }}>
                   CUSTOM
                 </span>
               )}
-              <div style={{
-                width: '100%', aspectRatio: '1', borderRadius: 6, marginBottom: 6,
-                overflow: 'hidden', border: `1px solid ${t.accent}33`,
-              }}>
+              <div
+                onClick={() => onSelect(t.id)}
+                style={{
+                  width: '100%', aspectRatio: '1', borderRadius: 5, marginBottom: 4,
+                  overflow: 'hidden', border: `1px solid ${t.accent}33`,
+                }}
+              >
                 {preview ? (
                   <img src={preview} alt={`${t.name} preview`}
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -118,41 +153,16 @@ export default function TemplateSelector({ selected, onSelect }: Props) {
                   </div>
                 )}
               </div>
-              <p style={{
-                fontSize: 'var(--fs-xs)', fontWeight: 600,
+              <p onClick={() => onSelect(t.id)} style={{
+                fontSize: 'var(--fs-3xs)', fontWeight: 600,
                 color: selected === t.id ? t.accent : 'var(--text-secondary)',
                 overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
               }}>
                 {t.name}
               </p>
-              <p style={{
-                fontSize: 'var(--fs-3xs)', color: 'var(--text-muted)',
-                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-              }}>
-                {t.description}
-              </p>
-            </button>
+            </div>
           );
         })}
-        {/* Create Your Own card */}
-        <button
-          onClick={() => setShowBuilder(true)}
-          title="Create a custom template"
-          style={{
-            flexShrink: 0, scrollSnapAlign: 'start',
-            width: 120, padding: 8, borderRadius: 10, cursor: 'pointer',
-            border: '2px dashed var(--gold)',
-            background: 'rgba(212,168,67,0.04)',
-            display: 'flex', flexDirection: 'column', alignItems: 'center',
-            justifyContent: 'center', gap: 6,
-            transition: 'all 0.2s',
-          }}
-        >
-          <span style={{ fontSize: 'var(--fs-2xl)', color: 'var(--gold)', lineHeight: 1 }}>+</span>
-          <span style={{ fontSize: 'var(--fs-xs)', fontWeight: 600, color: 'var(--gold)' }}>
-            Create Your Own
-          </span>
-        </button>
       </div>
 
       {/* Import from image link */}
@@ -169,8 +179,9 @@ export default function TemplateSelector({ selected, onSelect }: Props) {
 
       {showBuilder && (
         <TemplateBuilder
-          onSave={handleSaveCustom}
-          onCancel={() => setShowBuilder(false)}
+          initial={editTemplate || undefined}
+          onSave={(t) => { handleSaveCustom(t); setEditTemplate(null); }}
+          onCancel={() => { setShowBuilder(false); setEditTemplate(null); }}
         />
       )}
       {showImporter && (

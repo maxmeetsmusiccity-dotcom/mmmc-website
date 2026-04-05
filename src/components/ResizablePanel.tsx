@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect, type ReactNode } from 'react';
 
 const STORAGE_KEY = 'nmf_panel_ratio';
-const DEFAULT_RATIO = 0.40;
+const DEFAULT_RATIO = 0.35;
 const MIN_LEFT = 280;
 const MIN_RIGHT = 300;
 

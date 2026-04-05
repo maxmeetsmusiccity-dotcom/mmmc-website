@@ -43,77 +43,70 @@ function LayoutIcon({ config, size = 36, active }: { config: GridConfig; size?: 
   );
 }
 
-function GridSection({ title, grids, selected, onSelect }: {
-  title: string;
-  grids: GridConfig[];
-  selected: string;
-  onSelect: (id: string) => void;
-}) {
-  if (grids.length === 0) return null;
+export default function GridLayoutSelector({ trackCount, selected, onSelect, onChangeCount }: Props) {
+  const opts = useMemo(() => getGridsForCount(trackCount), [trackCount]);
+  const betterCounts = useMemo(() => suggestBetterCounts(trackCount), [trackCount]);
+  const hasExactFit = opts.exact.length > 0 && opts.exact.some(g => g.columns > 1 && g.rows > 1);
+
+  // Flatten all grids into one list with category labels
+  const allGrids = useMemo(() => {
+    const list: { config: GridConfig; type: string }[] = [];
+    for (const g of opts.exact) list.push({ config: g, type: 'exact' });
+    for (const g of opts.logo) list.push({ config: g, type: 'logo' });
+    for (const g of opts.mosaic) list.push({ config: g, type: 'mosaic' });
+    for (const g of opts.close) list.push({ config: g, type: 'close' });
+    return list;
+  }, [opts]);
+
   return (
-    <div style={{ marginBottom: 12 }}>
-      <p style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)', marginBottom: 4, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-        {title} ({grids.length})
+    <div style={{ marginBottom: 16 }}>
+      <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginBottom: 6 }}>
+        Grid Layout <span className="mono" style={{ color: 'var(--gold)' }}>({trackCount} tracks &middot; {allGrids.length} options)</span>
       </p>
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-        {grids.map(config => {
+
+      {/* Single scrollable row with all grid options */}
+      <div style={{ display: 'flex', gap: 5, overflowX: 'auto', paddingBottom: 6, WebkitOverflowScrolling: 'touch' }}>
+        {allGrids.map(({ config, type }) => {
           const isActive = selected === config.id;
           return (
             <button
               key={config.id}
               data-testid="grid-layout-button"
               onClick={() => onSelect(config.id)}
-              title={`${config.name} — ${config.trackSlots} tracks${config.hasLogo ? ' + logo' : ''}${config.emptyCount > 0 ? ` (${config.emptyCount} empty)` : ''}`}
+              title={`${config.name} — ${config.trackSlots} tracks${config.hasLogo ? ' + logo' : ''}${config.emptyCount > 0 ? ` (${config.emptyCount} empty)` : ''} [${type}]`}
               style={{
                 flexShrink: 0,
-                width: 56, padding: '4px 2px', borderRadius: 6, cursor: 'pointer',
+                width: 52, padding: '3px 2px', borderRadius: 6, cursor: 'pointer',
                 background: isActive ? 'var(--midnight-hover)' : 'var(--midnight)',
                 border: isActive ? '2px solid var(--gold)' : '2px solid var(--midnight-border)',
                 transition: 'all 0.15s',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1,
               }}
             >
-              <LayoutIcon config={config} size={32} active={isActive} />
+              <LayoutIcon config={config} size={28} active={isActive} />
               <span style={{
                 fontSize: 'var(--fs-3xs)', fontWeight: 600,
                 color: isActive ? 'var(--gold)' : 'var(--text-muted)',
                 whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                maxWidth: 50,
+                maxWidth: 48,
               }}>
                 {config.name}
+              </span>
+              <span style={{ fontSize: '8px', color: 'var(--text-muted)', opacity: 0.6 }}>
+                {type}
               </span>
             </button>
           );
         })}
       </div>
-    </div>
-  );
-}
 
-export default function GridLayoutSelector({ trackCount, selected, onSelect, onChangeCount }: Props) {
-  const opts = useMemo(() => getGridsForCount(trackCount), [trackCount]);
-  const betterCounts = useMemo(() => suggestBetterCounts(trackCount), [trackCount]);
-  const hasExactFit = opts.exact.length > 0 && opts.exact.some(g => g.columns > 1 && g.rows > 1);
-
-  return (
-    <div style={{ marginBottom: 16 }}>
-      <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginBottom: 8 }}>
-        Grid Layout <span className="mono" style={{ color: 'var(--gold)' }}>({trackCount} tracks)</span>
-      </p>
-
-      <GridSection title="Exact Fit" grids={opts.exact} selected={selected} onSelect={onSelect} />
-      <GridSection title="With Logo" grids={opts.logo} selected={selected} onSelect={onSelect} />
-      <GridSection title="Mosaic" grids={opts.mosaic} selected={selected} onSelect={onSelect} />
-      <GridSection title="Close Fit" grids={opts.close} selected={selected} onSelect={onSelect} />
-
-      {/* Change count suggestion for close-fit scenarios */}
       {!hasExactFit && betterCounts.length > 0 && onChangeCount && (
         <div style={{
-          marginTop: 8, padding: '6px 10px', borderRadius: 6,
+          marginTop: 6, padding: '4px 8px', borderRadius: 6,
           background: 'rgba(212,168,67,0.08)', border: '1px solid var(--gold-dark)',
-          fontSize: 'var(--fs-xs)', color: 'var(--text-secondary)',
+          fontSize: 'var(--fs-3xs)', color: 'var(--text-secondary)',
         }}>
-          Or feature{' '}
+          Try{' '}
           {betterCounts.map((c, i) => (
             <span key={c}>
               {i > 0 && ', '}

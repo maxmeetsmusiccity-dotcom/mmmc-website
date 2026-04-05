@@ -3,7 +3,7 @@ import type { TrackItem } from '../lib/spotify';
 import { getLastFriday } from '../lib/spotify';
 import { generateGridSlide, generateTitleSlide, downloadBlob, type CarouselAspect } from '../lib/canvas-grid';
 import { getGridsForCount } from '../lib/grid-layouts';
-import { getPlatform, PLATFORMS } from '../lib/platforms';
+import { getPlatform } from '../lib/platforms';
 import { generatePlatformImage, PLATFORM_LIST, type PlatformId } from '../lib/cross-platform';
 import TemplateSelector from './TemplateSelector';
 import TitleTemplatePicker from './TitleTemplatePicker';
@@ -74,7 +74,7 @@ interface Props {
 export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onTracksPerSlideChange }: Props) {
   const { user } = useAuth();
   const [tracksPerSlide, setTracksPerSlide] = useState(8);
-  const [platformId, setPlatformId] = useState('ig-post');
+  const [platformId] = useState('ig-post');
   const [gridTemplateId, setGridTemplateId] = useState(localStorage.getItem('nmf_template') || 'mmmc_classic');
   const [titleTemplateId, setTitleTemplateId] = useState(() => getDefaultTitleTemplateId(user?.email || undefined));
   const hasUserChangedTitle = useRef(false);
@@ -94,11 +94,16 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
   const weekDate = getLastFriday();
 
   // Fix: update title template when user email resolves (Supabase auth is async)
+  // Also trigger on user.id change in case email arrives with the session
   useEffect(() => {
-    if (user?.email && !hasUserChangedTitle.current) {
-      setTitleTemplateId(getDefaultTitleTemplateId(user.email));
+    if (!hasUserChangedTitle.current) {
+      const email = user?.email;
+      if (email) {
+        const defaultId = getDefaultTitleTemplateId(email);
+        setTitleTemplateId(defaultId);
+      }
     }
-  }, [user?.email]);
+  }, [user?.email, user?.id]);
 
   // Grid layout: auto-computed but user-overridable
   const autoLayoutId = useMemo(() => {
@@ -316,77 +321,7 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
             onSelect={(id) => { hasUserChangedLayout.current = true; setGridLayoutId(id); setAllPreviews([]); }}
           />
 
-          {/* Platform / Aspect Ratio */}
-          <div style={{ marginBottom: 20 }}>
-            <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginBottom: 6 }}>
-              Size <span style={{ fontSize: 'var(--fs-2xs)', color: 'var(--gold)' }}>{platform.width}x{platform.height} ({platform.aspectLabel})</span>
-            </p>
-            {/* Social presets */}
-            <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap', marginBottom: 4 }}>
-              {PLATFORMS.filter(p => p.category === 'social').map(p => {
-                const isActive = platformId === p.id;
-                const overLimit = totalSlides > p.maxSlides;
-                return (
-                  <button
-                    key={p.id}
-                    onClick={() => setPlatformId(p.id)}
-                    className={`filter-pill ${isActive ? 'active' : ''}`}
-                    style={{
-                      fontSize: 'var(--fs-2xs)', padding: '3px 7px',
-                      borderColor: overLimit && isActive ? 'var(--mmmc-red)' : undefined,
-                      color: overLimit && isActive ? 'var(--mmmc-red)' : undefined,
-                    }}
-                  >
-                    {p.icon} {p.name}
-                  </button>
-                );
-              })}
-            </div>
-            {/* Aspect ratio presets */}
-            <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
-              {PLATFORMS.filter(p => p.category === 'ratio').map(p => {
-                const isActive = platformId === p.id;
-                return (
-                  <button
-                    key={p.id}
-                    onClick={() => setPlatformId(p.id)}
-                    className={`filter-pill ${isActive ? 'active' : ''}`}
-                    style={{ fontSize: 'var(--fs-3xs)', padding: '2px 6px' }}
-                  >
-                    {p.aspectLabel}
-                  </button>
-                );
-              })}
-            </div>
-            {totalSlides > platform.maxSlides && (
-              <p style={{ fontSize: 'var(--fs-2xs)', color: 'var(--mmmc-red)', marginTop: 4 }}>
-                {platform.name} max {platform.maxSlides} slides. You have {totalSlides}.
-              </p>
-            )}
-            {/* Quick export for non-Instagram platforms */}
-            {!platformId.startsWith('ig-') && selectedTracks.length > 0 && (
-              <button
-                className="btn btn-sm"
-                style={{ marginTop: 8, fontSize: 'var(--fs-xs)' }}
-                onClick={async () => {
-                  const mapped: Record<string, PlatformId> = {
-                    'tiktok': 'tiktok', 'facebook': 'facebook', 'twitter': 'twitter', 'linkedin': 'facebook',
-                  };
-                  const crossId = mapped[platformId];
-                  if (!crossId) return;
-                  const slots = buildSlots(selectedTracks.map((t, i) => ({
-                    track: t, albumId: t.album_spotify_id,
-                    selectionNumber: i + 1, slideGroup: 1,
-                    positionInSlide: i + 1, isCoverFeature: false,
-                  })));
-                  const blob = await generatePlatformImage(slots, weekDate, crossId, gridTemplateId);
-                  downloadBlob(blob, `nmf-${platformId}-${platform.width}x${platform.height}.png`);
-                }}
-              >
-                Download {platform.name} Image ({platform.width}x{platform.height})
-              </button>
-            )}
-          </div>
+          {/* Platform section removed — Carousel Shape toggle handles aspect ratio */}
 
           {/* Center Logo */}
           <div style={{ marginBottom: 20 }}>
@@ -438,9 +373,8 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
             <TemplateSelector selected={gridTemplateId} onSelect={handleGridTemplateChange} />
           </div>
 
-          {/* Title Slide Style */}
+          {/* Title Slide Template */}
           <div style={{ marginBottom: 20 }}>
-            <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginBottom: 8 }}>Title Slide Style</p>
             <TitleTemplatePicker
               selected={titleTemplateId}
               onSelect={id => { hasUserChangedTitle.current = true; setTitleTemplateId(id); setAllPreviews([]); }}
@@ -454,7 +388,7 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
             onSplitChange={handleSplitChange}
           />
         </div>}
-        right={<div style={{ position: 'sticky', top: 80 }}>
+        right={<div style={{ position: 'sticky', top: 80, marginTop: 20 }}>
           {/* Grid slide preview */}
           <div style={{ marginBottom: 16 }}>
             <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)', marginBottom: 6 }}>

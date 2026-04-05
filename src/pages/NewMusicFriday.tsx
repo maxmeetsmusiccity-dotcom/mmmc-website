@@ -118,7 +118,7 @@ export default function NewMusicFriday() {
   const [viewMode, setViewMode] = useState<'releases' | 'tracks'>('releases');
   const [loadedFromCache, setLoadedFromCache] = useState(false);
   const [cardSize, setCardSize] = useState(() => {
-    try { return parseInt(localStorage.getItem('nmf_card_size') || '200'); } catch { return 200; }
+    try { return parseInt(localStorage.getItem('nmf_card_size') || '240'); } catch { return 240; }
   });
 
   // Undo stack for selections (last 20 states)
@@ -847,7 +847,7 @@ export default function NewMusicFriday() {
           {/*  STICKY TOOLBAR: counter + filters (consolidated 4→2 rows)    */}
           {/* ============================================================ */}
           <div style={{
-            position: 'sticky', top: 0, zIndex: 20,
+            position: 'sticky', top: 48, zIndex: 20,
             background: 'var(--midnight)', borderBottom: '1px solid var(--midnight-border)',
           }}>
             {/* Row 1: Selection counter + target + filters + stats */}
@@ -935,6 +935,14 @@ export default function NewMusicFriday() {
                 <Link to="/newmusicfriday/archive" className="filter-pill" style={{ textDecoration: 'none', fontSize: 'var(--fs-2xs)', padding: '2px 8px' }}>
                   Archive
                 </Link>
+                {/* Thumbnail size slider */}
+                <span style={{ color: 'var(--midnight-border)', margin: '0 2px' }}>|</span>
+                <input
+                  type="range" min="120" max="350" value={cardSize}
+                  onChange={e => { const v = Number(e.target.value); setCardSize(v); try { localStorage.setItem('nmf_card_size', String(v)); } catch {} }}
+                  style={{ width: 80 }}
+                  title={`Card size: ${cardSize}px`}
+                />
               </div>
             </div>
 
@@ -983,21 +991,6 @@ export default function NewMusicFriday() {
               )}
             </div>
             <div style={{ padding: 24 }}>
-
-              {/* Thumbnail size slider (Lightroom-style) */}
-              {viewMode === 'releases' && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                  <span style={{ fontSize: 'var(--fs-3xs)', color: 'var(--text-muted)' }}>Compact</span>
-                  <input
-                    type="range" min="120" max="350" value={cardSize}
-                    onChange={e => { const v = Number(e.target.value); setCardSize(v); try { localStorage.setItem('nmf_card_size', String(v)); } catch {} }}
-                    style={{ flex: 1, maxWidth: 200 }}
-                    title={`Card size: ${cardSize}px`}
-                  />
-                  <span style={{ fontSize: 'var(--fs-3xs)', color: 'var(--text-muted)' }}>Detail</span>
-                  <span className="mono" style={{ fontSize: 'var(--fs-3xs)', color: 'var(--text-muted)', width: 40 }}>{cardSize}px</span>
-                </div>
-              )}
 
               {/* ---- ALBUM VIEW (default) ---- */}
               {viewMode === 'releases' && (
