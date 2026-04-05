@@ -215,8 +215,8 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
           not scrolled off to the right. */}
       <div className="carousel-layout" style={{
         display: 'grid',
-        gridTemplateColumns: '1fr minmax(280px, 420px)',
-        gap: 24,
+        gridTemplateColumns: 'minmax(0, 1fr) minmax(280px, 380px)',
+        gap: 20,
       }}>
         <style>{`
           @media (max-width: 768px) {
@@ -225,8 +225,8 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
             }
           }
         `}</style>
-        {/* LEFT COLUMN: Selectors */}
-        <div>
+        {/* LEFT COLUMN: Selectors (overflow hidden to force horizontal scroll on template rows) */}
+        <div style={{ minWidth: 0 }}>
           {/* Tracks per slide */}
           <div style={{ marginBottom: 20 }}>
             <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8 }}>Tracks per slide</p>
