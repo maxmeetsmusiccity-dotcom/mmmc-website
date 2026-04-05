@@ -117,6 +117,15 @@ export default function NewMusicFriday() {
   const [tracksPerSlide, setTracksPerSlide] = useState(8);
   const [viewMode, setViewMode] = useState<'releases' | 'tracks'>('releases');
   const [loadedFromCache, setLoadedFromCache] = useState(false);
+  const [cardSize, setCardSize] = useState(() => {
+    try { return parseInt(localStorage.getItem('nmf_card_size') || '200'); } catch { return 200; }
+  });
+
+  // Undo stack for selections (last 20 states)
+  const selectionHistory = useRef<SelectionSlot[][]>([]);
+  const pushSelectionHistory = useCallback((prev: SelectionSlot[]) => {
+    selectionHistory.current = [...selectionHistory.current.slice(-19), prev];
+  }, []);
 
   // Shift-click multi-select tracking
   const lastClickedIdx = useRef<number>(-1);
@@ -375,6 +384,7 @@ export default function NewMusicFriday() {
   const handleSelectRelease = useCallback((cluster: ReleaseCluster, trackId?: string) => {
     haptic();
     setSelections(prev => {
+      pushSelectionHistory(prev);
       const chosenTrackId = trackId || cluster.titleTrackId;
       const track = cluster.tracks.find(t => t.track_id === chosenTrackId) || cluster.tracks[0];
 
@@ -425,6 +435,49 @@ export default function NewMusicFriday() {
       isCoverFeature: s.track.track_id === trackId,
     })));
   }, []);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (phase !== 'results') return;
+      const meta = e.metaKey || e.ctrlKey;
+      // Cmd+A — Select All
+      if (meta && !e.shiftKey && e.key === 'a') {
+        e.preventDefault();
+        setSelections(prev => {
+          pushSelectionHistory(prev);
+          const existing = new Set(prev.map(s => s.albumId));
+          const newSlots = [...prev];
+          for (const r of releases) {
+            if (!existing.has(r.album_spotify_id)) {
+              const track = r.tracks.find(t => t.track_id === r.titleTrackId) || r.tracks[0];
+              newSlots.push({
+                track, albumId: r.album_spotify_id,
+                selectionNumber: newSlots.length + 1,
+                slideGroup: getSlideGroup(newSlots.length + 1),
+                positionInSlide: ((newSlots.length) % 8) + 1,
+                isCoverFeature: false,
+              });
+            }
+          }
+          return buildSlots(newSlots);
+        });
+      }
+      // Cmd+Shift+A — Clear All
+      if (meta && e.shiftKey && e.key === 'A') {
+        e.preventDefault();
+        setSelections(prev => { pushSelectionHistory(prev); return []; });
+      }
+      // Cmd+Z — Undo
+      if (meta && !e.shiftKey && e.key === 'z') {
+        e.preventDefault();
+        const prev = selectionHistory.current.pop();
+        if (prev) setSelections(prev);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [phase, releases, pushSelectionHistory]);
 
   // Filtered releases for browse
   const filteredReleases = useMemo(() => {
@@ -530,12 +583,14 @@ export default function NewMusicFriday() {
 
   return (
     <div style={{ minHeight: '100vh' }}>
-      {/* Header */}
+      {/* Header — sticky on desktop */}
       <header style={{
-        padding: '16px 24px',
+        padding: '12px 24px',
         borderBottom: '1px solid var(--midnight-border)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         flexWrap: 'wrap', gap: 12,
+        position: 'sticky', top: 0, zIndex: 30,
+        background: 'var(--midnight)',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <ProductNav />
@@ -927,9 +982,24 @@ export default function NewMusicFriday() {
             </div>
             <div style={{ padding: 24 }}>
 
+              {/* Thumbnail size slider (Lightroom-style) */}
+              {viewMode === 'releases' && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                  <span style={{ fontSize: 'var(--fs-3xs)', color: 'var(--text-muted)' }}>Compact</span>
+                  <input
+                    type="range" min="120" max="350" value={cardSize}
+                    onChange={e => { const v = Number(e.target.value); setCardSize(v); try { localStorage.setItem('nmf_card_size', String(v)); } catch {} }}
+                    style={{ flex: 1, maxWidth: 200 }}
+                    title={`Card size: ${cardSize}px`}
+                  />
+                  <span style={{ fontSize: 'var(--fs-3xs)', color: 'var(--text-muted)' }}>Detail</span>
+                  <span className="mono" style={{ fontSize: 'var(--fs-3xs)', color: 'var(--text-muted)', width: 40 }}>{cardSize}px</span>
+                </div>
+              )}
+
               {/* ---- ALBUM VIEW (default) ---- */}
               {viewMode === 'releases' && (
-                <div className="release-grid" data-testid="track-grid">
+                <div className="release-grid" data-testid="track-grid" style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${cardSize}px, 1fr))` }}>
                   {filteredReleases.map((cluster, idx) => (
                     <ClusterCard
                       key={cluster.album_spotify_id}
@@ -1261,6 +1331,20 @@ export default function NewMusicFriday() {
             </section>
           )}
         </>
+      )}
+
+      {/* Status bar — Lightroom-style bottom bar */}
+      {phase === 'results' && (
+        <div style={{
+          position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 20,
+          background: 'var(--midnight-raised)', borderTop: '1px solid var(--midnight-border)',
+          padding: '4px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          fontSize: 'var(--fs-3xs)', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)',
+        }}>
+          <span>{releases.length} releases &bull; {allTracks.length} tracks</span>
+          <span>{selections.length} selected &bull; {Math.ceil(selections.length / tracksPerSlide)} slides</span>
+          <span>NMF Curator Studio v1.0</span>
+        </div>
       )}
     </div>
   );
