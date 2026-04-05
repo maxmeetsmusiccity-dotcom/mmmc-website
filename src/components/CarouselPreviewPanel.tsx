@@ -4,6 +4,7 @@ import { getLastFriday } from '../lib/spotify';
 import { generateGridSlide, generateTitleSlide, downloadBlob } from '../lib/canvas-grid';
 import { getGridsForCount } from '../lib/grid-layouts';
 import { getPlatform, PLATFORMS } from '../lib/platforms';
+import { generatePlatformImage, PLATFORM_LIST, type PlatformId } from '../lib/cross-platform';
 import TemplateSelector from './TemplateSelector';
 import TitleTemplatePicker from './TitleTemplatePicker';
 import SlideSplitter, { type SlideGroup } from './SlideSplitter';
@@ -390,6 +391,24 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
             Download All ({allPreviews.length} slides)
           </button>
         )}
+        {allPreviews.length > 0 && PLATFORM_LIST.filter(p => p.id !== 'instagram').map(p => (
+          <button
+            key={p.id}
+            className="btn btn-sm"
+            onClick={async () => {
+              const slots = buildSlots(selectedTracks.map((t, i) => ({
+                track: t, albumId: t.album_spotify_id,
+                selectionNumber: i + 1, slideGroup: 1,
+                positionInSlide: i + 1, isCoverFeature: false,
+              })));
+              const blob = await generatePlatformImage(slots, weekDate, p.id as PlatformId, gridTemplateId);
+              downloadBlob(blob, `nmf-${p.id}-${p.w}x${p.h}.png`);
+            }}
+            style={{ fontSize: '0.6rem' }}
+          >
+            {p.label} ({p.w}×{p.h})
+          </button>
+        ))}
         <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', alignSelf: 'center' }}>
           {platform.width}×{platform.height} · {platform.aspectLabel} · {totalSlides} slide{totalSlides !== 1 ? 's' : ''}
         </span>
