@@ -85,8 +85,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogle = async () => {
     if (!supabase) return;
-    // Redirect to current page so users land back where they started
-    const redirectTo = window.location.href;
+    // Use clean URL without hash/query — Supabase appends #access_token
+    const redirectTo = window.location.origin + window.location.pathname;
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo },
