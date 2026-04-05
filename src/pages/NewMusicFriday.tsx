@@ -359,30 +359,46 @@ export default function NewMusicFriday() {
     }
   }, [weekDate]);
 
-  // Selection helpers
+  // Selection helpers — keyed by track ID so multiple tracks per album can be selected
   const selectionByAlbum = useMemo(() => {
     const map = new Map<string, SelectionSlot>();
-    for (const s of selections) map.set(s.albumId, s);
+    for (const s of selections) {
+      if (!map.has(s.albumId)) map.set(s.albumId, s);
+    }
+    return map;
+  }, [selections]);
+
+  /** All selected slots grouped by album ID (supports multi-track per album) */
+  const selectionsByAlbum = useMemo(() => {
+    const map = new Map<string, SelectionSlot[]>();
+    for (const s of selections) {
+      const arr = map.get(s.albumId) || [];
+      arr.push(s);
+      map.set(s.albumId, arr);
+    }
     return map;
   }, [selections]);
 
   const handleSelectRelease = useCallback((cluster: ReleaseCluster, trackId?: string) => {
     setSelections(prev => {
-      // Already selected? Update track choice
-      const existing = prev.findIndex(s => s.albumId === cluster.album_spotify_id);
-      if (existing >= 0) {
-        if (!trackId) return prev;
-        const newTrack = cluster.tracks.find(t => t.track_id === trackId);
-        if (!newTrack) return prev;
-        const updated = [...prev];
-        updated[existing] = { ...updated[existing], track: newTrack };
-        return buildSlots(updated);
-      }
-
-      // New selection
       const chosenTrackId = trackId || cluster.titleTrackId;
       const track = cluster.tracks.find(t => t.track_id === chosenTrackId) || cluster.tracks[0];
 
+      // Already selected this specific track? Deselect it
+      const existingTrack = prev.findIndex(s => s.track.track_id === track.track_id);
+      if (existingTrack >= 0) {
+        return buildSlots(prev.filter((_, i) => i !== existingTrack));
+      }
+
+      // For singles (1 track): if album already selected, this is a deselect of the only track
+      if (cluster.isSingle) {
+        const existingAlbum = prev.findIndex(s => s.albumId === cluster.album_spotify_id);
+        if (existingAlbum >= 0) {
+          return buildSlots(prev.filter((_, i) => i !== existingAlbum));
+        }
+      }
+
+      // Add new selection (allows multiple tracks from same album)
       const newSlot: SelectionSlot = {
         track,
         albumId: cluster.album_spotify_id,
@@ -396,8 +412,15 @@ export default function NewMusicFriday() {
     });
   }, []);
 
-  const handleDeselect = useCallback((albumId: string) => {
-    setSelections(prev => buildSlots(prev.filter(s => s.albumId !== albumId)));
+  const handleDeselect = useCallback((albumId: string, trackId?: string) => {
+    setSelections(prev => {
+      if (trackId) {
+        // Deselect specific track
+        return buildSlots(prev.filter(s => s.track.track_id !== trackId));
+      }
+      // Deselect all tracks from this album
+      return buildSlots(prev.filter(s => s.albumId !== albumId));
+    });
   }, []);
 
   const handleSetCoverFeature = useCallback((trackId: string) => {
@@ -847,6 +870,7 @@ export default function NewMusicFriday() {
             <div style={{ padding: 24 }}>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: 16 }}>
                 <span className="mono">{filteredReleases.length}</span> releases
+                <span style={{ color: 'var(--text-muted)' }}> ({allTracks.length} tracks)</span>
                 {search && ` matching "${search}"`}
                 {selections.length > 0 && (
                   <span style={{ marginLeft: 12, color: 'var(--gold)', fontWeight: 600 }}>
@@ -860,6 +884,7 @@ export default function NewMusicFriday() {
                     key={cluster.album_spotify_id}
                     cluster={cluster}
                     selectionSlot={selectionByAlbum.get(cluster.album_spotify_id) || null}
+                    selectedSlots={selectionsByAlbum.get(cluster.album_spotify_id)}
                     hasSelections={selections.length > 0}
                     onSelectRelease={handleSelectRelease}
                     onDeselect={handleDeselect}
