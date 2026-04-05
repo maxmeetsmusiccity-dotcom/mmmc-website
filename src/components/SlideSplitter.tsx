@@ -220,34 +220,74 @@ export default function SlideSplitter({ tracks, defaultTracksPerSlide, onSplitCh
               {/* Divider zone */}
               {i < orderedTracks.length - 1 && (
                 <div
-                  onClick={() => isDivider ? removeDivider(i + 1) : addDivider(i + 1)}
-                  onDragOver={(e) => { e.preventDefault(); setDragOverIdx(i + 0.5); }}
-                  onDrop={() => handleDrop(i + 1)}
                   style={{
-                    height: isDivider ? 24 : 8,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    cursor: 'pointer', margin: '0 28px',
-                    borderTop: isDivider ? '2px solid var(--gold)' : '1px dashed transparent',
-                    transition: 'all 0.15s',
+                    display: 'flex', alignItems: 'center', gap: 4,
+                    margin: isDivider ? '2px 0' : '0',
                   }}
-                  title={isDivider ? 'Click to remove slide break' : 'Click to add slide break here'}
                 >
+                  <div
+                    onClick={() => isDivider ? removeDivider(i + 1) : addDivider(i + 1)}
+                    onDragOver={(e) => { e.preventDefault(); setDragOverIdx(i + 0.5); }}
+                    onDrop={() => handleDrop(i + 1)}
+                    style={{
+                      flex: 1,
+                      height: isDivider ? 24 : 8,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      cursor: 'pointer', marginLeft: 28,
+                      borderTop: isDivider ? '2px solid var(--gold)' : '1px dashed transparent',
+                      transition: 'all 0.15s',
+                    }}
+                    title={isDivider ? 'Click to remove slide break' : 'Click to add slide break here'}
+                  >
+                    {isDivider && (
+                      <span style={{
+                        fontSize: '0.5rem', color: 'var(--gold)', fontWeight: 600,
+                        background: 'var(--midnight)', padding: '0 6px',
+                      }}>
+                        Slide {slideNum} /{groups[slideNum - 1]?.tracks.length || 0}
+                      </span>
+                    )}
+                  </div>
                   {isDivider && (
-                    <span style={{
-                      fontSize: '0.5rem', color: 'var(--gold)', fontWeight: 600,
-                      background: 'var(--midnight)', padding: '0 6px',
-                    }}>
-                      -- Slide Break --
-                    </span>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); shuffleSlide(slideNum - 1); }}
+                      title={`Shuffle Slide ${slideNum}`}
+                      style={{
+                        fontSize: '0.55rem', color: 'var(--gold)', cursor: 'pointer',
+                        padding: '2px 6px', borderRadius: 4,
+                        background: 'rgba(212,168,67,0.1)',
+                        border: '1px solid rgba(212,168,67,0.2)',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      Shuffle &#x21C4;
+                    </button>
                   )}
                 </div>
               )}
             </div>
           );
         })}
+        {/* Shuffle button for the last slide */}
+        {groups.length > 0 && (
+          <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '4px 0' }}>
+            <button
+              onClick={() => shuffleSlide(groups.length - 1)}
+              title={`Shuffle Slide ${groups.length}`}
+              style={{
+                fontSize: '0.55rem', color: 'var(--gold)', cursor: 'pointer',
+                padding: '2px 6px', borderRadius: 4,
+                background: 'rgba(212,168,67,0.1)',
+                border: '1px solid rgba(212,168,67,0.2)',
+              }}
+            >
+              Shuffle Slide {groups.length} &#x21C4;
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Group summary with per-slide shuffle */}
+      {/* Group summary */}
       <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap', alignItems: 'center' }}>
         {groups.map((group, i) => (
           <button
