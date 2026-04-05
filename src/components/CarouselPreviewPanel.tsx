@@ -244,6 +244,7 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
                 <button
                   key={opt.value}
                   onClick={() => { setCarouselAspect(opt.value); setAllPreviews([]); }}
+                  title={`Generate ${opt.label} slides (${opt.sub})`}
                   style={{
                     flex: 1, padding: '10px 12px', borderRadius: 10, cursor: 'pointer',
                     background: carouselAspect === opt.value ? 'var(--midnight-hover)' : 'var(--midnight)',
@@ -401,6 +402,7 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
                 className="btn btn-sm"
                 onClick={() => logoFileRef.current?.click()}
                 style={{ fontSize: 'var(--fs-2xs)' }}
+                title="Upload your own logo image (PNG, JPEG, WebP)"
               >
                 Upload Logo
               </button>
@@ -524,11 +526,12 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
           className="btn btn-gold"
           onClick={handleGenerate}
           disabled={generating || selectedTracks.length === 0}
+          title="Generate all slides as downloadable PNG images"
         >
           {generating ? 'Generating...' : allPreviews.length > 0 ? 'Regenerate All Slides' : 'Generate Carousel'}
         </button>
         {allPreviews.length > 0 && (
-          <button className="btn btn-sm" onClick={handleDownloadAll}>
+          <button className="btn btn-sm" onClick={handleDownloadAll} title="Download all slides as individual PNGs">
             Download All ({allPreviews.length} slides)
           </button>
         )}

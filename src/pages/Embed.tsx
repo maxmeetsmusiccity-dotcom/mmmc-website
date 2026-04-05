@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { getCarouselUrls } from '../lib/supabase';
 import { getLastFriday } from '../lib/spotify';
+import ProductNav from '../components/ProductNav';
+import Footer from '../components/Footer';
 
 export default function Embed() {
   const [searchParams] = useSearchParams();
@@ -40,7 +42,11 @@ export default function Embed() {
   if (loading) {
     return (
       <div style={containerStyle}>
+        <header style={{ padding: '16px 24px', borderBottom: '1px solid var(--midnight-border)', display: 'flex', alignItems: 'center', gap: 16, width: '100%' }}>
+          <ProductNav backTo="/newmusicfriday" backLabel="Curator Studio" />
+        </header>
         <p style={{ color: '#6B7F95', fontSize: 'var(--fs-md)' }}>Loading...</p>
+        <Footer />
       </div>
     );
   }
@@ -48,6 +54,9 @@ export default function Embed() {
   if (images.length === 0) {
     return (
       <div style={containerStyle}>
+        <header style={{ padding: '16px 24px', borderBottom: '1px solid var(--midnight-border)', display: 'flex', alignItems: 'center', gap: 16, width: '100%' }}>
+          <ProductNav backTo="/newmusicfriday" backLabel="Curator Studio" />
+        </header>
         <h2 style={titleStyle}>
           New Music <span style={{ color: '#D4A843' }}>Friday</span>
         </h2>
@@ -57,6 +66,7 @@ export default function Embed() {
         <p style={{ color: '#4A5568', fontSize: 'var(--fs-2xs)', marginTop: 8 }}>
           {weekDate}
         </p>
+        <Footer />
       </div>
     );
   }
@@ -67,6 +77,9 @@ export default function Embed() {
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
+      <header style={{ padding: '16px 24px', borderBottom: '1px solid var(--midnight-border)', display: 'flex', alignItems: 'center', gap: 16, width: '100%' }}>
+        <ProductNav backTo="/newmusicfriday" backLabel="Curator Studio" />
+      </header>
       {/* Slide */}
       <div style={{ position: 'relative', width: '100%', aspectRatio: '1', overflow: 'hidden', borderRadius: 8 }}>
         {images.map((url, i) => (
@@ -112,6 +125,7 @@ export default function Embed() {
           Max Meets Music City
         </a>
       </div>
+      <Footer />
     </div>
   );
 }

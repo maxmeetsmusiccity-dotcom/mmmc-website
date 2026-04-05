@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
 import { supabase, type NMFFeature } from '../lib/supabase';
 import { getLastFriday } from '../lib/spotify';
+import ProductNav from '../components/ProductNav';
+import Footer from '../components/Footer';
 
 export default function ThisWeek() {
   const [features, setFeatures] = useState<NMFFeature[]>([]);
@@ -41,8 +42,7 @@ export default function ThisWeek() {
         padding: '16px 24px', borderBottom: '1px solid var(--midnight-border)',
         display: 'flex', alignItems: 'center', gap: 16,
       }}>
-        <Link to="/" style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-md)' }}>MMMC</Link>
-        <Link to="/newmusicfriday" style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-md)' }}>NMF</Link>
+        <ProductNav backTo="/newmusicfriday" backLabel="Curator Studio" />
         <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-2xl)', fontWeight: 600 }}>This Week in New Music</h1>
       </header>
 
@@ -93,6 +93,7 @@ export default function ThisWeek() {
           </div>
         )}
       </div>
+      <Footer />
     </div>
   );
 }

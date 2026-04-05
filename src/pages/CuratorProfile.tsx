@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { supabase, type NMFFeature } from '../lib/supabase';
+import ProductNav from '../components/ProductNav';
+import Footer from '../components/Footer';
 
 interface Profile {
   id: string;
@@ -50,8 +52,7 @@ export default function CuratorProfile() {
   return (
     <div style={{ minHeight: '100vh' }}>
       <header style={{ padding: '16px 24px', borderBottom: '1px solid var(--midnight-border)', display: 'flex', alignItems: 'center', gap: 16 }}>
-        <Link to="/" style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-md)' }}>MMMC</Link>
-        <Link to="/newmusicfriday/archive" style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-md)' }}>Archive</Link>
+        <ProductNav backTo="/newmusicfriday" backLabel="Curator Studio" />
       </header>
 
       <div style={{ maxWidth: 700, margin: '0 auto', padding: 32 }}>
@@ -156,6 +157,7 @@ export default function CuratorProfile() {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }

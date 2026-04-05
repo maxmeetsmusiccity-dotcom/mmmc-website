@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../lib/auth-context';
 import ProductNav from '../components/ProductNav';
+import Footer from '../components/Footer';
 import { supabase } from '../lib/supabase';
 
 interface CuratorSummary {
@@ -123,7 +124,7 @@ export default function Dashboard() {
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <ProductNav showAdmin={isAdmin} />
+          <ProductNav showAdmin={isAdmin} backTo="/newmusicfriday" backLabel="Curator Studio" />
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-2xl)', fontWeight: 600 }}>
             NMF <span style={{ color: 'var(--gold)' }}>Intelligence</span>
           </h1>
@@ -348,6 +349,7 @@ export default function Dashboard() {
           </div>
         )}
       </div>
+      <Footer />
     </div>
   );
 }

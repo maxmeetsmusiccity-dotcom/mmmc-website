@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import ProductNav from '../components/ProductNav';
+import Footer from '../components/Footer';
 
 export default function Submit() {
   const [trackUrl, setTrackUrl] = useState('');
@@ -39,8 +40,7 @@ export default function Submit() {
         padding: '16px 24px', borderBottom: '1px solid var(--midnight-border)',
         display: 'flex', alignItems: 'center', gap: 16,
       }}>
-        <Link to="/" style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-md)' }}>MMMC</Link>
-        <Link to="/newmusicfriday" style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-md)' }}>NMF</Link>
+        <ProductNav backTo="/newmusicfriday" backLabel="Curator Studio" />
         <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-2xl)', fontWeight: 600 }}>Submit a Track</h1>
       </header>
 
@@ -79,6 +79,7 @@ export default function Submit() {
           </>
         )}
       </div>
+      <Footer />
     </div>
   );
 }

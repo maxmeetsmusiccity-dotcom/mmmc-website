@@ -897,13 +897,15 @@ export default function NewMusicFriday() {
                     setSelections(prev => buildSlots([...prev, ...newSelections]));
                   }}
                   style={{ fontSize: 'var(--fs-2xs)', color: 'var(--steel)', cursor: 'pointer', padding: '2px 6px' }}
+                  title="Select the title track from every visible release (Cmd+A)"
                 >
                   Select All
                 </button>
                 {selections.length > 0 && (
                   <button
-                    onClick={() => { haptic(5); setSelections([]); }}
+                    onClick={() => { haptic(5); pushSelectionHistory(selections); setSelections([]); }}
                     style={{ fontSize: 'var(--fs-2xs)', color: 'var(--mmmc-red)', cursor: 'pointer', padding: '2px 6px' }}
+                    title="Remove all selections (Cmd+Shift+A)"
                   >
                     Clear
                   </button>
