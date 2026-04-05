@@ -196,6 +196,8 @@ function generateCloseGrids(trackCount: number): GridConfig[] {
     const pairs = factorize(total);
     for (const [cols, rows] of pairs) {
       if (cols < 2 || rows < 2) continue;
+      // Logo only centered in odd×odd grids (even grids put it off-center)
+      if (cols % 2 === 0 || rows % 2 === 0) continue;
       const key = `${cols}x${rows}_logo_close`;
       if (seen.has(key)) continue;
       seen.add(key);
