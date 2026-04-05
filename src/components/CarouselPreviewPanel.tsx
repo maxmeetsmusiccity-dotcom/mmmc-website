@@ -9,7 +9,7 @@ import TemplateSelector from './TemplateSelector';
 import TitleTemplatePicker from './TitleTemplatePicker';
 import SlideSplitter, { type SlideGroup } from './SlideSplitter';
 import type { SelectionSlot } from '../lib/selection';
-import { buildSlots, shuffleSlideGroup } from '../lib/selection';
+import { buildSlots } from '../lib/selection';
 
 /** Compute valid tracks-per-slide options based on total selected tracks */
 function getTracksPerSlideOptions(totalTracks: number): { value: number; label: string }[] {
@@ -239,15 +239,14 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
               {slideGroups.length > 0 && (
                 <button
                   onClick={() => {
-                    // Shuffle track order within each slide group
-                    const shuffled = slideGroups.map((group, i) => {
-                      const slots = buildSlots(group.tracks.map((t, j) => ({
-                        track: t, albumId: t.album_spotify_id,
-                        selectionNumber: j + 1, slideGroup: i + 1,
-                        positionInSlide: j + 1, isCoverFeature: false,
-                      })));
-                      const result = shuffleSlideGroup(slots, i + 1);
-                      return { ...group, tracks: result.map(s => s.track) };
+                    // Fisher-Yates shuffle tracks within each slide group
+                    const shuffled = slideGroups.map(group => {
+                      const tracks = [...group.tracks];
+                      for (let i = tracks.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [tracks[i], tracks[j]] = [tracks[j], tracks[i]];
+                      }
+                      return { ...group, tracks };
                     });
                     setSlideGroups(shuffled);
                     setAllPreviews([]);
