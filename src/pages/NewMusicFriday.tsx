@@ -202,13 +202,21 @@ export default function NewMusicFriday() {
       getWeek(weekDate, userId).then(week => {
         if (week?.all_releases && Array.isArray(week.all_releases) && (week.all_releases as TrackItem[]).length > 0) {
           const tracks = week.all_releases as TrackItem[];
+          const savedAt = week.updated_at || week.created_at || null;
           setAllTracks(tracks);
           setReleases(groupIntoReleases(tracks));
           setPhase('results');
-          setLastScanned(week.updated_at || week.created_at || null);
-          sessionStorage.setItem(cacheKey, JSON.stringify({ tracks, timestamp: week.updated_at }));
+          setLastScanned(savedAt);
+          sessionStorage.setItem(cacheKey, JSON.stringify({ tracks, timestamp: savedAt }));
           if (week.selections && Array.isArray(week.selections)) {
             setSelections(buildSlots(week.selections as SelectionSlot[]));
+          }
+          // Staleness warning: if cached data is >24h old, nudge re-scan
+          if (savedAt) {
+            const ageMs = Date.now() - new Date(savedAt).getTime();
+            if (ageMs > 24 * 60 * 60 * 1000) {
+              setError('Loaded cached results from ' + new Date(savedAt).toLocaleString() + '. Consider re-scanning for the latest releases.');
+            }
           }
         }
       });
