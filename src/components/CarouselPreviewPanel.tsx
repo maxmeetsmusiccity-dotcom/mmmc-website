@@ -221,7 +221,7 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
           not scrolled off to the right. */}
       <div className="carousel-layout" style={{
         display: 'grid',
-        gridTemplateColumns: 'minmax(0, 340px) 1fr',
+        gridTemplateColumns: '2fr 3fr',
         gap: 24,
       }}>
         <style>{`
@@ -231,8 +231,8 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
             }
           }
         `}</style>
-        {/* LEFT COLUMN: Selectors — constrained width, scrollable template rows */}
-        <div style={{ minWidth: 0, maxWidth: 340, overflow: 'hidden' }}>
+        {/* LEFT COLUMN: Selectors — min-width 0 prevents grid blowout */}
+        <div style={{ minWidth: 0, overflow: 'hidden' }}>
           {/* Carousel Shape */}
           <div style={{ marginBottom: 20 }}>
             <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8 }}>Carousel Shape</p>
@@ -584,7 +584,7 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
               <img
                 src={allPreviews[activePreview]}
                 alt={`Slide ${activePreview + 1}`}
-                style={{ width: '100%', maxWidth: 600, borderRadius: 8, border: '1px solid var(--midnight-border)' }}
+                style={{ width: '100%', maxWidth: 480, borderRadius: 8, border: '1px solid var(--midnight-border)' }}
               />
               <span style={{
                 position: 'absolute', bottom: 8, right: 8,

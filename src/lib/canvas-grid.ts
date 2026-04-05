@@ -20,7 +20,10 @@ export interface CanvasDimensions {
 
 export function getDimensions(aspect: CarouselAspect = '1:1'): CanvasDimensions {
   if (aspect === '3:4') {
-    return { w: 1080, h: 1440, gridY: 100, gridH: 1200, fontScale: 1.0 };
+    // Portrait: extra 360px height. Header stays compact at top.
+    // Grid area gets the generous middle section.
+    // Footer (date) sits at the bottom with breathing room.
+    return { w: 1080, h: 1440, gridY: 100, gridH: 1240, fontScale: 1.0 };
   }
   return { w: 1080, h: 1080, gridY: 90, gridH: 932, fontScale: 1.0 };
 }
@@ -379,117 +382,96 @@ export async function generateTitleSlide(
 
   // Subtitle (removed — was "curated by @maxmeetsmusiccity")
 
-  // Vinyl record rendering (vinyl_classic template)
+  // Vinyl Classic rendering — faithful port of the original generateCoverSlide()
+  // Uses the mmmc_classic CarouselTemplate for neon style, vinyl overlay, etc.
   if (tt.vinylRecord) {
-    const cx = W / 2, cy = H / 2 + Math.round(H * 0.02);
-    const outerR = Math.round(Math.min(W, H) * 0.35);
+    const t = getTemplate('mmmc_classic');
+    await loadAllAssets(t);
 
-    // Outer disc shadow
-    ctx.save();
-    ctx.shadowColor = 'rgba(0,0,0,0.6)';
-    ctx.shadowBlur = 40;
-    ctx.shadowOffsetY = 8;
-    ctx.beginPath();
-    ctx.arc(cx, cy, outerR, 0, Math.PI * 2);
-    ctx.fillStyle = '#0A0A0A';
-    ctx.fill();
-    ctx.restore();
-
-    // Main disc body — subtle radial gradient
-    const discGrad = ctx.createRadialGradient(cx - outerR * 0.2, cy - outerR * 0.2, outerR * 0.1, cx, cy, outerR);
-    discGrad.addColorStop(0, '#1A1A1A');
-    discGrad.addColorStop(0.5, '#0D0D0D');
-    discGrad.addColorStop(1, '#050505');
-    ctx.beginPath();
-    ctx.arc(cx, cy, outerR, 0, Math.PI * 2);
-    ctx.fillStyle = discGrad;
-    ctx.fill();
-
-    // Groove rings — alternating subtle light/dark for realism
-    const grooveCount = 80;
-    const innerR = outerR * 0.42; // label area radius
-    const grooveStep = (outerR - innerR) / grooveCount;
-    for (let i = 0; i < grooveCount; i++) {
-      const r = innerR + i * grooveStep;
-      ctx.beginPath();
-      ctx.arc(cx, cy, r, 0, Math.PI * 2);
-      ctx.strokeStyle = i % 3 === 0
-        ? 'rgba(255,255,255,0.04)'
-        : i % 3 === 1
-        ? 'rgba(0,0,0,0.2)'
-        : 'rgba(255,255,255,0.02)';
-      ctx.lineWidth = 0.6;
-      ctx.stroke();
+    // Vinyl texture image overlay (the photographic vinyl bg)
+    const vinylSrc = t.assets?.vinyl || ASSETS.vinyl;
+    const vinyl = await loadImage(vinylSrc);
+    if (vinyl && t.cover.vinylOverlay) {
+      ctx.globalAlpha = t.cover.vinylOpacity;
+      ctx.drawImage(vinyl, 0, 0, W, H);
+      ctx.globalAlpha = 1;
     }
+    // Procedural groove rings on top of texture
+    vinylGrooves(ctx, t);
 
-    // Light reflection arc — top-left highlight
-    ctx.beginPath();
-    ctx.arc(cx - outerR * 0.15, cy - outerR * 0.15, outerR * 0.85, -0.8, -0.2);
-    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
-    ctx.lineWidth = outerR * 0.12;
-    ctx.stroke();
-
-    // Second reflection — bottom-right
-    ctx.beginPath();
-    ctx.arc(cx + outerR * 0.1, cy + outerR * 0.1, outerR * 0.7, 2.0, 2.6);
-    ctx.strokeStyle = 'rgba(255,255,255,0.03)';
-    ctx.lineWidth = outerR * 0.08;
-    ctx.stroke();
-
-    // Label area circle (solid background for album art)
-    ctx.beginPath();
-    ctx.arc(cx, cy, innerR, 0, Math.PI * 2);
-    ctx.fillStyle = tt.background;
-    ctx.fill();
-
-    // Featured album art — clipped to label circle
+    // Featured image — framed, NOT clipped to circle
     if (coverFeature) {
-      const img = await loadImage(coverFeature.track.cover_art_640);
-      if (img) {
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(cx, cy, innerR - 2, 0, Math.PI * 2);
-        ctx.clip();
-        const imgD = (innerR - 2) * 2;
-        ctx.drawImage(img, cx - innerR + 2, cy - innerR + 2, imgD, imgD);
-        ctx.restore();
+      const featImg = await loadImage(coverFeature.track.cover_art_640);
+      const imgSize = Math.round(W * 0.52);
+      const border = t.cover.frameBorder;
+      const imgX = (W - imgSize) / 2;
+      const imgY = Math.round(H * 0.17);
+
+      ctx.shadowColor = 'rgba(0,0,0,0.6)';
+      ctx.shadowBlur = t.cover.frameShadowBlur;
+      ctx.shadowOffsetY = 10;
+      ctx.fillStyle = t.cover.frameColor;
+      ctx.fillRect(imgX - border, imgY - border, imgSize + border * 2, imgSize + border * 2);
+      ctx.shadowColor = 'transparent';
+      if (featImg) ctx.drawImage(featImg, imgX, imgY, imgSize, imgSize);
+
+      // Artist name + song title below image
+      if (t.cover.showArtistName) {
+        const textY = imgY + imgSize + border + 16;
+        neonText(ctx, coverFeature.track.artist_names, W / 2, textY, `700 38px ${t.scriptFont}`, t);
+        if (t.cover.showTrackName) {
+          ctx.fillStyle = t.textSecondary;
+          ctx.font = `500 26px ${t.bodyFont}`;
+          ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+          ctx.fillText(coverFeature.track.track_name, W / 2, textY + 48);
+        }
       }
     }
 
-    // Center spindle hole
-    ctx.beginPath();
-    ctx.arc(cx, cy, 6, 0, Math.PI * 2);
-    ctx.fillStyle = tt.background;
-    ctx.fill();
+    // Header — gold neon "New Music Friday"
+    neonText(ctx, 'New Music Friday', W / 2, Math.round(H * 0.04), `700 56px ${t.scriptFont}`, t);
+    goldRule(ctx, Math.round(H * 0.10), t);
+    neonText(ctx, t.cover.subtitleText, W / 2, Math.round(H * 0.11), `italic 600 26px ${t.bodyFont}`, t);
 
-    // Thin gold ring around label area
-    ctx.beginPath();
-    ctx.arc(cx, cy, innerR, 0, Math.PI * 2);
-    ctx.strokeStyle = `${tt.accent}44`;
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
+    // Swipe pill
+    const swipeText = 'Swipe right for all this week\'s picks';
+    ctx.font = `600 22px ${t.scriptFont}`;
+    const swipeW = ctx.measureText(swipeText).width + 40;
+    const swipeY = Math.round(H * 0.83);
+    ctx.fillStyle = 'rgba(0,0,0,0.45)';
+    ctx.beginPath(); ctx.roundRect((W - swipeW) / 2, swipeY, swipeW, 36, 18); ctx.fill();
+    neonText(ctx, swipeText, W / 2, swipeY + 4, `600 22px ${t.scriptFont}`, t);
 
-    // Artist name + track below record
-    if (coverFeature) {
-      const labelY = cy + outerR + 20;
-      glowText(
-        coverFeature.track.artist_names,
-        W / 2, labelY,
-        `700 ${Math.round(W * 0.035)}px ${tt.headlineFont}`,
-        tt.textPrimary,
-      );
-      ctx.fillStyle = tt.textSecondary;
-      ctx.font = `400 ${Math.round(W * 0.024)}px ${tt.subtitleFont}`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'top';
-      ctx.fillText(coverFeature.track.track_name, W / 2, labelY + Math.round(W * 0.042));
+    // Date
+    neonText(ctx, formatDate(weekDate), W / 2, Math.round(H * 0.89), `700 48px ${t.scriptFont}`, t);
+
+    // Chevrons
+    if (t.cover.showChevrons) {
+      ctx.save();
+      ctx.shadowColor = `${t.accentGlow}0.6)`;
+      ctx.shadowBlur = 14;
+      ctx.fillStyle = t.accent;
+      for (let dx = 0; dx < 2; dx++) {
+        const bx = W - 140 + dx * 30, by = H / 2;
+        ctx.beginPath();
+        ctx.moveTo(bx, by - 28); ctx.lineTo(bx + 20, by); ctx.lineTo(bx, by + 28);
+        ctx.lineTo(bx + 6, by + 28); ctx.lineTo(bx + 26, by); ctx.lineTo(bx + 6, by - 28);
+        ctx.closePath(); ctx.fill();
+      }
+      ctx.restore();
     }
+
+    // Music notes + sparkles
+    if (t.decorations.showNotes) drawNotes(ctx, t.decorations.noteSize);
+    if (t.decorations.showSparkles) drawSparkles(ctx, [[160, 160], [W - 160, H - 180]], t.decorations.sparkleSize);
   }
 
   // Featured image (non-vinyl templates)
   if (!tt.vinylRecord && coverFeature) {
     const img = await loadImage(coverFeature.track.cover_art_640);
-    const imgSize = Math.round(W * tt.featuredImageSize);
+    // In portrait mode, scale featured image up by ~15% to use the extra vertical space
+    const sizeScale = aspect === '3:4' ? 1.15 : 1.0;
+    const imgSize = Math.round(W * tt.featuredImageSize * sizeScale);
     const imgX = (W - imgSize) / 2;
     const imgY = Math.round(H * tt.featuredImageY);
 
