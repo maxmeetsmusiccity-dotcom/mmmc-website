@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { TEMPLATES, type CarouselTemplate, getVisibleTemplates } from '../lib/carousel-templates';
-import { getTemplatePreview } from '../lib/canvas-grid';
+import { generateTemplatePreview } from '../lib/canvas-grid';
 import TemplateBuilder from './TemplateBuilder';
 import { useAuth } from '../lib/auth-context';
 
@@ -29,33 +29,38 @@ export default function TemplateSelector({ selected, onSelect }: Props) {
   const [showBuilder, setShowBuilder] = useState(false);
 
   const visibleTemplates = getVisibleTemplates(user?.email || undefined);
-  const allTemplates = [...visibleTemplates, ...customTemplates];
+  const allTemplates = useMemo(
+    () => [...visibleTemplates, ...customTemplates],
+    [visibleTemplates, customTemplates],
+  );
 
-  // Generate previews on mount and when custom templates change
+  // Generate previews — no global TEMPLATES mutation
   useEffect(() => {
-    // Inject custom templates into global TEMPLATES array for rendering
+    // Temporarily register custom templates so generateTemplatePreview can find them
+    const toRemove: string[] = [];
     for (const ct of customTemplates) {
       if (!TEMPLATES.find(t => t.id === ct.id)) {
         TEMPLATES.push(ct);
+        toRemove.push(ct.id);
       }
     }
     const map = new Map<string, string>();
     for (const t of allTemplates) {
-      map.set(t.id, getTemplatePreview(t.id, 200));
+      map.set(t.id, generateTemplatePreview(t.id, 200));
     }
     setPreviews(map);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [customTemplates]);
+    // Clean up: remove temporarily added templates
+    for (const id of toRemove) {
+      const idx = TEMPLATES.findIndex(t => t.id === id);
+      if (idx >= 0) TEMPLATES.splice(idx, 1);
+    }
+  }, [allTemplates, customTemplates]);
 
   const handleSaveCustom = (template: CarouselTemplate) => {
     const updated = customTemplates.filter(t => t.id !== template.id);
     updated.push(template);
     setCustomTemplates(updated);
     saveCustomTemplates(updated);
-    // Inject into global array
-    const existing = TEMPLATES.findIndex(t => t.id === template.id);
-    if (existing >= 0) TEMPLATES[existing] = template;
-    else TEMPLATES.push(template);
     onSelect(template.id);
     setShowBuilder(false);
   };

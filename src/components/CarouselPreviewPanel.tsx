@@ -8,7 +8,7 @@ import TemplateSelector from './TemplateSelector';
 import TitleTemplatePicker from './TitleTemplatePicker';
 import SlideSplitter, { type SlideGroup } from './SlideSplitter';
 import type { SelectionSlot } from '../lib/selection';
-import { buildSlots } from '../lib/selection';
+import { buildSlots, shuffleSlideGroup } from '../lib/selection';
 
 /** Compute valid tracks-per-slide options based on total selected tracks */
 function getTracksPerSlideOptions(totalTracks: number): { value: number; label: string }[] {
@@ -235,6 +235,27 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
             <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: 6 }}>
               {selectedTracks.length} tracks → {slideCount} slide{slideCount !== 1 ? 's' : ''}
               {titleTemplateId !== 'none' ? ' + title slide' : ''}
+              {slideGroups.length > 0 && (
+                <button
+                  onClick={() => {
+                    // Shuffle track order within each slide group
+                    const shuffled = slideGroups.map((group, i) => {
+                      const slots = buildSlots(group.tracks.map((t, j) => ({
+                        track: t, albumId: t.album_spotify_id,
+                        selectionNumber: j + 1, slideGroup: i + 1,
+                        positionInSlide: j + 1, isCoverFeature: false,
+                      })));
+                      const result = shuffleSlideGroup(slots, i + 1);
+                      return { ...group, tracks: result.map(s => s.track) };
+                    });
+                    setSlideGroups(shuffled);
+                    setAllPreviews([]);
+                  }}
+                  style={{ marginLeft: 8, fontSize: '0.6rem', color: 'var(--steel)', cursor: 'pointer', textDecoration: 'underline' }}
+                >
+                  Shuffle All
+                </button>
+              )}
             </p>
           </div>
 

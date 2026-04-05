@@ -508,7 +508,7 @@ export default function NewMusicFriday() {
               Scanned {new Date(lastScanned).toLocaleString()}
             </span>
           )}
-          {token && phase === 'results' && (
+          {token && phase !== 'scanning' && (
             <>
               <button className="btn btn-sm" onClick={() => runScan(token)}>Re-scan</button>
               <button className="btn btn-sm" onClick={() => { localStorage.removeItem('nmf_followed_artists'); runScan(token); }} title="Re-fetch followed artists from Spotify">Refresh Follows</button>
