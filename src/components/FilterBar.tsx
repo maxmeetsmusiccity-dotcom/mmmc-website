@@ -13,20 +13,19 @@ interface Props {
 export default function FilterBar({ filter, sort, search, onFilterChange, onSortChange, onSearchChange }: Props) {
   return (
     <div style={{
-      padding: '12px 24px',
-      borderBottom: '1px solid var(--midnight-border)',
       display: 'flex',
-      gap: 12,
+      gap: 8,
       flexWrap: 'wrap',
       alignItems: 'center',
     }}>
       {/* Filter pills */}
-      <div style={{ display: 'flex', gap: 6 }}>
+      <div style={{ display: 'flex', gap: 4 }}>
         {([['all', 'All'], ['single', 'Singles'], ['album', 'Albums & EPs']] as const).map(([key, label]) => (
           <button
             key={key}
             className={`filter-pill ${filter === key ? 'active' : ''}`}
             onClick={() => onFilterChange(key)}
+            style={{ fontSize: '0.7rem', padding: '3px 10px' }}
           >
             {label}
           </button>
@@ -40,14 +39,14 @@ export default function FilterBar({ filter, sort, search, onFilterChange, onSort
         style={{
           background: 'var(--midnight)',
           border: '1px solid var(--midnight-border)',
-          borderRadius: 8,
+          borderRadius: 6,
           color: 'var(--text-secondary)',
-          padding: '6px 12px',
-          fontSize: '0.8rem',
+          padding: '3px 8px',
+          fontSize: '0.7rem',
           fontFamily: 'var(--font-body)',
         }}
       >
-        <option value="date">Sort: Release Date</option>
+        <option value="date">Sort: Date</option>
         <option value="artist">Sort: Artist</option>
         <option value="title">Sort: Title</option>
       </select>
@@ -56,10 +55,10 @@ export default function FilterBar({ filter, sort, search, onFilterChange, onSort
       <input
         type="text"
         className="search-input"
-        placeholder="Search artist or title..."
+        placeholder="Search..."
         value={search}
         onChange={(e) => onSearchChange(e.target.value)}
-        style={{ maxWidth: 280, flex: '1 1 200px' }}
+        style={{ maxWidth: 200, flex: '1 1 140px', fontSize: '0.7rem', padding: '4px 10px' }}
       />
     </div>
   );

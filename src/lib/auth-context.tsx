@@ -106,10 +106,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
-    if (!supabase) return;
-    await supabase.auth.signOut();
+    // Clear Supabase auth
+    if (supabase) await supabase.auth.signOut();
     setUser(null);
     setSession(null);
+    setGuestMode(false);
+    // Clear all cached state
+    localStorage.removeItem('nmf_guest_mode');
+    localStorage.removeItem('nmf_followed_artists');
+    localStorage.removeItem('nmf_recent_release_artists');
+    sessionStorage.clear();
   };
 
   const continueAsGuest = () => {

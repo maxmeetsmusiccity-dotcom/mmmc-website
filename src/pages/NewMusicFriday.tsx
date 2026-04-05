@@ -54,65 +54,11 @@ const DEMO_TRACKS: TrackItem[] = [
 ];
 
 /* ------------------------------------------------------------------ */
-/*  Step Progress Breadcrumb                                          */
-/* ------------------------------------------------------------------ */
-
-interface StepProgressProps {
-  selections: SelectionSlot[];
-  hasGridTemplate: boolean;
-  hasTitleTemplate: boolean;
-  hasPreview: boolean;
-  onStepClick: (step: number) => void;
-}
-
-function StepProgress({ selections, hasGridTemplate, hasTitleTemplate, hasPreview, onStepClick }: StepProgressProps) {
-  const steps = [
-    { num: 1, label: 'Select Tracks', done: selections.length > 0 },
-    { num: 2, label: 'Configure Slides', done: selections.length >= 8 },
-    { num: 3, label: 'Grid Style', done: hasGridTemplate },
-    { num: 4, label: 'Title Style', done: hasTitleTemplate },
-    { num: 5, label: 'Export', done: hasPreview },
-  ];
-
-  const circled = ['\u2460', '\u2461', '\u2462', '\u2463', '\u2464'];
-
-  return (
-    <div style={{
-      display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap',
-      padding: '12px 24px',
-      background: 'var(--midnight)', border: '1px solid var(--midnight-border)',
-      borderRadius: 10, margin: '16px 24px 0',
-      fontSize: '0.8rem',
-    }}>
-      {steps.map((s, i) => (
-        <span key={s.num} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <button
-            onClick={() => onStepClick(s.num)}
-            style={{
-              background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-              color: s.done ? '#3DA877' : 'var(--text-muted)',
-              fontWeight: s.done ? 600 : 400,
-              fontSize: '0.8rem',
-              fontFamily: 'inherit',
-            }}
-          >
-            {s.done ? '\u2713' : circled[i]} {s.label}
-          </button>
-          {i < steps.length - 1 && (
-            <span style={{ color: 'var(--midnight-border)', margin: '0 2px' }}>{'\u2192'}</span>
-          )}
-        </span>
-      ))}
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
 /*  Main Component                                                    */
 /* ------------------------------------------------------------------ */
 
 export default function NewMusicFriday() {
-  const { user } = useAuth();
+  const { user, isGuest, signOut } = useAuth();
   const userId = user?.id || null;
   const [searchParams, setSearchParams] = useSearchParams();
   const [token, setToken] = useState<string | null>(getToken());
@@ -138,6 +84,9 @@ export default function NewMusicFriday() {
   const [activeSource, setActiveSource] = useState<MusicSource['id']>('spotify');
   const [tracksPerSlide, setTracksPerSlide] = useState(8);
 
+  // Shift-click multi-select tracking
+  const lastClickedIdx = useRef<number>(-1);
+
   // Step section refs for scroll-to
   const step1Ref = useRef<HTMLElement>(null);
   const step2Ref = useRef<HTMLElement>(null);
@@ -147,11 +96,6 @@ export default function NewMusicFriday() {
 
   const weekDate = getLastFriday();
 
-  const scrollToStep = useCallback((step: number) => {
-    const refs = [step1Ref, step2Ref, step3Ref, step4Ref, step5Ref];
-    const ref = refs[step - 1];
-    ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, []);
 
   // Handle OAuth callback
   useEffect(() => {
@@ -448,9 +392,7 @@ export default function NewMusicFriday() {
     return result;
   }, [releases, filter, sort, search]);
 
-  // Release counts for filter labels
-  const singleCount = useMemo(() => releases.filter(r => r.isSingle).length, [releases]);
-  const albumCount = useMemo(() => releases.filter(r => !r.isSingle).length, [releases]);
+  // (filter counts shown inline in sticky bar via filteredReleases.length)
 
   // Slide groups for TagBlocks — follows tracksPerSlide from carousel config
   const slideGroups = useMemo(() => {
@@ -563,6 +505,16 @@ export default function NewMusicFriday() {
           )}
           {token && (
             <button className="btn btn-sm btn-danger" onClick={handleDisconnect}>Disconnect</button>
+          )}
+          {/* Account info + sign out */}
+          {user && (
+            <>
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.6rem' }}>{user.email}</span>
+              <button className="btn btn-sm" onClick={signOut} style={{ fontSize: '0.65rem' }}>Sign Out</button>
+            </>
+          )}
+          {!user && isGuest && (
+            <button className="btn btn-sm" onClick={signOut} style={{ fontSize: '0.65rem' }}>Sign Out</button>
           )}
         </div>
       </header>
@@ -755,138 +707,127 @@ export default function NewMusicFriday() {
       {/* Results Phase -- single scrollable page with 5 steps */}
       {phase === 'results' && (
         <>
-          {/* Breadcrumb Progress */}
-          <StepProgress
-            selections={selections}
-            hasGridTemplate={true}
-            hasTitleTemplate={true}
-            hasPreview={selections.length > 0}
-            onStepClick={scrollToStep}
-          />
-
-          {/* Selection counter bar */}
+          {/* ============================================================ */}
+          {/*  STICKY TOOLBAR: counter + filters (consolidated 4→2 rows)    */}
+          {/* ============================================================ */}
           <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            flexWrap: 'wrap', gap: 12,
-            padding: '12px 24px',
-            borderBottom: '1px solid var(--midnight-border)',
+            position: 'sticky', top: 0, zIndex: 20,
+            background: 'var(--midnight)', borderBottom: '1px solid var(--midnight-border)',
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+            {/* Row 1: Selection counter + target + filters + stats */}
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              flexWrap: 'wrap', gap: 8,
+              padding: '10px 24px',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <span className="mono" style={{
-                  fontSize: '1.5rem', fontWeight: 700,
+                  fontSize: '1.4rem', fontWeight: 700,
                   color: selections.length > targetCount ? 'var(--mmmc-red)' : selections.length > 0 ? 'var(--gold)' : 'var(--text-muted)',
                 }}>
                   {selections.length}
                 </span>
-                <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                  / {targetCount} selected
-                </span>
+                <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>/ {targetCount}</span>
                 {selections.length > targetCount && (
-                  <span style={{ color: 'var(--mmmc-red)', fontSize: '0.75rem', fontWeight: 600 }}>Over limit!</span>
+                  <span style={{ color: 'var(--mmmc-red)', fontSize: '0.7rem', fontWeight: 600 }}>Over limit!</span>
                 )}
+                <select
+                  value={targetCount}
+                  onChange={e => setTargetCount(Number(e.target.value))}
+                  style={{
+                    background: 'var(--midnight)', border: '1px solid var(--midnight-border)',
+                    borderRadius: 6, color: 'var(--text-secondary)', padding: '3px 6px',
+                    fontSize: '0.7rem', fontFamily: 'var(--font-mono)',
+                  }}
+                >
+                  {Array.from({ length: 50 }, (_, i) => i + 1).map(n => (
+                    <option key={n} value={n}>{n} track{n !== 1 ? 's' : ''}</option>
+                  ))}
+                </select>
+                <span style={{ color: 'var(--midnight-border)', margin: '0 2px' }}>|</span>
+                <FilterBar
+                  filter={filter} sort={sort} search={search}
+                  onFilterChange={setFilter} onSortChange={setSort} onSearchChange={setSearch}
+                />
               </div>
-
-              {/* Target count selector */}
-              <select
-                value={targetCount}
-                onChange={e => setTargetCount(Number(e.target.value))}
-                style={{
-                  background: 'var(--midnight)', border: '1px solid var(--midnight-border)',
-                  borderRadius: 8, color: 'var(--text-secondary)', padding: '4px 8px',
-                  fontSize: '0.75rem', fontFamily: 'var(--font-mono)',
-                }}
-              >
-                {Array.from({ length: 50 }, (_, i) => i + 1).map(n => (
-                  <option key={n} value={n}>{n} track{n !== 1 ? 's' : ''}</option>
-                ))}
-              </select>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>
+                  {filteredReleases.length} releases ({allTracks.length} tracks)
+                </span>
+                <Link to="/newmusicfriday/archive" className="filter-pill" style={{ textDecoration: 'none', fontSize: '0.65rem' }}>
+                  Archive
+                </Link>
+              </div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>
-                {singleCount} singles, {albumCount} albums/EPs
-              </span>
-              <Link to="/newmusicfriday/archive" className="filter-pill" style={{ textDecoration: 'none' }}>
-                Archive
-              </Link>
+            {/* Row 2: Downloads (collapsed into a details for space) */}
+            <div style={{
+              padding: '4px 24px 8px',
+              display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center',
+              fontSize: '0.7rem',
+            }}>
+              <button className="btn btn-sm" style={{ fontSize: '0.65rem', padding: '3px 8px' }} onClick={() => downloadCSV(allTracks, 'nmf-all-tracks.csv')}>CSV</button>
+              <button className="btn btn-sm" style={{ fontSize: '0.65rem', padding: '3px 8px' }} onClick={() => downloadJSON(allTracks, 'nmf-all-tracks.json')}>JSON</button>
+              <button className="btn btn-sm" style={{ fontSize: '0.65rem', padding: '3px 8px' }} onClick={async () => { setArtDownloading(true); try { await downloadArt(allTracks); } finally { setArtDownloading(false); } }} disabled={artDownloading}>
+                {artDownloading ? '...' : 'Art ZIP'}
+              </button>
+              {selections.length > 0 && (
+                <>
+                  <span style={{ color: 'var(--midnight-border)' }}>|</span>
+                  <span style={{ color: 'var(--gold)', fontWeight: 600 }}>{selections.length} selected:</span>
+                  <button className="btn btn-sm" style={{ fontSize: '0.65rem', padding: '3px 8px' }} onClick={() => downloadCSV(selectedTracks, 'nmf-curated.csv')}>CSV</button>
+                  <button className="btn btn-sm" style={{ fontSize: '0.65rem', padding: '3px 8px' }} onClick={() => downloadJSON(selectedTracks, 'nmf-curated.json')}>JSON</button>
+                  <button className="btn btn-sm" style={{ fontSize: '0.65rem', padding: '3px 8px' }} onClick={async () => {
+                    await navigator.clipboard.writeText(JSON.stringify(selectedTracks, null, 2));
+                    setCopied(true); setTimeout(() => setCopied(false), 2000);
+                  }}>{copied ? 'Copied!' : 'Manifest'}</button>
+                </>
+              )}
             </div>
           </div>
 
           {/* ============================================================ */}
-          {/*  STEP 1: SELECT TRACKS                                       */}
+          {/*  STEP 1: SELECT TRACKS (scrollable grid below sticky bar)    */}
           {/* ============================================================ */}
-          <section ref={step1Ref} style={{ scrollMarginTop: 16 }}>
-            <div style={{
-              padding: '20px 24px 8px',
-              borderBottom: '1px solid var(--midnight-border)',
-            }}>
-              <h2 style={{
-                fontFamily: 'var(--font-display)', fontSize: '1.1rem', fontWeight: 600,
-                display: 'flex', alignItems: 'center', gap: 8,
-              }}>
-                <span style={{ color: selections.length > 0 ? '#3DA877' : 'var(--gold)' }}>
-                  {selections.length > 0 ? '\u2713' : '\u2460'}
-                </span>
-                Select Tracks
-              </h2>
-            </div>
-
-            <FilterBar
-              filter={filter} sort={sort} search={search}
-              onFilterChange={setFilter} onSortChange={setSort} onSearchChange={setSearch}
-            />
-
-            {/* Download bar */}
-            <div style={{
-              padding: '12px 24px', borderBottom: '1px solid var(--midnight-border)',
-              display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center',
-            }}>
-              <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginRight: 8 }}>All:</span>
-              <button className="btn btn-sm" onClick={async () => { setArtDownloading(true); try { await downloadArt(allTracks); } finally { setArtDownloading(false); } }} disabled={artDownloading}>
-                {artDownloading ? 'Downloading...' : 'Download All Art'}
-              </button>
-              <button className="btn btn-sm" onClick={() => downloadJSON(allTracks, 'nmf-all-tracks.json')}>JSON</button>
-              <button className="btn btn-sm" onClick={() => downloadCSV(allTracks, 'nmf-all-tracks.csv')}>CSV</button>
-
-              {selections.length > 0 && (
-                <>
-                  <span style={{ color: 'var(--midnight-border)', margin: '0 4px' }}>|</span>
-                  <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginRight: 8 }}>Selected:</span>
-                  <button className="btn btn-sm" onClick={async () => { setArtDownloading(true); try { await downloadArt(selectedTracks); } finally { setArtDownloading(false); } }} disabled={artDownloading}>
-                    Download Selected Art
-                  </button>
-                  <button className="btn btn-sm" onClick={() => downloadJSON(selectedTracks, 'nmf-curated.json')}>JSON</button>
-                  <button className="btn btn-sm" onClick={() => downloadCSV(selectedTracks, 'nmf-curated.csv')}>CSV</button>
-                  <button className="btn btn-sm" onClick={async () => {
-                    await navigator.clipboard.writeText(JSON.stringify(selectedTracks, null, 2));
-                    setCopied(true); setTimeout(() => setCopied(false), 2000);
-                  }}>{copied ? 'Copied!' : 'Copy Manifest'}</button>
-                </>
-              )}
-            </div>
-
+          <section ref={step1Ref} style={{ scrollMarginTop: 120 }}>
             {/* Release grid */}
             <div style={{ padding: 24 }}>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: 16 }}>
-                <span className="mono">{filteredReleases.length}</span> releases
-                <span style={{ color: 'var(--text-muted)' }}> ({allTracks.length} tracks)</span>
-                {search && ` matching "${search}"`}
-                {selections.length > 0 && (
-                  <span style={{ marginLeft: 12, color: 'var(--gold)', fontWeight: 600 }}>
-                    {selections.length} selected
-                  </span>
-                )}
-              </p>
               <div className="release-grid" data-testid="track-grid">
-                {filteredReleases.map(cluster => (
+                {filteredReleases.map((cluster, idx) => (
                   <ClusterCard
                     key={cluster.album_spotify_id}
                     cluster={cluster}
                     selectionSlot={selectionByAlbum.get(cluster.album_spotify_id) || null}
                     selectedSlots={selectionsByAlbum.get(cluster.album_spotify_id)}
                     hasSelections={selections.length > 0}
-                    onSelectRelease={handleSelectRelease}
+                    onSelectRelease={(c, trackId) => {
+                      // Shift-click: select range from last click to here
+                      if (lastClickedIdx.current >= 0 && window.event && (window.event as KeyboardEvent).shiftKey) {
+                        const start = Math.min(lastClickedIdx.current, idx);
+                        const end = Math.max(lastClickedIdx.current, idx);
+                        setSelections(prev => {
+                          let updated = [...prev];
+                          for (let i = start; i <= end; i++) {
+                            const r = filteredReleases[i];
+                            const alreadyHas = updated.some(s => s.albumId === r.album_spotify_id);
+                            if (!alreadyHas) {
+                              const track = r.tracks.find(t => t.track_id === r.titleTrackId) || r.tracks[0];
+                              updated.push({
+                                track, albumId: r.album_spotify_id,
+                                selectionNumber: updated.length + 1,
+                                slideGroup: getSlideGroup(updated.length + 1),
+                                positionInSlide: ((updated.length) % 8) + 1,
+                                isCoverFeature: false,
+                              });
+                            }
+                          }
+                          return buildSlots(updated);
+                        });
+                      } else {
+                        handleSelectRelease(c, trackId);
+                      }
+                      lastClickedIdx.current = idx;
+                    }}
                     onDeselect={handleDeselect}
                     onSetCoverFeature={handleSetCoverFeature}
                     featureCount={featureCounts.get(cluster.tracks[0]?.artist_id) || 0}
