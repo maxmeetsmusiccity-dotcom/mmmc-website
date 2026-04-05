@@ -93,7 +93,13 @@ export function neonText(ctx: CanvasRenderingContext2D, text: string, x: number,
   const metrics = ctx.measureText(text);
   const pad = Math.round(t.neon.outerBlur * 2.5);
   const tw = Math.ceil(metrics.width) + pad * 2;
-  const th = Math.ceil(parseInt(font) * 1.4) + pad * 2;
+  // Extract px size from font string like "700 48px Helvetica" — parseInt grabs weight, not size
+  const pxMatch = font.match(/(\d+(?:\.\d+)?)px/);
+  const fontSize = pxMatch ? parseFloat(pxMatch[1]) : 48;
+  const th = Math.ceil(fontSize * 1.4) + pad * 2;
+
+  // Guard against 0-dimension canvas (causes drawImage crash)
+  if (tw <= 0 || th <= 0 || !text.trim()) return;
 
   // Draw text to offscreen canvas
   const off = document.createElement('canvas');
