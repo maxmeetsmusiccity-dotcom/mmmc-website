@@ -77,8 +77,14 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
   // platformId kept for cross-platform export compatibility
   const platformId = 'ig-post';
   const [gridTemplateId, setGridTemplateId] = useState(localStorage.getItem('nmf_template') || 'mmmc_classic');
-  const [titleTemplateId, setTitleTemplateId] = useState(() => getDefaultTitleTemplateId(user?.email || undefined));
-  const hasUserChangedTitle = useRef(false);
+  const [titleTemplateId, setTitleTemplateId] = useState(() => {
+    const saved = localStorage.getItem('nmf_title_template');
+    const fallback = getDefaultTitleTemplateId(user?.email || undefined);
+    const chosen = saved || fallback;
+    console.log('[title-template] init:', { saved, fallback, chosen, email: user?.email || null });
+    return chosen;
+  });
+  const hasUserChangedTitle = useRef(!!localStorage.getItem('nmf_title_template'));
   const [slideGroups, setSlideGroups] = useState<SlideGroup[]>([]);
   const manualSplit = useRef(false);
   const [gridPreview, setGridPreview] = useState<string>('');
@@ -97,11 +103,14 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
   // Fix: update title template when user email resolves (Supabase auth is async)
   // Also trigger on user.id change in case email arrives with the session
   useEffect(() => {
+    console.log('[title-template] useEffect:', { email: user?.email, hasUserChanged: hasUserChangedTitle.current });
     if (!hasUserChangedTitle.current) {
       const email = user?.email;
       if (email) {
         const defaultId = getDefaultTitleTemplateId(email);
+        console.log('[title-template] auth resolved → setting default:', defaultId);
         setTitleTemplateId(defaultId);
+        localStorage.setItem('nmf_title_template', defaultId);
       }
     }
   }, [user?.email, user?.id]);
@@ -378,7 +387,7 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
           <div style={{ marginBottom: 20 }}>
             <TitleTemplatePicker
               selected={titleTemplateId}
-              onSelect={id => { hasUserChangedTitle.current = true; setTitleTemplateId(id); setAllPreviews([]); }}
+              onSelect={id => { hasUserChangedTitle.current = true; setTitleTemplateId(id); localStorage.setItem('nmf_title_template', id); setAllPreviews([]); }}
             />
           </div>
 

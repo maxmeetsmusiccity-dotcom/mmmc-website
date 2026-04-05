@@ -217,7 +217,7 @@ export default function SlideSplitter({ tracks, defaultTracksPerSlide, onSplitCh
                   {i + 1}
                 </span>
                 {track.cover_art_64 && (
-                  <img src={track.cover_art_64} alt="" style={{ width: 20, height: 20, borderRadius: 2 }} draggable={false} />
+                  <img src={track.cover_art_64} alt="" style={{ width: 20, height: 20, borderRadius: 2 }} draggable={false} onError={e => { (e.target as HTMLImageElement).src = '/placeholder-album.svg'; (e.target as HTMLImageElement).onerror = null; }} />
                 )}
                 <span style={{ flex: 1, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {track.artist_names} — {track.track_name}

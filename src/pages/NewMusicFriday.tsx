@@ -609,6 +609,7 @@ export default function NewMusicFriday() {
         flexWrap: 'wrap', gap: 14,
         position: 'sticky', top: 0, zIndex: 30,
         background: 'var(--midnight)',
+        boxShadow: '0 1px 8px rgba(0,0,0,0.3)',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <ProductNav />

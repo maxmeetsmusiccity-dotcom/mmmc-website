@@ -9,6 +9,7 @@ import Dashboard from './pages/Dashboard';
 import CuratorProfile from './pages/CuratorProfile';
 import Terms from './pages/Terms';
 import Privacy from './pages/Privacy';
+import Artists from './pages/Artists';
 import ErrorBoundary from './components/ErrorBoundary';
 import AuthGate from './components/AuthGate';
 
@@ -26,6 +27,7 @@ export default function App() {
         <Route path="/curator/:username" element={<CuratorProfile />} />
         <Route path="/terms" element={<Terms />} />
         <Route path="/privacy" element={<Privacy />} />
+        <Route path="/artists" element={<Artists />} />
         <Route path="/nmf" element={<Navigate to="/newmusicfriday" replace />} />
         <Route path="/nmf/*" element={<Navigate to="/newmusicfriday" replace />} />
       </Routes>
