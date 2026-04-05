@@ -255,11 +255,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     'sleeping-giants': ['songwriter nashville', 'publishing writer', 'credits nashville', 'nashville catalog'],
   };
 
-  const terms = searchTerms[category] || ['nashville country'];
+  // Limit to first 3 terms and 15 profiles each to stay within serverless timeout
+  const terms = (searchTerms[category] || ['nashville country']).slice(0, 3);
   const allProfiles: NDProfile['profile'][] = [];
 
   for (const term of terms) {
-    const batch = await fetchArtistBatch(term, 30);
+    const batch = await fetchArtistBatch(term, 15);
     allProfiles.push(...batch);
   }
 
