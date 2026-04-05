@@ -30,7 +30,7 @@ describe('getDimensions', () => {
     expect(getDimensions('1:1').fontScale).toBe(1.0);
     expect(getDimensions('3:4').fontScale).toBe(1.0);
   });
-  it('3:4 gridH is approximately 1240', () => {
-    expect(getDimensions('3:4').gridH).toBe(1240);
+  it('3:4 gridH is 1200', () => {
+    expect(getDimensions('3:4').gridH).toBe(1200);
   });
 });

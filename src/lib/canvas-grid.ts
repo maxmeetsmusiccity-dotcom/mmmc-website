@@ -20,10 +20,10 @@ export interface CanvasDimensions {
 
 export function getDimensions(aspect: CarouselAspect = '1:1'): CanvasDimensions {
   if (aspect === '3:4') {
-    // Portrait: extra 360px height. Header stays compact at top.
-    // Grid area gets the generous middle section.
-    // Footer (date) sits at the bottom with breathing room.
-    return { w: 1080, h: 1440, gridY: 100, gridH: 1240, fontScale: 1.0 };
+    // Portrait: header at top, grid centered in generous middle, date near grid bottom.
+    // Keep gridH proportional — cells are square so extra height becomes empty space.
+    // Use same proportions as square (gridY ≈ 8%, gridH ≈ 86% of canvas)
+    return { w: 1080, h: 1440, gridY: 120, gridH: 1200, fontScale: 1.0 };
   }
   return { w: 1080, h: 1080, gridY: 90, gridH: 932, fontScale: 1.0 };
 }
@@ -475,7 +475,8 @@ export async function generateTitleSlide(
       const imgSize = Math.round(W * 0.44);
       const border = 8;
       const imgCx = W / 2;
-      const imgCy = H * 0.42;
+      // In portrait, keep image centered vertically but not stretched by H fraction
+      const imgCy = aspect === '3:4' ? 520 : H * 0.42;
       const tiltDeg = -4;
 
       ctx.save();
@@ -499,8 +500,12 @@ export async function generateTitleSlide(
     // "Max Meets Music City" subtitle in italic
     neonText(ctx, 'Max Meets Music City', W / 2, headerY + 68, `italic 600 28px ${t.bodyFont}`, t);
 
-    // Gold sparkles/stars at decorative positions
-    const starPositions: [number, number][] = [
+    // Gold sparkles/stars — use fixed positions in portrait to keep them near content
+    const starPositions: [number, number][] = aspect === '3:4' ? [
+      [W * 0.12, 140], [W * 0.88, 140],
+      [W * 0.08, 820], [W * 0.92, 820],
+      [W * 0.18, 1020], [W * 0.82, 1020],
+    ] : [
       [W * 0.12, H * 0.14], [W * 0.88, H * 0.14],
       [W * 0.08, H * 0.68], [W * 0.92, H * 0.68],
       [W * 0.18, H * 0.85], [W * 0.82, H * 0.85],
@@ -516,7 +521,7 @@ export async function generateTitleSlide(
     ctx.shadowBlur = 14;
     ctx.fillStyle = t.accent;
     for (let dx = 0; dx < 2; dx++) {
-      const bx = W - 120 + dx * 30, by = H * 0.42;
+      const bx = W - 120 + dx * 30, by = aspect === '3:4' ? 520 : H * 0.42;
       ctx.beginPath();
       ctx.moveTo(bx, by - 28); ctx.lineTo(bx + 20, by); ctx.lineTo(bx, by + 28);
       ctx.lineTo(bx + 6, by + 28); ctx.lineTo(bx + 26, by); ctx.lineTo(bx + 6, by - 28);
@@ -586,8 +591,13 @@ export async function generateTitleSlide(
     ctx.fillText(coverFeature.track.track_name, W / 2, labelY + Math.round(W * 0.042));
   }
 
-  // Date Y: in portrait, use fixed offset from bottom (matches 1:1 visual position)
-  const dateY = aspect === '3:4' ? H - 100 : Math.round(H * tt.dateY);
+  // Date Y: in portrait, position below the featured image content, not at canvas bottom
+  // For square: use the template fraction. For portrait: relative to image position
+  const squareDateY = Math.round(H * tt.dateY);
+  const portraitDateY = coverFeature
+    ? Math.round(H * tt.featuredImageY) + Math.round(W * tt.featuredImageSize * 1.15) + 140
+    : H - 200;
+  const dateY = aspect === '3:4' ? Math.min(portraitDateY, H - 80) : squareDateY;
 
   // Swipe pill
   if (tt.swipePill) {
@@ -900,12 +910,15 @@ export async function generateGridSlide(
     }
   }
 
-  neonText(ctx, formatDate(weekDate), dim.w / 2, dim.h - 52, `700 40px ${t.scriptFont}`, t);
+  // Date below grid — fixed offset from grid bottom, not canvas bottom
+  const dateY = dim.gridY + dim.gridH + 20;
+  const dateFinalY = Math.min(dateY, dim.h - 52); // Don't overflow past canvas edge
+  neonText(ctx, formatDate(weekDate), dim.w / 2, dateFinalY, `700 40px ${t.scriptFont}`, t);
 
   if (t.decorations.showSparkles) {
     const sx = dim.w - 28;
-    const sy = dim.h - 28;
-    drawSparkles(ctx, [[28, 28], [sx, 28], [28, sy], [sx, sy]], t.decorations.sparkleSize);
+    const sparkleBottomY = Math.min(dateFinalY + 48, dim.h - 28);
+    drawSparkles(ctx, [[28, 28], [sx, 28], [28, sparkleBottomY], [sx, sparkleBottomY]], t.decorations.sparkleSize);
   }
   if (t.decorations.showNotes) drawNotes(ctx, t.decorations.noteSize);
 
