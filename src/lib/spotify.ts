@@ -236,7 +236,7 @@ export async function checkScanHealth(token: string): Promise<{
         message: `Rate limited. Retry after ${retryAfter}s. Use CSV import.`,
       };
     }
-    if (res.status === 401) {
+    if (res.status === 401 || res.status === 403) {
       clearToken();
       throw new Error('AUTH_EXPIRED');
     }
@@ -247,28 +247,12 @@ export async function checkScanHealth(token: string): Promise<{
   }
 }
 
-export function getLastFriday(): string {
-  const now = new Date();
-  const day = now.getDay(); // 0=Sun, 5=Fri
-  // Most recent Friday INCLUDING today if today is Friday
-  // Music drops Thursday night with Friday's release_date
-  const diff = day >= 5 ? day - 5 : day + 2;
-  const friday = new Date(now);
-  friday.setDate(now.getDate() - diff);
-  friday.setHours(0, 0, 0, 0);
-  return friday.toISOString().split('T')[0];
-}
+// Re-export from scan-utils (canonical source for date logic)
+export { computeLastFriday as getLastFriday, computeScanCutoff } from './scan-utils';
+import { computeLastFriday, computeScanCutoff } from './scan-utils';
 
-/**
- * Scan cutoff: Friday minus 6 days — matches Python's 7-day window.
- * Python: since = target - timedelta(days=days_back), days_back=6
- * Window: [cutoff, friday] inclusive — catches the full week of releases.
- */
 export function getScanCutoff(daysBack = 6): string {
-  const friday = getLastFriday();
-  const d = new Date(friday + 'T12:00:00');
-  d.setDate(d.getDate() - daysBack);
-  return d.toISOString().split('T')[0];
+  return computeScanCutoff(computeLastFriday(), daysBack);
 }
 
 export async function fetchFollowedArtists(

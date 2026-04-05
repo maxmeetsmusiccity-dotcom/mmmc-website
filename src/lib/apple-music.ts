@@ -1,6 +1,6 @@
 let cachedToken: { token: string; expiresAt: number } | null = null;
 
-async function getDeveloperToken(): Promise<string> {
+export async function getDeveloperToken(): Promise<string> {
   if (cachedToken && Date.now() < cachedToken.expiresAt) {
     return cachedToken.token;
   }

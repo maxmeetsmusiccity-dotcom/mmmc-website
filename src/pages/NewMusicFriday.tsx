@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { startAuth, exchangeCode, getToken, clearToken } from '../lib/auth';
+import { startAuth, exchangeCode, getToken, clearToken, refreshToken, isTokenExpired } from '../lib/auth';
 import {
   fetchFollowedArtists,
   fetchNewReleases,
@@ -246,9 +246,25 @@ export default function NewMusicFriday() {
     setRateLimited(false);
     const scanStart = Date.now();
     try {
+      // Refresh token if expired
+      let activeToken = tkn;
+      if (isTokenExpired()) {
+        setScanStatus('Refreshing Spotify token...');
+        const refreshed = await refreshToken();
+        if (refreshed) {
+          activeToken = refreshed;
+          setToken(refreshed);
+        } else {
+          setToken(null);
+          setPhase('auth');
+          setError('Session expired. Please reconnect Spotify.');
+          return;
+        }
+      }
+
       // Pre-scan health check
       setScanStatus('Checking Spotify status...');
-      const health = await checkScanHealth(tkn);
+      const health = await checkScanHealth(activeToken);
       if (!health.ok) {
         setRateLimited(true);
         setError(health.message);
@@ -258,7 +274,7 @@ export default function NewMusicFriday() {
       console.log(`[SCAN] Health check: ${health.message}`);
 
       setScanStatus('Fetching followed artists...');
-      const artists = await fetchFollowedArtists(tkn, (cur, tot) => {
+      const artists = await fetchFollowedArtists(activeToken, (cur, tot) => {
         setScanProgress({ current: cur, total: tot });
         setScanStatus(`Loaded ${cur} artists...`);
       });
@@ -267,7 +283,7 @@ export default function NewMusicFriday() {
       setScanStatus(`Scanning releases since ${cutoff}...`);
       setScanProgress({ current: 0, total: artists.length });
 
-      const result = await fetchNewReleases(artists, tkn, cutoff, (cur, tot, releasesFound, status) => {
+      const result = await fetchNewReleases(artists, activeToken, cutoff, (cur, tot, releasesFound, status) => {
         setScanProgress({ current: cur, total: tot });
         const elapsed = (Date.now() - scanStart) / 1000;
         const statusDot = status === 'green' ? '\uD83D\uDFE2' : status === 'yellow' ? '\uD83D\uDFE1' : '\uD83D\uDD34';

@@ -8,6 +8,7 @@
 
 import type { TrackItem } from '../spotify';
 import { parseReleaseDate } from '../scan-utils';
+import { getDeveloperToken } from '../apple-music';
 
 const MIN_GAP_MS = 400; // 2.5 req/s — conservative for Apple Music
 let lastCallTime = 0;
@@ -41,14 +42,6 @@ export function loadMusicKit(): Promise<void> {
     // Timeout after 10s
     setTimeout(() => reject(new Error('MusicKit JS load timeout')), 10000);
   });
-}
-
-/** Get developer token from our API endpoint */
-async function getDeveloperToken(): Promise<string> {
-  const res = await fetch('/api/apple-token');
-  if (!res.ok) throw new Error(`Apple token fetch failed: ${res.status}`);
-  const data = await res.json();
-  return data.token;
 }
 
 /** Configure and authorize MusicKit. Must be called from a user click. */

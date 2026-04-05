@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { TEMPLATES, type CarouselTemplate, getVisibleTemplates } from '../lib/carousel-templates';
 import { generateTemplatePreview } from '../lib/canvas-grid';
+import { saveCustomTemplate, getCustomTemplates } from '../lib/supabase';
 import TemplateBuilder from './TemplateBuilder';
 import { useAuth } from '../lib/auth-context';
 
@@ -11,22 +12,34 @@ interface Props {
 
 const CUSTOM_KEY = 'nmf_custom_templates';
 
-function loadCustomTemplates(): CarouselTemplate[] {
+function loadLocalTemplates(): CarouselTemplate[] {
   try {
     const raw = localStorage.getItem(CUSTOM_KEY);
     return raw ? JSON.parse(raw) : [];
   } catch { return []; }
 }
 
-function saveCustomTemplates(templates: CarouselTemplate[]) {
+function saveLocalTemplates(templates: CarouselTemplate[]) {
   try { localStorage.setItem(CUSTOM_KEY, JSON.stringify(templates)); } catch {}
 }
 
 export default function TemplateSelector({ selected, onSelect }: Props) {
   const { user } = useAuth();
   const [previews, setPreviews] = useState<Map<string, string>>(new Map());
-  const [customTemplates, setCustomTemplates] = useState<CarouselTemplate[]>(loadCustomTemplates);
+  const [customTemplates, setCustomTemplates] = useState<CarouselTemplate[]>(loadLocalTemplates);
   const [showBuilder, setShowBuilder] = useState(false);
+
+  // Load custom templates from Supabase for authenticated users
+  useEffect(() => {
+    if (!user?.id) return;
+    getCustomTemplates(user.id).then(serverTemplates => {
+      if (serverTemplates.length > 0) {
+        const merged = serverTemplates as unknown as CarouselTemplate[];
+        setCustomTemplates(merged);
+        saveLocalTemplates(merged); // sync to localStorage as backup
+      }
+    });
+  }, [user?.id]);
 
   const visibleTemplates = getVisibleTemplates(user?.email || undefined);
   const allTemplates = useMemo(
@@ -34,9 +47,8 @@ export default function TemplateSelector({ selected, onSelect }: Props) {
     [visibleTemplates, customTemplates],
   );
 
-  // Generate previews — no global TEMPLATES mutation
+  // Generate previews
   useEffect(() => {
-    // Temporarily register custom templates so generateTemplatePreview can find them
     const toRemove: string[] = [];
     for (const ct of customTemplates) {
       if (!TEMPLATES.find(t => t.id === ct.id)) {
@@ -49,7 +61,6 @@ export default function TemplateSelector({ selected, onSelect }: Props) {
       map.set(t.id, generateTemplatePreview(t.id, 200));
     }
     setPreviews(map);
-    // Clean up: remove temporarily added templates
     for (const id of toRemove) {
       const idx = TEMPLATES.findIndex(t => t.id === id);
       if (idx >= 0) TEMPLATES.splice(idx, 1);
@@ -60,7 +71,11 @@ export default function TemplateSelector({ selected, onSelect }: Props) {
     const updated = customTemplates.filter(t => t.id !== template.id);
     updated.push(template);
     setCustomTemplates(updated);
-    saveCustomTemplates(updated);
+    saveLocalTemplates(updated);
+    // Persist to Supabase for authenticated users
+    if (user?.id) {
+      saveCustomTemplate(user.id, template as unknown as Record<string, unknown>);
+    }
     onSelect(template.id);
     setShowBuilder(false);
   };

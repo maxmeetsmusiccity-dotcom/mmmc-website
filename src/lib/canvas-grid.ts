@@ -16,18 +16,33 @@ const ASSETS = {
   noteBR: '/assets/note-br.png',
 };
 
+const IMAGE_CACHE_MAX = 200;
 const imageCache = new Map<string, HTMLImageElement>();
+
+function evictIfNeeded() {
+  if (imageCache.size <= IMAGE_CACHE_MAX) return;
+  // Delete oldest entries (Map iterates in insertion order)
+  const toDelete = imageCache.size - IMAGE_CACHE_MAX;
+  const iter = imageCache.keys();
+  for (let i = 0; i < toDelete; i++) {
+    const key = iter.next().value;
+    if (key) imageCache.delete(key);
+  }
+}
 
 async function loadImage(src: string): Promise<HTMLImageElement | null> {
   if (imageCache.has(src)) return imageCache.get(src)!;
   return new Promise((resolve) => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
-    img.onload = () => { imageCache.set(src, img); resolve(img); };
+    img.onload = () => { imageCache.set(src, img); evictIfNeeded(); resolve(img); };
     img.onerror = () => resolve(null);
     img.src = src;
   });
 }
+
+/** Shared image loader with LRU cache (exported for cross-platform.ts) */
+export const loadImageCached = loadImage;
 
 async function loadAllAssets(t: CarouselTemplate): Promise<void> {
   const loads = Object.values(ASSETS).map(loadImage);
@@ -41,7 +56,7 @@ async function loadAllAssets(t: CarouselTemplate): Promise<void> {
   ]);
 }
 
-function neonText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, font: string, t: CarouselTemplate) {
+export function neonText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, font: string, t: CarouselTemplate) {
   ctx.font = font;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';

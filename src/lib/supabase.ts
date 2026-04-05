@@ -93,10 +93,13 @@ export async function getArtistFeatures(spotifyArtistId: string): Promise<NMFFea
 
 export async function searchFeatures(query: string): Promise<NMFFeature[]> {
   if (!supabase) return [];
+  // Sanitize: escape PostgREST special chars to prevent filter injection
+  const sanitized = query.replace(/[%_\\(),."']/g, '');
+  if (!sanitized) return [];
   const { data, error } = await supabase
     .from('nmf_features')
     .select('*')
-    .or(`artist_name.ilike.%${query}%,track_name.ilike.%${query}%`)
+    .or(`artist_name.ilike.%${sanitized}%,track_name.ilike.%${sanitized}%`)
     .order('week_date', { ascending: false })
     .limit(100);
   if (error) return [];
@@ -147,6 +150,44 @@ export async function saveHandle(handle: IGHandle): Promise<boolean> {
       onConflict: 'spotify_artist_id',
     });
   if (error) { console.error('saveHandle error:', error); return false; }
+  return true;
+}
+
+// ─── Custom Templates ───────────────────────────────────
+
+export async function saveCustomTemplate(userId: string, template: Record<string, unknown>): Promise<boolean> {
+  if (!supabase) return false;
+  const { error } = await supabase
+    .from('custom_templates')
+    .upsert({
+      user_id: userId,
+      template_id: template.id,
+      template_data: template,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'user_id,template_id' });
+  if (error) { console.error('saveCustomTemplate error:', error); return false; }
+  return true;
+}
+
+export async function getCustomTemplates(userId: string): Promise<Record<string, unknown>[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('custom_templates')
+    .select('template_data')
+    .eq('user_id', userId)
+    .order('updated_at', { ascending: false });
+  if (error) { console.error('getCustomTemplates error:', error); return []; }
+  return (data || []).map(row => row.template_data as Record<string, unknown>);
+}
+
+export async function deleteCustomTemplate(userId: string, templateId: string): Promise<boolean> {
+  if (!supabase) return false;
+  const { error } = await supabase
+    .from('custom_templates')
+    .delete()
+    .eq('user_id', userId)
+    .eq('template_id', templateId);
+  if (error) { console.error('deleteCustomTemplate error:', error); return false; }
   return true;
 }
 

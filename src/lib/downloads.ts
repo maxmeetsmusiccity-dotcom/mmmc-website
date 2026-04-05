@@ -1,13 +1,8 @@
 import type { TrackItem } from './spotify';
+import { formatDuration } from './utils';
 
 function sanitizeFilename(name: string): string {
   return name.replace(/[<>:"/\\|?*\x00-\x1F]/g, '_').slice(0, 80);
-}
-
-function formatDuration(ms: number): string {
-  const min = Math.floor(ms / 60000);
-  const sec = Math.floor((ms % 60000) / 1000);
-  return `${min}:${sec.toString().padStart(2, '0')}`;
 }
 
 export function downloadJSON(tracks: TrackItem[], filename: string): void {

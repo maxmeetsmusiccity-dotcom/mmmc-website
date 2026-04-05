@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { SelectionSlot } from '../lib/selection';
 import { resolveInstagramHandle, type HandleResult } from '../lib/nd';
 
@@ -29,36 +29,34 @@ export default function TagBlocks({ slideGroups }: Props) {
     }
   }
 
-  const handleResolveAll = async () => {
-    setResolving(true);
-    const accumulated = new Map(handles);
+  const resolveAllRef = useRef(false);
 
-    // Mark all as loading in one batch
-    for (const name of allArtists) {
-      if (accumulated.has(name) && !accumulated.get(name)!.loading) continue;
-      accumulated.set(name, {
-        artist_name: name, handle: null, source: 'unknown',
-        pg_id: null, loading: true, confirmed: false,
-      });
-    }
-    setHandles(new Map(accumulated));
+  // Auto-resolve handles when slide groups change
+  useEffect(() => {
+    if (allArtists.size === 0 || resolveAllRef.current) return;
+    resolveAllRef.current = true;
 
-    // Resolve all, then batch update once
-    for (const name of allArtists) {
-      if (handles.has(name) && !handles.get(name)!.loading) continue;
-      try {
-        const result = await resolveInstagramHandle(name, artistIdMap.get(name));
-        accumulated.set(name, result);
-      } catch {
-        accumulated.set(name, {
-          artist_name: name, handle: null, source: 'unknown',
-          pg_id: null, loading: false, confirmed: false,
-        });
+    (async () => {
+      setResolving(true);
+      const accumulated = new Map(handles);
+      for (const name of allArtists) {
+        if (accumulated.has(name) && !accumulated.get(name)!.loading) continue;
+        try {
+          const result = await resolveInstagramHandle(name, artistIdMap.get(name));
+          accumulated.set(name, result);
+        } catch {
+          accumulated.set(name, {
+            artist_name: name, handle: null, source: 'unknown',
+            pg_id: null, loading: false, confirmed: false,
+          });
+        }
       }
-    }
-    setHandles(new Map(accumulated));
-    setResolving(false);
-  };
+      setHandles(new Map(accumulated));
+      setResolving(false);
+      resolveAllRef.current = false;
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slideGroups]);
 
   const HANDLE_REGEX = /^@?[a-zA-Z0-9_.]{1,30}$/;
 
@@ -134,14 +132,8 @@ export default function TagBlocks({ slideGroups }: Props) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
         <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem' }}>
           Instagram Tags
+          {resolving && <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginLeft: 8 }}>Resolving...</span>}
         </h3>
-        <button
-          className="btn btn-sm"
-          onClick={handleResolveAll}
-          disabled={resolving}
-        >
-          {resolving ? 'Resolving...' : handles.size > 0 ? 'Re-resolve' : 'Resolve Handles'}
-        </button>
         <div style={{ display: 'flex', gap: 4 }}>
           {([['handles', 'Handles'], ['with_titles', 'With Titles'], ['newline', 'One Per Line']] as const).map(([key, label]) => (
             <button

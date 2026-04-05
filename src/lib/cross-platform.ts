@@ -1,39 +1,27 @@
 import type { SelectionSlot } from './selection';
 import { getTemplate } from './carousel-templates';
+import { PLATFORMS as PLATFORM_CONFIGS, type PlatformConfig } from './platforms';
+import { loadImageCached, neonText } from './canvas-grid';
 
-const PLATFORMS = {
-  instagram: { w: 1080, h: 1080, label: 'Instagram' },
-  twitter: { w: 1200, h: 675, label: 'Twitter/X Header' },
-  tiktok: { w: 1080, h: 1920, label: 'TikTok/Reels' },
-  facebook: { w: 1200, h: 630, label: 'Facebook' },
-} as const;
+// Export platform types derived from the canonical platforms.ts source
+const EXPORT_PLATFORM_IDS = ['twitter', 'tiktok', 'facebook'] as const;
 
-export type PlatformId = keyof typeof PLATFORMS;
-export const PLATFORM_LIST = Object.entries(PLATFORMS).map(([id, v]) => ({ id: id as PlatformId, ...v }));
+export type PlatformId = 'instagram' | 'twitter' | 'tiktok' | 'facebook';
 
-const imageCache = new Map<string, HTMLImageElement>();
+// Map canonical platform IDs to the ones cross-platform uses
+const PLATFORM_MAP: Record<PlatformId, PlatformConfig> = {
+  instagram: PLATFORM_CONFIGS.find(p => p.id === 'ig-post')!,
+  twitter: PLATFORM_CONFIGS.find(p => p.id === 'twitter')!,
+  tiktok: PLATFORM_CONFIGS.find(p => p.id === 'tiktok')!,
+  facebook: PLATFORM_CONFIGS.find(p => p.id === 'facebook')!,
+};
 
-async function loadImage(src: string): Promise<HTMLImageElement | null> {
-  if (imageCache.has(src)) return imageCache.get(src)!;
-  return new Promise(resolve => {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => { imageCache.set(src, img); resolve(img); };
-    img.onerror = () => resolve(null);
-    img.src = src;
-  });
-}
-
-function neonText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, font: string, accent: string) {
-  ctx.font = font;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
-  ctx.shadowColor = accent.replace(')', ', 0.4)').replace('rgba', 'rgba');
-  ctx.shadowBlur = 20;
-  ctx.fillStyle = '#F5E6B8';
-  ctx.fillText(text, x, y);
-  ctx.shadowColor = 'transparent';
-}
+export const PLATFORM_LIST = EXPORT_PLATFORM_IDS.map(id => ({
+  id: id as PlatformId,
+  w: PLATFORM_MAP[id].width,
+  h: PLATFORM_MAP[id].height,
+  label: PLATFORM_MAP[id].name,
+}));
 
 /** Generate a single-image composite of all selections for a non-Instagram platform */
 export async function generatePlatformImage(
@@ -43,7 +31,7 @@ export async function generatePlatformImage(
   templateId = 'mmmc_classic',
 ): Promise<Blob> {
   const t = getTemplate(templateId);
-  const { w, h } = PLATFORMS[platform];
+  const { width: w, height: h } = PLATFORM_MAP[platform];
   const canvas = document.createElement('canvas');
   canvas.width = w;
   canvas.height = h;
@@ -57,7 +45,7 @@ export async function generatePlatformImage(
 
   // Header
   const headerY = platform === 'tiktok' ? 60 : 20;
-  neonText(ctx, 'New Music Friday', w / 2, headerY, `700 ${platform === 'tiktok' ? 52 : 36}px ${t.scriptFont}`, t.accent);
+  neonText(ctx, 'New Music Friday', w / 2, headerY, `700 ${platform === 'tiktok' ? 52 : 36}px ${t.scriptFont}`, t);
 
   // Date
   const dateStr = new Date(weekDate + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
@@ -68,7 +56,7 @@ export async function generatePlatformImage(
   ctx.fillText(dateStr, w / 2, headerY + (platform === 'tiktok' ? 60 : 44));
 
   // Load images
-  const images = await Promise.all(allSlots.slice(0, 32).map(s => loadImage(s.track.cover_art_300)));
+  const images = await Promise.all(allSlots.slice(0, 32).map(s => loadImageCached(s.track.cover_art_300)));
 
   // Layout: pack album art into available space
   const startY = headerY + (platform === 'tiktok' ? 120 : 80);
