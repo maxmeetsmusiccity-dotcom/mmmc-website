@@ -1000,6 +1000,26 @@ export default function NewMusicFriday() {
 
               <details style={{ marginTop: 16, borderTop: '1px solid var(--midnight-border)', paddingTop: 16 }}>
                 <summary style={{ cursor: 'pointer', color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 600 }}>
+                  Import CSV Manifest
+                </summary>
+                <div style={{ marginTop: 12 }}>
+                  <ManualImport onImport={(tracks) => {
+                    setAllTracks(prev => {
+                      const existingIds = new Set(prev.map(t => t.track_id));
+                      const newTracks = tracks.filter(t => !existingIds.has(t.track_id));
+                      const merged = [...prev, ...newTracks];
+                      setReleases(groupIntoReleases(merged));
+                      return merged;
+                    });
+                  }} />
+                  <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: 4 }}>
+                    Import additional tracks from a CSV manifest. Duplicates are skipped.
+                  </p>
+                </div>
+              </details>
+
+              <details style={{ marginTop: 16, borderTop: '1px solid var(--midnight-border)', paddingTop: 16 }}>
+                <summary style={{ cursor: 'pointer', color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 600 }}>
                   Week History
                 </summary>
                 <div style={{ marginTop: 12 }}>
