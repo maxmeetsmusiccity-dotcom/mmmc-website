@@ -118,6 +118,7 @@ export default function NewMusicFriday() {
   const [tracksPerSlide, setTracksPerSlide] = useState(8);
   const [viewMode, setViewMode] = useState<'releases' | 'tracks'>('releases');
   const [loadedFromCache, setLoadedFromCache] = useState(false);
+  const [resolvedHandles, setResolvedHandles] = useState<Map<string, any>>(new Map());
   const [cardSize, setCardSize] = useState(() => {
     try { return parseInt(localStorage.getItem('nmf_card_size') || '240'); } catch { return 240; }
   });
@@ -559,7 +560,10 @@ export default function NewMusicFriday() {
   };
 
   const handleSaveWeek = async (extra: Partial<NMFWeek> = {}) => {
-    if (!userId) return; // Guests don't persist to Supabase
+    if (!userId) {
+      setError('Sign in with Google to save your work to the archive. Guest sessions are not persisted.');
+      return;
+    }
     const week: NMFWeek = {
       week_date: weekDate,
       all_releases: allTracks,
@@ -604,13 +608,13 @@ export default function NewMusicFriday() {
     <div style={{ minHeight: '100vh' }}>
       {/* Header — sticky on desktop */}
       <header style={{
-        padding: '16px 24px',
-        borderBottom: '2px solid var(--midnight-border)',
+        padding: '18px 28px',
+        borderBottom: '2px solid var(--gold-dark)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        flexWrap: 'wrap', gap: 16,
+        flexWrap: 'wrap', gap: 16, minHeight: 56,
         position: 'sticky', top: 0, zIndex: 30,
         background: 'var(--midnight)',
-        boxShadow: '0 2px 12px rgba(0,0,0,0.4)',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <ProductNav />
@@ -677,7 +681,7 @@ export default function NewMusicFriday() {
           flexWrap: 'wrap',
         }}>
           <span style={{ color: 'var(--gold)', fontSize: 'var(--fs-md)' }}>
-            Showing cached results{lastScanned ? ` from ${new Date(lastScanned).toLocaleString()}` : ''}.
+            Data last refreshed{lastScanned ? ` at ${new Date(lastScanned).toLocaleString()}` : ''}.
           </span>
           <button
             className="btn btn-sm btn-gold"
@@ -876,14 +880,15 @@ export default function NewMusicFriday() {
           {/*  STICKY TOOLBAR: counter + filters (consolidated 4→2 rows)    */}
           {/* ============================================================ */}
           <div style={{
-            position: 'sticky', top: 54, zIndex: 20,
+            position: 'sticky', top: 58, zIndex: 20,
             background: 'var(--midnight)', borderBottom: '2px solid var(--midnight-border)',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
           }}>
             {/* Row 1: Selection counter + target + filters + stats */}
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              flexWrap: 'wrap', gap: 12,
-              padding: '14px 24px',
+              flexWrap: 'wrap', gap: 12, minHeight: 48,
+              padding: '14px 28px',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <span className="mono" style={{
@@ -1013,12 +1018,12 @@ export default function NewMusicFriday() {
               </div>
             </div>
 
-            {/* Row 2: Downloads (collapsed into a details for space) */}
+            {/* Row 2: Downloads */}
             <div style={{
-              padding: '8px 24px 10px',
+              padding: '10px 28px 12px',
               borderTop: '1px solid var(--midnight-border)',
-              display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center',
-              fontSize: 'var(--fs-xs)',
+              display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center',
+              fontSize: 'var(--fs-xs)', minHeight: 40,
             }}>
               <button className="btn btn-sm" style={{ fontSize: 'var(--fs-2xs)', padding: '3px 8px' }} onClick={() => downloadCSV(allTracks, 'nmf-all-tracks.csv')}>CSV</button>
               <button className="btn btn-sm" style={{ fontSize: 'var(--fs-2xs)', padding: '3px 8px' }} onClick={() => downloadJSON(allTracks, 'nmf-all-tracks.json')}>JSON</button>
@@ -1363,13 +1368,13 @@ export default function NewMusicFriday() {
                 <summary style={{ cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 'var(--fs-lg)', fontWeight: 600 }}>
                   Instagram Tags
                 </summary>
-                <TagBlocks slideGroups={slideGroups} />
-                <CaptionGenerator selections={selections} handles={new Map()} weekDate={weekDate} />
+                <TagBlocks slideGroups={slideGroups} onHandlesResolved={setResolvedHandles} />
+                <CaptionGenerator selections={selections} handles={resolvedHandles} weekDate={weekDate} />
               </details>
 
               <details style={{ marginTop: 16, borderTop: '1px solid var(--midnight-border)', paddingTop: 16 }}>
                 <summary style={{ cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 'var(--fs-lg)', fontWeight: 600 }}>
-                  Push to Spotify
+                  Push to Playlist
                 </summary>
                 <div style={{ marginTop: 12 }}>
                   {token ? (
@@ -1381,48 +1386,54 @@ export default function NewMusicFriday() {
                       getPlaylistName={() => getPlaylistName(token, PLAYLIST_ID)}
                     />
                   ) : (
-                    <>
-                    <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-md)' }}>Connect Spotify to push to a Spotify playlist.</p>
-                    <button
-                      className="btn btn-sm"
-                      style={{ marginTop: 8 }}
-                      onClick={async () => {
-                        try {
-                          const { authorizeAppleMusic } = await import('../lib/sources/apple-music');
-                          await authorizeAppleMusic();
-                          const music = (window as any).MusicKit?.getInstance();
-                          if (!music) throw new Error('MusicKit not available');
-                          // Create playlist
-                          const name = `New Music Friday — ${new Date(weekDate + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`;
-                          const trackIds = selectedTracks
-                            .filter(t => t.apple_music_url)
-                            .map(t => {
-                              const match = t.apple_music_url?.match(/\/(\d+)$/);
-                              return match ? { id: match[1], type: 'songs' as const } : null;
-                            })
-                            .filter(Boolean);
-                          if (trackIds.length === 0) {
-                            alert('No Apple Music track IDs found. Run Apple Music enrichment first.');
-                            return;
-                          }
-                          await music.api.music('/v1/me/library/playlists', undefined, {
-                            fetchOptions: {
-                              method: 'POST',
-                              body: JSON.stringify({
-                                attributes: { name, description: 'Curated by Max Meets Music City' },
-                                relationships: { tracks: { data: trackIds } },
-                              }),
-                            },
-                          });
-                          alert(`Created Apple Music playlist: ${name}`);
-                        } catch (e) {
-                          alert(`Apple Music error: ${(e as Error).message}`);
-                        }
-                      }}
-                    >
-                      Push to Apple Music
-                    </button>
-                    </>
+                    <div>
+                      <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-md)', marginBottom: 12 }}>
+                        Connect a music service to create a playlist from your curated picks.
+                      </p>
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        <button className="btn btn-sm btn-spotify" onClick={startAuth}>
+                          Connect Spotify
+                        </button>
+                        <button
+                          className="btn btn-sm"
+                          onClick={async () => {
+                            try {
+                              const { authorizeAppleMusic } = await import('../lib/sources/apple-music');
+                              await authorizeAppleMusic();
+                              const music = (window as any).MusicKit?.getInstance();
+                              if (!music) throw new Error('MusicKit not available');
+                              const name = `New Music Friday \u2014 ${new Date(weekDate + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`;
+                              const trackIds = selectedTracks
+                                .filter(t => t.apple_music_url)
+                                .map(t => {
+                                  const match = t.apple_music_url?.match(/\/(\d+)$/);
+                                  return match ? { id: match[1], type: 'songs' as const } : null;
+                                })
+                                .filter(Boolean);
+                              if (trackIds.length === 0) {
+                                setError('No Apple Music track IDs found. Run Apple Music enrichment first.');
+                                return;
+                              }
+                              await music.api.music('/v1/me/library/playlists', undefined, {
+                                fetchOptions: {
+                                  method: 'POST',
+                                  body: JSON.stringify({
+                                    attributes: { name, description: 'Curated by Max Meets Music City' },
+                                    relationships: { tracks: { data: trackIds } },
+                                  }),
+                                },
+                              });
+                              setError('');
+                              alert(`Created Apple Music playlist: ${name}`);
+                            } catch (e) {
+                              setError(`Apple Music error: ${(e as Error).message}`);
+                            }
+                          }}
+                        >
+                          Create Apple Music Playlist
+                        </button>
+                      </div>
+                    </div>
                   )}
                 </div>
               </details>
@@ -1433,26 +1444,6 @@ export default function NewMusicFriday() {
                 </summary>
                 <div style={{ marginTop: 12 }}>
                   <EmbedWidget />
-                </div>
-              </details>
-
-              <details style={{ marginTop: 16, borderTop: '1px solid var(--midnight-border)', paddingTop: 16 }}>
-                <summary style={{ cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 'var(--fs-lg)', fontWeight: 600 }}>
-                  Import CSV Manifest
-                </summary>
-                <div style={{ marginTop: 12 }}>
-                  <ManualImport onImport={(tracks) => {
-                    setAllTracks(prev => {
-                      const existingIds = new Set(prev.map(t => t.track_id));
-                      const newTracks = tracks.filter(t => !existingIds.has(t.track_id));
-                      const merged = [...prev, ...newTracks];
-                      setReleases(groupIntoReleases(merged));
-                      return merged;
-                    });
-                  }} />
-                  <p style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)', marginTop: 4 }}>
-                    Import additional tracks from a CSV manifest. Duplicates are skipped.
-                  </p>
                 </div>
               </details>
 

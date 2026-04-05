@@ -53,8 +53,9 @@ export default function CaptionGenerator({ selections, handles, weekDate }: Prop
     for (let s = 0; s < slides.length; s++) {
       if (slides.length > 1) lines.push(`Slide ${s + 1}:`);
       for (const slot of slides[s]) {
-        const handle = artistHandles.get(slot.track.artist_names.split(/,|\s+feat/i)[0].trim()) || slot.track.artist_names;
-        lines.push(`${slot.track.track_name} — ${handle}`);
+        const primaryName = slot.track.artist_names.split(/,\s*|\s+feat\.?\s+|\s+ft\.?\s+|\s+x\s+|\s+&\s+/i)[0].trim();
+        const handle = artistHandles.get(primaryName) || slot.track.artist_names;
+        lines.push(`\u201c${slot.track.track_name}\u201d \u2014 ${handle}`);
       }
       lines.push('');
     }

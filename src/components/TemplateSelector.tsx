@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { type CarouselTemplate, getVisibleTemplates } from '../lib/carousel-templates';
 import { generateTemplatePreview } from '../lib/canvas-grid';
-import { saveCustomTemplate, getCustomTemplates } from '../lib/supabase';
+import { saveCustomTemplate, deleteCustomTemplate, getCustomTemplates } from '../lib/supabase';
 import TemplateBuilder from './TemplateBuilder';
 import TemplateImporter from './TemplateImporter';
 import { useAuth } from '../lib/auth-context';
@@ -64,12 +64,24 @@ export default function TemplateSelector({ selected, onSelect }: Props) {
     updated.push(template);
     setCustomTemplates(updated);
     saveLocalTemplates(updated);
-    // Persist to Supabase for authenticated users
     if (user?.id) {
       saveCustomTemplate(user.id, template as unknown as Record<string, unknown>);
     }
     onSelect(template.id);
     setShowBuilder(false);
+  };
+
+  const handleDeleteCustom = (templateId: string) => {
+    if (!confirm('Delete this custom template?')) return;
+    const updated = customTemplates.filter(t => t.id !== templateId);
+    setCustomTemplates(updated);
+    saveLocalTemplates(updated);
+    if (user?.id) {
+      deleteCustomTemplate(user.id, templateId);
+    }
+    if (selected === templateId && allTemplates.length > 0) {
+      onSelect(allTemplates[0].id);
+    }
   };
 
   return (
@@ -126,13 +138,26 @@ export default function TemplateSelector({ selected, onSelect }: Props) {
                 }}
               >&#9998;</button>
               {isCustom && (
-                <span style={{
-                  position: 'absolute', top: 3, left: 3, zIndex: 2,
-                  fontSize: '8px', background: 'var(--gold)', color: 'var(--midnight)',
-                  padding: '1px 3px', borderRadius: 3, fontWeight: 700,
-                }}>
-                  CUSTOM
-                </span>
+                <>
+                  <span style={{
+                    position: 'absolute', top: 3, left: 3, zIndex: 2,
+                    fontSize: '8px', background: 'var(--gold)', color: 'var(--midnight)',
+                    padding: '1px 3px', borderRadius: 3, fontWeight: 700,
+                  }}>
+                    CUSTOM
+                  </span>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleDeleteCustom(t.id); }}
+                    title="Delete custom template"
+                    style={{
+                      position: 'absolute', top: 3, right: 24, zIndex: 2,
+                      width: 20, height: 20, borderRadius: '50%',
+                      background: 'rgba(204,53,53,0.8)', color: '#fff',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: '11px', cursor: 'pointer', border: 'none', lineHeight: 1,
+                    }}
+                  >&times;</button>
+                </>
               )}
               <div
                 onClick={() => onSelect(t.id)}
