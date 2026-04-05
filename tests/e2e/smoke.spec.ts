@@ -51,9 +51,10 @@ test('this week page loads', async ({ page }) => {
   await expect(page.getByRole('heading', { name: /This Week/ })).toBeVisible();
 });
 
-test('NMF auth gate shows sign-in options when not authenticated', async ({ page }) => {
+test('NMF page shows connect options when no token', async ({ page }) => {
+  await guestBypass(page);
   await page.goto('/newmusicfriday');
-  // Without guest mode, should show the auth gate
-  await expect(page.getByText('Continue as Guest')).toBeVisible();
-  await expect(page.getByText('Sign in with Google')).toBeVisible();
+  // Without Spotify token, should show the Connect Spotify heading
+  await expect(page.getByRole('heading', { name: /Connect.*Spotify/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Try Demo/ })).toBeVisible();
 });
