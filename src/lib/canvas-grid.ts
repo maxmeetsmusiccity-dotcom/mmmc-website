@@ -349,14 +349,7 @@ export async function generateTitleSlide(
     ctx.stroke();
   }
 
-  // Subtitle
-  glowText(
-    'curated by @maxmeetsmusiccity',
-    S / 2,
-    Math.round(S * tt.subtitleY),
-    `italic 400 ${Math.round(S * tt.subtitleSize)}px ${tt.subtitleFont}`,
-    tt.textSecondary,
-  );
+  // Subtitle (removed — was "curated by @maxmeetsmusiccity")
 
   // Featured image
   if (coverFeature) {
