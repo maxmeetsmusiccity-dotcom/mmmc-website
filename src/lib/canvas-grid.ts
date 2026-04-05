@@ -682,6 +682,128 @@ function drawGridWithLayout(
   }
 }
 
+// ─── PER-TEMPLATE POST-PROCESSING ──────────────────────
+
+function drawScanlines(ctx: CanvasRenderingContext2D, color: string, spacing: number) {
+  if (spacing <= 0) return;
+  const cw = ctx.canvas.width, ch = ctx.canvas.height;
+  ctx.save();
+  ctx.globalCompositeOperation = 'overlay';
+  for (let y = 0; y < ch; y += spacing) {
+    ctx.fillStyle = color;
+    ctx.fillRect(0, y, cw, 1);
+  }
+  ctx.restore();
+}
+
+function drawSpotlight(ctx: CanvasRenderingContext2D) {
+  const cw = ctx.canvas.width, ch = ctx.canvas.height;
+  ctx.save();
+  ctx.globalCompositeOperation = 'screen';
+  const grad = ctx.createRadialGradient(cw / 2, 0, 0, cw / 2, ch * 0.3, cw * 0.7);
+  grad.addColorStop(0, 'rgba(255,255,255,0.12)');
+  grad.addColorStop(0.5, 'rgba(200,220,255,0.04)');
+  grad.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, cw, ch);
+  ctx.restore();
+}
+
+function drawSepiaWash(ctx: CanvasRenderingContext2D, opacity: number) {
+  const cw = ctx.canvas.width, ch = ctx.canvas.height;
+  ctx.save();
+  ctx.globalCompositeOperation = 'overlay';
+  ctx.globalAlpha = opacity;
+  const grad = ctx.createLinearGradient(0, 0, cw, ch);
+  grad.addColorStop(0, '#D4A060');
+  grad.addColorStop(1, '#8B6914');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, cw, ch);
+  ctx.restore();
+}
+
+function drawPaperTexture(ctx: CanvasRenderingContext2D, opacity: number) {
+  const cw = ctx.canvas.width, ch = ctx.canvas.height;
+  const paper = document.createElement('canvas');
+  paper.width = cw; paper.height = ch;
+  const pc = paper.getContext('2d')!;
+  const imageData = pc.createImageData(cw, ch);
+  const data = imageData.data;
+  for (let i = 0; i < data.length; i += 4) {
+    const v = Math.round(180 + (Math.random() - 0.5) * 60);
+    data[i] = v; data[i + 1] = v; data[i + 2] = v - 10; data[i + 3] = 255;
+  }
+  pc.putImageData(imageData, 0, 0);
+  ctx.save();
+  ctx.globalCompositeOperation = 'multiply';
+  ctx.globalAlpha = opacity;
+  ctx.drawImage(paper, 0, 0);
+  ctx.restore();
+}
+
+function drawGritTexture(ctx: CanvasRenderingContext2D, opacity: number) {
+  const cw = ctx.canvas.width, ch = ctx.canvas.height;
+  const grit = document.createElement('canvas');
+  grit.width = cw; grit.height = ch;
+  const gc = grit.getContext('2d')!;
+  const imageData = gc.createImageData(cw, ch);
+  const data = imageData.data;
+  for (let i = 0; i < data.length; i += 4) {
+    const v = Math.random() > 0.5 ? 200 : 40;
+    data[i] = v; data[i + 1] = v; data[i + 2] = v; data[i + 3] = 255;
+  }
+  gc.putImageData(imageData, 0, 0);
+  ctx.save();
+  ctx.globalCompositeOperation = 'multiply';
+  ctx.globalAlpha = opacity;
+  ctx.drawImage(grit, 0, 0);
+  ctx.restore();
+}
+
+/** Apply template-specific visual effects after grid is drawn */
+function postProcessGrid(ctx: CanvasRenderingContext2D, t: CarouselTemplate) {
+  switch (t.id) {
+    case 'neon_city':
+      drawScanlines(ctx, 'rgba(0,255,212,0.025)', 3);
+      break;
+    case 'neon_rose':
+      drawScanlines(ctx, 'rgba(255,105,180,0.02)', 4);
+      break;
+    case 'concrete_jungle':
+      drawGritTexture(ctx, 0.08);
+      drawScanlines(ctx, 'rgba(255,69,0,0.015)', 4);
+      break;
+    case 'golden_hour':
+      drawSepiaWash(ctx, 0.04);
+      break;
+    case 'editorial_mono':
+      drawPaperTexture(ctx, 0.03);
+      break;
+    case 'retro_vinyl':
+      drawSepiaWash(ctx, 0.05);
+      break;
+    case 'earthy_acoustic':
+      drawPaperTexture(ctx, 0.06);
+      break;
+    case 'stadium_lights':
+      drawSpotlight(ctx);
+      break;
+  }
+
+  // Generic extended effects from template config
+  if (t.scanlineSpacing && t.scanlineSpacing > 0) {
+    drawScanlines(ctx, `rgba(${t.accent === '#FFFFFF' ? '255,255,255' : '128,128,128'},0.03)`, t.scanlineSpacing);
+  }
+  if (t.colorOverlay && t.colorOverlayBlend) {
+    ctx.save();
+    ctx.globalCompositeOperation = t.colorOverlayBlend;
+    ctx.globalAlpha = 0.15;
+    ctx.fillStyle = t.colorOverlay;
+    ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    ctx.restore();
+  }
+}
+
 export async function generateGridSlide(
   slots: SelectionSlot[],
   weekDate: string,
@@ -750,9 +872,12 @@ export async function generateGridSlide(
   }
   if (t.decorations.showNotes) drawNotes(ctx, t.decorations.noteSize);
 
+  // Per-template post-processing (scanlines, textures, spotlight, etc.)
+  postProcessGrid(ctx, t);
+
   // Premium finishing
-  drawVignette(ctx, 0.2);
-  drawNoiseTexture(ctx, 0.12);
+  drawVignette(ctx, t.vignetteIntensity ?? 0.2);
+  drawNoiseTexture(ctx, t.grainIntensity ?? 0.12);
 
   return new Promise(resolve => canvas.toBlob(b => resolve(b!), 'image/png'));
 }

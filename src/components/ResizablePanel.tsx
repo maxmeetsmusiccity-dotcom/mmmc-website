@@ -70,6 +70,31 @@ export default function ResizablePanel({ left, right }: Props) {
     document.addEventListener('mouseup', onUp);
   }, [ratio]);
 
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    e.preventDefault();
+    dragging.current = true;
+
+    const onMove = (e: TouchEvent) => {
+      if (!dragging.current || !containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const x = e.touches[0].clientX - rect.left;
+      const newRatio = x / rect.width;
+      const leftW = newRatio * rect.width;
+      const rightW = (1 - newRatio) * rect.width;
+      if (leftW < MIN_LEFT || rightW < MIN_RIGHT) return;
+      setRatio(Math.max(0.2, Math.min(0.7, newRatio)));
+    };
+
+    const onEnd = () => {
+      dragging.current = false;
+      document.removeEventListener('touchmove', onMove);
+      document.removeEventListener('touchend', onEnd);
+    };
+
+    document.addEventListener('touchmove', onMove, { passive: false });
+    document.addEventListener('touchend', onEnd);
+  }, []);
+
   // Save ratio on change (debounced by mouseup)
   useEffect(() => {
     try { localStorage.setItem(STORAGE_KEY, String(ratio)); } catch {}
@@ -108,6 +133,7 @@ export default function ResizablePanel({ left, right }: Props) {
       {/* Divider */}
       <div
         onMouseDown={handleMouseDown}
+        onTouchStart={handleTouchStart}
         style={{
           width: 4,
           flexShrink: 0,
