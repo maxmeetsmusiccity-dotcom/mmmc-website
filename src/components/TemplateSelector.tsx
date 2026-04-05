@@ -71,16 +71,7 @@ export default function TemplateSelector({ selected, onSelect }: Props) {
 
   return (
     <div style={{ marginBottom: 16 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-        <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)' }}>Template</p>
-        <button
-          className="btn btn-sm"
-          onClick={() => setShowBuilder(true)}
-          style={{ fontSize: 'var(--fs-2xs)', padding: '3px 10px' }}
-        >
-          + Custom
-        </button>
-      </div>
+      <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginBottom: 8 }}>Template</p>
       <div style={{
         display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 8,
         WebkitOverflowScrolling: 'touch', scrollSnapType: 'x mandatory',
@@ -141,6 +132,25 @@ export default function TemplateSelector({ selected, onSelect }: Props) {
             </button>
           );
         })}
+        {/* Create Your Own card */}
+        <button
+          onClick={() => setShowBuilder(true)}
+          title="Create a custom template"
+          style={{
+            flexShrink: 0, scrollSnapAlign: 'start',
+            width: 120, padding: 8, borderRadius: 10, cursor: 'pointer',
+            border: '2px dashed var(--gold)',
+            background: 'rgba(212,168,67,0.04)',
+            display: 'flex', flexDirection: 'column', alignItems: 'center',
+            justifyContent: 'center', gap: 6,
+            transition: 'all 0.2s',
+          }}
+        >
+          <span style={{ fontSize: 'var(--fs-2xl)', color: 'var(--gold)', lineHeight: 1 }}>+</span>
+          <span style={{ fontSize: 'var(--fs-xs)', fontWeight: 600, color: 'var(--gold)' }}>
+            Create Your Own
+          </span>
+        </button>
       </div>
 
       {showBuilder && (

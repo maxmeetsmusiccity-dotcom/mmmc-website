@@ -65,6 +65,21 @@ export interface CarouselTemplate {
     sparkle?: string;
     overlay?: string;
   };
+
+  // Extended fields (optional — backward compatible)
+  backgroundGradient?: string;
+  headerFontSize?: number;
+  letterSpacing?: number;
+  textTransform?: 'none' | 'uppercase' | 'lowercase';
+  cellCornerRadius?: number;
+  cellShadowBlur?: number;
+  cellBorderWidth?: number;
+  grainIntensity?: number;
+  vignetteIntensity?: number;
+  scanlineSpacing?: number;
+  colorOverlay?: string;
+  colorOverlayBlend?: 'screen' | 'multiply' | 'overlay';
+  backgroundBlur?: number;
 }
 
 export const TEMPLATES: CarouselTemplate[] = [
