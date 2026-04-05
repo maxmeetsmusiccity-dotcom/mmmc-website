@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import type { TrackItem } from '../lib/spotify';
 import { getLastFriday } from '../lib/spotify';
-import { generateGridSlide, generateCoverSlide, downloadBlob } from '../lib/canvas-grid';
+import { generateGridSlide, generateTitleSlide, downloadBlob } from '../lib/canvas-grid';
 import { getGridsForCount } from '../lib/grid-layouts';
 import { getPlatform, PLATFORMS } from '../lib/platforms';
 import TemplateSelector from './TemplateSelector';
@@ -126,21 +126,18 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
       .catch(e => console.error('[PREVIEW] Grid render error:', e));
   }, [gridTemplateId, gridLayoutId, selectedTracks, tracksPerSlide, weekDate]);
 
-  // Live preview: render title slide when title template changes
-  // Uses titleTemplateId NOT gridTemplateId — they are independent
+  // Live preview: render title slide using TitleSlideTemplate (independent of grid template)
   useEffect(() => {
     if (!coverFeature || titleTemplateId === 'none') {
       setTitlePreview('');
       return;
     }
-    // For now, use titleTemplateId as the template for the cover slide
-    // TODO: implement dedicated generateTitleSlide() using TitleSlideTemplate config
-    generateCoverSlide(coverFeature, weekDate, titleTemplateId === 'nashville_neon' ? 'mmmc_classic' : titleTemplateId.startsWith('vintage') ? 'editorial_mono' : titleTemplateId.startsWith('dust') ? 'mmmc_classic' : titleTemplateId.startsWith('studio') ? 'midnight_minimal' : titleTemplateId.startsWith('honky') ? 'concrete_jungle' : titleTemplateId.startsWith('chrome') ? 'midnight_minimal' : titleTemplateId.startsWith('editorial') ? 'editorial_mono' : titleTemplateId.startsWith('saturated') ? 'concrete_jungle' : titleTemplateId.startsWith('polaroid') ? 'editorial_mono' : titleTemplateId.startsWith('dark') ? 'midnight_minimal' : 'mmmc_classic')
+    generateTitleSlide(coverFeature, weekDate, titleTemplateId)
       .then(blob => {
         const url = URL.createObjectURL(blob);
         setTitlePreview(prev => { if (prev) URL.revokeObjectURL(prev); return url; });
       })
-      .catch(() => {});
+      .catch(e => console.error('[PREVIEW] Title render error:', e));
   }, [titleTemplateId, coverFeature, weekDate]);
 
   const handleGridTemplateChange = (id: string) => {
@@ -164,9 +161,9 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
     try {
       const urls: string[] = [];
 
-      // Title slide
+      // Title slide (uses TitleSlideTemplate, independent of grid style)
       if (titleTemplateId !== 'none' && coverFeature) {
-        const titleBlob = await generateCoverSlide(coverFeature, weekDate, gridTemplateId);
+        const titleBlob = await generateTitleSlide(coverFeature, weekDate, titleTemplateId);
         urls.push(URL.createObjectURL(titleBlob));
       }
 

@@ -1,6 +1,7 @@
 import type { SelectionSlot } from './selection';
 import type { CarouselTemplate } from './carousel-templates';
 import { getTemplate } from './carousel-templates';
+import { getTitleTemplate } from './title-templates';
 import { type GridConfig, getGridById, computeCellRects } from './grid-layouts';
 
 const S = 1080;
@@ -244,6 +245,196 @@ export async function generateCoverSlide(
   return new Promise(resolve => canvas.toBlob(b => resolve(b!), 'image/png'));
 }
 
+// ─── TITLE SLIDE (uses TitleSlideTemplate) ──────────────
+
+/**
+ * Renders a title/cover slide using the TitleSlideTemplate system.
+ * This is independent of the grid template — title and grid styles
+ * are selected separately by the user.
+ */
+export async function generateTitleSlide(
+  coverFeature: SelectionSlot | null,
+  weekDate: string,
+  titleTemplateId = 'nashville_neon',
+): Promise<Blob> {
+  const tt = getTitleTemplate(titleTemplateId);
+
+  // Pre-load fonts
+  await Promise.all([
+    document.fonts.load(`${tt.headlineWeight} ${Math.round(S * tt.headlineSize)}px ${tt.headlineFont}`).catch(() => {}),
+    document.fonts.load(`400 ${Math.round(S * tt.subtitleSize)}px ${tt.subtitleFont}`).catch(() => {}),
+    document.fonts.load(`700 ${Math.round(S * tt.dateSize)}px ${tt.dateFont}`).catch(() => {}),
+  ]);
+
+  const canvas = document.createElement('canvas');
+  canvas.width = S; canvas.height = S;
+  const ctx = canvas.getContext('2d')!;
+
+  // Background
+  ctx.fillStyle = tt.background;
+  ctx.fillRect(0, 0, S, S);
+
+  // Background gradient
+  if (tt.backgroundGradient) {
+    const colors = tt.backgroundGradient.match(/#[0-9A-Fa-f]{6}/g);
+    if (colors && colors.length >= 2) {
+      const grad = ctx.createLinearGradient(0, 0, 0, S);
+      colors.forEach((c, i) => grad.addColorStop(i / (colors.length - 1), c));
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, S, S);
+    }
+  }
+
+  // Frame border
+  if (tt.showFrame && tt.frameWidth > 0) {
+    ctx.strokeStyle = tt.frameColor;
+    ctx.lineWidth = tt.frameWidth;
+    const inset = tt.frameWidth / 2;
+    ctx.strokeRect(inset, inset, S - tt.frameWidth, S - tt.frameWidth);
+  }
+
+  // Helper: text with glow
+  const glowText = (text: string, x: number, y: number, font: string, color: string) => {
+    ctx.font = font;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    if (tt.glow.passes > 0 && tt.glow.blur > 0) {
+      for (let p = tt.glow.passes; p > 0; p--) {
+        const scale = p / tt.glow.passes;
+        ctx.shadowColor = tt.glow.color;
+        ctx.shadowBlur = tt.glow.blur * scale;
+        ctx.fillStyle = tt.glow.color;
+        ctx.fillText(text, x, y);
+      }
+    }
+    ctx.shadowColor = 'transparent';
+    ctx.fillStyle = color;
+    ctx.fillText(text, x, y);
+  };
+
+  // Headline
+  const rawHeadline = 'New Music Friday';
+  const headline = tt.headlineCase === 'uppercase' ? rawHeadline.toUpperCase() : rawHeadline;
+  glowText(
+    headline,
+    S / 2,
+    Math.round(S * tt.headlineY),
+    `${tt.headlineWeight} ${Math.round(S * tt.headlineSize)}px ${tt.headlineFont}`,
+    tt.textPrimary,
+  );
+
+  // Divider between headline and subtitle
+  if (tt.showDivider) {
+    ctx.strokeStyle = tt.dividerColor;
+    ctx.lineWidth = 1;
+    const divY = Math.round(S * (tt.subtitleY - 0.01));
+    ctx.beginPath();
+    ctx.moveTo(S * 0.18, divY);
+    ctx.lineTo(S * 0.82, divY);
+    ctx.stroke();
+  }
+
+  // Subtitle
+  glowText(
+    'curated by @maxmeetsmusiccity',
+    S / 2,
+    Math.round(S * tt.subtitleY),
+    `italic 400 ${Math.round(S * tt.subtitleSize)}px ${tt.subtitleFont}`,
+    tt.textSecondary,
+  );
+
+  // Featured image
+  if (coverFeature) {
+    const img = await loadImage(coverFeature.track.cover_art_640);
+    const imgSize = Math.round(S * tt.featuredImageSize);
+    const imgX = (S - imgSize) / 2;
+    const imgY = Math.round(S * tt.featuredImageY);
+
+    ctx.save();
+    if (tt.featuredRotation !== 0) {
+      const cx = imgX + imgSize / 2, cy = imgY + imgSize / 2;
+      ctx.translate(cx, cy);
+      ctx.rotate((tt.featuredRotation * Math.PI) / 180);
+      ctx.translate(-cx, -cy);
+    }
+
+    // Shadow
+    if (tt.featuredShadowBlur > 0) {
+      ctx.shadowColor = 'rgba(0,0,0,0.5)';
+      ctx.shadowBlur = tt.featuredShadowBlur;
+      ctx.shadowOffsetY = 8;
+    }
+
+    // Border (acts as a frame around the image)
+    if (tt.featuredBorder > 0) {
+      ctx.fillStyle = tt.featuredBorderColor || '#FFFFFF';
+      ctx.fillRect(
+        imgX - tt.featuredBorder, imgY - tt.featuredBorder,
+        imgSize + tt.featuredBorder * 2, imgSize + tt.featuredBorder * 2,
+      );
+    }
+    ctx.shadowColor = 'transparent';
+
+    if (img) ctx.drawImage(img, imgX, imgY, imgSize, imgSize);
+    ctx.restore();
+
+    // Artist name + track name below image
+    const labelY = imgY + imgSize + (tt.featuredBorder || 0) + 16;
+    glowText(
+      coverFeature.track.artist_names,
+      S / 2,
+      labelY,
+      `700 ${Math.round(S * 0.035)}px ${tt.headlineFont}`,
+      tt.textPrimary,
+    );
+    ctx.fillStyle = tt.textSecondary;
+    ctx.font = `400 ${Math.round(S * 0.024)}px ${tt.subtitleFont}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText(coverFeature.track.track_name, S / 2, labelY + Math.round(S * 0.042));
+  }
+
+  // Swipe pill
+  if (tt.swipePill) {
+    const pillText = 'Swipe for all picks \u2192';
+    const pillFontSize = Math.round(S * 0.020);
+    ctx.font = `600 ${pillFontSize}px "DM Sans", sans-serif`;
+    const pillW = ctx.measureText(pillText).width + 40;
+    const pillY = Math.round(S * tt.dateY) - 48;
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.beginPath();
+    ctx.roundRect((S - pillW) / 2, pillY, pillW, 32, 16);
+    ctx.fill();
+    ctx.fillStyle = '#FFFFFF';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText(pillText, S / 2, pillY + 7);
+  }
+
+  // Date
+  glowText(
+    formatDate(weekDate),
+    S / 2,
+    Math.round(S * tt.dateY),
+    `700 ${Math.round(S * tt.dateSize)}px ${tt.dateFont}`,
+    tt.textPrimary,
+  );
+
+  // Overlay tint
+  if (tt.overlay) {
+    ctx.fillStyle = tt.overlay;
+    ctx.fillRect(0, 0, S, S);
+  }
+
+  // Vignette
+  if (tt.vignette > 0) drawVignette(ctx, tt.vignette);
+
+  // Grain/noise
+  if (tt.grain > 0) drawNoiseTexture(ctx, tt.grain);
+
+  return new Promise(resolve => canvas.toBlob(b => resolve(b!), 'image/png'));
+}
+
 // ─── GRID ────────────────────────────────────────────────
 
 function drawGrid(
@@ -474,11 +665,15 @@ export async function generateFullCarousel(
   templateId = 'mmmc_classic',
   logoUrl = '/mmmc-logo.png',
   layoutId?: string,
+  titleTemplateId?: string,
 ): Promise<CarouselOutput> {
   const total = 1 + slideGroups.length;
   onProgress?.(0, total);
 
-  const coverSlide = await generateCoverSlide(coverFeature, weekDate, templateId);
+  // Use dedicated title slide renderer if a titleTemplateId is provided
+  const coverSlide = titleTemplateId
+    ? await generateTitleSlide(coverFeature, weekDate, titleTemplateId)
+    : await generateCoverSlide(coverFeature, weekDate, templateId);
   onProgress?.(1, total);
 
   const gridSlides: Blob[] = [];
