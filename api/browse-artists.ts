@@ -49,8 +49,7 @@ const CATEGORIES = [
     emoji: '\uD83D\uDE80',
     filter: (p: NDProfile['profile']) =>
       ['emerging', 'developing', 'active'].includes(p.tier) &&
-      p.arc === 'growing' &&
-      (p.spotify_monthly_listeners > 50000 || p.spotify_popularity > 30),
+      (p.spotify_monthly_listeners > 50000 || p.spotify_popularity > 25),
   },
   {
     id: 'the-establishment',
@@ -58,7 +57,8 @@ const CATEGORIES = [
     description: 'Nashville\'s proven hitmakers and chart-toppers',
     emoji: '\uD83C\uDFC6',
     filter: (p: NDProfile['profile']) =>
-      p.tier === 'marquee' && p.tier_evidence.no1_songs >= 1,
+      (p.tier === 'marquee' || p.tier === 'established') &&
+      (p.tier_evidence.no1_songs >= 1 || p.tier_evidence.credits >= 30),
   },
   {
     id: 'songwriters-round',
@@ -66,9 +66,8 @@ const CATEGORIES = [
     description: 'The craft — writers who built Nashville from the Bluebird to the Ryman',
     emoji: '\u270D\uFE0F',
     filter: (p: NDProfile['profile']) =>
-      p.archetype.includes('writer') &&
-      p.tier_evidence.credits >= 30 &&
-      p.tags.some(t => ['bluebird_cafe', 'listening_room', 'pin_drop'].includes(t.id)),
+      (p.archetype.includes('writer') || p.archetype.includes('songwriter')) &&
+      p.tier_evidence.credits >= 20,
   },
   {
     id: 'neon-rhinestones',
@@ -88,8 +87,9 @@ const CATEGORIES = [
     filter: (p: NDProfile['profile']) =>
       p.spotify_genres.some(g =>
         g.includes('outlaw') || g.includes('americana') || g.includes('red dirt') ||
-        g.includes('texas country') || g.includes('country rock'),
-      ),
+        g.includes('texas country') || g.includes('country rock') || g.includes('folk') ||
+        g.includes('roots') || g.includes('alt-country') || g.includes('bluegrass'),
+      ) || (p.archetype.includes('outlaw') || p.archetype.includes('americana')),
   },
   {
     id: 'fresh-ink',
@@ -98,8 +98,7 @@ const CATEGORIES = [
     emoji: '\uD83C\uDD95',
     filter: (p: NDProfile['profile']) =>
       ['emerging', 'developing'].includes(p.tier) &&
-      p.tier_evidence.credits <= 10 &&
-      p.tier_evidence.credits >= 1,
+      p.tier_evidence.credits <= 15,
   },
   {
     id: 'stadium-country',
