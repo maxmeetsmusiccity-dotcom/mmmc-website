@@ -81,62 +81,114 @@ async function loadAllAssets(t: CarouselTemplate): Promise<void> {
   ]);
 }
 
+/**
+ * Neon text — offscreen canvas + screen blend compositing.
+ * Produces crisp core text with luminous bloom, like actual neon photography.
+ */
 export function neonText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, font: string, t: CarouselTemplate) {
+  // Measure text bounds for tight offscreen canvas
   ctx.font = font;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
-  // Pass 1: ultra-wide atmospheric glow
-  ctx.shadowColor = t.neon.outerGlow;
-  ctx.shadowBlur = t.neon.outerBlur * 1.5;
-  ctx.fillStyle = `${t.accentGlow}${t.neon.outerAlpha * 0.4})`;
-  ctx.fillText(text, x, y);
-  // Pass 2: wide outer glow
-  ctx.shadowColor = t.neon.outerGlow;
-  ctx.shadowBlur = t.neon.outerBlur;
-  ctx.fillStyle = `${t.accentGlow}${t.neon.outerAlpha})`;
-  ctx.fillText(text, x, y);
-  // Pass 3: medium glow
-  ctx.shadowColor = t.neon.midGlow;
-  ctx.shadowBlur = t.neon.midBlur;
-  ctx.fillStyle = `${t.accentGlow}${t.neon.midAlpha})`;
-  ctx.fillText(text, x, y);
-  // Pass 4: tight bright glow
-  ctx.shadowColor = `${t.accentGlow}0.9)`;
-  ctx.shadowBlur = t.neon.coreBlur * 2;
-  ctx.fillStyle = `${t.accentGlow}0.85)`;
-  ctx.fillText(text, x, y);
-  // Pass 5: crisp core
-  ctx.shadowColor = `${t.accentGlow}0.8)`;
-  ctx.shadowBlur = t.neon.coreBlur;
-  ctx.fillStyle = t.neon.coreColor;
-  ctx.fillText(text, x, y);
-  ctx.shadowColor = 'transparent';
+  const metrics = ctx.measureText(text);
+  const pad = Math.round(t.neon.outerBlur * 2.5);
+  const tw = Math.ceil(metrics.width) + pad * 2;
+  const th = Math.ceil(parseInt(font) * 1.4) + pad * 2;
+
+  // Draw text to offscreen canvas
+  const off = document.createElement('canvas');
+  off.width = tw; off.height = th;
+  const oc = off.getContext('2d')!;
+  oc.font = font;
+  oc.textAlign = 'center';
+  oc.textBaseline = 'top';
+  oc.fillStyle = t.neon.coreColor;
+  oc.fillText(text, tw / 2, pad);
+
+  // Destination position
+  const dx = x - tw / 2;
+  const dy = y - pad;
+
+  // Skip glow passes for templates with no glow
+  if (t.neon.outerBlur > 0 && t.neon.outerAlpha > 0) {
+    // Glow canvas — tinted for color
+    const glow = document.createElement('canvas');
+    glow.width = tw; glow.height = th;
+    const gc = glow.getContext('2d')!;
+    gc.font = font;
+    gc.textAlign = 'center';
+    gc.textBaseline = 'top';
+    gc.fillStyle = t.neon.midGlow;
+    gc.fillText(text, tw / 2, pad);
+
+    ctx.save();
+    ctx.globalCompositeOperation = 'screen';
+
+    // Pass 1: wide atmospheric glow
+    ctx.filter = `blur(${Math.round(t.neon.outerBlur * 1.2)}px)`;
+    ctx.globalAlpha = t.neon.outerAlpha * 0.5;
+    ctx.drawImage(glow, dx, dy);
+
+    // Pass 2: medium glow
+    ctx.filter = `blur(${Math.round(t.neon.midBlur)}px)`;
+    ctx.globalAlpha = t.neon.midAlpha * 0.7;
+    ctx.drawImage(glow, dx, dy);
+
+    // Pass 3: tight glow
+    ctx.filter = `blur(${Math.round(t.neon.coreBlur * 1.5)}px)`;
+    ctx.globalAlpha = 0.8;
+    ctx.drawImage(glow, dx, dy);
+
+    ctx.filter = 'none';
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.restore();
+  }
+
+  // Core text — crisp, zero blur, full opacity on top
+  ctx.drawImage(off, dx, dy);
 }
 
-/** Subtle noise texture overlay for depth */
+/**
+ * Film grain via overlay compositing — preserves color, adds texture.
+ * More realistic than additive pixel noise.
+ */
 function drawNoiseTexture(ctx: CanvasRenderingContext2D, opacity: number) {
   const cw = ctx.canvas.width, ch = ctx.canvas.height;
-  const imageData = ctx.getImageData(0, 0, cw, ch);
+  const grain = document.createElement('canvas');
+  grain.width = cw; grain.height = ch;
+  const gc = grain.getContext('2d')!;
+  const imageData = gc.createImageData(cw, ch);
   const data = imageData.data;
-  const strength = opacity * 12;
   for (let i = 0; i < data.length; i += 4) {
-    const noise = (Math.random() - 0.5) * strength;
-    data[i] += noise;
-    data[i + 1] += noise;
-    data[i + 2] += noise;
+    const v = Math.round(128 + (Math.random() - 0.5) * 80);
+    data[i] = v; data[i + 1] = v; data[i + 2] = v;
+    data[i + 3] = 255;
   }
-  ctx.putImageData(imageData, 0, 0);
+  gc.putImageData(imageData, 0, 0);
+  ctx.save();
+  ctx.globalCompositeOperation = 'overlay';
+  ctx.globalAlpha = opacity;
+  ctx.drawImage(grain, 0, 0);
+  ctx.restore();
 }
 
-/** Vignette effect — darkens edges for premium feel */
+/**
+ * Vignette via multiply compositing — cleaner edge darkening.
+ */
 function drawVignette(ctx: CanvasRenderingContext2D, strength: number) {
   const cw = ctx.canvas.width, ch = ctx.canvas.height;
   const maxDim = Math.max(cw, ch);
-  const grad = ctx.createRadialGradient(cw / 2, ch / 2, maxDim * 0.25, cw / 2, ch / 2, maxDim * 0.65);
-  grad.addColorStop(0, 'rgba(0,0,0,0)');
-  grad.addColorStop(1, `rgba(0,0,0,${strength})`);
+  ctx.save();
+  ctx.globalCompositeOperation = 'multiply';
+  const grad = ctx.createRadialGradient(cw / 2, ch / 2, maxDim * 0.28, cw / 2, ch / 2, maxDim * 0.68);
+  // Center: white (no darkening via multiply). Edges: dark.
+  grad.addColorStop(0, '#ffffff');
+  grad.addColorStop(0.5, `rgba(255,255,255,${1 - strength * 0.3})`);
+  grad.addColorStop(1, `rgba(${Math.round(40 * (1 - strength))},${Math.round(40 * (1 - strength))},${Math.round(50 * (1 - strength))},1)`);
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, cw, ch);
+  ctx.restore();
 }
 
 function goldRule(ctx: CanvasRenderingContext2D, y: number, t: CarouselTemplate) {
@@ -415,17 +467,14 @@ export async function generateTitleSlide(
       ctx.shadowColor = 'transparent';
       if (featImg) ctx.drawImage(featImg, imgX, imgY, imgSize, imgSize);
 
-      // Artist name + song title below image
-      if (t.cover.showArtistName) {
-        const textY = imgY + imgSize + border + 16;
-        neonText(ctx, coverFeature.track.artist_names, W / 2, textY, `700 38px ${t.scriptFont}`, t);
-        if (t.cover.showTrackName) {
-          ctx.fillStyle = t.textSecondary;
-          ctx.font = `500 26px ${t.bodyFont}`;
-          ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-          ctx.fillText(coverFeature.track.track_name, W / 2, textY + 48);
-        }
-      }
+      // Artist name below image — neon glow
+      const textY = imgY + imgSize + border + 20;
+      neonText(ctx, coverFeature.track.artist_names, W / 2, textY, `700 38px ${t.scriptFont}`, t);
+      // Song name — italic, in quotes
+      ctx.fillStyle = t.textSecondary;
+      ctx.font = `italic 500 26px ${t.bodyFont}`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+      ctx.fillText(`\u201C${coverFeature.track.track_name}\u201D`, W / 2, textY + 50);
     }
 
     // Header — gold neon "New Music Friday"
@@ -433,37 +482,8 @@ export async function generateTitleSlide(
     goldRule(ctx, Math.round(H * 0.10), t);
     neonText(ctx, t.cover.subtitleText, W / 2, Math.round(H * 0.11), `italic 600 26px ${t.bodyFont}`, t);
 
-    // Swipe pill
-    const swipeText = 'Swipe right for all this week\'s picks';
-    ctx.font = `600 22px ${t.scriptFont}`;
-    const swipeW = ctx.measureText(swipeText).width + 40;
-    const swipeY = Math.round(H * 0.83);
-    ctx.fillStyle = 'rgba(0,0,0,0.45)';
-    ctx.beginPath(); ctx.roundRect((W - swipeW) / 2, swipeY, swipeW, 36, 18); ctx.fill();
-    neonText(ctx, swipeText, W / 2, swipeY + 4, `600 22px ${t.scriptFont}`, t);
-
-    // Date
-    neonText(ctx, formatDate(weekDate), W / 2, Math.round(H * 0.89), `700 48px ${t.scriptFont}`, t);
-
-    // Chevrons
-    if (t.cover.showChevrons) {
-      ctx.save();
-      ctx.shadowColor = `${t.accentGlow}0.6)`;
-      ctx.shadowBlur = 14;
-      ctx.fillStyle = t.accent;
-      for (let dx = 0; dx < 2; dx++) {
-        const bx = W - 140 + dx * 30, by = H / 2;
-        ctx.beginPath();
-        ctx.moveTo(bx, by - 28); ctx.lineTo(bx + 20, by); ctx.lineTo(bx, by + 28);
-        ctx.lineTo(bx + 6, by + 28); ctx.lineTo(bx + 26, by); ctx.lineTo(bx + 6, by - 28);
-        ctx.closePath(); ctx.fill();
-      }
-      ctx.restore();
-    }
-
-    // Music notes + sparkles
-    if (t.decorations.showNotes) drawNotes(ctx, t.decorations.noteSize);
-    if (t.decorations.showSparkles) drawSparkles(ctx, [[160, 160], [W - 160, H - 180]], t.decorations.sparkleSize);
+    // Date at bottom
+    neonText(ctx, formatDate(weekDate), W / 2, Math.round(H * 0.90), `700 48px ${t.scriptFont}`, t);
   }
 
   // Featured image (non-vinyl templates)
@@ -574,19 +594,26 @@ function drawGridWithLayout(
 
   let trackIdx = 0;
   for (const rect of rects) {
+    const cornerR = Math.round(Math.min(rect.w, rect.h) * 0.03); // subtle rounded corners
+
     if (rect.isLogo) {
-      // Draw logo
+      // Draw logo with rounded corners
+      ctx.save();
+      ctx.beginPath();
+      ctx.roundRect(rect.x, rect.y, rect.w, rect.h, cornerR);
+      ctx.clip();
       if (logo) {
         ctx.drawImage(logo, rect.x, rect.y, rect.w, rect.h);
       } else {
         ctx.fillStyle = t.background;
-        ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
+        ctx.fill();
         ctx.fillStyle = t.accent;
         const fontSize = Math.round(Math.min(rect.w, rect.h) * 0.15);
         ctx.font = `bold ${fontSize}px ${t.bodyFont}`;
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.fillText('MMMC', rect.x + rect.w / 2, rect.y + rect.h / 2);
       }
+      ctx.restore();
       continue;
     }
 
@@ -602,27 +629,40 @@ function drawGridWithLayout(
     const cx = rect.x + rect.w / 2, cy = rect.y + rect.h / 2;
     ctx.translate(cx, cy); ctx.rotate(rot); ctx.translate(-cx, -cy);
 
+    // Drop shadow beneath cell
     if (t.grid.cellShadow) {
-      ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 16;
-      ctx.shadowOffsetX = 3; ctx.shadowOffsetY = 4;
-      ctx.fillStyle = t.background;
-      ctx.fillRect(rect.x - 2, rect.y - 2, rect.w + 4, rect.h + 4);
+      ctx.shadowColor = 'rgba(0,0,0,0.45)';
+      ctx.shadowBlur = 14;
+      ctx.shadowOffsetX = 2;
+      ctx.shadowOffsetY = 4;
+      ctx.fillStyle = '#000';
+      ctx.beginPath();
+      ctx.roundRect(rect.x, rect.y, rect.w, rect.h, cornerR);
+      ctx.fill();
       ctx.shadowColor = 'transparent';
     }
 
+    // Clip to rounded rect, draw album art
+    ctx.beginPath();
+    ctx.roundRect(rect.x, rect.y, rect.w, rect.h, cornerR);
+    ctx.clip();
     ctx.drawImage(img, rect.x, rect.y, rect.w, rect.h);
 
-    // Glass highlight
-    const hlGrad = ctx.createLinearGradient(rect.x, rect.y, rect.x, rect.y + rect.h * 0.3);
-    hlGrad.addColorStop(0, 'rgba(255,255,255,0.06)');
+    // Glass highlight — screen blend for additive light
+    ctx.globalCompositeOperation = 'screen';
+    const hlGrad = ctx.createLinearGradient(rect.x, rect.y, rect.x, rect.y + rect.h * 0.35);
+    hlGrad.addColorStop(0, 'rgba(255,255,255,0.08)');
     hlGrad.addColorStop(1, 'rgba(255,255,255,0)');
     ctx.fillStyle = hlGrad;
-    ctx.fillRect(rect.x, rect.y, rect.w, rect.h * 0.3);
+    ctx.fillRect(rect.x, rect.y, rect.w, rect.h * 0.35);
+    ctx.globalCompositeOperation = 'source-over';
 
     if (t.grid.cellBorder) {
       ctx.strokeStyle = t.grid.cellBorderColor;
       ctx.lineWidth = 2;
-      ctx.strokeRect(rect.x + 1, rect.y + 1, rect.w - 2, rect.h - 2);
+      ctx.beginPath();
+      ctx.roundRect(rect.x + 1, rect.y + 1, rect.w - 2, rect.h - 2, Math.max(0, cornerR - 1));
+      ctx.stroke();
     }
 
     ctx.restore();

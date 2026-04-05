@@ -8,6 +8,7 @@ import { generatePlatformImage, PLATFORM_LIST, type PlatformId } from '../lib/cr
 import TemplateSelector from './TemplateSelector';
 import TitleTemplatePicker from './TitleTemplatePicker';
 import SlideSplitter, { type SlideGroup } from './SlideSplitter';
+import ResizablePanel from './ResizablePanel';
 import type { SelectionSlot } from '../lib/selection';
 import { buildSlots } from '../lib/selection';
 import { useAuth } from '../lib/auth-context';
@@ -216,23 +217,9 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
         ② Configure & Preview
       </h3>
 
-      {/* TWO-COLUMN on desktop, single column on mobile.
-          On mobile: previews appear BETWEEN the config sections,
-          not scrolled off to the right. */}
-      <div className="carousel-layout" style={{
-        display: 'grid',
-        gridTemplateColumns: '2fr 3fr',
-        gap: 24,
-      }}>
-        <style>{`
-          @media (max-width: 768px) {
-            .carousel-layout {
-              grid-template-columns: 1fr !important;
-            }
-          }
-        `}</style>
-        {/* LEFT COLUMN: Selectors — min-width 0 prevents grid blowout */}
-        <div style={{ minWidth: 0, overflow: 'hidden' }}>
+      {/* TWO-COLUMN with draggable divider on desktop, single column on mobile */}
+      <ResizablePanel
+        left={<div>
           {/* Carousel Shape */}
           <div style={{ marginBottom: 20 }}>
             <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8 }}>Carousel Shape</p>
@@ -444,15 +431,8 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
             defaultTracksPerSlide={tracksPerSlide}
             onSplitChange={handleSplitChange}
           />
-        </div>
-
-        {/* RIGHT COLUMN: Live Previews (sticky on desktop, inline on mobile) */}
-        <div className="carousel-previews" style={{ position: 'sticky', top: 80, alignSelf: 'start' }}>
-          <style>{`
-            @media (max-width: 768px) {
-              .carousel-previews { position: static !important; }
-            }
-          `}</style>
+        </div>}
+        right={<div style={{ position: 'sticky', top: 80 }}>
           {/* Grid slide preview */}
           <div style={{ marginBottom: 16 }}>
             <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: 6 }}>
@@ -510,8 +490,8 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
               )}
             </div>
           )}
-        </div>
-      </div>
+        </div>}
+      />
 
       {/* GENERATE + EXPORT (full width below the two columns) */}
       {error && (

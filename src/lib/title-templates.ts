@@ -417,7 +417,7 @@ export const TITLE_TEMPLATES: TitleSlideTemplate[] = [
     showDivider: true, dividerColor: 'rgba(212,168,67,0.4)',
     featuredBorder: 0, featuredBorderColor: '', featuredShadowBlur: 0, featuredRotation: 0,
     texture: 'grain',
-    swipePill: true,
+    swipePill: false,
     vinylRecord: true,
   },
 ];
