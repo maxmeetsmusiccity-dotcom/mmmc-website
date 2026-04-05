@@ -242,17 +242,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // For now: search with broad queries that are likely to return artists in this category
   // In the future this should hit a pre-computed index
+  // Search terms designed to pull real ND profiles that match each category's filter
   const searchTerms: Record<string, string[]> = {
-    'breaking-through': ['country new', 'rising country', 'nashville new'],
-    'the-establishment': ['country hits', 'nashville star', 'country award'],
-    'songwriters-round': ['nashville writer', 'songwriter country', 'bluebird'],
-    'neon-rhinestones': ['country pop', 'nashville pop', 'country crossover'],
-    'outlaw-spirit': ['americana', 'outlaw country', 'red dirt', 'texas country'],
-    'fresh-ink': ['new nashville', 'debut country', 'first single'],
-    'stadium-country': ['country superstar', 'country arena', 'country festival'],
-    'whiskey-jam-alumni': ['whiskey jam', 'nashville monday', 'nashville live'],
-    'opry-circle': ['grand ole opry', 'opry member', 'ryman'],
-    'sleeping-giants': ['nashville writer', 'songwriter credits', 'publishing'],
+    'breaking-through': ['ashley cooke', 'ella langley', 'nate smith', 'megan moroney', 'tyler hubbard', 'chayce beckham', 'mackenzie carpenter', 'country'],
+    'the-establishment': ['luke combs', 'morgan wallen', 'thomas rhett', 'chris stapleton', 'luke bryan', 'jason aldean', 'carrie underwood', 'kenny chesney'],
+    'songwriters-round': ['shane mcanally', 'lori mckenna', 'hillary lindsey', 'ross copperman', 'josh osborne', 'ashley gorley', 'songwriter'],
+    'neon-rhinestones': ['kelsea ballerini', 'maren morris', 'carly pearce', 'gabby barrett', 'danielle bradbery', 'pop country'],
+    'outlaw-spirit': ['tyler childers', 'sturgill simpson', 'jason isbell', 'colter wall', 'zach bryan', 'americana'],
+    'fresh-ink': ['nashville new artist', 'debut', 'first single country', 'emerging artist'],
+    'stadium-country': ['morgan wallen', 'luke combs', 'zach bryan', 'lainey wilson', 'chris stapleton', 'kenny chesney', 'eric church'],
+    'whiskey-jam-alumni': ['sam hunt', 'maren morris', 'cole swindell', 'kip moore', 'whiskey jam'],
+    'opry-circle': ['vince gill', 'reba mcentire', 'darius rucker', 'brad paisley', 'alan jackson', 'opry'],
+    'sleeping-giants': ['songwriter nashville', 'publishing writer', 'credits nashville', 'nashville catalog'],
   };
 
   const terms = searchTerms[category] || ['nashville country'];
