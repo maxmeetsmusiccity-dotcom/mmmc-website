@@ -210,12 +210,21 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
         ② Configure & Preview
       </h3>
 
-      {/* TWO-COLUMN LAYOUT: controls left, capped previews right */}
-      <div style={{
+      {/* TWO-COLUMN on desktop, single column on mobile.
+          On mobile: previews appear BETWEEN the config sections,
+          not scrolled off to the right. */}
+      <div className="carousel-layout" style={{
         display: 'grid',
         gridTemplateColumns: '1fr minmax(280px, 420px)',
         gap: 24,
       }}>
+        <style>{`
+          @media (max-width: 768px) {
+            .carousel-layout {
+              grid-template-columns: 1fr !important;
+            }
+          }
+        `}</style>
         {/* LEFT COLUMN: Selectors */}
         <div>
           {/* Tracks per slide */}
@@ -354,8 +363,13 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
           />
         </div>
 
-        {/* RIGHT COLUMN: Live Previews */}
-        <div style={{ position: 'sticky', top: 80, alignSelf: 'start' }}>
+        {/* RIGHT COLUMN: Live Previews (sticky on desktop, inline on mobile) */}
+        <div className="carousel-previews" style={{ position: 'sticky', top: 80, alignSelf: 'start' }}>
+          <style>{`
+            @media (max-width: 768px) {
+              .carousel-previews { position: static !important; }
+            }
+          `}</style>
           {/* Grid slide preview */}
           <div style={{ marginBottom: 16 }}>
             <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: 6 }}>

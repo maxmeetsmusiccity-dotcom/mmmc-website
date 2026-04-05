@@ -133,12 +133,32 @@ export default function SlideSplitter({ tracks, defaultTracksPerSlide, onSplitCh
     setDragOverIdx(-1);
   };
 
+  /** Shuffle tracks within a single slide group */
+  const shuffleSlide = (slideIndex: number) => {
+    isManual.current = true;
+    const group = groups[slideIndex];
+    if (!group || group.tracks.length <= 1) return;
+
+    // Find the start index in orderedTracks for this group
+    let startIdx = 0;
+    for (let i = 0; i < slideIndex; i++) startIdx += groups[i].tracks.length;
+
+    const newTracks = [...orderedTracks];
+    const slice = newTracks.slice(startIdx, startIdx + group.tracks.length);
+    for (let i = slice.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [slice[i], slice[j]] = [slice[j], slice[i]];
+    }
+    newTracks.splice(startIdx, slice.length, ...slice);
+    setOrderedTracks(newTracks);
+    notifyParent(newTracks, dividers);
+  };
+
   return (
     <div data-testid="slide-splitter" style={{ marginBottom: 16 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
         <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
           Slide Split <span className="mono" style={{ color: 'var(--gold)' }}>({groups.length} slide{groups.length !== 1 ? 's' : ''})</span>
-          <span style={{ fontSize: '0.55rem', color: 'var(--text-muted)', marginLeft: 8 }}>Drag to reorder</span>
         </p>
         <button
           onClick={resetToAuto}
@@ -147,6 +167,9 @@ export default function SlideSplitter({ tracks, defaultTracksPerSlide, onSplitCh
           Reset to Auto
         </button>
       </div>
+      <p style={{ fontSize: '0.55rem', color: 'var(--text-muted)', marginBottom: 8, lineHeight: 1.4 }}>
+        Drag tracks to reorder within or across slides. Click between tracks to add/remove slide breaks.
+      </p>
 
       <div style={{
         display: 'flex', flexDirection: 'column', gap: 2,
@@ -224,15 +247,21 @@ export default function SlideSplitter({ tracks, defaultTracksPerSlide, onSplitCh
         })}
       </div>
 
-      {/* Group summary */}
-      <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
+      {/* Group summary with per-slide shuffle */}
+      <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap', alignItems: 'center' }}>
         {groups.map((group, i) => (
-          <span key={i} className="badge" style={{
-            background: 'rgba(212,168,67,0.12)', color: 'var(--gold)',
-            fontSize: '0.6rem',
-          }}>
-            Slide {i + 1}: {group.tracks.length} track{group.tracks.length !== 1 ? 's' : ''}
-          </span>
+          <button
+            key={i}
+            onClick={() => shuffleSlide(i)}
+            className="badge"
+            style={{
+              background: 'rgba(212,168,67,0.12)', color: 'var(--gold)',
+              fontSize: '0.6rem', cursor: 'pointer', border: 'none',
+            }}
+            title={`Shuffle tracks in Slide ${i + 1}`}
+          >
+            Slide {i + 1}: {group.tracks.length} track{group.tracks.length !== 1 ? 's' : ''} &#x21C4;
+          </button>
         ))}
       </div>
     </div>
