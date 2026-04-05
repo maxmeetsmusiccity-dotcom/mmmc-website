@@ -22,13 +22,9 @@ export default function AuthGate({ children }: Props) {
     );
   }
 
-  // Admin bypass: ?admin=true in URL or mmmc_admin in localStorage
-  const urlAdmin = new URLSearchParams(window.location.search).get('admin') === 'true';
-  if (urlAdmin) localStorage.setItem('mmmc_admin', '1');
-  const adminBypass = localStorage.getItem('mmmc_admin') === '1';
-
-  // Authenticated, guest, or admin bypass — show the app
-  if (user || isGuest || adminBypass) return <>{children}</>;
+  // Authenticated or guest — show the app. Admin status is determined by
+  // email allowlist in auth-context.tsx (no URL-param bypass).
+  if (user || isGuest) return <>{children}</>;
 
   const handleEmail = async () => {
     if (isSignUp && !tosAccepted) {

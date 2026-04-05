@@ -156,11 +156,25 @@ export default function NewMusicFriday() {
   // Handle OAuth callback
   useEffect(() => {
     const code = searchParams.get('code');
+    const oauthError = searchParams.get('error');
+    if (oauthError) {
+      setSearchParams({}, { replace: true });
+      const desc = searchParams.get('error_description') || oauthError;
+      setError(`Spotify access denied: ${desc}. This app is in development mode and limited to approved accounts. Use the Manual/CSV import instead.`);
+      return;
+    }
     if (code) {
       setSearchParams({}, { replace: true });
       exchangeCode(code)
         .then(t => { setToken(t); setError(''); })
-        .catch(e => setError(`Auth failed: ${e.message}`));
+        .catch(e => {
+          const msg = e.message || 'Unknown error';
+          if (msg.includes('invalid_grant') || msg.includes('access_denied') || msg.includes('invalid_client')) {
+            setError(`Spotify connection failed: ${msg}. This app is in Spotify development mode (limited users). Use the Manual/CSV import tab to import your releases without Spotify.`);
+          } else {
+            setError(`Auth failed: ${msg}`);
+          }
+        });
     }
   }, [searchParams, setSearchParams]);
 
@@ -298,10 +312,12 @@ export default function NewMusicFriday() {
 
       // Only cache if results > 0
       if (tracks.length > 0) {
-        try {
-          sessionStorage.setItem(`nmf_scan_${weekDate}_${userId || 'guest'}`, JSON.stringify({ tracks, timestamp: now }));
-        } catch { /* storage full, ignore */ }
-        saveWeek({ week_date: weekDate, all_releases: tracks, playlist_master_pushed: false, carousel_generated: false }, userId || undefined);
+        if (userId) {
+          try {
+            sessionStorage.setItem(`nmf_scan_${weekDate}_${userId}`, JSON.stringify({ tracks, timestamp: now }));
+          } catch { /* storage full, ignore */ }
+          saveWeek({ week_date: weekDate, all_releases: tracks, playlist_master_pushed: false, carousel_generated: false }, userId);
+        }
       } else if (failCount > totalArtists * 0.5) {
         setError(`Spotify rate limit hit \u2014 ${failCount}/${totalArtists} artists failed. Wait 30-60 minutes and try again.`);
       } else {
@@ -430,6 +446,7 @@ export default function NewMusicFriday() {
   };
 
   const handleSaveWeek = async (extra: Partial<NMFWeek> = {}) => {
+    if (!userId) return; // Guests don't persist to Supabase
     const week: NMFWeek = {
       week_date: weekDate,
       all_releases: allTracks,
@@ -440,7 +457,7 @@ export default function NewMusicFriday() {
       carousel_generated: false,
       ...extra,
     };
-    await saveWeek(week, userId || undefined);
+    await saveWeek(week, userId);
     const features = selections.map(s => ({
       week_date: weekDate,
       spotify_artist_id: s.track.artist_id,
@@ -616,44 +633,18 @@ export default function NewMusicFriday() {
               </div>
             )}
 
-            {/* Apple Music source */}
+            {/* Apple Music source — coming soon */}
             {activeSource === 'apple-music' && (
               <div style={{ marginTop: 16 }}>
                 <p style={{ color: 'var(--text-secondary)', marginBottom: 16, fontSize: '0.85rem' }}>
-                  Scan your Apple Music library for new releases.
+                  Apple Music library scanning is coming soon. In the meantime, use Spotify or import a CSV manifest.
                 </p>
                 <button
                   className="btn"
-                  onClick={async () => {
-                    try {
-                      const { authorizeAppleMusic, scanAppleMusicLibrary } = await import('../lib/sources/apple-music');
-                      await authorizeAppleMusic();
-                      setPhase('scanning');
-                      setScanStatus('Scanning Apple Music library...');
-                      const cutoff = getScanCutoff();
-                      const tracks = await scanAppleMusicLibrary({
-                        cutoffDate: cutoff,
-                        onProgress: (cur, tot, found) => {
-                          setScanProgress({ current: cur, total: tot });
-                          setScanStatus(`Apple Music: ${cur}/${tot} artists \u00B7 ${found} release${found !== 1 ? 's' : ''}`);
-                        },
-                        onReleasesFound: (tracks) => {
-                          setAllTracks(tracks);
-                          setReleases(groupIntoReleases(tracks));
-                        },
-                      });
-                      setAllTracks(tracks);
-                      setReleases(groupIntoReleases(tracks));
-                      setPhase('results');
-                      setLastScanned(new Date().toISOString());
-                    } catch (e) {
-                      setError(`Apple Music: ${(e as Error).message}`);
-                      setPhase('ready');
-                    }
-                  }}
-                  style={{ fontSize: '1rem', padding: '14px 32px' }}
+                  disabled
+                  style={{ fontSize: '1rem', padding: '14px 32px', opacity: 0.5, cursor: 'not-allowed' }}
                 >
-                  Connect Apple Music
+                  Coming Soon
                 </button>
               </div>
             )}

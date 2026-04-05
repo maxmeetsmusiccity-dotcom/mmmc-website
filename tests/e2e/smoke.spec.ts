@@ -1,9 +1,9 @@
 import { test, expect } from '@playwright/test';
 
-// Helper: set admin bypass before page load
-async function adminBypass(page: import('@playwright/test').Page) {
+// Helper: enable guest mode before navigating to auth-gated pages
+async function guestBypass(page: import('@playwright/test').Page) {
   await page.goto('/');
-  await page.evaluate(() => localStorage.setItem('mmmc_admin', '1'));
+  await page.evaluate(() => localStorage.setItem('nmf_guest_mode', '1'));
 }
 
 test('home page loads with two product cards', async ({ page }) => {
@@ -12,16 +12,16 @@ test('home page loads with two product cards', async ({ page }) => {
   await expect(page.getByText('NMF Intelligence')).toBeVisible();
 });
 
-test('NMF page loads with admin bypass', async ({ page }) => {
-  await page.goto('/newmusicfriday?admin=true');
+test('NMF page loads with guest mode', async ({ page }) => {
+  await guestBypass(page);
+  await page.goto('/newmusicfriday');
   await expect(page.getByRole('heading', { name: /New Music Friday/ })).toBeVisible();
 });
 
-test('dashboard loads with admin bypass', async ({ page }) => {
-  await adminBypass(page);
+test('dashboard loads with guest mode', async ({ page }) => {
+  await guestBypass(page);
   await page.goto('/dashboard');
-  // Dashboard shows "Publicist Access Required" for non-publicist admin bypass
-  // or the Intelligence heading for admins — either means the page loaded
+  // Dashboard shows a heading regardless of role — page loaded
   const heading = page.getByRole('heading').first();
   await expect(heading).toBeVisible();
 });
@@ -51,8 +51,9 @@ test('this week page loads', async ({ page }) => {
   await expect(page.getByRole('heading', { name: /This Week/ })).toBeVisible();
 });
 
-test('NMF auth gate shows connect options', async ({ page }) => {
-  await page.goto('/newmusicfriday?admin=true');
-  // Admin bypass shows NMF page — should have the header
-  await expect(page.getByRole('heading', { name: /New Music Friday/ })).toBeVisible();
+test('NMF auth gate shows sign-in options when not authenticated', async ({ page }) => {
+  await page.goto('/newmusicfriday');
+  // Without guest mode, should show the auth gate
+  await expect(page.getByText('Continue as Guest')).toBeVisible();
+  await expect(page.getByText('Sign in with Google')).toBeVisible();
 });
