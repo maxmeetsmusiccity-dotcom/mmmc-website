@@ -1,4 +1,5 @@
-import { TITLE_TEMPLATES } from '../lib/title-templates';
+import { getVisibleTitleTemplates } from '../lib/title-templates';
+import { useAuth } from '../lib/auth-context';
 
 interface Props {
   selected: string;
@@ -7,6 +8,9 @@ interface Props {
 }
 
 export default function TitleTemplatePicker({ selected, onSelect, onHover }: Props) {
+  const { user } = useAuth();
+  const visibleTemplates = getVisibleTitleTemplates(user?.email || undefined);
+
   return (
     <div data-testid="title-template-picker" style={{ marginBottom: 16 }}>
       <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8 }}>Title Slide Template</p>
@@ -40,7 +44,7 @@ export default function TitleTemplatePicker({ selected, onSelect, onHover }: Pro
           </span>
         </button>
 
-        {TITLE_TEMPLATES.map(t => {
+        {visibleTemplates.map(t => {
           const isActive = selected === t.id;
           return (
             <button

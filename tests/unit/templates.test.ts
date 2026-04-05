@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { TEMPLATES, getVisibleTemplates, MAX_ONLY_TEMPLATES, getTemplate } from '../../src/lib/carousel-templates';
-import { TITLE_TEMPLATES, getTitleTemplate } from '../../src/lib/title-templates';
+import { TITLE_TEMPLATES, getTitleTemplate, MAX_ONLY_TITLE_TEMPLATES, getVisibleTitleTemplates, getDefaultTitleTemplateId } from '../../src/lib/title-templates';
 
 describe('carousel templates', () => {
   it('has at least 6 templates', () => {
@@ -46,8 +46,8 @@ describe('carousel templates', () => {
 });
 
 describe('title templates', () => {
-  it('has exactly 10 title templates', () => {
-    expect(TITLE_TEMPLATES.length).toBe(10);
+  it('has exactly 11 title templates', () => {
+    expect(TITLE_TEMPLATES.length).toBe(11);
   });
 
   it('all title templates have required fields', () => {
@@ -80,5 +80,36 @@ describe('title templates', () => {
   it('getTitleTemplate returns fallback for unknown id', () => {
     const t = getTitleTemplate('nonexistent_xyz');
     expect(t.id).toBe(TITLE_TEMPLATES[0].id);
+  });
+
+  it('vinyl_classic template exists with vinylRecord flag', () => {
+    const t = getTitleTemplate('vinyl_classic');
+    expect(t.id).toBe('vinyl_classic');
+    expect(t.vinylRecord).toBe(true);
+    expect(t.background).toBe('#0F1B33');
+  });
+
+  it('MAX_ONLY_TITLE_TEMPLATES includes nashville_neon and vinyl_classic', () => {
+    expect(MAX_ONLY_TITLE_TEMPLATES).toBeInstanceOf(Set);
+    expect(MAX_ONLY_TITLE_TEMPLATES.has('nashville_neon')).toBe(true);
+    expect(MAX_ONLY_TITLE_TEMPLATES.has('vinyl_classic')).toBe(true);
+  });
+
+  it('getVisibleTitleTemplates hides Max-only for non-admin', () => {
+    const visible = getVisibleTitleTemplates('random@example.com');
+    for (const t of visible) {
+      expect(MAX_ONLY_TITLE_TEMPLATES.has(t.id)).toBe(false);
+    }
+  });
+
+  it('getVisibleTitleTemplates shows all for Max', () => {
+    const visible = getVisibleTitleTemplates('maxmeetsmusiccity@gmail.com');
+    expect(visible.length).toBe(TITLE_TEMPLATES.length);
+  });
+
+  it('getDefaultTitleTemplateId returns vinyl_classic for Max', () => {
+    expect(getDefaultTitleTemplateId('maxmeetsmusiccity@gmail.com')).toBe('vinyl_classic');
+    expect(getDefaultTitleTemplateId('maxblachman@gmail.com')).toBe('vinyl_classic');
+    expect(getDefaultTitleTemplateId('random@example.com')).toBe('nashville_neon');
   });
 });

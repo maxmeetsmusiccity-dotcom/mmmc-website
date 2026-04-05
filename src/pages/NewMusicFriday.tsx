@@ -116,6 +116,7 @@ export default function NewMusicFriday() {
   const [activeSource, setActiveSource] = useState<MusicSource['id']>('spotify');
   const [tracksPerSlide, setTracksPerSlide] = useState(8);
   const [viewMode, setViewMode] = useState<'releases' | 'tracks'>('releases');
+  const [loadedFromCache, setLoadedFromCache] = useState(false);
 
   // Shift-click multi-select tracking
   const lastClickedIdx = useRef<number>(-1);
@@ -170,6 +171,7 @@ export default function NewMusicFriday() {
           setReleases(groupIntoReleases(tracks));
           setPhase('results');
           setLastScanned(timestamp);
+          setLoadedFromCache(true);
           return;
         }
       } catch { /* corrupted cache */ }
@@ -184,6 +186,7 @@ export default function NewMusicFriday() {
           setReleases(groupIntoReleases(tracks));
           setPhase('results');
           setLastScanned(savedAt);
+          setLoadedFromCache(true);
           sessionStorage.setItem(cacheKey, JSON.stringify({ tracks, timestamp: savedAt }));
           if (week.selections && Array.isArray(week.selections)) {
             setSelections(buildSlots(week.selections as SelectionSlot[]));
@@ -221,6 +224,7 @@ export default function NewMusicFriday() {
     setPhase('scanning');
     setError('');
     setRateLimited(false);
+    setLoadedFromCache(false);
     const scanStart = Date.now();
     try {
       // Refresh token if expired
@@ -587,6 +591,30 @@ export default function NewMusicFriday() {
           borderBottom: '1px solid var(--steel-dark)', color: 'var(--steel)', fontSize: '0.75rem',
         }}>
           Adding Apple Music links...
+        </div>
+      )}
+
+      {loadedFromCache && phase === 'results' && (
+        <div style={{
+          padding: '10px 24px', background: 'rgba(212,168,67,0.08)',
+          borderBottom: '1px solid var(--gold-dark)',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+          flexWrap: 'wrap',
+        }}>
+          <span style={{ color: 'var(--gold)', fontSize: '0.8rem' }}>
+            Showing cached results{lastScanned ? ` from ${new Date(lastScanned).toLocaleString()}` : ''}.
+          </span>
+          <button
+            className="btn btn-sm btn-gold"
+            onClick={() => {
+              setLoadedFromCache(false);
+              if (token) runScan(token);
+              else setPhase(token ? 'ready' : 'auth');
+            }}
+            style={{ fontSize: '0.75rem', padding: '6px 16px' }}
+          >
+            Re-scan for latest releases
+          </button>
         </div>
       )}
 

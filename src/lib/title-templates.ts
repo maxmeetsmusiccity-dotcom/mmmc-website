@@ -62,6 +62,7 @@ export interface TitleSlideTemplate {
   // Unique per-template
   texture?: 'grain' | 'halftone' | 'leather' | 'denim' | 'none';
   swipePill: boolean;
+  vinylRecord?: boolean;
 }
 
 export const TITLE_TEMPLATES: TitleSlideTemplate[] = [
@@ -386,8 +387,57 @@ export const TITLE_TEMPLATES: TitleSlideTemplate[] = [
     texture: 'grain',
     swipePill: true,
   },
+
+  // 11. Vinyl Classic — Max's original cover slide: vinyl record + gold neon
+  {
+    id: 'vinyl_classic',
+    name: 'Vinyl Classic',
+    description: 'Dark navy vinyl record with gold neon — the Nashville original',
+    background: '#0F1B33',
+    textPrimary: '#F5E6B8',
+    textSecondary: '#FFFFFF',
+    accent: '#D4A843',
+    headlineFont: '"Dancing Script", cursive',
+    subtitleFont: '"DM Sans", sans-serif',
+    dateFont: '"Dancing Script", cursive',
+    headlineWeight: 700,
+    headlineCase: 'capitalize',
+    headlineSize: 0.052,
+    subtitleSize: 0.026,
+    dateSize: 0.044,
+    headlineY: 0.03,
+    subtitleY: 0.10,
+    dateY: 0.90,
+    featuredImageY: 0.28,
+    featuredImageSize: 0.42,
+    glow: { color: 'rgba(212,168,67,0.4)', blur: 45, passes: 5 },
+    grain: 0.15,
+    vignette: 0.30,
+    showFrame: false, frameColor: '', frameWidth: 0,
+    showDivider: true, dividerColor: 'rgba(212,168,67,0.4)',
+    featuredBorder: 0, featuredBorderColor: '', featuredShadowBlur: 0, featuredRotation: 0,
+    texture: 'grain',
+    swipePill: true,
+    vinylRecord: true,
+  },
 ];
+
+/** Title templates that are exclusive to Max's account */
+export const MAX_ONLY_TITLE_TEMPLATES = new Set(['nashville_neon', 'vinyl_classic']);
 
 export function getTitleTemplate(id: string): TitleSlideTemplate {
   return TITLE_TEMPLATES.find(t => t.id === id) || TITLE_TEMPLATES[0];
+}
+
+/** Get title templates visible to a user (filters out Max-only for other users) */
+export function getVisibleTitleTemplates(userEmail?: string): TitleSlideTemplate[] {
+  const isMax = userEmail === 'maxmeetsmusiccity@gmail.com' || userEmail === 'maxblachman@gmail.com';
+  if (isMax) return TITLE_TEMPLATES;
+  return TITLE_TEMPLATES.filter(t => !MAX_ONLY_TITLE_TEMPLATES.has(t.id));
+}
+
+/** Get the default title template ID for a user */
+export function getDefaultTitleTemplateId(userEmail?: string): string {
+  const isMax = userEmail === 'maxmeetsmusiccity@gmail.com' || userEmail === 'maxblachman@gmail.com';
+  return isMax ? 'vinyl_classic' : 'nashville_neon';
 }

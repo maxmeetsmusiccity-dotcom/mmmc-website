@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import type { TrackItem } from '../lib/spotify';
 import { getLastFriday } from '../lib/spotify';
-import { generateGridSlide, generateTitleSlide, downloadBlob } from '../lib/canvas-grid';
+import { generateGridSlide, generateTitleSlide, downloadBlob, type CarouselAspect } from '../lib/canvas-grid';
 import { getGridsForCount } from '../lib/grid-layouts';
 import { getPlatform, PLATFORMS } from '../lib/platforms';
 import { generatePlatformImage, PLATFORM_LIST, type PlatformId } from '../lib/cross-platform';
@@ -10,6 +10,8 @@ import TitleTemplatePicker from './TitleTemplatePicker';
 import SlideSplitter, { type SlideGroup } from './SlideSplitter';
 import type { SelectionSlot } from '../lib/selection';
 import { buildSlots } from '../lib/selection';
+import { useAuth } from '../lib/auth-context';
+import { getDefaultTitleTemplateId } from '../lib/title-templates';
 
 /** Compute valid tracks-per-slide options based on total selected tracks */
 function getTracksPerSlideOptions(totalTracks: number): { value: number; label: string }[] {
@@ -68,10 +70,11 @@ interface Props {
 }
 
 export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onTracksPerSlideChange }: Props) {
+  const { user } = useAuth();
   const [tracksPerSlide, setTracksPerSlide] = useState(8);
   const [platformId, setPlatformId] = useState('ig-post');
   const [gridTemplateId, setGridTemplateId] = useState(localStorage.getItem('nmf_template') || 'mmmc_classic');
-  const [titleTemplateId, setTitleTemplateId] = useState('nashville_neon');
+  const [titleTemplateId, setTitleTemplateId] = useState(() => getDefaultTitleTemplateId(user?.email || undefined));
   const [slideGroups, setSlideGroups] = useState<SlideGroup[]>([]);
   const manualSplit = useRef(false);
   const [gridPreview, setGridPreview] = useState<string>('');
@@ -80,6 +83,9 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState('');
   const [activePreview, setActivePreview] = useState(0);
+  const [logoUrl, setLogoUrl] = useState(localStorage.getItem('nmf_logo_url') || '/mmmc-logo.png');
+  const logoFileRef = useRef<HTMLInputElement>(null);
+  const [carouselAspect, setCarouselAspect] = useState<CarouselAspect>('1:1');
 
   const platform = getPlatform(platformId);
   const weekDate = getLastFriday();
@@ -121,13 +127,13 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
     })));
     // Clear previous preview immediately to show loading state
     setGridPreview('');
-    generateGridSlide(slots, weekDate, gridTemplateId, '/mmmc-logo.png', gridLayoutId)
+    generateGridSlide(slots, weekDate, gridTemplateId, logoUrl, gridLayoutId, carouselAspect)
       .then(blob => {
         const url = URL.createObjectURL(blob);
         setGridPreview(prev => { if (prev) URL.revokeObjectURL(prev); return url; });
       })
       .catch(e => console.error('[PREVIEW] Grid render error:', e));
-  }, [gridTemplateId, gridLayoutId, selectedTracks, tracksPerSlide, weekDate]);
+  }, [gridTemplateId, gridLayoutId, selectedTracks, tracksPerSlide, weekDate, carouselAspect, logoUrl]);
 
   // Live preview: render title slide using TitleSlideTemplate (independent of grid template)
   useEffect(() => {
@@ -135,7 +141,7 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
       setTitlePreview('');
       return;
     }
-    generateTitleSlide(coverFeature, weekDate, titleTemplateId)
+    generateTitleSlide(coverFeature, weekDate, titleTemplateId, carouselAspect)
       .then(blob => {
         const url = URL.createObjectURL(blob);
         setTitlePreview(prev => { if (prev) URL.revokeObjectURL(prev); return url; });
@@ -167,7 +173,7 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
 
       // Title slide (uses TitleSlideTemplate, independent of grid style)
       if (titleTemplateId !== 'none' && coverFeature) {
-        const titleBlob = await generateTitleSlide(coverFeature, weekDate, titleTemplateId);
+        const titleBlob = await generateTitleSlide(coverFeature, weekDate, titleTemplateId, carouselAspect);
         urls.push(URL.createObjectURL(titleBlob));
       }
 
@@ -178,7 +184,7 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
           selectionNumber: i + 1, slideGroup: 1,
           positionInSlide: i + 1, isCoverFeature: false,
         })));
-        const blob = await generateGridSlide(slots, weekDate, gridTemplateId, '/mmmc-logo.png', group.gridId || gridLayoutId);
+        const blob = await generateGridSlide(slots, weekDate, gridTemplateId, logoUrl, group.gridId || gridLayoutId, carouselAspect);
         urls.push(URL.createObjectURL(blob));
       }
 
@@ -215,8 +221,8 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
           not scrolled off to the right. */}
       <div className="carousel-layout" style={{
         display: 'grid',
-        gridTemplateColumns: 'minmax(0, 1fr) minmax(280px, 380px)',
-        gap: 20,
+        gridTemplateColumns: 'minmax(0, 340px) 1fr',
+        gap: 24,
       }}>
         <style>{`
           @media (max-width: 768px) {
@@ -225,8 +231,42 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
             }
           }
         `}</style>
-        {/* LEFT COLUMN: Selectors (overflow hidden to force horizontal scroll on template rows) */}
-        <div style={{ minWidth: 0 }}>
+        {/* LEFT COLUMN: Selectors — constrained width, scrollable template rows */}
+        <div style={{ minWidth: 0, maxWidth: 340, overflow: 'hidden' }}>
+          {/* Carousel Shape */}
+          <div style={{ marginBottom: 20 }}>
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8 }}>Carousel Shape</p>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {([
+                { value: '1:1' as CarouselAspect, label: 'Square', sub: '1080×1080', icon: '◻' },
+                { value: '3:4' as CarouselAspect, label: 'Portrait', sub: '1080×1440', icon: '▯' },
+              ]).map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => { setCarouselAspect(opt.value); setAllPreviews([]); }}
+                  style={{
+                    flex: 1, padding: '10px 12px', borderRadius: 10, cursor: 'pointer',
+                    background: carouselAspect === opt.value ? 'var(--midnight-hover)' : 'var(--midnight)',
+                    border: carouselAspect === opt.value ? '2px solid var(--gold)' : '2px solid var(--midnight-border)',
+                    transition: 'all 0.15s',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                  }}
+                >
+                  <span style={{ fontSize: '1.4rem' }}>{opt.icon}</span>
+                  <span style={{
+                    fontSize: '0.8rem', fontWeight: 600,
+                    color: carouselAspect === opt.value ? 'var(--gold)' : 'var(--text-secondary)',
+                  }}>
+                    {opt.label}
+                  </span>
+                  <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>
+                    {opt.sub}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Tracks per slide */}
           <div style={{ marginBottom: 20 }}>
             <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8 }}>Tracks per slide</p>
@@ -242,7 +282,7 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
                 </button>
               ))}
             </div>
-            <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: 6 }}>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 6 }}>
               {selectedTracks.length} tracks → {slideCount} slide{slideCount !== 1 ? 's' : ''}
               {titleTemplateId !== 'none' ? ' + title slide' : ''}
               {slideGroups.length > 0 && (
@@ -260,7 +300,7 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
                     setSlideGroups(shuffled);
                     setAllPreviews([]);
                   }}
-                  style={{ marginLeft: 8, fontSize: '0.6rem', color: 'var(--steel)', cursor: 'pointer', textDecoration: 'underline' }}
+                  style={{ marginLeft: 8, fontSize: '0.75rem', color: 'var(--steel)', cursor: 'pointer', textDecoration: 'underline' }}
                 >
                   Shuffle All
                 </button>
@@ -340,6 +380,49 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
             )}
           </div>
 
+          {/* Center Logo */}
+          <div style={{ marginBottom: 20 }}>
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 6 }}>Center Logo</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <img
+                src={logoUrl}
+                alt="Logo"
+                style={{ width: 36, height: 36, borderRadius: 6, border: '1px solid var(--midnight-border)', objectFit: 'cover' }}
+                onError={e => { (e.target as HTMLImageElement).src = '/mmmc-logo.png'; }}
+              />
+              <button
+                className="btn btn-sm"
+                onClick={() => logoFileRef.current?.click()}
+                style={{ fontSize: '0.65rem' }}
+              >
+                Upload Logo
+              </button>
+              {logoUrl !== '/mmmc-logo.png' && (
+                <button
+                  className="btn btn-sm"
+                  onClick={() => { setLogoUrl('/mmmc-logo.png'); localStorage.removeItem('nmf_logo_url'); setAllPreviews([]); }}
+                  style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}
+                >
+                  Reset
+                </button>
+              )}
+              <input
+                ref={logoFileRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                style={{ display: 'none' }}
+                onChange={e => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  const url = URL.createObjectURL(file);
+                  setLogoUrl(url);
+                  localStorage.setItem('nmf_logo_url', url);
+                  setAllPreviews([]);
+                }}
+              />
+            </div>
+          </div>
+
           {/* Grid Slide Style */}
           <div style={{ marginBottom: 20 }}>
             <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8 }}>Grid Slide Style</p>
@@ -382,11 +465,12 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
                 style={{
                   width: '100%', borderRadius: 8,
                   border: '1px solid var(--midnight-border)',
+                  aspectRatio: carouselAspect === '3:4' ? '3/4' : '1',
                 }}
               />
             ) : (
               <div style={{
-                width: '100%', aspectRatio: '1',
+                width: '100%', aspectRatio: carouselAspect === '3:4' ? '3/4' : '1',
                 borderRadius: 8, background: 'var(--midnight)',
                 border: '1px solid var(--midnight-border)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -410,11 +494,12 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
                   style={{
                     width: '100%', borderRadius: 8,
                     border: '1px solid var(--midnight-border)',
+                    aspectRatio: carouselAspect === '3:4' ? '3/4' : '1',
                   }}
                 />
               ) : (
                 <div style={{
-                  width: '100%', aspectRatio: '1',
+                  width: '100%', aspectRatio: carouselAspect === '3:4' ? '3/4' : '1',
                   borderRadius: 8, background: 'var(--midnight)',
                   border: '1px solid var(--midnight-border)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -499,7 +584,7 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
               <img
                 src={allPreviews[activePreview]}
                 alt={`Slide ${activePreview + 1}`}
-                style={{ maxWidth: 500, maxHeight: 600, borderRadius: 8, border: '1px solid var(--midnight-border)' }}
+                style={{ width: '100%', maxWidth: 600, borderRadius: 8, border: '1px solid var(--midnight-border)' }}
               />
               <span style={{
                 position: 'absolute', bottom: 8, right: 8,

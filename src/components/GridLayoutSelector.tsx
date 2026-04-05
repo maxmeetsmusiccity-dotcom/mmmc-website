@@ -20,12 +20,24 @@ function LayoutIcon({ config, size = 36, active }: { config: GridConfig; size?: 
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
       {rects.map((r, i) => (
-        <rect
-          key={i}
-          x={r.x} y={r.y} width={r.w} height={r.h} rx={1}
-          fill={r.isLogo ? logoColor : r.isEmpty ? emptyColor : accent}
-          opacity={r.isLogo ? 0.6 : r.isEmpty ? 0.3 : 0.85}
-        />
+        <g key={i}>
+          <rect
+            x={r.x} y={r.y} width={r.w} height={r.h} rx={1}
+            fill={r.isLogo ? logoColor : r.isEmpty ? emptyColor : accent}
+            opacity={r.isLogo ? 0.8 : r.isEmpty ? 0.3 : 0.85}
+          />
+          {r.isLogo && (
+            <text
+              x={r.x + r.w / 2} y={r.y + r.h / 2 + 1}
+              textAnchor="middle" dominantBaseline="middle"
+              fill={active ? '#F5E6B8' : '#A0B4C8'}
+              fontSize={Math.max(3, Math.round(r.w * 0.45))}
+              fontWeight={700}
+            >
+              ★
+            </text>
+          )}
+        </g>
       ))}
     </svg>
   );

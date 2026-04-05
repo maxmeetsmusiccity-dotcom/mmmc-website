@@ -2,8 +2,30 @@ import type { SelectionSlot } from './selection';
 import type { CarouselTemplate } from './carousel-templates';
 import { getTemplate } from './carousel-templates';
 import { getTitleTemplate } from './title-templates';
-import { type GridConfig, getGridById, computeCellRects } from './grid-layouts';
+import { type GridConfig, getGridById, getGridsForCount, computeCellRects } from './grid-layouts';
 
+/** Canvas dimensions by aspect ratio */
+export type CarouselAspect = '1:1' | '3:4';
+
+export interface CanvasDimensions {
+  w: number;
+  h: number;
+  /** Grid area origin Y — below header text */
+  gridY: number;
+  /** Grid area height */
+  gridH: number;
+  /** Header font scale relative to 1080 */
+  fontScale: number;
+}
+
+export function getDimensions(aspect: CarouselAspect = '1:1'): CanvasDimensions {
+  if (aspect === '3:4') {
+    return { w: 1080, h: 1440, gridY: 100, gridH: 1200, fontScale: 1.0 };
+  }
+  return { w: 1080, h: 1080, gridY: 90, gridH: 932, fontScale: 1.0 };
+}
+
+// Legacy alias — used by functions that haven't been updated to pass dimensions
 const S = 1080;
 
 const ASSETS = {
@@ -90,7 +112,8 @@ export function neonText(ctx: CanvasRenderingContext2D, text: string, x: number,
 
 /** Subtle noise texture overlay for depth */
 function drawNoiseTexture(ctx: CanvasRenderingContext2D, opacity: number) {
-  const imageData = ctx.getImageData(0, 0, S, S);
+  const cw = ctx.canvas.width, ch = ctx.canvas.height;
+  const imageData = ctx.getImageData(0, 0, cw, ch);
   const data = imageData.data;
   const strength = opacity * 12;
   for (let i = 0; i < data.length; i += 4) {
@@ -104,11 +127,13 @@ function drawNoiseTexture(ctx: CanvasRenderingContext2D, opacity: number) {
 
 /** Vignette effect — darkens edges for premium feel */
 function drawVignette(ctx: CanvasRenderingContext2D, strength: number) {
-  const grad = ctx.createRadialGradient(S / 2, S / 2, S * 0.3, S / 2, S / 2, S * 0.75);
+  const cw = ctx.canvas.width, ch = ctx.canvas.height;
+  const maxDim = Math.max(cw, ch);
+  const grad = ctx.createRadialGradient(cw / 2, ch / 2, maxDim * 0.25, cw / 2, ch / 2, maxDim * 0.65);
   grad.addColorStop(0, 'rgba(0,0,0,0)');
   grad.addColorStop(1, `rgba(0,0,0,${strength})`);
   ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, S, S);
+  ctx.fillRect(0, 0, cw, ch);
 }
 
 function goldRule(ctx: CanvasRenderingContext2D, y: number, t: CarouselTemplate) {
@@ -271,32 +296,35 @@ export async function generateTitleSlide(
   coverFeature: SelectionSlot | null,
   weekDate: string,
   titleTemplateId = 'nashville_neon',
+  aspect: CarouselAspect = '1:1',
 ): Promise<Blob> {
   const tt = getTitleTemplate(titleTemplateId);
+  const dim = getDimensions(aspect);
+  const W = dim.w, H = dim.h;
 
   // Pre-load fonts
   await Promise.all([
-    document.fonts.load(`${tt.headlineWeight} ${Math.round(S * tt.headlineSize)}px ${tt.headlineFont}`).catch(() => {}),
-    document.fonts.load(`400 ${Math.round(S * tt.subtitleSize)}px ${tt.subtitleFont}`).catch(() => {}),
-    document.fonts.load(`700 ${Math.round(S * tt.dateSize)}px ${tt.dateFont}`).catch(() => {}),
+    document.fonts.load(`${tt.headlineWeight} ${Math.round(W * tt.headlineSize)}px ${tt.headlineFont}`).catch(() => {}),
+    document.fonts.load(`400 ${Math.round(W * tt.subtitleSize)}px ${tt.subtitleFont}`).catch(() => {}),
+    document.fonts.load(`700 ${Math.round(W * tt.dateSize)}px ${tt.dateFont}`).catch(() => {}),
   ]);
 
   const canvas = document.createElement('canvas');
-  canvas.width = S; canvas.height = S;
+  canvas.width = W; canvas.height = H;
   const ctx = canvas.getContext('2d')!;
 
   // Background
   ctx.fillStyle = tt.background;
-  ctx.fillRect(0, 0, S, S);
+  ctx.fillRect(0, 0, W, H);
 
   // Background gradient
   if (tt.backgroundGradient) {
     const colors = tt.backgroundGradient.match(/#[0-9A-Fa-f]{6}/g);
     if (colors && colors.length >= 2) {
-      const grad = ctx.createLinearGradient(0, 0, 0, S);
+      const grad = ctx.createLinearGradient(0, 0, 0, H);
       colors.forEach((c, i) => grad.addColorStop(i / (colors.length - 1), c));
       ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, S, S);
+      ctx.fillRect(0, 0, W, H);
     }
   }
 
@@ -305,7 +333,7 @@ export async function generateTitleSlide(
     ctx.strokeStyle = tt.frameColor;
     ctx.lineWidth = tt.frameWidth;
     const inset = tt.frameWidth / 2;
-    ctx.strokeRect(inset, inset, S - tt.frameWidth, S - tt.frameWidth);
+    ctx.strokeRect(inset, inset, W - tt.frameWidth, H - tt.frameWidth);
   }
 
   // Helper: text with glow
@@ -332,9 +360,9 @@ export async function generateTitleSlide(
   const headline = tt.headlineCase === 'uppercase' ? rawHeadline.toUpperCase() : rawHeadline;
   glowText(
     headline,
-    S / 2,
-    Math.round(S * tt.headlineY),
-    `${tt.headlineWeight} ${Math.round(S * tt.headlineSize)}px ${tt.headlineFont}`,
+    W / 2,
+    Math.round(H * tt.headlineY),
+    `${tt.headlineWeight} ${Math.round(W * tt.headlineSize)}px ${tt.headlineFont}`,
     tt.textPrimary,
   );
 
@@ -342,21 +370,128 @@ export async function generateTitleSlide(
   if (tt.showDivider) {
     ctx.strokeStyle = tt.dividerColor;
     ctx.lineWidth = 1;
-    const divY = Math.round(S * (tt.subtitleY - 0.01));
+    const divY = Math.round(H * (tt.subtitleY - 0.01));
     ctx.beginPath();
-    ctx.moveTo(S * 0.18, divY);
-    ctx.lineTo(S * 0.82, divY);
+    ctx.moveTo(W * 0.18, divY);
+    ctx.lineTo(W * 0.82, divY);
     ctx.stroke();
   }
 
   // Subtitle (removed — was "curated by @maxmeetsmusiccity")
 
-  // Featured image
-  if (coverFeature) {
+  // Vinyl record rendering (vinyl_classic template)
+  if (tt.vinylRecord) {
+    const cx = W / 2, cy = H / 2 + Math.round(H * 0.02);
+    const outerR = Math.round(Math.min(W, H) * 0.35);
+
+    // Outer disc shadow
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.6)';
+    ctx.shadowBlur = 40;
+    ctx.shadowOffsetY = 8;
+    ctx.beginPath();
+    ctx.arc(cx, cy, outerR, 0, Math.PI * 2);
+    ctx.fillStyle = '#0A0A0A';
+    ctx.fill();
+    ctx.restore();
+
+    // Main disc body — subtle radial gradient
+    const discGrad = ctx.createRadialGradient(cx - outerR * 0.2, cy - outerR * 0.2, outerR * 0.1, cx, cy, outerR);
+    discGrad.addColorStop(0, '#1A1A1A');
+    discGrad.addColorStop(0.5, '#0D0D0D');
+    discGrad.addColorStop(1, '#050505');
+    ctx.beginPath();
+    ctx.arc(cx, cy, outerR, 0, Math.PI * 2);
+    ctx.fillStyle = discGrad;
+    ctx.fill();
+
+    // Groove rings — alternating subtle light/dark for realism
+    const grooveCount = 80;
+    const innerR = outerR * 0.42; // label area radius
+    const grooveStep = (outerR - innerR) / grooveCount;
+    for (let i = 0; i < grooveCount; i++) {
+      const r = innerR + i * grooveStep;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.strokeStyle = i % 3 === 0
+        ? 'rgba(255,255,255,0.04)'
+        : i % 3 === 1
+        ? 'rgba(0,0,0,0.2)'
+        : 'rgba(255,255,255,0.02)';
+      ctx.lineWidth = 0.6;
+      ctx.stroke();
+    }
+
+    // Light reflection arc — top-left highlight
+    ctx.beginPath();
+    ctx.arc(cx - outerR * 0.15, cy - outerR * 0.15, outerR * 0.85, -0.8, -0.2);
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = outerR * 0.12;
+    ctx.stroke();
+
+    // Second reflection — bottom-right
+    ctx.beginPath();
+    ctx.arc(cx + outerR * 0.1, cy + outerR * 0.1, outerR * 0.7, 2.0, 2.6);
+    ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+    ctx.lineWidth = outerR * 0.08;
+    ctx.stroke();
+
+    // Label area circle (solid background for album art)
+    ctx.beginPath();
+    ctx.arc(cx, cy, innerR, 0, Math.PI * 2);
+    ctx.fillStyle = tt.background;
+    ctx.fill();
+
+    // Featured album art — clipped to label circle
+    if (coverFeature) {
+      const img = await loadImage(coverFeature.track.cover_art_640);
+      if (img) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(cx, cy, innerR - 2, 0, Math.PI * 2);
+        ctx.clip();
+        const imgD = (innerR - 2) * 2;
+        ctx.drawImage(img, cx - innerR + 2, cy - innerR + 2, imgD, imgD);
+        ctx.restore();
+      }
+    }
+
+    // Center spindle hole
+    ctx.beginPath();
+    ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+    ctx.fillStyle = tt.background;
+    ctx.fill();
+
+    // Thin gold ring around label area
+    ctx.beginPath();
+    ctx.arc(cx, cy, innerR, 0, Math.PI * 2);
+    ctx.strokeStyle = `${tt.accent}44`;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Artist name + track below record
+    if (coverFeature) {
+      const labelY = cy + outerR + 20;
+      glowText(
+        coverFeature.track.artist_names,
+        W / 2, labelY,
+        `700 ${Math.round(W * 0.035)}px ${tt.headlineFont}`,
+        tt.textPrimary,
+      );
+      ctx.fillStyle = tt.textSecondary;
+      ctx.font = `400 ${Math.round(W * 0.024)}px ${tt.subtitleFont}`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.fillText(coverFeature.track.track_name, W / 2, labelY + Math.round(W * 0.042));
+    }
+  }
+
+  // Featured image (non-vinyl templates)
+  if (!tt.vinylRecord && coverFeature) {
     const img = await loadImage(coverFeature.track.cover_art_640);
-    const imgSize = Math.round(S * tt.featuredImageSize);
-    const imgX = (S - imgSize) / 2;
-    const imgY = Math.round(S * tt.featuredImageY);
+    const imgSize = Math.round(W * tt.featuredImageSize);
+    const imgX = (W - imgSize) / 2;
+    const imgY = Math.round(H * tt.featuredImageY);
 
     ctx.save();
     if (tt.featuredRotation !== 0) {
@@ -390,48 +525,48 @@ export async function generateTitleSlide(
     const labelY = imgY + imgSize + (tt.featuredBorder || 0) + 16;
     glowText(
       coverFeature.track.artist_names,
-      S / 2,
+      W / 2,
       labelY,
-      `700 ${Math.round(S * 0.035)}px ${tt.headlineFont}`,
+      `700 ${Math.round(W * 0.035)}px ${tt.headlineFont}`,
       tt.textPrimary,
     );
     ctx.fillStyle = tt.textSecondary;
-    ctx.font = `400 ${Math.round(S * 0.024)}px ${tt.subtitleFont}`;
+    ctx.font = `400 ${Math.round(W * 0.024)}px ${tt.subtitleFont}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
-    ctx.fillText(coverFeature.track.track_name, S / 2, labelY + Math.round(S * 0.042));
+    ctx.fillText(coverFeature.track.track_name, W / 2, labelY + Math.round(W * 0.042));
   }
 
   // Swipe pill
   if (tt.swipePill) {
     const pillText = 'Swipe for all picks \u2192';
-    const pillFontSize = Math.round(S * 0.020);
+    const pillFontSize = Math.round(W * 0.020);
     ctx.font = `600 ${pillFontSize}px "DM Sans", sans-serif`;
     const pillW = ctx.measureText(pillText).width + 40;
-    const pillY = Math.round(S * tt.dateY) - 48;
+    const pillY = Math.round(H * tt.dateY) - 48;
     ctx.fillStyle = 'rgba(0,0,0,0.35)';
     ctx.beginPath();
-    ctx.roundRect((S - pillW) / 2, pillY, pillW, 32, 16);
+    ctx.roundRect((W - pillW) / 2, pillY, pillW, 32, 16);
     ctx.fill();
     ctx.fillStyle = '#FFFFFF';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
-    ctx.fillText(pillText, S / 2, pillY + 7);
+    ctx.fillText(pillText, W / 2, pillY + 7);
   }
 
   // Date
   glowText(
     formatDate(weekDate),
-    S / 2,
-    Math.round(S * tt.dateY),
-    `700 ${Math.round(S * tt.dateSize)}px ${tt.dateFont}`,
+    W / 2,
+    Math.round(H * tt.dateY),
+    `700 ${Math.round(W * tt.dateSize)}px ${tt.dateFont}`,
     tt.textPrimary,
   );
 
   // Overlay tint
   if (tt.overlay) {
     ctx.fillStyle = tt.overlay;
-    ctx.fillRect(0, 0, S, S);
+    ctx.fillRect(0, 0, W, H);
   }
 
   // Vignette
@@ -444,77 +579,6 @@ export async function generateTitleSlide(
 }
 
 // ─── GRID ────────────────────────────────────────────────
-
-function drawGrid(
-  ctx: CanvasRenderingContext2D, slots: SelectionSlot[],
-  images: (HTMLImageElement | null)[], logo: HTMLImageElement | null,
-  ox: number, oy: number, gridSize: number, t: CarouselTemplate,
-) {
-  const gap = Math.round(gridSize * t.grid.gap);
-  const cell = Math.floor((gridSize - gap * 4) / 3);
-
-  const positions = [
-    { x: ox + gap, y: oy + gap },
-    { x: ox + gap + cell + gap, y: oy + gap },
-    { x: ox + gap + (cell + gap) * 2, y: oy + gap },
-    { x: ox + gap, y: oy + gap + cell + gap },
-    { x: ox + gap + (cell + gap) * 2, y: oy + gap + cell + gap },
-    { x: ox + gap, y: oy + gap + (cell + gap) * 2 },
-    { x: ox + gap + cell + gap, y: oy + gap + (cell + gap) * 2 },
-    { x: ox + gap + (cell + gap) * 2, y: oy + gap + (cell + gap) * 2 },
-  ];
-
-  for (let i = 0; i < Math.min(slots.length, 8); i++) {
-    const img = images[i];
-    if (!img) continue;
-    const pos = positions[i];
-    const rot = (t.grid.rotations[i] * Math.PI) / 180;
-
-    ctx.save();
-    const cx = pos.x + cell / 2, cy = pos.y + cell / 2;
-    ctx.translate(cx, cy); ctx.rotate(rot); ctx.translate(-cx, -cy);
-
-    if (t.grid.cellShadow) {
-      // Multi-layer shadow for depth
-      ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 16;
-      ctx.shadowOffsetX = 3; ctx.shadowOffsetY = 4;
-      ctx.fillStyle = t.background;
-      ctx.fillRect(pos.x - 2, pos.y - 2, cell + 4, cell + 4);
-      ctx.shadowColor = 'transparent';
-    }
-
-    // Draw album art
-    ctx.drawImage(img, pos.x, pos.y, cell, cell);
-
-    // Subtle inner highlight on top edge for glass effect
-    const hlGrad = ctx.createLinearGradient(pos.x, pos.y, pos.x, pos.y + cell * 0.3);
-    hlGrad.addColorStop(0, 'rgba(255,255,255,0.06)');
-    hlGrad.addColorStop(1, 'rgba(255,255,255,0)');
-    ctx.fillStyle = hlGrad;
-    ctx.fillRect(pos.x, pos.y, cell, cell * 0.3);
-
-    if (t.grid.cellBorder) {
-      ctx.strokeStyle = t.grid.cellBorderColor;
-      ctx.lineWidth = 2;
-      ctx.strokeRect(pos.x + 1, pos.y + 1, cell - 2, cell - 2);
-    }
-
-    ctx.restore();
-  }
-
-  // Center logo
-  const logoX = ox + gap + cell + gap, logoY = oy + gap + cell + gap;
-  if (logo) {
-    ctx.drawImage(logo, logoX, logoY, cell, cell);
-  } else {
-    ctx.fillStyle = t.background;
-    ctx.fillRect(logoX, logoY, cell, cell);
-    ctx.fillStyle = t.accent;
-    ctx.font = `bold ${Math.round(cell * 0.12)}px ${t.bodyFont}`;
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText('MMMC', logoX + cell / 2, logoY + cell / 2);
-  }
-}
 
 /** Layout-aware grid renderer — works with any GridConfig */
 function drawGridWithLayout(
@@ -589,43 +653,66 @@ export async function generateGridSlide(
   templateId = 'mmmc_classic',
   logoUrl = '/mmmc-logo.png',
   layoutId?: string,
+  aspect: CarouselAspect = '1:1',
 ): Promise<Blob> {
   const t = getTemplate(templateId);
   await loadAllAssets(t);
+  const dim = getDimensions(aspect);
   const canvas = document.createElement('canvas');
-  canvas.width = S; canvas.height = S;
+  canvas.width = dim.w; canvas.height = dim.h;
   const ctx = canvas.getContext('2d')!;
 
   // Background (check for template asset)
   ctx.fillStyle = t.background;
-  ctx.fillRect(0, 0, S, S);
+  ctx.fillRect(0, 0, dim.w, dim.h);
   if (t.assets?.background) {
     const bg = await loadImage(t.assets.background);
-    if (bg) ctx.drawImage(bg, 0, 0, S, S);
+    if (bg) ctx.drawImage(bg, 0, 0, dim.w, dim.h);
   }
 
-  neonText(ctx, 'New Music Friday', S / 2, 16, `700 52px ${t.scriptFont}`, t);
+  neonText(ctx, 'New Music Friday', dim.w / 2, 16, `700 52px ${t.scriptFont}`, t);
   goldRule(ctx, 78, t);
 
   const imagePromises = slots.map(s => loadImage(s.track.cover_art_640));
   const logoPromise = loadImage(logoUrl);
   const [images, logo] = await Promise.all([Promise.all(imagePromises), logoPromise]);
 
-  // Use layout-aware renderer if layoutId provided, else legacy 3x3
-  if (layoutId) {
-    const layout = getGridById(slots.length, layoutId);
-    if (layout) {
-      drawGridWithLayout(ctx, slots, images, logo, 74, 90, 932, 932, t, layout);
-    } else {
-      drawGrid(ctx, slots, images, logo, 74, 90, 932, t);
-    }
+  // Always use layout-aware renderer — resolve layout from ID or auto-select
+  const resolvedLayout = layoutId
+    ? getGridById(slots.length, layoutId)
+    : null;
+  const gridX = 74;
+  const gridW = dim.w - 74 * 2;
+
+  if (resolvedLayout) {
+    drawGridWithLayout(ctx, slots, images, logo, gridX, dim.gridY, gridW, dim.gridH, t, resolvedLayout);
   } else {
-    drawGrid(ctx, slots, images, logo, 74, 90, 932, t);
+    // Auto-select best layout for the track count
+    const autoOpts = getGridsForCount(slots.length);
+    const autoLayout = autoOpts.logo[0] || autoOpts.exact.find(g => g.columns > 1 && g.rows > 1) || autoOpts.exact[0] || autoOpts.close[0];
+    if (autoLayout) {
+      drawGridWithLayout(ctx, slots, images, logo, gridX, dim.gridY, gridW, dim.gridH, t, autoLayout);
+    } else {
+      const cols = Math.ceil(Math.sqrt(slots.length));
+      drawGridWithLayout(ctx, slots, images, logo, gridX, dim.gridY, gridW, dim.gridH, t, {
+        id: 'auto', name: 'Auto', columns: cols,
+        rows: Math.ceil(slots.length / cols),
+        trackSlots: slots.length, hasLogo: false, logoIndex: -1,
+        cells: Array.from({ length: slots.length }, (_, i) => ({
+          col: i % cols, row: Math.floor(i / cols), colSpan: 1, rowSpan: 1,
+        })),
+        emptyCount: 0, category: 'exact',
+      });
+    }
   }
 
-  neonText(ctx, formatDate(weekDate), S / 2, 1028, `700 40px ${t.scriptFont}`, t);
+  neonText(ctx, formatDate(weekDate), dim.w / 2, dim.h - 52, `700 40px ${t.scriptFont}`, t);
 
-  if (t.decorations.showSparkles) drawSparkles(ctx, [[28, 28], [1052, 28], [28, 1052], [1052, 1052]], t.decorations.sparkleSize);
+  if (t.decorations.showSparkles) {
+    const sx = dim.w - 28;
+    const sy = dim.h - 28;
+    drawSparkles(ctx, [[28, 28], [sx, 28], [28, sy], [sx, sy]], t.decorations.sparkleSize);
+  }
   if (t.decorations.showNotes) drawNotes(ctx, t.decorations.noteSize);
 
   // Premium finishing
@@ -652,7 +739,11 @@ export async function generateGridComposite(
   const logoPromise = loadImage(logoUrl);
   const [images, logo] = await Promise.all([Promise.all(imagePromises), logoPromise]);
 
-  drawGrid(ctx, slots, images, logo, 0, 0, S, t);
+  const autoOpts = getGridsForCount(slots.length);
+  const autoLayout = autoOpts.logo[0] || autoOpts.exact.find(g => g.columns > 1 && g.rows > 1) || autoOpts.exact[0];
+  if (autoLayout) {
+    drawGridWithLayout(ctx, slots, images, logo, 0, 0, S, S, t, autoLayout);
+  }
 
   return new Promise(resolve => canvas.toBlob(b => resolve(b!), 'image/png'));
 }
@@ -674,19 +765,20 @@ export async function generateFullCarousel(
   logoUrl = '/mmmc-logo.png',
   layoutId?: string,
   titleTemplateId?: string,
+  aspect: CarouselAspect = '1:1',
 ): Promise<CarouselOutput> {
   const total = 1 + slideGroups.length;
   onProgress?.(0, total);
 
   // Use dedicated title slide renderer if a titleTemplateId is provided
   const coverSlide = titleTemplateId
-    ? await generateTitleSlide(coverFeature, weekDate, titleTemplateId)
+    ? await generateTitleSlide(coverFeature, weekDate, titleTemplateId, aspect)
     : await generateCoverSlide(coverFeature, weekDate, templateId);
   onProgress?.(1, total);
 
   const gridSlides: Blob[] = [];
   for (let i = 0; i < slideGroups.length; i++) {
-    gridSlides.push(await generateGridSlide(slideGroups[i], weekDate, templateId, logoUrl, layoutId));
+    gridSlides.push(await generateGridSlide(slideGroups[i], weekDate, templateId, logoUrl, layoutId, aspect));
     onProgress?.(2 + i, total);
   }
 
@@ -715,10 +807,12 @@ const PREVIEW_COLORS = [
  * so it renders instantly with no network requests.
  */
 export function generateTemplatePreview(
-  templateId: string,
+  templateIdOrTemplate: string | CarouselTemplate,
   size = 200,
 ): string {
-  const t = getTemplate(templateId);
+  const t = typeof templateIdOrTemplate === 'string'
+    ? getTemplate(templateIdOrTemplate)
+    : templateIdOrTemplate;
   const canvas = document.createElement('canvas');
   canvas.width = size;
   canvas.height = size;

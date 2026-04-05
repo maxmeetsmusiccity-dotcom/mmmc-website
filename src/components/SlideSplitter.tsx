@@ -55,7 +55,13 @@ export default function SlideSplitter({ tracks, defaultTracksPerSlide, onSplitCh
     });
   }, [tracks]);
 
+  // Reset to auto when tracksPerSlide changes from parent
+  const prevTracksPerSlide = useRef(defaultTracksPerSlide);
   useEffect(() => {
+    if (prevTracksPerSlide.current !== defaultTracksPerSlide) {
+      isManual.current = false;
+      prevTracksPerSlide.current = defaultTracksPerSlide;
+    }
     if (isManual.current) {
       setDividers(prev => prev.filter(d => d > 0 && d < orderedTracks.length));
     } else {
@@ -167,7 +173,7 @@ export default function SlideSplitter({ tracks, defaultTracksPerSlide, onSplitCh
           Reset to Auto
         </button>
       </div>
-      <p style={{ fontSize: '0.55rem', color: 'var(--text-muted)', marginBottom: 8, lineHeight: 1.4 }}>
+      <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: 8, lineHeight: 1.4 }}>
         Drag tracks to reorder within or across slides. Click between tracks to add/remove slide breaks.
       </p>
 
@@ -192,8 +198,8 @@ export default function SlideSplitter({ tracks, defaultTracksPerSlide, onSplitCh
                 onDragEnd={handleDragEnd}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 8,
-                  padding: '4px 8px', borderRadius: 4,
-                  fontSize: '0.7rem', cursor: 'grab',
+                  padding: '6px 8px', borderRadius: 4,
+                  fontSize: '0.8rem', cursor: 'grab',
                   background: isDragOver ? 'rgba(212,168,67,0.1)' : 'transparent',
                   borderTop: isDragOver ? '2px solid var(--gold)' : '2px solid transparent',
                   transition: 'background 0.1s',
@@ -203,7 +209,7 @@ export default function SlideSplitter({ tracks, defaultTracksPerSlide, onSplitCh
                 <span style={{ color: 'var(--midnight-border)', fontSize: '0.7rem', cursor: 'grab', userSelect: 'none' }}>
                   &#x2630;
                 </span>
-                <span className="mono" style={{ color: 'var(--gold)', width: 20, textAlign: 'right', fontSize: '0.6rem' }}>
+                <span className="mono" style={{ color: 'var(--gold)', width: 20, textAlign: 'right', fontSize: '0.75rem' }}>
                   {i + 1}
                 </span>
                 {track.cover_art_64 && (
@@ -212,7 +218,7 @@ export default function SlideSplitter({ tracks, defaultTracksPerSlide, onSplitCh
                 <span style={{ flex: 1, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {track.artist_names} — {track.track_name}
                 </span>
-                <span className="mono" style={{ fontSize: '0.5rem', color: 'var(--text-muted)' }}>
+                <span className="mono" style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
                   S{slideNum}
                 </span>
               </div>
@@ -241,7 +247,7 @@ export default function SlideSplitter({ tracks, defaultTracksPerSlide, onSplitCh
                   >
                     {isDivider && (
                       <span style={{
-                        fontSize: '0.5rem', color: 'var(--gold)', fontWeight: 600,
+                        fontSize: '0.65rem', color: 'var(--gold)', fontWeight: 600,
                         background: 'var(--midnight)', padding: '0 6px',
                       }}>
                         Slide {slideNum} /{groups[slideNum - 1]?.tracks.length || 0}
@@ -253,7 +259,7 @@ export default function SlideSplitter({ tracks, defaultTracksPerSlide, onSplitCh
                       onClick={(e) => { e.stopPropagation(); shuffleSlide(slideNum - 1); }}
                       title={`Shuffle Slide ${slideNum}`}
                       style={{
-                        fontSize: '0.55rem', color: 'var(--gold)', cursor: 'pointer',
+                        fontSize: '0.7rem', color: 'var(--gold)', cursor: 'pointer',
                         padding: '2px 6px', borderRadius: 4,
                         background: 'rgba(212,168,67,0.1)',
                         border: '1px solid rgba(212,168,67,0.2)',
@@ -275,7 +281,7 @@ export default function SlideSplitter({ tracks, defaultTracksPerSlide, onSplitCh
               onClick={() => shuffleSlide(groups.length - 1)}
               title={`Shuffle Slide ${groups.length}`}
               style={{
-                fontSize: '0.55rem', color: 'var(--gold)', cursor: 'pointer',
+                fontSize: '0.7rem', color: 'var(--gold)', cursor: 'pointer',
                 padding: '2px 6px', borderRadius: 4,
                 background: 'rgba(212,168,67,0.1)',
                 border: '1px solid rgba(212,168,67,0.2)',
@@ -296,7 +302,7 @@ export default function SlideSplitter({ tracks, defaultTracksPerSlide, onSplitCh
             className="badge"
             style={{
               background: 'rgba(212,168,67,0.12)', color: 'var(--gold)',
-              fontSize: '0.6rem', cursor: 'pointer', border: 'none',
+              fontSize: '0.75rem', cursor: 'pointer', border: 'none',
             }}
             title={`Shuffle tracks in Slide ${i + 1}`}
           >

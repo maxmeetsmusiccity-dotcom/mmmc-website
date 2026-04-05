@@ -144,19 +144,18 @@ async function enforceGap(): Promise<void> {
 }
 
 /**
- * Core Spotify API caller:
+ * Core Spotify API caller — matches Python nmf_common.py retry strategy:
  * - 429: throw RateLimitError immediately. Do NOT retry — each retry
  *   EXTENDS the penalty. Retry-After can escalate to 13+ hours.
- * - 5xx: retry THIS request only, 3 attempts max (1s/2s/4s backoff).
- *   If still failing after 3, skip and continue.
+ * - 5xx: retry up to 8 times with min(30s, 1.2^attempt + random()) backoff.
  * - 401: throw immediately.
- * - Network errors: retry 3 times (1s/2s/4s).
+ * - Network errors: retry up to 8 times with same backoff (cap 15s).
  */
 async function callSpotify(url: string, token: string): Promise<Response> {
-  const BACKOFFS = [1000, 2000, 4000]; // 3 attempts: 1s, 2s, 4s
+  const MAX_RETRIES = 8;
   let lastError: Error | null = null;
 
-  for (let attempt = 0; attempt <= BACKOFFS.length; attempt++) {
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     await enforceGap();
     try {
       const res = await fetch(url, {
@@ -176,10 +175,10 @@ async function callSpotify(url: string, token: string): Promise<Response> {
         throw new RateLimitError(retryAfter);
       }
 
-      // 5xx: transient server error — retry up to 3 times
-      if (res.status >= 500 && attempt < BACKOFFS.length) {
-        const wait = BACKOFFS[attempt];
-        console.warn(`[SCAN] HTTP ${res.status} attempt ${attempt + 1}/3, retrying in ${wait}ms`);
+      // 5xx: transient server error — retry with exponential backoff
+      if (res.status >= 500 && attempt < MAX_RETRIES) {
+        const wait = Math.min(30000, Math.round(Math.pow(1.2, attempt) * 1000 + Math.random() * 1000));
+        console.warn(`[SCAN] HTTP ${res.status} attempt ${attempt + 1}/${MAX_RETRIES}, retrying in ${wait}ms`);
         await new Promise(r => setTimeout(r, wait));
         continue;
       }
@@ -194,16 +193,16 @@ async function callSpotify(url: string, token: string): Promise<Response> {
       if (lastError.message === 'AUTH_EXPIRED') throw lastError;
       if (lastError instanceof RateLimitError) throw lastError;
 
-      // Network error — retry up to 3 times
-      if (attempt < BACKOFFS.length) {
-        const wait = BACKOFFS[attempt];
-        console.warn(`[SCAN] Network error attempt ${attempt + 1}/3: ${lastError.message}, retrying in ${wait}ms`);
+      // Network error — retry with backoff (cap 15s)
+      if (attempt < MAX_RETRIES) {
+        const wait = Math.min(15000, Math.round(Math.pow(1.2, attempt) * 1000 + Math.random() * 1000));
+        console.warn(`[SCAN] Network error attempt ${attempt + 1}/${MAX_RETRIES}: ${lastError.message}, retrying in ${wait}ms`);
         await new Promise(r => setTimeout(r, wait));
       }
     }
   }
 
-  throw lastError || new Error('Spotify call failed after 3 retries');
+  throw lastError || new Error(`Spotify call failed after ${MAX_RETRIES} retries`);
 }
 
 /**

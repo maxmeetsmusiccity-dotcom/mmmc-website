@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { TEMPLATES, type CarouselTemplate, getVisibleTemplates } from '../lib/carousel-templates';
+import { type CarouselTemplate, getVisibleTemplates } from '../lib/carousel-templates';
 import { generateTemplatePreview } from '../lib/canvas-grid';
 import { saveCustomTemplate, getCustomTemplates } from '../lib/supabase';
 import TemplateBuilder from './TemplateBuilder';
@@ -47,25 +47,14 @@ export default function TemplateSelector({ selected, onSelect }: Props) {
     [visibleTemplates, customTemplates],
   );
 
-  // Generate previews
+  // Generate previews — pass template objects directly to avoid global array mutation
   useEffect(() => {
-    const toRemove: string[] = [];
-    for (const ct of customTemplates) {
-      if (!TEMPLATES.find(t => t.id === ct.id)) {
-        TEMPLATES.push(ct);
-        toRemove.push(ct.id);
-      }
-    }
     const map = new Map<string, string>();
     for (const t of allTemplates) {
-      map.set(t.id, generateTemplatePreview(t.id, 200));
+      map.set(t.id, generateTemplatePreview(t, 200));
     }
     setPreviews(map);
-    for (const id of toRemove) {
-      const idx = TEMPLATES.findIndex(t => t.id === id);
-      if (idx >= 0) TEMPLATES.splice(idx, 1);
-    }
-  }, [allTemplates, customTemplates]);
+  }, [allTemplates]);
 
   const handleSaveCustom = (template: CarouselTemplate) => {
     const updated = customTemplates.filter(t => t.id !== template.id);
