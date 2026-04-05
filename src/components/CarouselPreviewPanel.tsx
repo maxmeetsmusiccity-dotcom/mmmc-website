@@ -377,7 +377,7 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
                   src={titlePreview}
                   alt="Title slide preview"
                   style={{
-                    width: '100%', maxWidth: 400, borderRadius: 8,
+                    width: '100%', borderRadius: 8,
                     border: '1px solid var(--midnight-border)',
                   }}
                 />
