@@ -95,7 +95,7 @@ export default function NewMusicFriday() {
   const userId = user?.id || null;
   const [searchParams, setSearchParams] = useSearchParams();
   const [token, setToken] = useState<string | null>(getToken());
-  const [phase, setPhase] = useState<Phase>('auth');
+  const [phase, setPhase] = useState<Phase>('ready');
   const [allTracks, setAllTracks] = useState<TrackItem[]>([]);
   const [releases, setReleases] = useState<ReleaseCluster[]>([]);
   const [selections, setSelections] = useState<SelectionSlot[]>([]);
@@ -131,6 +131,7 @@ export default function NewMusicFriday() {
 
   // Rubber-band drag select
   const [rubberBand, setRubberBand] = useState<{ startX: number; startY: number; endX: number; endY: number } | null>(null);
+  const rubberBandRef = useRef<{ startX: number; startY: number; endX: number; endY: number } | null>(null);
   const gridContainerRef = useRef<HTMLDivElement>(null);
   const pushSelectionHistory = useCallback((prev: SelectionSlot[]) => {
     selectionHistory.current = [...selectionHistory.current.slice(-19), prev];
@@ -255,7 +256,7 @@ export default function NewMusicFriday() {
           setToken(refreshed);
         } else {
           setToken(null);
-          setPhase('auth');
+          setPhase('ready');
           setError('Session expired. Please reconnect Spotify.');
           return;
         }
@@ -603,13 +604,13 @@ export default function NewMusicFriday() {
     <div style={{ minHeight: '100vh' }}>
       {/* Header — sticky on desktop */}
       <header style={{
-        padding: '14px 24px',
-        borderBottom: '1px solid var(--midnight-border)',
+        padding: '16px 24px',
+        borderBottom: '2px solid var(--midnight-border)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        flexWrap: 'wrap', gap: 14,
+        flexWrap: 'wrap', gap: 16,
         position: 'sticky', top: 0, zIndex: 30,
         background: 'var(--midnight)',
-        boxShadow: '0 1px 8px rgba(0,0,0,0.3)',
+        boxShadow: '0 2px 12px rgba(0,0,0,0.4)',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <ProductNav />
@@ -633,7 +634,7 @@ export default function NewMusicFriday() {
                   <button className="btn btn-sm btn-danger" onClick={handleDisconnect} style={{ fontSize: 'var(--fs-2xs)' }}>Disconnect Spotify</button>
                 </>
               ) : (
-                <button className="btn btn-sm" onClick={() => setPhase(token ? 'ready' : 'auth')}>New Scan</button>
+                <button className="btn btn-sm" onClick={() => setPhase('ready')}>New Scan</button>
               )}
             </>
           )}
@@ -683,7 +684,7 @@ export default function NewMusicFriday() {
             onClick={() => {
               setLoadedFromCache(false);
               if (token) runScan(token);
-              else setPhase(token ? 'ready' : 'auth');
+              else setPhase('ready');
             }}
             style={{ fontSize: 'var(--fs-sm)', padding: '6px 16px' }}
           >
@@ -774,12 +775,21 @@ export default function NewMusicFriday() {
             {activeSource === 'spotify' && (
               <div style={{ marginTop: 16 }}>
                 <p style={{ color: 'var(--text-secondary)', marginBottom: 16, fontSize: 'var(--fs-md)' }}>
-                  Scan your followed artists for new releases since last Friday.
+                  {token ? 'Scan your followed artists for new releases since last Friday.' : 'Connect your Spotify account to scan followed artists for new releases.'}
                 </p>
                 <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-                  <button data-testid="scan-button" className="btn btn-gold" onClick={() => token && runScan(token)} style={{ fontSize: 'var(--fs-lg)', padding: '14px 32px' }}>
-                    Scan New Releases
-                  </button>
+                  {token ? (
+                    <button data-testid="scan-button" className="btn btn-gold" onClick={() => runScan(token)} style={{ fontSize: 'var(--fs-lg)', padding: '14px 32px' }}>
+                      Scan New Releases
+                    </button>
+                  ) : (
+                    <button className="btn btn-spotify" onClick={startAuth} style={{ fontSize: 'var(--fs-lg)', padding: '14px 32px' }}>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
+                      </svg>
+                      Connect Spotify
+                    </button>
+                  )}
                   <button className="btn" onClick={loadDemo}>
                     Try Demo
                   </button>
@@ -829,7 +839,7 @@ export default function NewMusicFriday() {
           <span>Demo mode -- showing sample data. Connect Spotify and scan to see your real releases.</span>
           <button
             className="btn btn-sm"
-            onClick={() => { setIsDemoMode(false); setAllTracks([]); setReleases([]); setSelections([]); setPhase(token ? 'ready' : 'auth'); }}
+            onClick={() => { setIsDemoMode(false); setAllTracks([]); setReleases([]); setSelections([]); setPhase('ready'); }}
             style={{ fontSize: 'var(--fs-xs)' }}
           >
             Exit Demo
@@ -866,14 +876,14 @@ export default function NewMusicFriday() {
           {/*  STICKY TOOLBAR: counter + filters (consolidated 4→2 rows)    */}
           {/* ============================================================ */}
           <div style={{
-            position: 'sticky', top: 48, zIndex: 20,
-            background: 'var(--midnight)', borderBottom: '1px solid var(--midnight-border)',
+            position: 'sticky', top: 54, zIndex: 20,
+            background: 'var(--midnight)', borderBottom: '2px solid var(--midnight-border)',
           }}>
             {/* Row 1: Selection counter + target + filters + stats */}
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              flexWrap: 'wrap', gap: 10,
-              padding: '12px 24px',
+              flexWrap: 'wrap', gap: 12,
+              padding: '14px 24px',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <span className="mono" style={{
@@ -923,6 +933,9 @@ export default function NewMusicFriday() {
                       });
                       setReleases(groupIntoReleases([...allTracks, ...tracks]));
                     }} />
+                    <Link to="/artists" className="btn btn-sm" style={{ width: '100%', marginTop: 8, justifyContent: 'center', textDecoration: 'none', display: 'flex' }}>
+                      Browse Artists (A-Z)
+                    </Link>
                     {token && (
                       <button className="btn btn-sm btn-spotify" onClick={() => runScan(token)} style={{ width: '100%', marginTop: 8, justifyContent: 'center' }}>
                         Re-scan Spotify
@@ -988,18 +1001,22 @@ export default function NewMusicFriday() {
                 </Link>
                 {/* Thumbnail size slider */}
                 <span style={{ color: 'var(--midnight-border)', margin: '0 2px' }}>|</span>
+                <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-3xs)' }}>Compact</span>
                 <input
                   type="range" min="120" max="350" value={cardSize}
                   onChange={e => { const v = Number(e.target.value); setCardSize(v); try { localStorage.setItem('nmf_card_size', String(v)); } catch {} }}
                   style={{ width: 80 }}
                   title={`Card size: ${cardSize}px`}
                 />
+                <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-3xs)' }}>Detail</span>
+                <span className="mono" style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-3xs)', minWidth: 32, textAlign: 'right' }}>{cardSize}px</span>
               </div>
             </div>
 
             {/* Row 2: Downloads (collapsed into a details for space) */}
             <div style={{
-              padding: '4px 24px 8px',
+              padding: '8px 24px 10px',
+              borderTop: '1px solid var(--midnight-border)',
               display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center',
               fontSize: 'var(--fs-xs)',
             }}>
@@ -1056,21 +1073,26 @@ export default function NewMusicFriday() {
                     if (!rect) return;
                     const x = e.clientX - rect.left;
                     const y = e.clientY - rect.top;
-                    setRubberBand({ startX: x, startY: y, endX: x, endY: y });
+                    const initial = { startX: x, startY: y, endX: x, endY: y };
+                    setRubberBand(initial);
+                    rubberBandRef.current = initial;
                     const onMove = (ev: MouseEvent) => {
                       if (!rect) return;
-                      setRubberBand(prev => prev ? { ...prev, endX: ev.clientX - rect.left, endY: ev.clientY - rect.top } : null);
+                      const updated = rubberBandRef.current ? { ...rubberBandRef.current, endX: ev.clientX - rect.left, endY: ev.clientY - rect.top } : null;
+                      rubberBandRef.current = updated;
+                      setRubberBand(updated);
                     };
                     const onUp = () => {
                       // Select all cards within the rubber band
-                      if (gridContainerRef.current && rubberBand) {
+                      const rb = rubberBandRef.current;
+                      if (gridContainerRef.current && rb) {
                         const cards = gridContainerRef.current.querySelectorAll('[data-album-id]');
                         const containerRect = gridContainerRef.current.getBoundingClientRect();
                         const selRect = {
-                          left: Math.min(rubberBand.startX, rubberBand.endX),
-                          top: Math.min(rubberBand.startY, rubberBand.endY),
-                          right: Math.max(rubberBand.startX, rubberBand.endX),
-                          bottom: Math.max(rubberBand.startY, rubberBand.endY),
+                          left: Math.min(rb.startX, rb.endX),
+                          top: Math.min(rb.startY, rb.endY),
+                          right: Math.max(rb.startX, rb.endX),
+                          bottom: Math.max(rb.startY, rb.endY),
                         };
                         const newSelections: SelectionSlot[] = [];
                         cards.forEach(card => {
@@ -1096,6 +1118,7 @@ export default function NewMusicFriday() {
                           setSelections(prev => buildSlots([...prev, ...newSelections]));
                         }
                       }
+                      rubberBandRef.current = null;
                       setRubberBand(null);
                       document.removeEventListener('mousemove', onMove);
                       document.removeEventListener('mouseup', onUp);

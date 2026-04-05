@@ -444,5 +444,7 @@ export function getVisibleTitleTemplates(userEmail?: string): TitleSlideTemplate
 /** Get the default title template ID for a user */
 export function getDefaultTitleTemplateId(userEmail?: string): string {
   const isMax = userEmail === 'maxmeetsmusiccity@gmail.com' || userEmail === 'maxblachman@gmail.com';
-  return isMax ? 'vinyl_classic' : 'nashville_neon';
+  if (isMax) return 'vinyl_classic';
+  const firstVisible = TITLE_TEMPLATES.find(t => !MAX_ONLY_TITLE_TEMPLATES.has(t.id));
+  return firstVisible?.id || TITLE_TEMPLATES[0].id;
 }

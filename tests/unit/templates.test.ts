@@ -107,9 +107,9 @@ describe('title templates', () => {
     expect(visible.length).toBe(TITLE_TEMPLATES.length);
   });
 
-  it('getDefaultTitleTemplateId returns vinyl_classic for Max', () => {
+  it('getDefaultTitleTemplateId returns vinyl_classic for Max, non-Max-only for others', () => {
     expect(getDefaultTitleTemplateId('maxmeetsmusiccity@gmail.com')).toBe('vinyl_classic');
     expect(getDefaultTitleTemplateId('maxblachman@gmail.com')).toBe('vinyl_classic');
-    expect(getDefaultTitleTemplateId('random@example.com')).toBe('nashville_neon');
+    expect(MAX_ONLY_TITLE_TEMPLATES.has(getDefaultTitleTemplateId('random@example.com'))).toBe(false);
   });
 });

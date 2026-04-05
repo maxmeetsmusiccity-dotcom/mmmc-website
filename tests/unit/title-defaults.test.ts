@@ -8,11 +8,13 @@ describe('title template defaults', () => {
   it('returns vinyl_classic for maxblachman@gmail.com', () => {
     expect(getDefaultTitleTemplateId('maxblachman@gmail.com')).toBe('vinyl_classic');
   });
-  it('returns nashville_neon for non-Max users', () => {
-    expect(getDefaultTitleTemplateId('user@example.com')).toBe('nashville_neon');
+  it('returns first visible (non-Max-only) template for non-Max users', () => {
+    const defaultId = getDefaultTitleTemplateId('user@example.com');
+    expect(MAX_ONLY_TITLE_TEMPLATES.has(defaultId)).toBe(false);
   });
-  it('returns nashville_neon for undefined email', () => {
-    expect(getDefaultTitleTemplateId(undefined)).toBe('nashville_neon');
+  it('returns first visible (non-Max-only) template for undefined email', () => {
+    const defaultId = getDefaultTitleTemplateId(undefined);
+    expect(MAX_ONLY_TITLE_TEMPLATES.has(defaultId)).toBe(false);
   });
   it('visible templates exclude Max-only for non-Max', () => {
     const visible = getVisibleTitleTemplates('user@example.com');
