@@ -42,15 +42,66 @@ type SortKey = 'date' | 'artist' | 'title';
 
 const PLAYLIST_ID = '0ve1vYFkWoRaElCmfkw2IB';
 
+function demoTrack(id: number, name: string, artist: string, album: string, albumId: string, type: string, date: string, total: number, trackNum = 1, seed?: string): TrackItem {
+  const s = seed || artist.toLowerCase().replace(/\s+/g, '');
+  return { track_id: `demo${id}`, track_uri: `spotify:track:demo${id}`, track_name: name, track_number: trackNum, artist_names: artist, artist_id: `demoa${id}`, artist_spotify_url: '', artist_genres: ['country'], artist_followers: 100000 + id * 50000, album_name: album, album_spotify_id: albumId, album_type: type, album_spotify_url: '', cover_art_300: `https://picsum.photos/seed/${s}/300/300`, cover_art_640: `https://picsum.photos/seed/${s}/640/640`, cover_art_64: `https://picsum.photos/seed/${s}/64/64`, release_date: date, total_tracks: total, track_spotify_url: '', duration_ms: 180000 + id * 3000, explicit: id % 7 === 0 };
+}
+
 const DEMO_TRACKS: TrackItem[] = [
-  { track_id: 'demo1', track_uri: 'spotify:track:demo1', track_name: 'Never Wanted To Know', track_number: 1, artist_names: 'Ashley Cooke', artist_id: '0z2HJSBPqJRBEHFMkKFBOk', artist_spotify_url: '', artist_genres: ['country'], artist_followers: 500000, album_name: 'Never Wanted To Know', album_spotify_id: 'demoalb1', album_type: 'single', album_spotify_url: '', cover_art_300: 'https://picsum.photos/seed/cooke/300/300', cover_art_640: 'https://picsum.photos/seed/cooke/640/640', cover_art_64: 'https://picsum.photos/seed/cooke/64/64', release_date: '2026-04-03', total_tracks: 1, track_spotify_url: 'https://open.spotify.com/track/demo1', duration_ms: 198000, explicit: false },
-  { track_id: 'demo2', track_uri: 'spotify:track:demo2', track_name: 'Come Back To Me', track_number: 1, artist_names: 'Ella Langley', artist_id: '2FMVNblFGRxPijkMjXMHgi', artist_spotify_url: '', artist_genres: ['country'], artist_followers: 300000, album_name: 'Come Back To Me', album_spotify_id: 'demoalb2', album_type: 'single', album_spotify_url: '', cover_art_300: 'https://picsum.photos/seed/langley/300/300', cover_art_640: 'https://picsum.photos/seed/langley/640/640', cover_art_64: 'https://picsum.photos/seed/langley/64/64', release_date: '2026-04-03', total_tracks: 1, track_spotify_url: 'https://open.spotify.com/track/demo2', duration_ms: 210000, explicit: false },
-  { track_id: 'demo3', track_uri: 'spotify:track:demo3', track_name: 'Gold Rush', track_number: 1, artist_names: 'Carter Faith', artist_id: '4GNCsORqGEfXpXp80sxhPK', artist_spotify_url: '', artist_genres: ['country'], artist_followers: 150000, album_name: 'Gold Rush', album_spotify_id: 'demoalb3', album_type: 'single', album_spotify_url: '', cover_art_300: 'https://picsum.photos/seed/faith/300/300', cover_art_640: 'https://picsum.photos/seed/faith/640/640', cover_art_64: 'https://picsum.photos/seed/faith/64/64', release_date: '2026-04-03', total_tracks: 1, track_spotify_url: 'https://open.spotify.com/track/demo3', duration_ms: 223000, explicit: false },
-  { track_id: 'demo4', track_uri: 'spotify:track:demo4', track_name: 'Waitin On You', track_number: 1, artist_names: 'Tigirlily Gold', artist_id: '3uch1TRjfeaPL1JVcYqoOl', artist_spotify_url: '', artist_genres: ['country'], artist_followers: 200000, album_name: 'Waitin On You', album_spotify_id: 'demoalb4', album_type: 'single', album_spotify_url: '', cover_art_300: 'https://picsum.photos/seed/tigirlily/300/300', cover_art_640: 'https://picsum.photos/seed/tigirlily/640/640', cover_art_64: 'https://picsum.photos/seed/tigirlily/64/64', release_date: '2026-04-03', total_tracks: 1, track_spotify_url: 'https://open.spotify.com/track/demo4', duration_ms: 187000, explicit: false },
-  { track_id: 'demo5', track_uri: 'spotify:track:demo5', track_name: 'Heartbreak Hotel', track_number: 1, artist_names: 'Lainey Wilson', artist_id: '7oKoJgRTlG5pFRBbbJGJuC', artist_spotify_url: '', artist_genres: ['country'], artist_followers: 800000, album_name: 'Heartbreak Hotel', album_spotify_id: 'demoalb5', album_type: 'single', album_spotify_url: '', cover_art_300: 'https://picsum.photos/seed/wilson/300/300', cover_art_640: 'https://picsum.photos/seed/wilson/640/640', cover_art_64: 'https://picsum.photos/seed/wilson/64/64', release_date: '2026-04-04', total_tracks: 1, track_spotify_url: 'https://open.spotify.com/track/demo5', duration_ms: 201000, explicit: false },
-  { track_id: 'demo6', track_uri: 'spotify:track:demo6', track_name: 'Sand In My Boots', track_number: 1, artist_names: 'Morgan Wallen', artist_id: '4oUHIQIBe0LHzYfvXNW4QM', artist_spotify_url: '', artist_genres: ['country'], artist_followers: 2000000, album_name: 'Sand In My Boots', album_spotify_id: 'demoalb6', album_type: 'single', album_spotify_url: '', cover_art_300: 'https://picsum.photos/seed/wallen/300/300', cover_art_640: 'https://picsum.photos/seed/wallen/640/640', cover_art_64: 'https://picsum.photos/seed/wallen/64/64', release_date: '2026-04-04', total_tracks: 1, track_spotify_url: 'https://open.spotify.com/track/demo6', duration_ms: 234000, explicit: false },
-  { track_id: 'demo7', track_uri: 'spotify:track:demo7', track_name: 'Burn It Down', track_number: 1, artist_names: 'Zach Bryan', artist_id: '40ZNYROS4zLfyyBSs2PGe2', artist_spotify_url: '', artist_genres: ['country'], artist_followers: 3000000, album_name: 'Burn It Down', album_spotify_id: 'demoalb7', album_type: 'single', album_spotify_url: '', cover_art_300: 'https://picsum.photos/seed/bryan/300/300', cover_art_640: 'https://picsum.photos/seed/bryan/640/640', cover_art_64: 'https://picsum.photos/seed/bryan/64/64', release_date: '2026-04-04', total_tracks: 1, track_spotify_url: 'https://open.spotify.com/track/demo7', duration_ms: 219000, explicit: false },
-  { track_id: 'demo8', track_uri: 'spotify:track:demo8', track_name: 'Take It Easy', track_number: 1, artist_names: 'Kelsea Ballerini', artist_id: '3RqBeV12Tt7A8xH3zBDMYa', artist_spotify_url: '', artist_genres: ['country'], artist_followers: 1000000, album_name: 'Take It Easy', album_spotify_id: 'demoalb8', album_type: 'single', album_spotify_url: '', cover_art_300: 'https://picsum.photos/seed/ballerini/300/300', cover_art_640: 'https://picsum.photos/seed/ballerini/640/640', cover_art_64: 'https://picsum.photos/seed/ballerini/64/64', release_date: '2026-04-04', total_tracks: 1, track_spotify_url: 'https://open.spotify.com/track/demo8', duration_ms: 195000, explicit: false },
+  // --- 28 Singles ---
+  demoTrack(1, 'Never Wanted To Know', 'Ashley Cooke', 'Never Wanted To Know', 'da1', 'single', '2026-04-03', 1),
+  demoTrack(2, 'Come Back To Me', 'Ella Langley', 'Come Back To Me', 'da2', 'single', '2026-04-03', 1),
+  demoTrack(3, 'Gold Rush', 'Carter Faith', 'Gold Rush', 'da3', 'single', '2026-04-03', 1),
+  demoTrack(4, 'Waitin On You', 'Tigirlily Gold', 'Waitin On You', 'da4', 'single', '2026-04-03', 1),
+  demoTrack(5, 'Heartbreak Hotel', 'Lainey Wilson', 'Heartbreak Hotel', 'da5', 'single', '2026-04-04', 1),
+  demoTrack(6, 'Sand In My Boots', 'Morgan Wallen', 'Sand In My Boots', 'da6', 'single', '2026-04-04', 1),
+  demoTrack(7, 'Burn It Down', 'Zach Bryan', 'Burn It Down', 'da7', 'single', '2026-04-04', 1),
+  demoTrack(8, 'Take It Easy', 'Kelsea Ballerini', 'Take It Easy', 'da8', 'single', '2026-04-04', 1),
+  demoTrack(9, 'Southern Rock', 'Cassidy Daniels', 'Southern Rock', 'da9', 'single', '2026-04-03', 1),
+  demoTrack(10, 'Lightning', 'Clever', 'Lightning', 'da10', 'single', '2026-04-02', 1),
+  demoTrack(11, 'LEAVIN\'', 'David J', 'LEAVIN\'', 'da11', 'single', '2026-04-03', 1),
+  demoTrack(12, 'STARLET', 'Ella Boh', 'STARLET', 'da12', 'single', '2026-04-03', 1),
+  demoTrack(13, 'Risk It', 'Erin Gibney', 'Risk It - Stripped', 'da13', 'single', '2026-04-03', 1),
+  demoTrack(14, 'The Jesus I Know Now', 'Brandon Lake, Lainey Wilson', 'The Jesus I Know Now', 'da14', 'single', '2026-04-03', 1),
+  demoTrack(15, 'Lose My Mind', 'Callie Prince', 'Lose My Mind', 'da15', 'single', '2026-04-03', 1),
+  demoTrack(16, 'Caving In', 'Chloe Collins', 'Caving In', 'da16', 'single', '2026-04-02', 1),
+  demoTrack(17, 'forever', 'Jake Puliti', 'forever', 'da17', 'single', '2026-04-03', 1),
+  demoTrack(18, 'Stepdad', 'Jay Allen', 'Stepdad', 'da18', 'single', '2026-04-04', 1),
+  demoTrack(19, 'The Blade', 'Jamie Floyd, Jake Hoot', 'The Blade', 'da19', 'single', '2026-04-03', 1),
+  demoTrack(20, 'Neon Church', 'Jordyn Shellhart', 'Neon Church', 'da20', 'single', '2026-04-02', 1),
+  demoTrack(21, 'paloma', 'Ashley Anne', 'paloma', 'da21', 'single', '2026-04-03', 1),
+  demoTrack(22, 'In the Garden', 'Tiera Kennedy', 'In the Garden (Greenhouse Sessions) [Live]', 'da22', 'single', '2026-04-03', 1),
+  demoTrack(23, 'Catch A Break', 'Niklas Juritsch', 'Catch A Break', 'da23', 'single', '2026-04-01', 1),
+  demoTrack(24, 'When No One\'s Around', 'Tayler Holder', 'When No One\'s Around', 'da24', 'single', '2026-04-03', 1),
+  demoTrack(25, 'Alternate Ending', 'Thelma & James', 'Alternate Ending', 'da25', 'single', '2026-04-03', 1),
+  demoTrack(26, 'Damn, When I Do', 'Bonnie Stewart', 'Damn, When I Do', 'da26', 'single', '2026-04-03', 1),
+  demoTrack(27, 'Lipstick On A Pig', 'Colby Acuff', 'Lipstick On A Pig', 'da27', 'single', '2026-04-04', 1),
+  demoTrack(28, '1000 Lifetimes', 'Gareth', '1000 Lifetimes (Wedding Version)', 'da28', 'single', '2026-03-31', 1),
+  // --- EP: Danielle Bradbery (2 tracks) ---
+  demoTrack(29, 'Cowgirl\'s Prayer', 'Danielle Bradbery', 'Cowgirl\'s Prayer', 'da29', 'single', '2026-04-03', 2, 1, 'bradbery1'),
+  demoTrack(30, 'Worth the Wait', 'Danielle Bradbery', 'Cowgirl\'s Prayer', 'da29', 'single', '2026-04-03', 2, 2, 'bradbery2'),
+  // --- Album: Luke Grimes - Red Bird (5 tracks) ---
+  demoTrack(31, 'Red Bird', 'Luke Grimes', 'Red Bird', 'da30', 'album', '2026-04-03', 5, 1, 'grimes1'),
+  demoTrack(32, 'Oklahoma Smoke Show', 'Luke Grimes', 'Red Bird', 'da30', 'album', '2026-04-03', 5, 2, 'grimes2'),
+  demoTrack(33, 'God Only Knows', 'Luke Grimes', 'Red Bird', 'da30', 'album', '2026-04-03', 5, 3, 'grimes3'),
+  demoTrack(34, 'Didn\'t I', 'Luke Grimes', 'Red Bird', 'da30', 'album', '2026-04-03', 5, 4, 'grimes4'),
+  demoTrack(35, 'Burn the Boats', 'Luke Grimes', 'Red Bird', 'da30', 'album', '2026-04-03', 5, 5, 'grimes5'),
+  // --- Album: Sam Barber - Broken View (5 tracks) ---
+  demoTrack(36, 'Broken View', 'Sam Barber', 'Broken View', 'da31', 'album', '2026-04-03', 5, 1, 'barber1'),
+  demoTrack(37, 'Drowning', 'Sam Barber', 'Broken View', 'da31', 'album', '2026-04-03', 5, 2, 'barber2'),
+  demoTrack(38, 'Old Soul', 'Sam Barber', 'Broken View', 'da31', 'album', '2026-04-03', 5, 3, 'barber3'),
+  demoTrack(39, 'Highway Hymn', 'Sam Barber', 'Broken View', 'da31', 'album', '2026-04-03', 5, 4, 'barber4'),
+  demoTrack(40, 'Last Call', 'Sam Barber', 'Broken View', 'da31', 'album', '2026-04-03', 5, 5, 'barber5'),
+  // --- EP: Gillian Smith (3 tracks) ---
+  demoTrack(41, 'I Can\'t Make You Love Me', 'Gillian Smith', 'I Can\'t Make You Love Me', 'da32', 'single', '2026-04-03', 3, 1, 'gsmith1'),
+  demoTrack(42, 'Forgiven', 'Gillian Smith', 'I Can\'t Make You Love Me', 'da32', 'single', '2026-04-03', 3, 2, 'gsmith2'),
+  demoTrack(43, 'Wayward Heart', 'Gillian Smith', 'I Can\'t Make You Love Me', 'da32', 'single', '2026-04-03', 3, 3, 'gsmith3'),
+  // --- More singles ---
+  demoTrack(44, 'Superwoman', 'MORIAH', 'Superwoman', 'da33', 'single', '2026-04-02', 1),
+  demoTrack(45, 'Holy Water', 'Justine Beverley', 'Holy Water', 'da34', 'single', '2026-04-03', 1),
+  demoTrack(46, 'Impossible Heights', 'Girl Named Tom', 'Impossible Heights', 'da35', 'single', '2026-04-03', 1),
+  demoTrack(47, 'Midnight Rodeo', 'Madison Parks', 'Midnight Rodeo', 'da36', 'single', '2026-04-04', 1),
+  demoTrack(48, 'Little Dove', 'Kayley Bishop', 'Little Dove (Live From Nashville)', 'da37', 'single', '2026-04-03', 1),
 ];
 
 /* ------------------------------------------------------------------ */
