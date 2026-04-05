@@ -83,6 +83,7 @@ export default function NewMusicFriday() {
   const [featureCounts, setFeatureCounts] = useState<Map<string, number>>(new Map());
   const [activeSource, setActiveSource] = useState<MusicSource['id']>('spotify');
   const [tracksPerSlide, setTracksPerSlide] = useState(8);
+  const [viewMode, setViewMode] = useState<'releases' | 'tracks'>('releases');
 
   // Shift-click multi-select tracking
   const lastClickedIdx = useRef<number>(-1);
@@ -491,30 +492,35 @@ export default function NewMusicFriday() {
             New Music Friday
           </h1>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           {lastScanned && (
-            <span style={{ color: 'var(--text-muted)', fontSize: '0.65rem' }}>
-              Scanned {new Date(lastScanned).toLocaleString()}
+            <span style={{ color: 'var(--text-muted)', fontSize: '0.6rem' }}>
+              {new Date(lastScanned).toLocaleString()}
             </span>
           )}
-          {token && phase !== 'scanning' && (
+          {/* Re-scan: works with Spotify token OR via server-side scan */}
+          {phase === 'results' && (
             <>
-              <button className="btn btn-sm" onClick={() => runScan(token)}>Re-scan</button>
-              <button className="btn btn-sm" onClick={() => { localStorage.removeItem('nmf_followed_artists'); runScan(token); }} title="Re-fetch followed artists from Spotify">Refresh Follows</button>
+              {token ? (
+                <>
+                  <button className="btn btn-sm" onClick={() => runScan(token)}>Re-scan</button>
+                  <button className="btn btn-sm" onClick={() => { localStorage.removeItem('nmf_followed_artists'); runScan(token); }}>Refresh Follows</button>
+                  <button className="btn btn-sm btn-danger" onClick={handleDisconnect} style={{ fontSize: '0.65rem' }}>Disconnect Spotify</button>
+                </>
+              ) : (
+                <button className="btn btn-sm" onClick={() => setPhase(token ? 'ready' : 'auth')}>New Scan</button>
+              )}
             </>
           )}
-          {token && (
-            <button className="btn btn-sm btn-danger" onClick={handleDisconnect}>Disconnect</button>
-          )}
-          {/* Account info + sign out */}
+          {/* Account */}
           {user && (
             <>
-              <span style={{ color: 'var(--text-muted)', fontSize: '0.6rem' }}>{user.email}</span>
-              <button className="btn btn-sm" onClick={signOut} style={{ fontSize: '0.65rem' }}>Sign Out</button>
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.55rem' }}>{user.email}</span>
+              <button className="btn btn-sm" onClick={signOut} style={{ fontSize: '0.6rem' }}>Sign Out</button>
             </>
           )}
           {!user && isGuest && (
-            <button className="btn btn-sm" onClick={signOut} style={{ fontSize: '0.65rem' }}>Sign Out</button>
+            <button className="btn btn-sm" onClick={signOut} style={{ fontSize: '0.6rem' }}>Sign Out</button>
           )}
         </div>
       </header>
@@ -750,11 +756,23 @@ export default function NewMusicFriday() {
                   onFilterChange={setFilter} onSortChange={setSort} onSearchChange={setSearch}
                 />
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>
-                  {filteredReleases.length} releases ({allTracks.length} tracks)
+                  {viewMode === 'releases'
+                    ? `${filteredReleases.length} releases (${allTracks.length} tracks)`
+                    : `${allTracks.length} tracks`}
                 </span>
-                <Link to="/newmusicfriday/archive" className="filter-pill" style={{ textDecoration: 'none', fontSize: '0.65rem' }}>
+                <button
+                  className={`filter-pill ${viewMode === 'releases' ? 'active' : ''}`}
+                  onClick={() => setViewMode('releases')}
+                  style={{ fontSize: '0.6rem', padding: '2px 8px' }}
+                >Albums</button>
+                <button
+                  className={`filter-pill ${viewMode === 'tracks' ? 'active' : ''}`}
+                  onClick={() => setViewMode('tracks')}
+                  style={{ fontSize: '0.6rem', padding: '2px 8px' }}
+                >Tracks</button>
+                <Link to="/newmusicfriday/archive" className="filter-pill" style={{ textDecoration: 'none', fontSize: '0.6rem', padding: '2px 8px' }}>
                   Archive
                 </Link>
               </div>
@@ -790,51 +808,148 @@ export default function NewMusicFriday() {
           {/*  STEP 1: SELECT TRACKS (scrollable grid below sticky bar)    */}
           {/* ============================================================ */}
           <section ref={step1Ref} style={{ scrollMarginTop: 120 }}>
-            {/* Release grid */}
             <div style={{ padding: 24 }}>
-              <div className="release-grid" data-testid="track-grid">
-                {filteredReleases.map((cluster, idx) => (
-                  <ClusterCard
-                    key={cluster.album_spotify_id}
-                    cluster={cluster}
-                    selectionSlot={selectionByAlbum.get(cluster.album_spotify_id) || null}
-                    selectedSlots={selectionsByAlbum.get(cluster.album_spotify_id)}
-                    hasSelections={selections.length > 0}
-                    onSelectRelease={(c, trackId) => {
-                      // Shift-click: select range from last click to here
-                      if (lastClickedIdx.current >= 0 && window.event && (window.event as KeyboardEvent).shiftKey) {
-                        const start = Math.min(lastClickedIdx.current, idx);
-                        const end = Math.max(lastClickedIdx.current, idx);
-                        setSelections(prev => {
-                          let updated = [...prev];
-                          for (let i = start; i <= end; i++) {
-                            const r = filteredReleases[i];
-                            const alreadyHas = updated.some(s => s.albumId === r.album_spotify_id);
-                            if (!alreadyHas) {
-                              const track = r.tracks.find(t => t.track_id === r.titleTrackId) || r.tracks[0];
-                              updated.push({
-                                track, albumId: r.album_spotify_id,
-                                selectionNumber: updated.length + 1,
-                                slideGroup: getSlideGroup(updated.length + 1),
-                                positionInSlide: ((updated.length) % 8) + 1,
-                                isCoverFeature: false,
-                              });
+
+              {/* ---- ALBUM VIEW (default) ---- */}
+              {viewMode === 'releases' && (
+                <div className="release-grid" data-testid="track-grid">
+                  {filteredReleases.map((cluster, idx) => (
+                    <ClusterCard
+                      key={cluster.album_spotify_id}
+                      cluster={cluster}
+                      selectionSlot={selectionByAlbum.get(cluster.album_spotify_id) || null}
+                      selectedSlots={selectionsByAlbum.get(cluster.album_spotify_id)}
+                      hasSelections={selections.length > 0}
+                      onSelectRelease={(c, trackId) => {
+                        if (lastClickedIdx.current >= 0 && window.event && (window.event as KeyboardEvent).shiftKey) {
+                          const start = Math.min(lastClickedIdx.current, idx);
+                          const end = Math.max(lastClickedIdx.current, idx);
+                          setSelections(prev => {
+                            const updated = [...prev];
+                            for (let i = start; i <= end; i++) {
+                              const r = filteredReleases[i];
+                              const alreadyHas = updated.some(s => s.albumId === r.album_spotify_id);
+                              if (!alreadyHas) {
+                                const track = r.tracks.find(t => t.track_id === r.titleTrackId) || r.tracks[0];
+                                updated.push({
+                                  track, albumId: r.album_spotify_id,
+                                  selectionNumber: updated.length + 1,
+                                  slideGroup: getSlideGroup(updated.length + 1),
+                                  positionInSlide: ((updated.length) % 8) + 1,
+                                  isCoverFeature: false,
+                                });
+                              }
                             }
-                          }
-                          return buildSlots(updated);
-                        });
-                      } else {
-                        handleSelectRelease(c, trackId);
-                      }
-                      lastClickedIdx.current = idx;
-                    }}
-                    onDeselect={handleDeselect}
-                    onSetCoverFeature={handleSetCoverFeature}
-                    featureCount={featureCounts.get(cluster.tracks[0]?.artist_id) || 0}
-                  />
-                ))}
-              </div>
-              {filteredReleases.length === 0 && releases.length > 0 && (
+                            return buildSlots(updated);
+                          });
+                        } else {
+                          handleSelectRelease(c, trackId);
+                        }
+                        lastClickedIdx.current = idx;
+                      }}
+                      onDeselect={handleDeselect}
+                      onSetCoverFeature={handleSetCoverFeature}
+                      featureCount={featureCounts.get(cluster.tracks[0]?.artist_id) || 0}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* ---- TRACK VIEW (flat list, matches Python manifest) ---- */}
+              {viewMode === 'tracks' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  {allTracks
+                    .filter(t => {
+                      if (filter === 'single') return t.album_type === 'single' && t.total_tracks === 1;
+                      if (filter === 'album') return t.album_type !== 'single' || t.total_tracks > 1;
+                      return true;
+                    })
+                    .filter(t => {
+                      if (!search) return true;
+                      const q = search.toLowerCase();
+                      return t.artist_names.toLowerCase().includes(q) || t.track_name.toLowerCase().includes(q) || t.album_name.toLowerCase().includes(q);
+                    })
+                    .map((track, idx) => {
+                      const isSelected = selections.some(s => s.track.track_id === track.track_id);
+                      const slot = selections.find(s => s.track.track_id === track.track_id);
+                      return (
+                        <div
+                          key={track.track_id}
+                          onClick={(e) => {
+                            // Shift-click range select in track view
+                            if (lastClickedIdx.current >= 0 && e.shiftKey) {
+                              const start = Math.min(lastClickedIdx.current, idx);
+                              const end = Math.max(lastClickedIdx.current, idx);
+                              setSelections(prev => {
+                                const updated = [...prev];
+                                const visibleTracks = allTracks; // use full list for indexing
+                                for (let i = start; i <= end; i++) {
+                                  const t = visibleTracks[i];
+                                  if (!t || updated.some(s => s.track.track_id === t.track_id)) continue;
+                                  updated.push({
+                                    track: t, albumId: t.album_spotify_id,
+                                    selectionNumber: updated.length + 1,
+                                    slideGroup: getSlideGroup(updated.length + 1),
+                                    positionInSlide: ((updated.length) % 8) + 1,
+                                    isCoverFeature: false,
+                                  });
+                                }
+                                return buildSlots(updated);
+                              });
+                            } else {
+                              handleSelectRelease(
+                                releases.find(r => r.album_spotify_id === track.album_spotify_id)!,
+                                track.track_id,
+                              );
+                            }
+                            lastClickedIdx.current = idx;
+                          }}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 10,
+                            padding: '6px 10px', borderRadius: 6, cursor: 'pointer',
+                            background: isSelected ? 'rgba(212,168,67,0.1)' : 'transparent',
+                            border: isSelected ? '1px solid var(--gold-dark)' : '1px solid transparent',
+                            transition: 'all 0.1s',
+                          }}
+                        >
+                          {/* Selection number or track number */}
+                          <span className="mono" style={{
+                            width: 24, textAlign: 'right', fontSize: '0.7rem', fontWeight: 600,
+                            color: isSelected ? 'var(--gold)' : 'var(--text-muted)',
+                          }}>
+                            {slot ? slot.selectionNumber : ''}
+                          </span>
+                          {track.cover_art_64 && (
+                            <img src={track.cover_art_64} alt="" style={{ width: 32, height: 32, borderRadius: 4 }} />
+                          )}
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{
+                              fontSize: '0.8rem', fontWeight: isSelected ? 600 : 400,
+                              color: isSelected ? 'var(--gold)' : 'var(--text-primary)',
+                              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                            }}>
+                              {track.track_name}
+                            </div>
+                            <div style={{
+                              fontSize: '0.65rem', color: 'var(--text-muted)',
+                              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                            }}>
+                              {track.artist_names} — {track.album_name}
+                            </div>
+                          </div>
+                          <span className={`badge ${track.album_type === 'single' && track.total_tracks === 1 ? 'badge-single' : 'badge-album'}`} style={{ fontSize: '0.5rem' }}>
+                            {track.album_type === 'single' && track.total_tracks === 1 ? 'Single' : track.album_type === 'album' ? 'Album' : 'EP'}
+                          </span>
+                          <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)', width: 65, textAlign: 'right' }}>
+                            {track.release_date}
+                          </span>
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
+
+              {filteredReleases.length === 0 && releases.length > 0 && viewMode === 'releases' && (
                 <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginTop: 48 }}>
                   No releases match your filters.
                 </p>
