@@ -324,7 +324,13 @@ export default function NewMusicFriday() {
     return map;
   }, [selections]);
 
+  /** Haptic tap for mobile — light vibration on selection actions */
+  const haptic = useCallback((ms = 10) => {
+    try { navigator?.vibrate?.(ms); } catch { /* not supported */ }
+  }, []);
+
   const handleSelectRelease = useCallback((cluster: ReleaseCluster, trackId?: string) => {
+    haptic();
     setSelections(prev => {
       const chosenTrackId = trackId || cluster.titleTrackId;
       const track = cluster.tracks.find(t => t.track_id === chosenTrackId) || cluster.tracks[0];
@@ -358,6 +364,7 @@ export default function NewMusicFriday() {
   }, []);
 
   const handleDeselect = useCallback((albumId: string, trackId?: string) => {
+    haptic(5);
     setSelections(prev => {
       if (trackId) {
         // Deselect specific track
@@ -369,6 +376,7 @@ export default function NewMusicFriday() {
   }, []);
 
   const handleSetCoverFeature = useCallback((trackId: string) => {
+    haptic(15);
     setSelections(prev => prev.map(s => ({
       ...s,
       isCoverFeature: s.track.track_id === trackId,
@@ -808,6 +816,20 @@ export default function NewMusicFriday() {
           {/*  STEP 1: SELECT TRACKS (scrollable grid below sticky bar)    */}
           {/* ============================================================ */}
           <section ref={step1Ref} style={{ scrollMarginTop: 120 }}>
+            {/* Contextual guidance */}
+            <div style={{
+              padding: '12px 24px', fontSize: '0.75rem', color: 'var(--text-secondary)',
+              lineHeight: 1.6, borderBottom: '1px solid var(--midnight-border)',
+              background: 'rgba(212,168,67,0.04)',
+            }}>
+              {selections.length === 0 ? (
+                <>Click releases to select tracks for your carousel. <strong>Shift-click</strong> to select a range. Albums with multiple tracks show a "Pick tracks" button to choose individual songs.</>
+              ) : selections.length > 0 && !selections.some(s => s.isCoverFeature) ? (
+                <>Click the <span style={{ color: 'var(--gold)', fontWeight: 700 }}>&#9733; star</span> on any selected release to set it as the <strong>featured artist on your title slide</strong>. Keep selecting to build your carousel.</>
+              ) : (
+                <>Scroll down to configure your carousel slides, pick templates, and export. Or keep selecting more tracks.</>
+              )}
+            </div>
             <div style={{ padding: 24 }}>
 
               {/* ---- ALBUM VIEW (default) ---- */}
@@ -1011,6 +1033,18 @@ export default function NewMusicFriday() {
               <div ref={step3Ref as React.RefObject<HTMLDivElement>} style={{ scrollMarginTop: 16 }} />
               <div ref={step4Ref as React.RefObject<HTMLDivElement>} style={{ scrollMarginTop: 16 }} />
               <div ref={step5Ref as React.RefObject<HTMLDivElement>} style={{ scrollMarginTop: 16 }} />
+
+              {/* Carousel builder guidance */}
+              <div style={{
+                padding: '12px 0 16px', fontSize: '0.75rem', color: 'var(--text-secondary)',
+                lineHeight: 1.6, borderBottom: '1px solid var(--midnight-border)', marginBottom: 16,
+              }}>
+                {!selections.some(s => s.isCoverFeature) ? (
+                  <span style={{ color: 'var(--gold)' }}>Tip: Go back up and click the <strong>&#9733; star</strong> on a release to set it as your title slide feature before generating.</span>
+                ) : (
+                  <>Choose how many tracks per slide, pick your grid and title styles, then hit <strong>Generate Carousel</strong>. Each slide exports as a 1080x1080 PNG ready for Instagram.</>
+                )}
+              </div>
 
               <CarouselPreviewPanel
                 selectedTracks={selectedTracks}
