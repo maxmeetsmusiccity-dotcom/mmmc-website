@@ -380,6 +380,7 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 20, marginBottom: 16 }}>
         <button
+          data-testid="generate-button"
           className="btn btn-gold"
           onClick={handleGenerate}
           disabled={generating || selectedTracks.length === 0}

@@ -631,7 +631,7 @@ export default function NewMusicFriday() {
                   Scan your followed artists for new releases since last Friday.
                 </p>
                 <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-                  <button className="btn btn-gold" onClick={() => token && runScan(token)} style={{ fontSize: '1rem', padding: '14px 32px' }}>
+                  <button data-testid="scan-button" className="btn btn-gold" onClick={() => token && runScan(token)} style={{ fontSize: '1rem', padding: '14px 32px' }}>
                     Scan New Releases
                   </button>
                   <button className="btn" onClick={loadDemo}>
@@ -838,7 +838,7 @@ export default function NewMusicFriday() {
                   </span>
                 )}
               </p>
-              <div className="release-grid">
+              <div className="release-grid" data-testid="track-grid">
                 {filteredReleases.map(cluster => (
                   <ClusterCard
                     key={cluster.album_spotify_id}
