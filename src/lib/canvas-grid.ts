@@ -447,56 +447,84 @@ export async function generateTitleSlide(
     }
   }
 
-  // Vinyl Classic rendering — faithful port of the original generateCoverSlide()
-  // Uses the mmmc_classic CarouselTemplate for neon style, vinyl overlay, etc.
+  // Vinyl Classic rendering — matches reference image (Image 1)
+  // Full-canvas vinyl record, tilted album art, gold neon, sparkles, notes, chevrons
   if (tt.vinylRecord) {
     const t = getTemplate('mmmc_classic');
     await loadAllAssets(t);
 
-    // Vinyl texture image overlay (the photographic vinyl bg)
+    // Vinyl texture image overlay (photographic realism)
     const vinylSrc = t.assets?.vinyl || ASSETS.vinyl;
     const vinyl = await loadImage(vinylSrc);
-    if (vinyl && t.cover.vinylOverlay) {
-      ctx.globalAlpha = t.cover.vinylOpacity;
+    if (vinyl) {
+      ctx.globalAlpha = 0.6;
       ctx.drawImage(vinyl, 0, 0, W, H);
       ctx.globalAlpha = 1;
     }
-    // Procedural groove rings on top of texture
     vinylGrooves(ctx, t);
 
-    // Featured image — framed, NOT clipped to circle
+    // Featured image — TILTED ~4 degrees on the record (like a CD case on vinyl)
     if (coverFeature) {
       const featImg = await loadImage(coverFeature.track.cover_art_640);
-      const imgSize = Math.round(W * 0.52);
-      const border = t.cover.frameBorder;
-      const imgX = (W - imgSize) / 2;
-      const imgY = Math.round(H * 0.17);
+      const imgSize = Math.round(W * 0.44);
+      const border = 8;
+      const imgCx = W / 2;
+      const imgCy = H * 0.42;
+      const tiltDeg = -4;
 
-      ctx.shadowColor = 'rgba(0,0,0,0.6)';
-      ctx.shadowBlur = t.cover.frameShadowBlur;
-      ctx.shadowOffsetY = 10;
-      ctx.fillStyle = t.cover.frameColor;
-      ctx.fillRect(imgX - border, imgY - border, imgSize + border * 2, imgSize + border * 2);
+      ctx.save();
+      ctx.translate(imgCx, imgCy);
+      ctx.rotate((tiltDeg * Math.PI) / 180);
+      // Shadow
+      ctx.shadowColor = 'rgba(0,0,0,0.7)';
+      ctx.shadowBlur = 28;
+      ctx.shadowOffsetY = 8;
+      // White frame
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(-imgSize / 2 - border, -imgSize / 2 - border, imgSize + border * 2, imgSize + border * 2);
       ctx.shadowColor = 'transparent';
-      if (featImg) ctx.drawImage(featImg, imgX, imgY, imgSize, imgSize);
-
-      // Artist name below image — neon glow
-      const textY = imgY + imgSize + border + 20;
-      neonText(ctx, coverFeature.track.artist_names, W / 2, textY, `700 38px ${t.scriptFont}`, t);
-      // Song name — italic script, in quotes
-      ctx.fillStyle = t.textSecondary;
-      ctx.font = `italic 500 26px ${t.scriptFont}`;
-      ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-      ctx.fillText(`\u201C${coverFeature.track.track_name}\u201D`, W / 2, textY + 50);
+      if (featImg) ctx.drawImage(featImg, -imgSize / 2, -imgSize / 2, imgSize, imgSize);
+      ctx.restore();
     }
 
-    // Header — gold neon "New Music Friday"
-    neonText(ctx, 'New Music Friday', W / 2, Math.round(H * 0.04), `700 56px ${t.scriptFont}`, t);
-    goldRule(ctx, Math.round(H * 0.10), t);
-    neonText(ctx, t.cover.subtitleText, W / 2, Math.round(H * 0.11), `italic 600 26px ${t.bodyFont}`, t);
+    // Header — gold neon "New Music Friday" with music note emojis
+    const headerY = 32;
+    neonText(ctx, 'New Music Friday', W / 2, headerY, `700 56px ${t.scriptFont}`, t);
+    // "Max Meets Music City" subtitle in italic
+    neonText(ctx, 'Max Meets Music City', W / 2, headerY + 68, `italic 600 28px ${t.bodyFont}`, t);
 
-    // Date at bottom
-    neonText(ctx, formatDate(weekDate), W / 2, Math.round(H * 0.90), `700 48px ${t.scriptFont}`, t);
+    // Gold sparkles/stars at decorative positions
+    const starPositions: [number, number][] = [
+      [W * 0.12, H * 0.14], [W * 0.88, H * 0.14],
+      [W * 0.08, H * 0.68], [W * 0.92, H * 0.68],
+      [W * 0.18, H * 0.85], [W * 0.82, H * 0.85],
+    ];
+    if (t.decorations.showSparkles) drawSparkles(ctx, starPositions, t.decorations.sparkleSize);
+
+    // Music notes in corners
+    if (t.decorations.showNotes) drawNotes(ctx, t.decorations.noteSize);
+
+    // Double chevrons on the right
+    ctx.save();
+    ctx.shadowColor = `${t.accentGlow}0.6)`;
+    ctx.shadowBlur = 14;
+    ctx.fillStyle = t.accent;
+    for (let dx = 0; dx < 2; dx++) {
+      const bx = W - 120 + dx * 30, by = H * 0.42;
+      ctx.beginPath();
+      ctx.moveTo(bx, by - 28); ctx.lineTo(bx + 20, by); ctx.lineTo(bx, by + 28);
+      ctx.lineTo(bx + 6, by + 28); ctx.lineTo(bx + 26, by); ctx.lineTo(bx + 6, by - 28);
+      ctx.closePath(); ctx.fill();
+    }
+    ctx.restore();
+
+    // "Swipe right for all this week's picks" in gold
+    const swipeY = aspect === '3:4' ? H - 180 : H * 0.78;
+    neonText(ctx, 'Swipe right for all this week\'s picks', W / 2, swipeY, `600 24px ${t.scriptFont}`, t);
+
+    // Date at bottom — fixed offset from bottom in portrait
+    const vinylDateY = aspect === '3:4' ? H - 100 : H * 0.88;
+    neonText(ctx, formatDate(weekDate), W / 2, vinylDateY, `700 48px ${t.scriptFont}`, t);
   }
 
   // Featured image (non-vinyl templates)
@@ -552,13 +580,16 @@ export async function generateTitleSlide(
     ctx.fillText(coverFeature.track.track_name, W / 2, labelY + Math.round(W * 0.042));
   }
 
+  // Date Y: in portrait, use fixed offset from bottom (matches 1:1 visual position)
+  const dateY = aspect === '3:4' ? H - 100 : Math.round(H * tt.dateY);
+
   // Swipe pill
   if (tt.swipePill) {
     const pillText = 'Swipe for all picks \u2192';
     const pillFontSize = Math.round(W * 0.020);
     ctx.font = `600 ${pillFontSize}px "DM Sans", sans-serif`;
     const pillW = ctx.measureText(pillText).width + 40;
-    const pillY = Math.round(H * tt.dateY) - 48;
+    const pillY = dateY - 48;
     ctx.fillStyle = 'rgba(0,0,0,0.35)';
     ctx.beginPath();
     ctx.roundRect((W - pillW) / 2, pillY, pillW, 32, 16);
@@ -573,7 +604,7 @@ export async function generateTitleSlide(
   glowText(
     formatDate(weekDate),
     W / 2,
-    Math.round(H * tt.dateY),
+    dateY,
     `700 ${Math.round(W * tt.dateSize)}px ${tt.dateFont}`,
     tt.textPrimary,
   );

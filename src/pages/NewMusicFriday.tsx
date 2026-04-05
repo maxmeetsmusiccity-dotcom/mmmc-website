@@ -585,10 +585,10 @@ export default function NewMusicFriday() {
     <div style={{ minHeight: '100vh' }}>
       {/* Header — sticky on desktop */}
       <header style={{
-        padding: '12px 24px',
+        padding: '14px 24px',
         borderBottom: '1px solid var(--midnight-border)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        flexWrap: 'wrap', gap: 12,
+        flexWrap: 'wrap', gap: 14,
         position: 'sticky', top: 0, zIndex: 30,
         background: 'var(--midnight)',
       }}>
@@ -853,8 +853,8 @@ export default function NewMusicFriday() {
             {/* Row 1: Selection counter + target + filters + stats */}
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              flexWrap: 'wrap', gap: 8,
-              padding: '10px 24px',
+              flexWrap: 'wrap', gap: 10,
+              padding: '12px 24px',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <span className="mono" style={{
