@@ -210,11 +210,11 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
         ② Configure & Preview
       </h3>
 
-      {/* TWO-COLUMN LAYOUT (desktop) */}
+      {/* TWO-COLUMN LAYOUT: controls left, larger previews right */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'minmax(300px, 1fr) minmax(300px, 1fr)',
-        gap: 32,
+        gridTemplateColumns: 'minmax(280px, 2fr) minmax(350px, 3fr)',
+        gap: 24,
       }}>
         {/* LEFT COLUMN: Selectors */}
         <div>
@@ -259,9 +259,11 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
             </p>
           </div>
 
-          {/* Platform */}
+          {/* Platform export */}
           <div style={{ marginBottom: 20 }}>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8 }}>Platform</p>
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8 }}>
+              Export for Platform <span style={{ fontSize: '0.6rem' }}>({platform.width}x{platform.height}, max {platform.maxSlides} slides)</span>
+            </p>
             <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
               {PLATFORMS.map(p => {
                 const isActive = platformId === p.id;
@@ -286,6 +288,29 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
               <p style={{ fontSize: '0.6rem', color: 'var(--mmmc-red)', marginTop: 4 }}>
                 {platform.name} max {platform.maxSlides} slides. You have {totalSlides}.
               </p>
+            )}
+            {/* Quick export for non-Instagram platforms */}
+            {!platformId.startsWith('ig-') && selectedTracks.length > 0 && (
+              <button
+                className="btn btn-sm"
+                style={{ marginTop: 8, fontSize: '0.7rem' }}
+                onClick={async () => {
+                  const mapped: Record<string, PlatformId> = {
+                    'tiktok': 'tiktok', 'facebook': 'facebook', 'twitter': 'twitter', 'linkedin': 'facebook',
+                  };
+                  const crossId = mapped[platformId];
+                  if (!crossId) return;
+                  const slots = buildSlots(selectedTracks.map((t, i) => ({
+                    track: t, albumId: t.album_spotify_id,
+                    selectionNumber: i + 1, slideGroup: 1,
+                    positionInSlide: i + 1, isCoverFeature: false,
+                  })));
+                  const blob = await generatePlatformImage(slots, weekDate, crossId, gridTemplateId);
+                  downloadBlob(blob, `nmf-${platformId}-${platform.width}x${platform.height}.png`);
+                }}
+              >
+                Download {platform.name} Image ({platform.width}x{platform.height})
+              </button>
             )}
           </div>
 
@@ -324,13 +349,13 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
                 src={gridPreview}
                 alt="Grid slide preview"
                 style={{
-                  width: '100%', maxWidth: 400, borderRadius: 8,
+                  width: '100%', borderRadius: 8,
                   border: '1px solid var(--midnight-border)',
                 }}
               />
             ) : (
               <div style={{
-                width: '100%', maxWidth: 400, aspectRatio: '1',
+                width: '100%', aspectRatio: '1',
                 borderRadius: 8, background: 'var(--midnight)',
                 border: '1px solid var(--midnight-border)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -358,7 +383,7 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
                 />
               ) : (
                 <div style={{
-                  width: '100%', maxWidth: 400, aspectRatio: '1',
+                  width: '100%', aspectRatio: '1',
                   borderRadius: 8, background: 'var(--midnight)',
                   border: '1px solid var(--midnight-border)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
