@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 
 interface BrowseCategory {
   id: string;
@@ -41,13 +41,49 @@ function formatListeners(n: number): string {
   return String(n);
 }
 
+interface SpotifySearchResult {
+  track_name: string;
+  artist_names: string;
+  album_name: string;
+  release_date: string;
+  cover_art_300: string;
+  album_spotify_id: string;
+  track_spotify_url: string;
+}
+
 export default function Artists() {
+  const navigate = useNavigate();
   const [categories, setCategories] = useState<BrowseCategory[]>([]);
   const [allArtists, setAllArtists] = useState<BrowseArtist[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeLetter, setActiveLetter] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [liveResults, setLiveResults] = useState<SpotifySearchResult[]>([]);
+  const [liveSearching, setLiveSearching] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  // Live search via Spotify catalog when R2 data is empty or query doesn't match
+  const doLiveSearch = useCallback((query: string) => {
+    clearTimeout(debounceRef.current);
+    if (query.trim().length < 2) { setLiveResults([]); return; }
+    debounceRef.current = setTimeout(async () => {
+      setLiveSearching(true);
+      try {
+        const names = query.split(/[,\n]/).map(n => n.trim()).filter(n => n.length > 1);
+        const res = await fetch('/api/scan-artists', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ artistNames: names.length > 0 ? names : [query.trim()] }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setLiveResults(data.tracks || []);
+        }
+      } catch { /* silent */ }
+      finally { setLiveSearching(false); }
+    }, 500);
+  }, []);
 
   useEffect(() => {
     setLoading(true);
@@ -110,15 +146,35 @@ export default function Artists() {
         <div style={{ marginBottom: 16 }}>
           <input
             type="text"
-            placeholder="Search artists, genres, camps..."
+            placeholder={allArtists.length > 0 ? "Search artists, genres, camps..." : "Type artist names to search Spotify catalog..."}
             value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
+            onChange={e => {
+              setSearchQuery(e.target.value);
+              // If no R2 data loaded, do live Spotify search
+              if (allArtists.length === 0) doLiveSearch(e.target.value);
+            }}
+            onKeyDown={e => {
+              if (e.key === 'Enter' && allArtists.length === 0) doLiveSearch(searchQuery);
+            }}
             style={{
-              width: '100%', maxWidth: 400, padding: '10px 14px', borderRadius: 8,
+              width: '100%', maxWidth: 500, padding: '10px 14px', borderRadius: 8,
               border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)',
               color: '#fff', fontSize: 14, outline: 'none',
             }}
           />
+          {allArtists.length === 0 && searchQuery.trim().length >= 2 && (
+            <button
+              onClick={() => doLiveSearch(searchQuery)}
+              disabled={liveSearching}
+              style={{
+                marginLeft: 8, padding: '10px 20px', borderRadius: 8,
+                background: '#F5C453', color: '#0a0a1a', border: 'none',
+                fontWeight: 600, fontSize: 14, cursor: 'pointer',
+              }}
+            >
+              {liveSearching ? 'Searching...' : 'Search Spotify'}
+            </button>
+          )}
         </div>
 
         {/* Letter bar */}
@@ -176,10 +232,70 @@ export default function Artists() {
         {/* Loading / empty states */}
         {loading && <div style={{ color: '#7A8CA0', padding: 40, textAlign: 'center' }}>Loading artist directory...</div>}
 
-        {!loading && allArtists.length === 0 && (
+        {!loading && allArtists.length === 0 && liveResults.length === 0 && !liveSearching && (
           <div style={{ color: '#7A8CA0', padding: 40, textAlign: 'center' }}>
-            <p style={{ fontSize: 16, marginBottom: 8 }}>Artist directory not yet populated.</p>
-            <p style={{ fontSize: 13 }}>Data will appear after the next cascade run generates browse_artists.json to R2.</p>
+            <p style={{ fontSize: 16, marginBottom: 8 }}>Type artist names above to search for new releases.</p>
+            <p style={{ fontSize: 13 }}>You can enter multiple names separated by commas or newlines. Results come from the Spotify catalog.</p>
+          </div>
+        )}
+
+        {/* Live Spotify search results */}
+        {liveSearching && (
+          <div style={{ color: '#F5C453', padding: 20, textAlign: 'center' }}>Searching Spotify catalog...</div>
+        )}
+        {liveResults.length > 0 && (
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <p style={{ color: '#F5C453', fontSize: 14, fontWeight: 600 }}>
+                {liveResults.length} new release{liveResults.length !== 1 ? 's' : ''} found
+              </p>
+              <button
+                onClick={() => {
+                  // Navigate to NMF page and pass the tracks via sessionStorage
+                  sessionStorage.setItem('nmf_import_tracks', JSON.stringify(liveResults));
+                  navigate('/newmusicfriday?import=browse');
+                }}
+                style={{
+                  padding: '8px 16px', borderRadius: 8,
+                  background: '#F5C453', color: '#0a0a1a', border: 'none',
+                  fontWeight: 600, fontSize: 13, cursor: 'pointer',
+                }}
+              >
+                Import All to Curator Studio
+              </button>
+            </div>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+              gap: 10,
+            }}>
+              {liveResults.map((t, i) => (
+                <div key={`${t.album_spotify_id}-${i}`} style={{
+                  background: 'rgba(255,255,255,0.02)',
+                  border: '1px solid rgba(255,255,255,0.05)',
+                  borderRadius: 8, padding: 10,
+                  display: 'flex', gap: 10, alignItems: 'center',
+                }}>
+                  {t.cover_art_300 && (
+                    <img src={t.cover_art_300} alt="" style={{ width: 48, height: 48, borderRadius: 4, flexShrink: 0 }} />
+                  )}
+                  <div style={{ overflow: 'hidden', flex: 1 }}>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {t.track_name}
+                    </p>
+                    <p style={{ fontSize: 12, color: '#7A8CA0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {t.artist_names} &middot; {t.album_name}
+                    </p>
+                    <p style={{ fontSize: 11, color: '#556' }}>{t.release_date}</p>
+                  </div>
+                  {t.track_spotify_url && (
+                    <a href={t.track_spotify_url} target="_blank" rel="noopener" style={{ fontSize: 11, color: '#1DB954', flexShrink: 0 }}>
+                      Spotify
+                    </a>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         )}
 

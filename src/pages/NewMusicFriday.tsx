@@ -178,6 +178,26 @@ export default function NewMusicFriday() {
     }
   }, [searchParams, setSearchParams]);
 
+  // Handle import from Browse Artists page
+  useEffect(() => {
+    if (searchParams.get('import') === 'browse') {
+      setSearchParams({}, { replace: true });
+      const stored = sessionStorage.getItem('nmf_import_tracks');
+      if (stored) {
+        sessionStorage.removeItem('nmf_import_tracks');
+        try {
+          const tracks = JSON.parse(stored) as TrackItem[];
+          if (tracks.length > 0) {
+            setAllTracks(tracks);
+            setReleases(groupIntoReleases(tracks));
+            setPhase('results');
+            setLastScanned(new Date().toISOString());
+          }
+        } catch { /* corrupted */ }
+      }
+    }
+  }, [searchParams, setSearchParams]);
+
   // On mount: try to load cached results. Guests see empty state.
   useEffect(() => {
     // Guests/admin-bypass: no cached data, start fresh
