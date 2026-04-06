@@ -11,35 +11,43 @@ interface Props {
   onSelect: (id: string) => void;
 }
 
-const CUSTOM_KEY = 'nmf_custom_templates';
+function getCustomKey(userId?: string) {
+  return userId ? `nmf_custom_templates_${userId}` : 'nmf_custom_templates_guest';
+}
 
-function loadLocalTemplates(): CarouselTemplate[] {
+function loadLocalTemplates(userId?: string): CarouselTemplate[] {
   try {
-    const raw = localStorage.getItem(CUSTOM_KEY);
+    const raw = localStorage.getItem(getCustomKey(userId));
     return raw ? JSON.parse(raw) : [];
   } catch { return []; }
 }
 
-function saveLocalTemplates(templates: CarouselTemplate[]) {
-  try { localStorage.setItem(CUSTOM_KEY, JSON.stringify(templates)); } catch {}
+function saveLocalTemplates(templates: CarouselTemplate[], userId?: string) {
+  try { localStorage.setItem(getCustomKey(userId), JSON.stringify(templates)); } catch {}
 }
 
 export default function TemplateSelector({ selected, onSelect }: Props) {
   const { user } = useAuth();
   const [showImporter, setShowImporter] = useState(false);
   const [previews, setPreviews] = useState<Map<string, string>>(new Map());
-  const [customTemplates, setCustomTemplates] = useState<CarouselTemplate[]>(loadLocalTemplates);
+  const [customTemplates, setCustomTemplates] = useState<CarouselTemplate[]>([]);
   const [showBuilder, setShowBuilder] = useState(false);
   const [editTemplate, setEditTemplate] = useState<CarouselTemplate | null>(null);
 
-  // Load custom templates from Supabase for authenticated users
+  // Load custom templates — scoped by user ID (no cross-account leakage)
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      setCustomTemplates([]); // Guests see no custom templates
+      return;
+    }
+    // Try Supabase first (authoritative), fall back to user-scoped localStorage
     getCustomTemplates(user.id).then(serverTemplates => {
       if (serverTemplates.length > 0) {
         const merged = serverTemplates as unknown as CarouselTemplate[];
         setCustomTemplates(merged);
-        saveLocalTemplates(merged); // sync to localStorage as backup
+        saveLocalTemplates(merged, user.id);
+      } else {
+        setCustomTemplates(loadLocalTemplates(user.id));
       }
     });
   }, [user?.id]);
@@ -63,7 +71,7 @@ export default function TemplateSelector({ selected, onSelect }: Props) {
     const updated = customTemplates.filter(t => t.id !== template.id);
     updated.push(template);
     setCustomTemplates(updated);
-    saveLocalTemplates(updated);
+    saveLocalTemplates(updated, user?.id);
     if (user?.id) {
       saveCustomTemplate(user.id, template as unknown as Record<string, unknown>);
     }
@@ -75,7 +83,7 @@ export default function TemplateSelector({ selected, onSelect }: Props) {
     if (!confirm('Delete this custom template?')) return;
     const updated = customTemplates.filter(t => t.id !== templateId);
     setCustomTemplates(updated);
-    saveLocalTemplates(updated);
+    saveLocalTemplates(updated, user?.id);
     if (user?.id) {
       deleteCustomTemplate(user.id, templateId);
     }

@@ -1045,7 +1045,7 @@ export default function NewMusicFriday() {
                   onClick={() => setViewMode('tracks')}
                   style={{ fontSize: 'var(--fs-2xs)', padding: '2px 8px' }}
                 >Tracks</button>
-                <Link to="/newmusicfriday/archive" className="filter-pill" style={{ textDecoration: 'none', fontSize: 'var(--fs-2xs)', padding: '2px 8px' }}>
+                <Link to="/newmusicfriday/archive" className="filter-pill" style={{ textDecoration: 'none', fontSize: 'var(--fs-2xs)', padding: '2px 8px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
                   Archive
                 </Link>
                 {/* Thumbnail size slider */}

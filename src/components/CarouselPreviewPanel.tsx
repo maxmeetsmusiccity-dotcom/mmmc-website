@@ -383,9 +383,9 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
             </div>
           </div>
 
-          {/* Grid Slide Style */}
+          {/* Grid Slide Style Template */}
           <div style={{ marginBottom: 20 }}>
-            <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginBottom: 8 }}>Grid Slide Style</p>
+            <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginBottom: 8 }}>Grid Slide Style Template</p>
             <TemplateSelector selected={gridTemplateId} onSelect={handleGridTemplateChange} />
           </div>
 
