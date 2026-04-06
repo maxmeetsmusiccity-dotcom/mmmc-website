@@ -636,10 +636,10 @@ export default function NewMusicFriday() {
     <div style={{ minHeight: '100vh' }}>
       {/* Header — fixed at top, always visible */}
       <header style={{
-        padding: '14px 24px',
+        padding: '16px 24px',
         borderBottom: '2px solid var(--gold-dark)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        flexWrap: 'wrap', gap: 12, minHeight: 48,
+        flexWrap: 'wrap', gap: 14, minHeight: 54,
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40,
         background: 'var(--midnight)',
         boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
@@ -683,7 +683,7 @@ export default function NewMusicFriday() {
         </div>
       </header>
       {/* Spacer for fixed header */}
-      <div style={{ height: 52 }} />
+      <div style={{ height: 56 }} />
 
       {error && (
         <div style={{
@@ -923,17 +923,17 @@ export default function NewMusicFriday() {
           {/*  STICKY TOOLBAR: counter + filters (consolidated 4→2 rows)    */}
           {/* ============================================================ */}
           {/* Spacer for fixed header */}
-          <div style={{ height: 52 }} />
+          <div style={{ height: 56 }} />
           <div style={{
-            position: 'fixed', top: 52, left: 0, right: 0, zIndex: 35,
+            position: 'fixed', top: 56, left: 0, right: 0, zIndex: 35,
             background: 'var(--midnight)', borderBottom: '2px solid var(--midnight-border)',
             boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
           }}>
             {/* Row 1: Selection counter + target + filters + stats */}
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              flexWrap: 'wrap', gap: 12, minHeight: 44,
-              padding: '10px 24px',
+              flexWrap: 'wrap', gap: 12, minHeight: 48,
+              padding: '12px 24px',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <span className="mono" style={{
@@ -1093,8 +1093,8 @@ export default function NewMusicFriday() {
             </div>
           </div>
 
-          {/* Spacer for fixed toolbar */}
-          <div style={{ height: 100 }} />
+          {/* Spacer for fixed toolbar (header 56px + toolbar rows ~130px) */}
+          <div style={{ height: 130 }} />
 
           {/* ============================================================ */}
           {/*  STEP 1: SELECT TRACKS (scrollable grid below fixed bars)    */}
