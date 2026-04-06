@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { getVisibleTitleTemplates, type TitleSlideTemplate } from '../lib/title-templates';
 import { useAuth } from '../lib/auth-context';
-import TitleTemplateBuilder from './TitleTemplateBuilder';
+import UnifiedTemplateBuilder from './UnifiedTemplateBuilder';
 
 interface Props {
   selected: string;
@@ -118,7 +118,8 @@ export default function TitleTemplatePicker({ selected, onSelect, onHover }: Pro
       </div>
 
       {showBuilder && (
-        <TitleTemplateBuilder
+        <UnifiedTemplateBuilder
+          mode="title"
           initial={editTemplate}
           onSave={(customTemplate) => {
             onSelect(customTemplate.id);

@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { type CarouselTemplate, getVisibleTemplates } from '../lib/carousel-templates';
 import { generateTemplatePreview } from '../lib/canvas-grid';
 import { saveCustomTemplate, deleteCustomTemplate, getCustomTemplates } from '../lib/supabase';
-import TemplateBuilder from './TemplateBuilder';
+import UnifiedTemplateBuilder from './UnifiedTemplateBuilder';
 import TemplateImporter from './TemplateImporter';
 import { useAuth } from '../lib/auth-context';
 
@@ -214,7 +214,8 @@ export default function TemplateSelector({ selected, onSelect }: Props) {
       </button>
 
       {showBuilder && (
-        <TemplateBuilder
+        <UnifiedTemplateBuilder
+          mode="grid"
           initial={editTemplate || undefined}
           onSave={(t) => { handleSaveCustom(t); setEditTemplate(null); }}
           onCancel={() => { setShowBuilder(false); setEditTemplate(null); }}

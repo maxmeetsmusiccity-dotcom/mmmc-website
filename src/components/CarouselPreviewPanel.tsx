@@ -15,7 +15,7 @@ import type { SelectionSlot } from '../lib/selection';
 import { buildSlots } from '../lib/selection';
 import { useAuth } from '../lib/auth-context';
 import { getDefaultTitleTemplateId } from '../lib/title-templates';
-import TitleSlideEditor from './TitleSlideEditor';
+// TitleSlideEditor replaced by UnifiedTemplateBuilder (accessed via TitleTemplatePicker)
 
 /** Compute valid tracks-per-slide options based on total selected tracks */
 function getTracksPerSlideOptions(totalTracks: number): { value: number; label: string }[] {
@@ -115,7 +115,7 @@ const CarouselPreviewPanel = forwardRef<CarouselPanelHandle, Props>(function Car
   const logoFileRef = useRef<HTMLInputElement>(null);
   const setCarouselAspect = onAspectChange;
   const [comparePreviews, setComparePreviews] = useState<{ id: string; name: string; url: string }[]>([]);
-  const [showTitleEditor, setShowTitleEditor] = useState(false);
+  // Title editing now handled by UnifiedTemplateBuilder via TitleTemplatePicker
 
   void platformId; // used in cross-platform export
   const weekDate = getLastFriday();
@@ -422,16 +422,7 @@ const CarouselPreviewPanel = forwardRef<CarouselPanelHandle, Props>(function Car
                 onSelect={id => { hasUserChangedTitle.current = true; setTitleTemplateId(id); localStorage.setItem('nmf_title_template', id); setAllPreviews([]); }}
               />
             </div>
-            {titleTemplateId !== 'none' && (
-              <button
-                className="btn btn-sm"
-                onClick={() => setShowTitleEditor(true)}
-                style={{ fontSize: 'var(--fs-xs)', marginTop: 4 }}
-                title="Open visual editor to customize this title slide"
-              >
-                Customize Title Slide
-              </button>
-            )}
+            {/* Title customization now via "Create New" in TitleTemplatePicker */}
           </div>
 
           {/* Slide Split */}
@@ -662,21 +653,7 @@ const CarouselPreviewPanel = forwardRef<CarouselPanelHandle, Props>(function Car
           </div>
         </div>
       )}
-      {/* Title Slide Visual Editor */}
-      {showTitleEditor && (
-        <TitleSlideEditor
-          templateId={titleTemplateId}
-          coverFeature={coverFeature}
-          weekDate={weekDate}
-          onSave={(customTemplate) => {
-            // For now, just apply the template settings and close
-            setTitleTemplateId(customTemplate.id);
-            setShowTitleEditor(false);
-            setAllPreviews([]);
-          }}
-          onCancel={() => setShowTitleEditor(false)}
-        />
-      )}
+      {/* Title editing handled by UnifiedTemplateBuilder via TitleTemplatePicker */}
     </div>
   );
 });
