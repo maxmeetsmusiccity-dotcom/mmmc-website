@@ -47,9 +47,9 @@ export default function SourceSelector({
             >
               {isSpotifyLocked && (
                 <div style={{
-                  position: 'absolute', top: 14, right: -20, transform: 'rotate(45deg)',
-                  background: 'var(--gold-dark)', color: 'var(--midnight)', fontSize: 9,
-                  fontWeight: 700, padding: '3px 30px', letterSpacing: '0.05em',
+                  position: 'absolute', top: 16, right: -18, transform: 'rotate(45deg)',
+                  background: 'var(--gold)', color: 'var(--midnight)', fontSize: 10,
+                  fontWeight: 700, padding: '4px 32px', letterSpacing: '0.06em',
                 }}>
                   COMING SOON
                 </div>
@@ -62,7 +62,7 @@ export default function SourceSelector({
                 {source.name}
               </span>
               <span style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)' }}>
-                {isSpotifyLocked ? 'Available soon' : source.description}
+                {isSpotifyLocked ? 'Scan your library' : source.description}
               </span>
               {source.requiresAuth && !isSpotifyLocked && (
                 <span style={{
