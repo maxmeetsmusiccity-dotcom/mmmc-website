@@ -22,7 +22,9 @@ export default function AuthGate({ children }: Props) {
     );
   }
 
-  if (user || isGuest) return <>{children}</>;
+  // Even if signed in, show the landing page until user explicitly enters this session
+  const hasEntered = sessionStorage.getItem('nmf_entered') === '1';
+  if ((user || isGuest) && hasEntered) return <>{children}</>;
 
   const handleEmail = async () => {
     if (isSignUp && !tosAccepted) {
@@ -32,6 +34,7 @@ export default function AuthGate({ children }: Props) {
     setError('');
     setSubmitting(true);
     try {
+      sessionStorage.setItem('nmf_entered', '1');
       if (isSignUp) await signUpWithEmail(email, password);
       else await signInWithEmail(email, password);
     } catch (e) {
@@ -62,10 +65,21 @@ export default function AuthGate({ children }: Props) {
           This tool exists because your work matters. You listen to everything, you find the gems, and you share them with the world. We're here to save you time so you can focus on what you do best.
         </p>
 
+        {/* Already signed in — show a quick "Continue" instead of full auth */}
+        {user && (
+          <button
+            className="btn btn-gold"
+            onClick={() => { sessionStorage.setItem('nmf_entered', '1'); window.location.reload(); }}
+            style={{ width: '100%', justifyContent: 'center', fontSize: 'var(--fs-lg)', padding: '14px 0', marginBottom: 12 }}
+          >
+            Continue as {user.email?.split('@')[0] || 'User'}
+          </button>
+        )}
+
         {/* Continue as Guest */}
         <button
           className="btn btn-gold"
-          onClick={continueAsGuest}
+          onClick={() => { sessionStorage.setItem('nmf_entered', '1'); continueAsGuest(); }}
           style={{ width: '100%', justifyContent: 'center', fontSize: 'var(--fs-lg)', padding: '14px 0', marginBottom: 12 }}
         >
           Jump In
@@ -74,7 +88,7 @@ export default function AuthGate({ children }: Props) {
         {/* Google Sign-In */}
         <button
           className="btn"
-          onClick={signInWithGoogle}
+          onClick={() => { sessionStorage.setItem('nmf_entered', '1'); signInWithGoogle(); }}
           style={{ width: '100%', justifyContent: 'center', fontSize: 'var(--fs-lg)', padding: '12px 0', marginBottom: 12 }}
         >
           Sign in with Google

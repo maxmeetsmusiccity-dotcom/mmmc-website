@@ -41,15 +41,15 @@ export default function SourceSelector({
                 border: isActive ? '2px solid var(--gold)' : '2px solid var(--midnight-border)',
                 transition: 'all 0.15s',
                 display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
-                opacity: isSpotifyLocked ? 0.35 : isActive ? 1 : 0.7,
+                opacity: isSpotifyLocked ? 0.55 : isActive ? 1 : 0.7,
                 position: 'relative', overflow: 'hidden',
               }}
             >
               {isSpotifyLocked && (
                 <div style={{
-                  position: 'absolute', top: 8, right: -24, transform: 'rotate(45deg)',
-                  background: 'var(--gold-dark)', color: 'var(--midnight)', fontSize: 8,
-                  fontWeight: 700, padding: '2px 28px', letterSpacing: '0.05em',
+                  position: 'absolute', top: 14, right: -20, transform: 'rotate(45deg)',
+                  background: 'var(--gold-dark)', color: 'var(--midnight)', fontSize: 9,
+                  fontWeight: 700, padding: '3px 30px', letterSpacing: '0.05em',
                 }}>
                   COMING SOON
                 </div>

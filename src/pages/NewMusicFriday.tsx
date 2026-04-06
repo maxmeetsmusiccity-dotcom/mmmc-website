@@ -115,7 +115,7 @@ export default function NewMusicFriday() {
   const [copied, setCopied] = useState(false);
   const [appleEnriching, setAppleEnriching] = useState(false);
   const [featureCounts, setFeatureCounts] = useState<Map<string, number>>(new Map());
-  const [activeSource, setActiveSource] = useState<MusicSource['id']>('spotify');
+  const [activeSource, setActiveSource] = useState<MusicSource['id']>('nashville');
   const [tracksPerSlide, setTracksPerSlide] = useState(8);
   const [viewMode, setViewMode] = useState<'releases' | 'tracks'>('releases');
   const [loadedFromCache, setLoadedFromCache] = useState(false);
@@ -763,8 +763,8 @@ export default function NewMusicFriday() {
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
           minHeight: '60vh', padding: 24, textAlign: 'center',
         }}>
-          <div className="animate-float-up" style={{ maxWidth: 560, width: '100%' }}>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.75rem', marginBottom: 16 }}>
+          <div className="animate-float-up" style={{ maxWidth: 700, width: '100%' }}>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '2.25rem', marginBottom: 20 }}>
               Ready to <span style={{ color: 'var(--gold)' }}>Scan</span>
             </h2>
 
@@ -777,24 +777,21 @@ export default function NewMusicFriday() {
 
             {/* Spotify source */}
             {activeSource === 'spotify' && (
-              <div style={{ marginTop: 16 }}>
-                <p style={{ color: 'var(--text-secondary)', marginBottom: 16, fontSize: 'var(--fs-md)' }}>
+              <div style={{ marginTop: 20 }}>
+                <p style={{ color: 'var(--text-secondary)', marginBottom: 20, fontSize: 'var(--fs-xl)' }}>
                   {token ? 'Scan your followed artists for new releases since last Friday.' : 'Connect your Spotify account to scan followed artists for new releases.'}
                 </p>
-                <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
                   {token ? (
-                    <button data-testid="scan-button" className="btn btn-gold" onClick={() => runScan(token)} style={{ fontSize: 'var(--fs-lg)', padding: '14px 32px' }}>
+                    <button data-testid="scan-button" className="btn btn-gold" onClick={() => runScan(token)} style={{ fontSize: 'var(--fs-xl)', padding: '16px 40px' }}>
                       Scan New Releases
                     </button>
                   ) : (
-                    <button className="btn btn-spotify" onClick={startAuth} style={{ fontSize: 'var(--fs-lg)', padding: '14px 32px' }}>
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
-                      </svg>
+                    <button className="btn btn-spotify" onClick={startAuth} style={{ fontSize: 'var(--fs-xl)', padding: '16px 40px', opacity: isGuest ? 0.5 : 1, cursor: isGuest ? 'not-allowed' : 'pointer' }} disabled={isGuest}>
                       Connect Spotify
                     </button>
                   )}
-                  <button className="btn" onClick={loadDemo}>
+                  <button className="btn" onClick={loadDemo} style={{ fontSize: 'var(--fs-xl)', padding: '16px 40px' }}>
                     Try Demo
                   </button>
                 </div>

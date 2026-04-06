@@ -87,23 +87,55 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // ── No filters: return category index ──
   if (!category && !searchQuery) {
+    // Handle categories as array or object
+    const cats = Array.isArray(data.categories)
+      ? data.categories.map((c: any) => ({
+          id: c.id || c.name, name: c.name || c.id, emoji: c.emoji || '',
+          type: c.type || '', count: c.count || (c.artists?.length || 0),
+        }))
+      : Object.entries(data.categories || {}).map(([id, cat]: [string, any]) => ({
+          id, ...cat,
+        }));
+
+    // Count total artists across all categories
+    let totalArtists = data.artists?.length || 0;
+    if (totalArtists === 0 && Array.isArray(data.categories)) {
+      const seen = new Set<string>();
+      for (const c of data.categories) {
+        for (const a of (c.artists || [])) seen.add(a.name);
+      }
+      totalArtists = seen.size;
+    }
+
     res.setHeader('Cache-Control', 's-maxage=600, stale-while-revalidate=120');
     return res.status(200).json({
-      categories: Object.entries(data.categories || {}).map(([id, cat]) => ({
-        id, ...cat,
-      })),
-      total_artists: data.artists?.length || 0,
+      categories: cats,
+      total_artists: totalArtists,
       generated_at: data.generated_at,
       source: 'r2',
     });
   }
 
-  let artists = data.artists || [];
+  // Build flat artist list — R2 may have artists at top level OR nested in categories
+  let artists: BrowseArtist[] = data.artists || [];
+  const categoriesArr = Array.isArray(data.categories) ? data.categories : [];
+  if (artists.length === 0 && categoriesArr.length > 0) {
+    // Extract artists from category objects
+    const seen = new Set<string>();
+    for (const cat of categoriesArr) {
+      for (const a of (cat.artists || [])) {
+        if (!seen.has(a.name)) {
+          seen.add(a.name);
+          artists.push({ ...a, categories: [...(a.categories || []), cat.id || cat.name] });
+        }
+      }
+    }
+  }
 
   // ── Search mode ──
   if (searchQuery) {
-    artists = artists.filter(a =>
-      a.name.toLowerCase().includes(searchQuery) ||
+    const filtered = artists.filter(a =>
+      (a.name || '').toLowerCase().includes(searchQuery) ||
       (a.spotify_genres || []).some(g => g.toLowerCase().includes(searchQuery)) ||
       (a.camp_name || '').toLowerCase().includes(searchQuery)
     );
@@ -111,25 +143,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=60');
     return res.status(200).json({
       query: searchQuery,
-      results: artists.slice(0, 50),
-      total: artists.length,
+      results: filtered.slice(0, 100),
+      total: filtered.length,
       source: 'r2',
     });
   }
 
   // ── Category mode ──
-  const catMeta = data.categories?.[category!];
-  if (!catMeta) {
+  // Find category in the array (not object lookup)
+  const catObj = categoriesArr.find((c: any) => c.id === category || c.name === category);
+  if (!catObj) {
     return res.status(400).json({
       error: `Unknown category: ${category}`,
-      categories: Object.keys(data.categories || {}),
+      categories: categoriesArr.map((c: any) => c.id || c.name),
     });
   }
 
-  const matched = artists
-    .filter(a => (a.categories || []).includes(category!))
-    .sort((a, b) => b.monthly_listeners - a.monthly_listeners)
-    .slice(0, 50);
+  // If category has its own artists array, use those directly
+  const matched = catObj.artists?.length > 0
+    ? catObj.artists.slice(0, 100)
+    : artists.filter(a => (a.categories || []).includes(category!)).slice(0, 100);
 
   res.setHeader('Cache-Control', 's-maxage=600, stale-while-revalidate=120');
   return res.status(200).json({
