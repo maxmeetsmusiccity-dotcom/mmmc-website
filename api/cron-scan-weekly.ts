@@ -55,18 +55,37 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     total_tracks_found: 0,
   });
 
-  // Try to load artist list from R2 (full list with spotify IDs)
+  // Try to load artist list from R2
   let artistNames: string[] = SEED_ARTISTS;
   try {
     const r2Resp = await fetch(`${R2_BASE}/browse_artists.json`);
     if (r2Resp.ok) {
       const r2Data = await r2Resp.json();
+      // R2 file may have artists at top level OR nested in categories
+      const names = new Set<string>();
       if (r2Data.artists && r2Data.artists.length > 0) {
-        artistNames = r2Data.artists.map((a: { name: string }) => a.name);
+        for (const a of r2Data.artists) names.add(a.name);
+      }
+      // Also extract from category objects (Thread A nests artists inside categories)
+      if (Array.isArray(r2Data.categories)) {
+        for (const cat of r2Data.categories) {
+          if (Array.isArray(cat.artists)) {
+            for (const a of cat.artists) names.add(a.name);
+          }
+        }
+      }
+      if (names.size > 0) {
+        artistNames = [...names];
         console.log(`[CRON] Loaded ${artistNames.length} artists from R2`);
       }
     }
   } catch { console.log('[CRON] R2 not available, using seed list'); }
+
+  // Merge seed list to ensure key Nashville artists are always included
+  const allNames = new Set(artistNames);
+  for (const name of SEED_ARTISTS) allNames.add(name);
+  artistNames = [...allNames];
+  console.log(`[CRON] Total artists to scan: ${artistNames.length}`);
 
   // Scan in batches via our own scan-artists endpoint
   const batchSize = 50;
