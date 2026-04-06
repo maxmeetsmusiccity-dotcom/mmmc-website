@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import type { TrackItem } from '../lib/spotify';
 import { getLastFriday } from '../lib/spotify';
 import { generateGridSlide, generateTitleSlide, downloadBlob, type CarouselAspect } from '../lib/canvas-grid';
+import { getVisibleTemplates } from '../lib/carousel-templates';
 import { getGridsForCount } from '../lib/grid-layouts';
 // getPlatform used indirectly via platformId
 import { generatePlatformImage, PLATFORM_LIST, type PlatformId } from '../lib/cross-platform';
@@ -97,6 +98,7 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
   const [logoUrl, setLogoUrl] = useState(localStorage.getItem('nmf_logo_url') || '/mmmc-logo.png');
   const logoFileRef = useRef<HTMLInputElement>(null);
   const [carouselAspect, setCarouselAspect] = useState<CarouselAspect>('1:1');
+  const [comparePreviews, setComparePreviews] = useState<{ id: string; name: string; url: string }[]>([]);
 
   void platformId; // used in cross-platform export
   const weekDate = getLastFriday();
@@ -478,11 +480,56 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
           {generating ? 'Generating...' : allPreviews.length > 0 ? 'Regenerate All Slides' : 'Generate Carousel'}
         </button>
         {allPreviews.length > 0 && (
-          <button className="btn btn-sm" onClick={handleDownloadAll} title="Download all slides as individual PNGs">
+          <button className="btn btn-gold" onClick={handleDownloadAll} title="Download all slides as individual PNGs" style={{ fontSize: 'var(--fs-md)', padding: '10px 24px' }}>
             Download Instagram Carousel ({allPreviews.length} slides)
           </button>
         )}
       </div>
+      {/* Template comparison */}
+      {selectedTracks.length > 0 && slideGroups.length > 0 && (
+        <details style={{ marginBottom: 12 }}>
+          <summary style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)', cursor: 'pointer' }}>
+            Compare Templates {comparePreviews.length > 0 ? `(${comparePreviews.length})` : ''}
+          </summary>
+          <div style={{ marginTop: 8 }}>
+            <button
+              className="btn btn-sm"
+              onClick={async () => {
+                const templates = getVisibleTemplates(user?.email || undefined).slice(0, 4);
+                const firstGroup = slideGroups[0];
+                if (!firstGroup) return;
+                const slots = buildSlots(firstGroup.tracks.map((t, i) => ({
+                  track: t, albumId: t.album_spotify_id,
+                  selectionNumber: i + 1, slideGroup: 1,
+                  positionInSlide: i + 1, isCoverFeature: false,
+                })));
+                const results: { id: string; name: string; url: string }[] = [];
+                for (const tmpl of templates) {
+                  const blob = await generateGridSlide(slots, weekDate, tmpl.id, logoUrl, undefined, carouselAspect);
+                  results.push({ id: tmpl.id, name: tmpl.name, url: URL.createObjectURL(blob) });
+                }
+                setComparePreviews(prev => { prev.forEach(p => URL.revokeObjectURL(p.url)); return results; });
+              }}
+              style={{ fontSize: 'var(--fs-2xs)', marginBottom: 8 }}
+            >
+              Generate Comparison (first 4 templates)
+            </button>
+            {comparePreviews.length > 0 && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 8 }}>
+                {comparePreviews.map(p => (
+                  <div key={p.id} style={{ textAlign: 'center' }}>
+                    <img src={p.url} alt={p.name} style={{ width: '100%', borderRadius: 6, border: gridTemplateId === p.id ? '2px solid var(--gold)' : '1px solid var(--midnight-border)' }} />
+                    <p style={{ fontSize: 'var(--fs-3xs)', color: gridTemplateId === p.id ? 'var(--gold)' : 'var(--text-muted)', marginTop: 4, fontWeight: gridTemplateId === p.id ? 700 : 400 }}>
+                      {p.name} {gridTemplateId === p.id ? '(current)' : ''}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </details>
+      )}
+
       {/* Other platform exports — collapsible */}
       {allPreviews.length > 0 && (
         <details style={{ marginBottom: 16 }}>

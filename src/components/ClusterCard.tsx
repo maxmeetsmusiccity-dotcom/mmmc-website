@@ -142,8 +142,8 @@ export default memo(function ClusterCard({ cluster, selectionSlot, selectedSlots
               {featureCount && featureCount > 0 ? ` · ${featureCount}x featured` : ''}
             </span>
           </p>
-          {/* Action row — Pick tracks (modal) + Spotify link (hover-reveal at small sizes) */}
-          <div className="card-actions" style={{ display: 'flex', gap: 6, marginTop: 4, alignItems: 'center' }}>
+          {/* Action row — Pick tracks (modal) + Spotify link */}
+          <div className="card-actions" style={{ display: 'flex', gap: 6, marginTop: 4, alignItems: 'center', flexWrap: 'wrap' }}>
             {!cluster.isSingle && (
               <button
                 onClick={(e) => { e.stopPropagation(); setShowModal(true); }}
@@ -166,6 +166,20 @@ export default memo(function ClusterCard({ cluster, selectionSlot, selectedSlots
               }}
             >
               Spotify
+            </a>
+            <a
+              href={`https://nashvilledecoder.com/search?q=${encodeURIComponent(cluster.artist_names)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                fontSize: 'var(--fs-3xs)', color: 'var(--text-muted)',
+                padding: '1px 6px', border: '1px solid var(--midnight-border)', borderRadius: 4,
+                whiteSpace: 'nowrap', filter: 'blur(0px)', transition: 'filter 0.15s',
+              }}
+              title="See full credits on Nashville Decoder"
+            >
+              Credits &rarr; ND
             </a>
           </div>
         </div>

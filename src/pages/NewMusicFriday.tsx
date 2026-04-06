@@ -129,6 +129,7 @@ export default function NewMusicFriday() {
 
   // Quick Look: spacebar preview
   const [quickLookAlbum, setQuickLookAlbum] = useState<ReleaseCluster | null>(null);
+  const [showShortcuts, setShowShortcuts] = useState(false);
   const hoveredCluster = useRef<ReleaseCluster | null>(null);
 
   // Rubber-band drag select
@@ -491,14 +492,20 @@ export default function NewMusicFriday() {
         e.preventDefault();
         setQuickLookAlbum(prev => prev ? null : hoveredCluster.current);
       }
-      // Escape — dismiss Quick Look
-      if (e.key === 'Escape' && quickLookAlbum) {
-        setQuickLookAlbum(null);
+      // Escape — dismiss Quick Look or shortcuts overlay
+      if (e.key === 'Escape') {
+        if (quickLookAlbum) setQuickLookAlbum(null);
+        if (showShortcuts) setShowShortcuts(false);
+      }
+      // ? — show keyboard shortcuts
+      if (e.key === '?' || (meta && e.key === '/')) {
+        e.preventDefault();
+        setShowShortcuts(prev => !prev);
       }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [phase, releases, pushSelectionHistory, quickLookAlbum]);
+  }, [phase, releases, pushSelectionHistory, quickLookAlbum, showShortcuts]);
 
   // Filtered releases for browse
   const filteredReleases = useMemo(() => {
@@ -1506,6 +1513,33 @@ export default function NewMusicFriday() {
             <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)', marginTop: 4 }}>
               Press Space or Escape to close
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* Keyboard shortcuts overlay */}
+      {showShortcuts && (
+        <div
+          onClick={() => setShowShortcuts(false)}
+          style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        >
+          <div onClick={e => e.stopPropagation()} style={{ background: 'var(--midnight-raised)', borderRadius: 16, padding: 32, maxWidth: 480, width: '90%', border: '1px solid var(--midnight-border)' }}>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-2xl)', marginBottom: 20, color: 'var(--gold)' }}>Keyboard Shortcuts</h2>
+            {[
+              ['Cmd + A', 'Select all visible releases'],
+              ['Cmd + Shift + A', 'Clear all selections'],
+              ['Cmd + Z', 'Undo last selection change'],
+              ['Space', 'Quick Look preview (hover over album first)'],
+              ['Shift + Drag', 'Rubber-band select multiple albums'],
+              ['Escape', 'Close modal / overlay'],
+              ['?', 'Toggle this shortcuts panel'],
+            ].map(([key, desc]) => (
+              <div key={key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--midnight-border)' }}>
+                <kbd style={{ background: 'var(--midnight)', padding: '3px 10px', borderRadius: 6, fontSize: 'var(--fs-sm)', fontFamily: 'var(--font-mono)', color: 'var(--gold)', border: '1px solid var(--midnight-border)' }}>{key}</kbd>
+                <span style={{ color: 'var(--text-secondary)', fontSize: 'var(--fs-sm)' }}>{desc}</span>
+              </div>
+            ))}
+            <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)', marginTop: 16, textAlign: 'center' }}>Press Escape or ? to close</p>
           </div>
         </div>
       )}
