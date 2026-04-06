@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import type { TrackItem } from '../lib/spotify';
 import { NASHVILLE_SEED_ARTISTS, releasesToTrackItems, type NashvilleRelease } from '../lib/sources/nashville';
+import { supabase } from '../lib/supabase';
 
 interface Props {
   onImport: (tracks: TrackItem[]) => void;
@@ -71,8 +72,40 @@ export default function NashvilleReleases({ onImport }: Props) {
     scanning.current = false;
   };
 
-  // Don't auto-scan — let user click the button
-  useEffect(() => { /* intentionally empty — user triggers scan */ }, []);
+  // On mount: check Supabase cache for this week's releases
+  useEffect(() => {
+    (async () => {
+      try {
+        if (!supabase) return;
+        const { data, error: err } = await supabase
+          .from('weekly_nashville_releases')
+          .select('*')
+          .order('artist_name');
+        if (!err && data && data.length > 0) {
+          const mapped: NashvilleRelease[] = data.map(r => ({
+            pg_id: r.spotify_artist_id || '',
+            artist_name: r.artist_name,
+            track_name: r.track_name,
+            album_name: r.album_name,
+            release_type: r.album_type || 'single',
+            release_date: r.release_date,
+            spotify_track_id: r.track_id,
+            spotify_album_id: r.album_id || '',
+            cover_art_url: r.cover_art_640 || '',
+            cover_art_300: r.cover_art_300 || '',
+            track_number: r.track_number || 1,
+            duration_ms: r.duration_ms || 0,
+            explicit: r.explicit || false,
+            total_tracks: r.total_tracks || 1,
+            is_charting: false,
+          }));
+          setReleases(mapped);
+          setWeek(data[0]?.scan_week || '');
+          setGeneratedAt(data[0]?.scanned_at || '');
+        }
+      } catch { /* no cache, user can trigger scan */ }
+    })();
+  }, []);
 
   const filtered = chartFilter ? releases.filter(r => r.is_charting) : releases;
   const chartingCount = releases.filter(r => r.is_charting).length;
