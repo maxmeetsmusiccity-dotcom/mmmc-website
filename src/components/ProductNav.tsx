@@ -38,6 +38,14 @@ export default function ProductNav({ showAdmin, backTo, backLabel }: Props) {
       >
         Curator Studio
       </Link>
+      <span style={{
+        fontSize: 10, fontWeight: 800, letterSpacing: '0.1em',
+        color: 'var(--gold)', border: '1px solid var(--gold-dark)',
+        borderRadius: 4, padding: '2px 6px', lineHeight: 1,
+        background: 'rgba(212,168,67,0.1)',
+      }}>
+        BETA
+      </span>
       {showAdmin && (
         <Link
           to="/admin"
