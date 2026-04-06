@@ -89,8 +89,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // Support resuming: ?start=500 skips first 500 artists
   const startIdx = parseInt(req.query.start as string || '0', 10);
-  // Cap at 500 artists per invocation to stay within 300s timeout
-  const maxPerRun = 500;
+  // Cap at 200 artists per invocation to stay within 300s timeout
+  const maxPerRun = 200;
   const endIdx = Math.min(startIdx + maxPerRun, artistNames.length);
   const batch = artistNames.slice(startIdx, endIdx);
 
