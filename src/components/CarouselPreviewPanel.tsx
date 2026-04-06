@@ -233,12 +233,15 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
   };
 
   const handleDownloadAll = async () => {
+    const JSZip = (await import('jszip')).default;
+    const zip = new JSZip();
     for (let i = 0; i < allPreviews.length; i++) {
       const res = await fetch(allPreviews[i]);
       const blob = await res.blob();
-      downloadBlob(blob, `nmf-${platformId}-slide-${i + 1}.png`);
-      if (i < allPreviews.length - 1) await new Promise(r => setTimeout(r, 200));
+      zip.file(`nmf-slide-${i + 1}.png`, blob);
     }
+    const zipBlob = await zip.generateAsync({ type: 'blob' });
+    downloadBlob(zipBlob, `nmf-carousel-${weekDate}.zip`);
   };
 
   if (selectedTracks.length === 0) return null;
@@ -494,8 +497,8 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
           {generating ? 'Generating...' : allPreviews.length > 0 ? 'Regenerate All Slides' : 'Generate Carousel'}
         </button>
         {allPreviews.length > 0 && (
-          <button className="btn btn-gold" onClick={handleDownloadAll} title="Download all slides as individual PNGs" style={{ fontSize: 'var(--fs-md)', padding: '10px 24px' }}>
-            Download Instagram Carousel ({allPreviews.length} slides)
+          <button className="btn btn-gold" onClick={handleDownloadAll} title="Download all slides as a ZIP file" style={{ fontSize: 'var(--fs-md)', padding: '10px 24px' }}>
+            Download ZIP ({allPreviews.length} slides)
           </button>
         )}
       </div>

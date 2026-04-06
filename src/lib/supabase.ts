@@ -157,15 +157,31 @@ export async function saveHandle(handle: IGHandle): Promise<boolean> {
 
 export async function saveCustomTemplate(userId: string, template: Record<string, unknown>): Promise<boolean> {
   if (!supabase) return false;
-  const { error } = await supabase
+  const templateId = template.id as string;
+  // Check if exists first
+  const { data: existing } = await supabase
     .from('custom_templates')
-    .upsert({
-      user_id: userId,
-      template_id: template.id,
-      template_data: template,
-      updated_at: new Date().toISOString(),
-    }, { onConflict: 'user_id,template_id' });
-  if (error) { console.error('saveCustomTemplate error:', error); return false; }
+    .select('id')
+    .eq('user_id', userId)
+    .eq('template_name', templateId)
+    .limit(1);
+
+  if (existing && existing.length > 0) {
+    const { error } = await supabase
+      .from('custom_templates')
+      .update({ config: template, updated_at: new Date().toISOString() })
+      .eq('id', existing[0].id);
+    if (error) { console.error('saveCustomTemplate update error:', error); return false; }
+  } else {
+    const { error } = await supabase
+      .from('custom_templates')
+      .insert({
+        user_id: userId,
+        template_name: templateId,
+        config: template,
+      });
+    if (error) { console.error('saveCustomTemplate insert error:', error); return false; }
+  }
   return true;
 }
 
@@ -173,11 +189,11 @@ export async function getCustomTemplates(userId: string): Promise<Record<string,
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('custom_templates')
-    .select('template_data')
+    .select('config')
     .eq('user_id', userId)
     .order('updated_at', { ascending: false });
   if (error) { console.error('getCustomTemplates error:', error); return []; }
-  return (data || []).map(row => row.template_data as Record<string, unknown>);
+  return (data || []).map(row => row.config as Record<string, unknown>);
 }
 
 export async function deleteCustomTemplate(userId: string, templateId: string): Promise<boolean> {
@@ -186,7 +202,7 @@ export async function deleteCustomTemplate(userId: string, templateId: string): 
     .from('custom_templates')
     .delete()
     .eq('user_id', userId)
-    .eq('template_id', templateId);
+    .eq('template_name', templateId);
   if (error) { console.error('deleteCustomTemplate error:', error); return false; }
   return true;
 }
