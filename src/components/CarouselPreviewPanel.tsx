@@ -278,7 +278,7 @@ const CarouselPreviewPanel = forwardRef<CarouselPanelHandle, Props>(function Car
 
       {/* TWO-COLUMN with draggable divider on desktop, single column on mobile */}
       <ResizablePanel
-        left={<div>
+        left={<div style={{ minWidth: 0, overflow: 'hidden' }}>
           {/* Carousel Shape */}
           <div style={{ marginBottom: 20 }}>
             <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginBottom: 8 }}>Carousel Shape</p>
@@ -409,14 +409,14 @@ const CarouselPreviewPanel = forwardRef<CarouselPanelHandle, Props>(function Car
           </div>
 
           {/* Grid Slide Style Template */}
-          <div style={{ marginBottom: 20 }}>
+          <div style={{ marginBottom: 20, overflow: 'hidden', maxWidth: '100%' }}>
             <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginBottom: 8 }}>Grid Slide Style Template</p>
             <TemplateSelector selected={gridTemplateId} onSelect={handleGridTemplateChange} />
           </div>
 
           {/* Title Slide Template */}
-          <div style={{ marginBottom: 20 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+          <div style={{ marginBottom: 20, overflow: 'hidden', maxWidth: '100%' }}>
+            <div style={{ marginBottom: 4 }}>
               <TitleTemplatePicker
                 selected={titleTemplateId}
                 onSelect={id => { hasUserChangedTitle.current = true; setTitleTemplateId(id); localStorage.setItem('nmf_title_template', id); setAllPreviews([]); }}
