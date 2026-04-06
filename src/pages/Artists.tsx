@@ -28,6 +28,21 @@ interface BrowseArtist {
 
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
+/** Map category IDs to badge image paths (from CWC/ND badge assets) */
+const BADGE_IMAGES: Record<string, string> = {
+  whiskey_jam: '/badges/whiskeyjam.png',
+  song_suffragettes: '/badges/suffragettes.png',
+  bluebird: '/badges/bluebird.png',
+  '3rd_lindsley': '/badges/3rdlindsley.png',
+  listening_room: '/badges/listeningroom.png',
+  nashville_tour_stop: '/badges/opry.png',
+  rowdy_round: '/badges/rowdy.png',
+  opry: '/badges/opry.png',
+  cma: '/badges/cma.png',
+  acm: '/badges/acm.png',
+  grammy: '/badges/grammy.png',
+};
+
 const TIER_COLORS: Record<string, string> = {
   marquee: '#F5C453',
   rising: '#6aacda',
@@ -241,7 +256,11 @@ export default function Artists() {
                       fontSize: 12, cursor: 'pointer', whiteSpace: 'nowrap',
                     }}
                   >
-                    {c.emoji} {c.name}{c.count ? ` (${c.count})` : ''}
+                    {BADGE_IMAGES[c.id]
+                      ? <img src={BADGE_IMAGES[c.id]} alt="" style={{ width: 18, height: 18, objectFit: 'contain', verticalAlign: 'middle', marginRight: 4 }} />
+                      : <span style={{ marginRight: 2 }}>{c.emoji}</span>
+                    }
+                    {c.name}{c.count ? ` (${c.count})` : ''}
                   </button>
                 ))}
               </div>
