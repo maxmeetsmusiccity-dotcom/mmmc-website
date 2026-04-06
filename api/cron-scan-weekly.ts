@@ -87,75 +87,83 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   artistNames = [...allNames];
   console.log(`[CRON] Total artists to scan: ${artistNames.length}`);
 
-  // Scan in batches via our own scan-artists endpoint
+  // Support resuming: ?start=500 skips first 500 artists
+  const startIdx = parseInt(req.query.start as string || '0', 10);
+  // Cap at 500 artists per invocation to stay within 300s timeout
+  const maxPerRun = 500;
+  const endIdx = Math.min(startIdx + maxPerRun, artistNames.length);
+  const batch = artistNames.slice(startIdx, endIdx);
+
+  console.log(`[CRON] Scanning artists ${startIdx}-${endIdx} of ${artistNames.length}`);
+
+  // Scan in batches, save to Supabase progressively
   const batchSize = 50;
-  const allTracks: any[] = [];
+  let totalTracks = 0;
   let scanned = 0;
   const scanHost = req.headers.host || 'maxmeetsmusiccity.com';
   const protocol = scanHost.includes('localhost') ? 'http' : 'https';
 
-  for (let i = 0; i < artistNames.length; i += batchSize) {
-    const batch = artistNames.slice(i, i + batchSize);
+  for (let i = 0; i < batch.length; i += batchSize) {
+    const chunk = batch.slice(i, i + batchSize);
     try {
       const resp = await fetch(`${protocol}://${scanHost}/api/scan-artists`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ artistNames: batch }),
+        body: JSON.stringify({ artistNames: chunk }),
       });
       if (resp.ok) {
         const data = await resp.json();
-        allTracks.push(...(data.tracks || []));
+        const tracks = data.tracks || [];
+        totalTracks += tracks.length;
+
+        // Save immediately after each batch
+        if (tracks.length > 0) {
+          const rows = tracks.map((t: any) => ({
+            scan_week: weekDate,
+            spotify_artist_id: t.artist_id || null,
+            artist_name: t.artist_names,
+            track_id: t.track_id,
+            track_name: t.track_name,
+            album_name: t.album_name,
+            album_id: t.album_spotify_id || null,
+            album_type: t.album_type || 'single',
+            release_date: t.release_date,
+            cover_art_640: t.cover_art_640 || null,
+            cover_art_300: t.cover_art_300 || null,
+            track_number: t.track_number || 1,
+            duration_ms: t.duration_ms || 0,
+            explicit: t.explicit || false,
+            total_tracks: t.total_tracks || 1,
+            spotify_url: t.track_spotify_url || null,
+          }));
+          await supabase.from('weekly_nashville_releases').upsert(rows, { onConflict: 'scan_week,track_id' });
+        }
       }
     } catch (e) {
-      console.error(`[CRON] Batch ${i}-${i + batchSize} failed:`, e);
+      console.error(`[CRON] Batch ${startIdx + i}-${startIdx + i + batchSize} failed:`, e);
     }
-    scanned += batch.length;
-  }
-
-  // Store in Supabase — upsert to avoid duplicates
-  if (allTracks.length > 0) {
-    const rows = allTracks.map(t => ({
-      scan_week: weekDate,
-      spotify_artist_id: t.artist_id || null,
-      artist_name: t.artist_names,
-      track_id: t.track_id,
-      track_name: t.track_name,
-      album_name: t.album_name,
-      album_id: t.album_spotify_id || null,
-      album_type: t.album_type || 'single',
-      release_date: t.release_date,
-      cover_art_640: t.cover_art_640 || null,
-      cover_art_300: t.cover_art_300 || null,
-      track_number: t.track_number || 1,
-      duration_ms: t.duration_ms || 0,
-      explicit: t.explicit || false,
-      total_tracks: t.total_tracks || 1,
-      spotify_url: t.track_spotify_url || null,
-    }));
-
-    // Insert in chunks to avoid payload limits
-    for (let i = 0; i < rows.length; i += 100) {
-      const chunk = rows.slice(i, i + 100);
-      await supabase.from('weekly_nashville_releases').upsert(chunk, { onConflict: 'scan_week,track_id' });
-    }
+    scanned += chunk.length;
   }
 
   // Update metadata
+  const isComplete = endIdx >= artistNames.length;
   await supabase.from('scan_metadata').upsert({
     id: 'nashville_weekly',
     last_scan_week: weekDate,
     last_scan_at: new Date().toISOString(),
-    status: 'complete',
-    total_artists_scanned: scanned,
-    total_tracks_found: allTracks.length,
+    status: isComplete ? 'complete' : 'in_progress',
+    total_artists_scanned: endIdx,
+    total_tracks_found: totalTracks,
   });
 
-  console.log(`[CRON] Scan complete: ${scanned} artists, ${allTracks.length} tracks`);
+  console.log(`[CRON] Chunk done: ${scanned} artists, ${totalTracks} tracks (${startIdx}-${endIdx} of ${artistNames.length})`);
 
   return res.status(200).json({
-    status: 'complete',
+    status: isComplete ? 'complete' : 'in_progress',
     week: weekDate,
     artists_scanned: scanned,
-    tracks_found: allTracks.length,
+    tracks_found: totalTracks,
+    range: `${startIdx}-${endIdx} of ${artistNames.length}`,
+    next: isComplete ? null : `/api/cron-scan-weekly?start=${endIdx}`,
   });
 }
