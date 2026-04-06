@@ -404,11 +404,11 @@ export default function NewMusicFriday() {
     } catch (e) {
       if ((e as Error).message === 'AUTH_EXPIRED') {
         setToken(null);
-        setPhase('auth');
-        setError('Session expired. Please reconnect.');
+        setPhase('ready');
+        setError('Spotify session expired. Use the Nashville source or paste artist names instead.');
       } else {
         setError((e as Error).message);
-        setPhase('auth');
+        setPhase('ready');
       }
     }
   }, [weekDate]);
@@ -586,7 +586,7 @@ export default function NewMusicFriday() {
   const handleDisconnect = () => {
     clearToken();
     setToken(null);
-    setPhase('auth');
+    setPhase('ready');
     setAllTracks([]);
     setReleases([]);
     setSelections([]);
@@ -755,65 +755,7 @@ export default function NewMusicFriday() {
         </div>
       )}
 
-      {/* Auth Phase */}
-      {phase === 'auth' && !token && (
-        <div style={{
-          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-          minHeight: '60vh', padding: 24, textAlign: 'center',
-        }}>
-          <div className="animate-float-up" style={{ maxWidth: 400 }}>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.75rem', marginBottom: 12 }}>
-              Connect <span style={{ color: 'var(--gold)' }}>Spotify</span>
-            </h2>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: 32 }}>
-              Scan your followed artists for new releases since last Friday.
-            </p>
-            <button className="btn btn-spotify" onClick={startAuth} style={{ fontSize: 'var(--fs-lg)', padding: '14px 32px' }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
-              </svg>
-              Connect Spotify
-            </button>
-            <button className="btn" onClick={loadDemo} style={{ fontSize: 'var(--fs-lg)', padding: '14px 32px' }}>
-              Try Demo
-            </button>
-            <div style={{ marginTop: 32 }}>
-              <details style={{ textAlign: 'left' }}>
-                <summary style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-md)', cursor: 'pointer' }}>
-                  Manual token entry (if redirect fails)
-                </summary>
-                <div style={{ marginTop: 12 }}>
-                  <input
-                    type="text"
-                    className="search-input"
-                    placeholder="Paste access token or full redirect URL..."
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        const val = (e.target as HTMLInputElement).value.trim();
-                        try {
-                          const url = new URL(val);
-                          const code = url.searchParams.get('code');
-                          if (code) {
-                            exchangeCode(code).then(t => { setToken(t); setError(''); }).catch(err => setError(err.message));
-                            return;
-                          }
-                        } catch { /* not a URL */ }
-                        if (val.length > 20) {
-                          sessionStorage.setItem('spotify_token', val);
-                          setToken(val);
-                        }
-                      }
-                    }}
-                  />
-                  <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)', marginTop: 8 }}>
-                    Press Enter to submit. Accepts a full redirect URL with code= or a raw access token.
-                  </p>
-                </div>
-              </details>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Auth phase removed — users always see the source selector (phase='ready') */}
 
       {/* Ready Phase -- token received, waiting for explicit scan */}
       {phase === 'ready' && (
