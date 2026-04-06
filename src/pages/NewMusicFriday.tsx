@@ -678,30 +678,7 @@ export default function NewMusicFriday() {
           <ProductNav />
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-          {/* Cover feature indicator */}
-          {phase === 'results' && selections.length > 0 && (
-            (() => {
-              const cover = selections.find(s => s.isCoverFeature);
-              return cover ? (
-                <span style={{ color: 'var(--gold)', fontSize: 'var(--fs-xs)', fontWeight: 600 }}>
-                  &#9733; {cover.track.artist_names.split(/,/)[0]}
-                </span>
-              ) : (
-                <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)' }}>Set cover &#9733;</span>
-              );
-            })()
-          )}
-          {/* Aspect ratio toggle */}
-          {phase === 'results' && (
-            <div style={{ display: 'flex', gap: 2 }}>
-              <button className={`filter-pill ${carouselAspect === '1:1' ? 'active' : ''}`}
-                onClick={() => setCarouselAspect('1:1')}
-                style={{ fontSize: 'var(--fs-3xs)', padding: '2px 6px' }}>1:1</button>
-              <button className={`filter-pill ${carouselAspect === '3:4' ? 'active' : ''}`}
-                onClick={() => setCarouselAspect('3:4')}
-                style={{ fontSize: 'var(--fs-3xs)', padding: '2px 6px' }}>3:4</button>
-            </div>
-          )}
+          {/* Cover feature + aspect toggle moved to Row 2 */}
           {lastScanned && (
             <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-2xs)' }}>
               {new Date(lastScanned).toLocaleString()}
@@ -1115,7 +1092,7 @@ export default function NewMusicFriday() {
               </div>
             </div>
 
-            {/* Row 2: Actions — export toggle + generate + ZIP + indicators */}
+            {/* Row 2: Actions — exports + cover/aspect + generate + indicators */}
             <div style={{
               padding: '8px 24px 10px',
               borderTop: '1px solid var(--midnight-border)',
@@ -1147,44 +1124,66 @@ export default function NewMusicFriday() {
                   }}>{copied ? 'Copied!' : 'Manifest'}</button>
               )}
 
-              <span style={{ color: 'var(--midnight-border)', margin: '0 2px' }}>|</span>
+              <span style={{ color: 'var(--midnight-border)', margin: '0 4px' }}>|</span>
+
+              {/* Cover feature indicator */}
+              {selections.length > 0 && (
+                (() => {
+                  const cover = selections.find(s => s.isCoverFeature);
+                  return cover ? (
+                    <span style={{ color: 'var(--gold)', fontSize: 'var(--fs-xs)', fontWeight: 600 }}>
+                      &#9733; {(cover.track.artist_names || '').split(/,/)[0]}
+                    </span>
+                  ) : (
+                    <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)' }}>Set cover &#9733;</span>
+                  );
+                })()
+              )}
+
+              {/* Aspect ratio toggle */}
+              <div style={{ display: 'flex', gap: 2 }}>
+                <button className={`filter-pill ${carouselAspect === '1:1' ? 'active' : ''}`}
+                  onClick={() => setCarouselAspect('1:1')}
+                  style={{ fontSize: 'var(--fs-2xs)', padding: '3px 8px' }}>1:1</button>
+                <button className={`filter-pill ${carouselAspect === '3:4' ? 'active' : ''}`}
+                  onClick={() => setCarouselAspect('3:4')}
+                  style={{ fontSize: 'var(--fs-2xs)', padding: '3px 8px' }}>3:4</button>
+              </div>
 
               {/* Generate Carousel */}
               <button className="btn btn-sm btn-gold" style={{ fontSize: 'var(--fs-2xs)', padding: '4px 12px', fontWeight: 700 }}
                 disabled={selections.length === 0 || generating}
                 onClick={() => carouselRef.current?.generate()}>
-                {generating ? 'Generating...' : '\u2605 Generate'}
+                {generating ? 'Generating...' : '★ Generate'}
               </button>
 
               {/* Download ZIP */}
               {allPreviews.length > 0 && (
                 <button className="btn btn-sm" style={{ fontSize: 'var(--fs-2xs)', padding: '3px 10px' }}
                   onClick={() => carouselRef.current?.downloadAll()}>
-                  \uD83D\uDCE6 ZIP ({allPreviews.length})
+                  ZIP ({allPreviews.length})
                 </button>
               )}
 
-              <span style={{ color: 'var(--midnight-border)', margin: '0 2px' }}>|</span>
-
-              {/* Slide count */}
+              {/* Slide count — prominent */}
               {selections.length > 0 && (
-                <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-3xs)' }}>
+                <span className="mono" style={{ color: 'var(--gold)', fontSize: 'var(--fs-md)', fontWeight: 700 }}>
                   {Math.ceil(selections.length / tracksPerSlide)} slides
                 </span>
               )}
 
-              {/* Undo indicator */}
+              {/* Undo */}
               {selectionHistory.current.length > 0 && (
-                <button style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-3xs)', cursor: 'pointer', background: 'none', border: 'none', padding: '2px 4px' }}
+                <button className="btn btn-sm" style={{ fontSize: 'var(--fs-2xs)', padding: '3px 8px' }}
                   onClick={() => { const prev = selectionHistory.current.pop(); if (prev) setSelections(prev); }}
                   title="Undo last selection change">
-                  \u21A9 {selectionHistory.current.length}
+                  Undo ({selectionHistory.current.length})
                 </button>
               )}
 
-              {/* Keyboard shortcuts */}
-              <button style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-3xs)', cursor: 'pointer', background: 'none', padding: '2px 6px', borderRadius: 4, border: '1px solid var(--midnight-border)' }}
-                onClick={() => setShowShortcuts(true)} title="Keyboard shortcuts">?</button>
+              {/* Keyboard shortcuts — same size as CSV/JSON buttons */}
+              <button className="btn btn-sm" style={{ fontSize: 'var(--fs-2xs)', padding: '3px 8px' }}
+                onClick={() => setShowShortcuts(true)} title="Keyboard shortcuts">Shortcuts</button>
             </div>
           </div>
 
