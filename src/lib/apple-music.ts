@@ -65,7 +65,7 @@ export async function searchTrack(artistName: string, trackName: string): Promis
     // Try to find exact match
     const exactMatch = results.find(t =>
       t.attributes.name.toLowerCase() === trackName.toLowerCase() &&
-      t.attributes.artistName.toLowerCase().includes(artistName.split(',')[0].toLowerCase())
+      t.attributes.artistName.toLowerCase().includes((artistName || '').split(',')[0].toLowerCase())
     );
     return (exactMatch || results[0]).attributes.url;
   } catch {
@@ -91,7 +91,7 @@ export async function batchResolveAppleMusic(
         if (url) { results.set(key, url); return; }
       }
       // Fall back to search
-      const url = await searchTrack(t.artist_names.split(',')[0].trim(), t.track_name);
+      const url = await searchTrack((t.artist_names || '').split(',')[0].trim(), t.track_name);
       if (url) results.set(key, url);
     });
     await Promise.all(promises);

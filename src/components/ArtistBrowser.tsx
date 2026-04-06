@@ -214,7 +214,7 @@ export default function ArtistBrowser({ onScanArtists, scanning }: Props) {
                       fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)',
                       display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 2,
                     }}>
-                      <span>{artist.tier_display.split(' (')[0]}</span>
+                      <span>{(artist.tier_display || artist.tier || '').split(' (')[0]}</span>
                       {artist.monthly_listeners > 0 && (
                         <span>{formatListeners(artist.monthly_listeners)} listeners</span>
                       )}

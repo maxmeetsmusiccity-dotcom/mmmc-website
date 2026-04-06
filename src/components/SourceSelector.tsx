@@ -47,9 +47,12 @@ export default function SourceSelector({
             >
               {isSpotifyLocked && (
                 <div style={{
-                  position: 'absolute', top: 16, right: -18, transform: 'rotate(45deg)',
-                  background: 'var(--gold)', color: 'var(--midnight)', fontSize: 10,
-                  fontWeight: 700, padding: '4px 32px', letterSpacing: '0.06em',
+                  position: 'absolute', top: '50%', left: '50%',
+                  transform: 'translate(-50%, -50%) rotate(-20deg)',
+                  background: 'var(--gold)', color: 'var(--midnight)', fontSize: 11,
+                  fontWeight: 800, padding: '4px 16px', letterSpacing: '0.08em',
+                  borderRadius: 3, whiteSpace: 'nowrap',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
                 }}>
                   COMING SOON
                 </div>
