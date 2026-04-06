@@ -46,8 +46,11 @@ describe('carousel templates', () => {
 });
 
 describe('title templates', () => {
-  it('has 14 title templates (11 original + 3 new)', () => {
-    expect(TITLE_TEMPLATES.length).toBe(14);
+  it('has 13 title templates (10 original + 3 new, no duplicates)', () => {
+    expect(TITLE_TEMPLATES.length).toBe(13);
+    // Verify no duplicate IDs
+    const ids = TITLE_TEMPLATES.map(t => t.id);
+    expect(new Set(ids).size).toBe(ids.length);
   });
 
   it('all title templates have required fields', () => {

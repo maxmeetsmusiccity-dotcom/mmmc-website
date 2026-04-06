@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { getVisibleTitleTemplates, type TitleSlideTemplate } from '../lib/title-templates';
 import { useAuth } from '../lib/auth-context';
 import UnifiedTemplateBuilder from './UnifiedTemplateBuilder';
@@ -14,11 +14,20 @@ export default function TitleTemplatePicker({ selected, onSelect, onHover }: Pro
   const visibleTemplates = getVisibleTitleTemplates(user?.email || undefined);
   const [showBuilder, setShowBuilder] = useState(false);
   const [editTemplate, setEditTemplate] = useState<TitleSlideTemplate | undefined>(undefined);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to selected template on mount
+  useEffect(() => {
+    if (!scrollRef.current) return;
+    const el = scrollRef.current.querySelector(`[data-testid="title-template-${selected}"]`) as HTMLElement;
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  }, [selected]);
 
   return (
     <div data-testid="title-template-picker" style={{ marginBottom: 16 }}>
       <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginBottom: 8 }}>Title Slide Template</p>
       <div
+        ref={scrollRef}
         style={{
           display: 'flex', gap: 10, overflowX: 'scroll', paddingBottom: 12,
           WebkitOverflowScrolling: 'touch', scrollSnapType: 'x mandatory',

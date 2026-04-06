@@ -323,37 +323,7 @@ export const TITLE_TEMPLATES: TitleSlideTemplate[] = [
     swipePill: true,
   },
 
-  // 9. Polaroid Stack
-  {
-    id: 'polaroid_stack',
-    name: 'Polaroid Stack',
-    description: 'Warm & personal — curated-by-a-friend feel',
-    background: '#F8F4EF',
-    textPrimary: '#3A3A3A',
-    textSecondary: '#8A7A6A',
-    accent: '#D4A843',
-    headlineFont: '"Dancing Script", cursive',
-    subtitleFont: '"DM Sans", sans-serif',
-    dateFont: '"Dancing Script", cursive',
-    headlineWeight: 700,
-    headlineCase: 'capitalize',
-    headlineSize: 0.060,
-    subtitleSize: 0.022,
-    dateSize: 0.042,
-    headlineY: 0.04,
-    subtitleY: 0.12,
-    dateY: 0.90,
-    featuredImageY: 0.18,
-    featuredImageSize: 0.48,
-    glow: { color: 'rgba(0,0,0,0)', blur: 0, passes: 0 },
-    grain: 0.12,
-    vignette: 0.10,
-    showFrame: false, frameColor: '', frameWidth: 0,
-    showDivider: false, dividerColor: '',
-    featuredBorder: 16, featuredBorderColor: '#FFFFFF', featuredShadowBlur: 20, featuredRotation: -3,
-    texture: 'grain',
-    swipePill: false,
-  },
+  // 9. (Removed — duplicate polaroid_stack, kept version in Max-only section)
 
   // 10. Dark Cinematic
   {
