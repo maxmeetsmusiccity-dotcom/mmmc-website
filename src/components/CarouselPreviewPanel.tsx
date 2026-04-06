@@ -15,6 +15,7 @@ import type { SelectionSlot } from '../lib/selection';
 import { buildSlots } from '../lib/selection';
 import { useAuth } from '../lib/auth-context';
 import { getDefaultTitleTemplateId } from '../lib/title-templates';
+import TitleSlideEditor from './TitleSlideEditor';
 
 /** Compute valid tracks-per-slide options based on total selected tracks */
 function getTracksPerSlideOptions(totalTracks: number): { value: number; label: string }[] {
@@ -99,6 +100,7 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
   const logoFileRef = useRef<HTMLInputElement>(null);
   const [carouselAspect, setCarouselAspect] = useState<CarouselAspect>('1:1');
   const [comparePreviews, setComparePreviews] = useState<{ id: string; name: string; url: string }[]>([]);
+  const [showTitleEditor, setShowTitleEditor] = useState(false);
 
   void platformId; // used in cross-platform export
   const weekDate = getLastFriday();
@@ -389,10 +391,22 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
 
           {/* Title Slide Template */}
           <div style={{ marginBottom: 20 }}>
-            <TitleTemplatePicker
-              selected={titleTemplateId}
-              onSelect={id => { hasUserChangedTitle.current = true; setTitleTemplateId(id); localStorage.setItem('nmf_title_template', id); setAllPreviews([]); }}
-            />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+              <TitleTemplatePicker
+                selected={titleTemplateId}
+                onSelect={id => { hasUserChangedTitle.current = true; setTitleTemplateId(id); localStorage.setItem('nmf_title_template', id); setAllPreviews([]); }}
+              />
+            </div>
+            {titleTemplateId !== 'none' && (
+              <button
+                className="btn btn-sm"
+                onClick={() => setShowTitleEditor(true)}
+                style={{ fontSize: 'var(--fs-xs)', marginTop: 4 }}
+                title="Open visual editor to customize this title slide"
+              >
+                Customize Title Slide
+              </button>
+            )}
           </div>
 
           {/* Slide Split */}
@@ -622,6 +636,21 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
             </button>
           </div>
         </div>
+      )}
+      {/* Title Slide Visual Editor */}
+      {showTitleEditor && (
+        <TitleSlideEditor
+          templateId={titleTemplateId}
+          coverFeature={coverFeature}
+          weekDate={weekDate}
+          onSave={(customTemplate) => {
+            // For now, just apply the template settings and close
+            setTitleTemplateId(customTemplate.id);
+            setShowTitleEditor(false);
+            setAllPreviews([]);
+          }}
+          onCancel={() => setShowTitleEditor(false)}
+        />
       )}
     </div>
   );
