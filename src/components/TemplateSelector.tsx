@@ -36,6 +36,9 @@ export default function TemplateSelector({ selected, onSelect }: Props) {
 
   // Load custom templates — scoped by user ID (no cross-account leakage)
   useEffect(() => {
+    // Clear legacy shared key that caused cross-account leakage
+    try { localStorage.removeItem('nmf_custom_templates'); } catch {}
+
     if (!user?.id) {
       setCustomTemplates([]); // Guests see no custom templates
       return;

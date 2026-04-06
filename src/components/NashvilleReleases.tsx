@@ -1,33 +1,78 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { TrackItem } from '../lib/spotify';
-import { fetchNashvilleReleases, releasesToTrackItems, type NashvilleRelease } from '../lib/sources/nashville';
+import { NASHVILLE_SEED_ARTISTS, releasesToTrackItems, type NashvilleRelease } from '../lib/sources/nashville';
 
 interface Props {
   onImport: (tracks: TrackItem[]) => void;
 }
 
 export default function NashvilleReleases({ onImport }: Props) {
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [releases, setReleases] = useState<NashvilleRelease[]>([]);
   const [week, setWeek] = useState('');
   const [error, setError] = useState('');
   const [generatedAt, setGeneratedAt] = useState('');
   const [chartFilter, setChartFilter] = useState(false);
+  const [progress, setProgress] = useState({ current: 0, total: 0, found: 0 });
+  const scanning = useRef(false);
 
-  useEffect(() => {
+  const runScan = async () => {
+    if (scanning.current) return;
+    scanning.current = true;
     setLoading(true);
-    fetchNashvilleReleases()
-      .then(data => {
-        setReleases(data.releases || []);
-        setWeek(data.week || '');
-        setGeneratedAt(data.generated_at || '');
-        if (data.message && (!data.releases || data.releases.length === 0)) {
-          setError(data.message);
+    setError('');
+    setReleases([]);
+    const totalArtists = NASHVILLE_SEED_ARTISTS.length;
+    const batchSize = 25;
+    const allReleases: NashvilleRelease[] = [];
+    setProgress({ current: 0, total: totalArtists, found: 0 });
+
+    for (let i = 0; i < totalArtists; i += batchSize) {
+      const batch = NASHVILLE_SEED_ARTISTS.slice(i, i + batchSize);
+      setProgress({ current: Math.min(i + batchSize, totalArtists), total: totalArtists, found: allReleases.length });
+      try {
+        const resp = await fetch('/api/scan-artists', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ artistNames: batch }),
+        });
+        if (resp.ok) {
+          const data = await resp.json();
+          for (const t of (data.tracks || [])) {
+            allReleases.push({
+              pg_id: t.artist_id || '',
+              artist_name: t.artist_names,
+              track_name: t.track_name,
+              album_name: t.album_name,
+              release_type: t.album_type || 'single',
+              release_date: t.release_date,
+              spotify_track_id: t.track_id,
+              spotify_track_uri: t.track_uri,
+              spotify_album_id: t.album_spotify_id,
+              cover_art_url: t.cover_art_640,
+              cover_art_300: t.cover_art_300,
+              track_number: t.track_number || 1,
+              duration_ms: t.duration_ms || 0,
+              explicit: t.explicit || false,
+              total_tracks: t.total_tracks || 1,
+              is_charting: false,
+            });
+          }
         }
-      })
-      .catch(e => setError(e.message))
-      .finally(() => setLoading(false));
-  }, []);
+      } catch { /* batch failed, continue */ }
+    }
+
+    setReleases(allReleases);
+    setWeek(new Date().toISOString().split('T')[0]);
+    setGeneratedAt(new Date().toISOString());
+    setProgress({ current: totalArtists, total: totalArtists, found: allReleases.length });
+    if (allReleases.length === 0) setError('No new releases found this week from Nashville artists.');
+    setLoading(false);
+    scanning.current = false;
+  };
+
+  // Don't auto-scan — let user click the button
+  useEffect(() => { /* intentionally empty — user triggers scan */ }, []);
 
   const filtered = chartFilter ? releases.filter(r => r.is_charting) : releases;
   const chartingCount = releases.filter(r => r.is_charting).length;
@@ -37,17 +82,51 @@ export default function NashvilleReleases({ onImport }: Props) {
     onImport(tracks);
   };
 
+  if (!loading && releases.length === 0 && !error) {
+    return (
+      <div style={{ padding: 24, textAlign: 'center' }}>
+        <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--fs-lg)', marginBottom: 12 }}>
+          Scan {NASHVILLE_SEED_ARTISTS.length} Nashville artists for this week's new releases.
+        </p>
+        <button
+          className="btn btn-gold"
+          onClick={runScan}
+          style={{ fontSize: 'var(--fs-lg)', padding: '14px 32px' }}
+        >
+          Scan Nashville Releases
+        </button>
+        <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)', marginTop: 12 }}>
+          Searches the Spotify catalog for releases from the past 7 days. Takes about 30 seconds.
+        </p>
+      </div>
+    );
+  }
+
   if (loading) {
-    return <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)' }}>Loading Nashville releases...</div>;
+    const pct = progress.total > 0 ? Math.round((progress.current / progress.total) * 100) : 0;
+    return (
+      <div style={{ padding: 24, textAlign: 'center' }}>
+        <p style={{ color: 'var(--gold)', fontSize: 'var(--fs-lg)', fontWeight: 600, marginBottom: 12 }}>
+          Scanning Nashville Artists...
+        </p>
+        <div className="progress-bar" style={{ marginBottom: 12, maxWidth: 400, margin: '0 auto 12px' }}>
+          <div className="progress-bar-fill" style={{ width: `${pct}%` }} />
+        </div>
+        <p className="mono" style={{ color: 'var(--text-secondary)', fontSize: 'var(--fs-md)' }}>
+          {progress.current}/{progress.total} artists scanned &middot; {progress.found} releases found
+        </p>
+        <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)', marginTop: 8 }}>
+          {pct < 30 ? 'Getting started...' : pct < 70 ? 'Making progress...' : 'Almost done...'}
+        </p>
+      </div>
+    );
   }
 
   if (error && releases.length === 0) {
     return (
       <div style={{ padding: 24, textAlign: 'center' }}>
         <p style={{ color: 'var(--text-muted)', marginBottom: 8 }}>{error}</p>
-        <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)' }}>
-          Release data populates after the weekly cascade runs (typically Wednesday 3 AM CT).
-        </p>
+        <button className="btn btn-sm" onClick={runScan} style={{ marginTop: 8 }}>Try Again</button>
       </div>
     );
   }
