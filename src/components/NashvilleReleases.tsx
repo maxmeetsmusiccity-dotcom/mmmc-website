@@ -216,8 +216,8 @@ export default function NashvilleReleases({ onImport }: Props) {
       </div>
 
       {/* Release list */}
-      <div style={{ maxHeight: 400, overflowY: 'auto' }}>
-        {filtered.slice(0, 100).map((r, i) => (
+      <div style={{ maxHeight: 600, overflowY: 'auto' }}>
+        {filtered.map((r, i) => (
           <div key={r.spotify_track_id || i} style={{
             display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0',
             borderBottom: '1px solid var(--midnight-border)',
@@ -255,11 +255,7 @@ export default function NashvilleReleases({ onImport }: Props) {
         ))}
       </div>
 
-      {filtered.length > 100 && (
-        <div style={{ textAlign: 'center', padding: 8, fontSize: 'var(--fs-xs)', color: 'var(--text-muted)' }}>
-          Showing 100 of {filtered.length}. Import to see all.
-        </div>
-      )}
+      {/* All releases shown — no cap */}
 
       {generatedAt && (
         <div style={{ marginTop: 8, fontSize: 'var(--fs-3xs)', color: 'var(--text-muted)' }}>
