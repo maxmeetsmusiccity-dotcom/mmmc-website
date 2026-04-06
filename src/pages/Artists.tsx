@@ -4,8 +4,9 @@ import { Link, useNavigate } from 'react-router-dom';
 interface BrowseCategory {
   id: string;
   name: string;
-  description: string;
+  description?: string;
   emoji: string;
+  type?: 'showcase' | 'genre' | 'tier';
   count?: number;
 }
 
@@ -208,26 +209,45 @@ export default function Artists() {
           ))}
         </div>
 
-        {/* Category filters */}
-        {categories.length > 0 && (
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 20 }}>
-            {categories.map(c => (
-              <button
-                key={c.id}
-                onClick={() => setActiveCategory(activeCategory === c.id ? null : c.id)}
-                style={{
-                  padding: '5px 12px', borderRadius: 16, border: '1px solid',
-                  borderColor: activeCategory === c.id ? '#3EE6C3' : 'rgba(255,255,255,0.08)',
-                  background: activeCategory === c.id ? 'rgba(62,230,195,0.08)' : 'transparent',
-                  color: activeCategory === c.id ? '#3EE6C3' : '#aaa',
-                  fontSize: 12, cursor: 'pointer', whiteSpace: 'nowrap',
-                }}
-              >
-                {c.emoji} {c.name}
-              </button>
-            ))}
-          </div>
-        )}
+        {/* Category filters — grouped by type */}
+        {categories.length > 0 && (() => {
+          const showcases = categories.filter(c => c.type === 'showcase');
+          const genres = categories.filter(c => c.type === 'genre');
+          const other = categories.filter(c => !c.type || (c.type !== 'showcase' && c.type !== 'genre'));
+          const groups = [
+            ...(showcases.length > 0 ? [{ label: 'Browse by Showcase', cats: showcases, color: '#3EE6C3' }] : []),
+            ...(genres.length > 0 ? [{ label: 'Browse by Genre', cats: genres, color: '#6aacda' }] : []),
+            ...(other.length > 0 ? [{ label: 'Browse by Category', cats: other, color: '#F5C453' }] : []),
+          ];
+          // If no type field at all, show all as one group
+          if (groups.length === 0 && categories.length > 0) {
+            groups.push({ label: 'Browse', cats: categories, color: '#F5C453' });
+          }
+          return groups.map(group => (
+            <div key={group.label} style={{ marginBottom: 12 }}>
+              <p style={{ fontSize: 11, color: '#7A8CA0', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>
+                {group.label}
+              </p>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {group.cats.map(c => (
+                  <button
+                    key={c.id}
+                    onClick={() => setActiveCategory(activeCategory === c.id ? null : c.id)}
+                    style={{
+                      padding: '5px 12px', borderRadius: 16, border: '1px solid',
+                      borderColor: activeCategory === c.id ? group.color : 'rgba(255,255,255,0.08)',
+                      background: activeCategory === c.id ? `${group.color}14` : 'transparent',
+                      color: activeCategory === c.id ? group.color : '#aaa',
+                      fontSize: 12, cursor: 'pointer', whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {c.emoji} {c.name}{c.count ? ` (${c.count})` : ''}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ));
+        })()}
 
         {/* Loading / empty states */}
         {loading && <div style={{ color: '#7A8CA0', padding: 40, textAlign: 'center' }}>Loading artist directory...</div>}
