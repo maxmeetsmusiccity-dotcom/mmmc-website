@@ -18,8 +18,9 @@ describe('getDimensions', () => {
   it('gridY is defined for 3:4', () => {
     expect(getDimensions('3:4').gridY).toBeGreaterThan(0);
   });
-  it('gridH is larger for 3:4 than 1:1', () => {
-    expect(getDimensions('3:4').gridH).toBeGreaterThan(getDimensions('1:1').gridH);
+  it('3:4 gridH is smaller than 1:1 (purpose-built portrait uses tighter grid)', () => {
+    // Portrait grid is 900px (tight center) vs square 932px (fills more)
+    expect(getDimensions('3:4').gridH).toBeLessThan(getDimensions('1:1').gridH);
   });
   it('defaults to 1:1 with no argument', () => {
     const d = getDimensions();
@@ -30,7 +31,8 @@ describe('getDimensions', () => {
     expect(getDimensions('1:1').fontScale).toBe(1.0);
     expect(getDimensions('3:4').fontScale).toBe(1.0);
   });
-  it('3:4 gridH is 1200', () => {
-    expect(getDimensions('3:4').gridH).toBe(1200);
+  it('3:4 gridH is 900 (purpose-built portrait layout)', () => {
+    expect(getDimensions('3:4').gridH).toBe(900);
+    expect(getDimensions('3:4').gridY).toBe(160);
   });
 });

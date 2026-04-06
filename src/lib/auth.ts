@@ -1,4 +1,4 @@
-const CLIENT_ID = 'a510c84b66164834a9aeda12aa2da47b';
+const CLIENT_ID = '43c4155bfae44185bf1de3c9aacae466';
 const REDIRECT_URI = window.location.hostname === 'localhost'
   ? `${window.location.origin}/newmusicfriday`
   : 'https://maxmeetsmusiccity.com/newmusicfriday';

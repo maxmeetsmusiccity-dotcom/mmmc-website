@@ -179,7 +179,7 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
         setTitlePreview(prev => { if (prev) URL.revokeObjectURL(prev); return url; });
       })
       .catch(e => console.error('[PREVIEW] Title render error:', e));
-  }, [titleTemplateId, coverFeature, weekDate]);
+  }, [titleTemplateId, coverFeature, weekDate, carouselAspect]);
 
   const handleGridTemplateChange = (id: string) => {
     setGridTemplateId(id);

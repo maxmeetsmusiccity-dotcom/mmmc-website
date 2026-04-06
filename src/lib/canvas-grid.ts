@@ -20,10 +20,10 @@ export interface CanvasDimensions {
 
 export function getDimensions(aspect: CarouselAspect = '1:1'): CanvasDimensions {
   if (aspect === '3:4') {
-    // Portrait: header at top, grid centered in generous middle, date near grid bottom.
-    // Keep gridH proportional — cells are square so extra height becomes empty space.
-    // Use same proportions as square (gridY ≈ 8%, gridH ≈ 86% of canvas)
-    return { w: 1080, h: 1440, gridY: 120, gridH: 1200, fontScale: 1.0 };
+    // Portrait: PURPOSE-BUILT layout, not stretched square.
+    // Grid occupies the CENTER ~900px, leaving ~160px header zone and ~380px bottom zone
+    // for logo, date, and decorations. Square cells won't stretch vertically.
+    return { w: 1080, h: 1440, gridY: 160, gridH: 900, fontScale: 1.0 };
   }
   return { w: 1080, h: 1080, gridY: 90, gridH: 932, fontScale: 1.0 };
 }
@@ -529,12 +529,12 @@ export async function generateTitleSlide(
     }
     ctx.restore();
 
-    // "Swipe right for all this week's picks" in gold
-    const swipeY = aspect === '3:4' ? H - 180 : H * 0.78;
+    // "Swipe right for all this week's picks" in gold — below sparkles/decorations
+    const swipeY = aspect === '3:4' ? 1100 : H * 0.78;
     neonText(ctx, 'Swipe right for all this week\'s picks', W / 2, swipeY, `600 24px ${t.scriptFont}`, t);
 
-    // Date at bottom — fixed offset from bottom in portrait
-    const vinylDateY = aspect === '3:4' ? H - 100 : H * 0.88;
+    // Date — in portrait, below swipe text with breathing room
+    const vinylDateY = aspect === '3:4' ? 1180 : H * 0.88;
     neonText(ctx, formatDate(weekDate), W / 2, vinylDateY, `700 48px ${t.scriptFont}`, t);
   }
 
@@ -874,8 +874,11 @@ export async function generateGridSlide(
     if (bg) ctx.drawImage(bg, 0, 0, dim.w, dim.h);
   }
 
-  neonText(ctx, 'New Music Friday', dim.w / 2, 16, `700 52px ${t.scriptFont}`, t);
-  goldRule(ctx, 78, t);
+  // Header — in portrait, center in the top zone above the grid
+  const headerY = aspect === '3:4' ? 40 : 16;
+  const ruleY = aspect === '3:4' ? 110 : 78;
+  neonText(ctx, 'New Music Friday', dim.w / 2, headerY, `700 52px ${t.scriptFont}`, t);
+  goldRule(ctx, ruleY, t);
 
   const imagePromises = slots.map(s => loadImage(s.track.cover_art_640));
   const logoPromise = loadImage(logoUrl);
@@ -910,15 +913,19 @@ export async function generateGridSlide(
     }
   }
 
-  // Date below grid — fixed offset from grid bottom, not canvas bottom
-  const dateY = dim.gridY + dim.gridH + 20;
-  const dateFinalY = Math.min(dateY, dim.h - 52); // Don't overflow past canvas edge
+  // Date — in portrait, centered in bottom zone below grid. In square, near canvas bottom.
+  const bottomZoneStart = dim.gridY + dim.gridH;
+  const bottomZoneH = dim.h - bottomZoneStart;
+  const dateFinalY = aspect === '3:4'
+    ? bottomZoneStart + Math.round(bottomZoneH * 0.6)  // 60% down in bottom zone
+    : dim.h - 52;
   neonText(ctx, formatDate(weekDate), dim.w / 2, dateFinalY, `700 40px ${t.scriptFont}`, t);
 
   if (t.decorations.showSparkles) {
     const sx = dim.w - 28;
-    const sparkleBottomY = Math.min(dateFinalY + 48, dim.h - 28);
-    drawSparkles(ctx, [[28, 28], [sx, 28], [28, sparkleBottomY], [sx, sparkleBottomY]], t.decorations.sparkleSize);
+    const sparkleTopY = aspect === '3:4' ? bottomZoneStart + 20 : 28;
+    const sparkleBottomY = aspect === '3:4' ? dim.h - 40 : dim.h - 28;
+    drawSparkles(ctx, [[28, sparkleTopY], [sx, sparkleTopY], [28, sparkleBottomY], [sx, sparkleBottomY]], t.decorations.sparkleSize);
   }
   if (t.decorations.showNotes) drawNotes(ctx, t.decorations.noteSize);
 
