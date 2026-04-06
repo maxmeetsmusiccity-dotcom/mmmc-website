@@ -850,17 +850,17 @@ export default function NewMusicFriday() {
 
             {/* Apple Music source — coming soon */}
             {activeSource === 'apple-music' && (
-              <div style={{ marginTop: 16 }}>
-                <p style={{ color: 'var(--text-secondary)', marginBottom: 16, fontSize: 'var(--fs-md)' }}>
-                  Apple Music library scanning is coming soon. In the meantime, use Spotify or import a CSV manifest.
+              <div style={{ marginTop: 16, textAlign: 'left' }}>
+                <p style={{ color: 'var(--text-secondary)', marginBottom: 12, fontSize: 'var(--fs-md)' }}>
+                  Search the Apple Music catalog for new releases. No login required.
                 </p>
-                <button
-                  className="btn"
-                  disabled
-                  style={{ fontSize: 'var(--fs-lg)', padding: '14px 32px', opacity: 0.5, cursor: 'not-allowed' }}
-                >
-                  Coming Soon
-                </button>
+                <ManualImport onImport={(tracks) => {
+                  setAllTracks(tracks);
+                  setReleases(groupIntoReleases(tracks));
+                  setPhase('results');
+                  setLastScanned(new Date().toISOString());
+                  setIsDemoMode(false);
+                }} scanEndpoint="/api/search-apple" scanLabel="Search Apple Music" />
               </div>
             )}
 

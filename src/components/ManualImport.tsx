@@ -6,11 +6,13 @@ import ArtistBrowser from './ArtistBrowser';
 
 interface Props {
   onImport: (tracks: TrackItem[]) => void;
+  scanEndpoint?: string;
+  scanLabel?: string;
 }
 
 type Tab = 'browse' | 'artists' | 'csv';
 
-export default function ManualImport({ onImport }: Props) {
+export default function ManualImport({ onImport, scanEndpoint = '/api/scan-artists', scanLabel = 'Scan for New Releases' }: Props) {
   const [tab, setTab] = useState<Tab>('browse');
   const [error, setError] = useState('');
   const [summary, setSummary] = useState<{ tracks: number; artists: number; albums: number } | null>(null);
@@ -77,7 +79,7 @@ export default function ManualImport({ onImport }: Props) {
     setScanStatus(`Scanning ${names.length} artists...`);
 
     try {
-      const res = await fetch('/api/scan-artists', {
+      const res = await fetch(scanEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ artistNames: names }),
@@ -146,7 +148,7 @@ export default function ManualImport({ onImport }: Props) {
             setSummary(null);
             setScanStatus(`Scanning ${names.length} artists...`);
             try {
-              const res = await fetch('/api/scan-artists', {
+              const res = await fetch(scanEndpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ artistNames: names }),
@@ -201,7 +203,7 @@ export default function ManualImport({ onImport }: Props) {
               disabled={scanning || !artistText.trim()}
               style={{ fontSize: 'var(--fs-md)', padding: '10px 24px' }}
             >
-              {scanning ? 'Scanning...' : 'Scan for New Releases'}
+              {scanning ? 'Scanning...' : scanLabel}
             </button>
             <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)' }}>
               {artistText.trim() ? `${artistText.split('\n').filter(s => s.trim()).length} artists` : ''}

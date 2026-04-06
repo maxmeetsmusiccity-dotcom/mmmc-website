@@ -43,19 +43,19 @@ export interface WeeklyReleasesResponse {
 
 /** Seed list of Nashville-relevant artists — scanned via Spotify catalog each week */
 export const NASHVILLE_SEED_ARTISTS = [
-  // The Establishment (marquee tier)
+  // Nashville marquee
   'Lainey Wilson', 'Morgan Wallen', 'Luke Combs', 'Chris Stapleton', 'Zach Bryan',
   'Jelly Roll', 'Bailey Zimmerman', 'Cody Johnson', 'Kane Brown', 'Megan Moroney',
   'Parker McCollum', 'Jordan Davis', 'Riley Green', 'Thomas Rhett', 'Keith Urban',
   'Carrie Underwood', 'Miranda Lambert', 'Luke Bryan', 'Jason Aldean', 'Dierks Bentley',
   'Sam Hunt', 'Brett Young', 'Dustin Lynch', 'Jon Pardi', 'Cole Swindell',
-  // Rising Stars
+  // Rising
   'Ella Langley', 'Tucker Wetmore', 'Nate Smith', 'Shaboozey', 'Dasha',
   'Hailey Whitters', 'Muscadine Bloodline', 'Ian Munsick', 'Dalton Dover', 'Corey Kent',
   'Ashley McBryde', 'Kameron Marlowe', 'Chayce Beckham', 'Dylan Gossett', 'Niko Moon',
   'Conner Smith', 'Jackson Dean', 'Tyler Hubbard', 'Chase Rice', 'Jameson Rodgers',
   'Russell Dickerson', 'Scotty McCreery', 'Lauren Alaina', 'Kelsea Ballerini', 'Gabby Barrett',
-  // Nashville Developing / Emerging
+  // Nashville active
   'Chloe Collins', 'Ella Boh', 'Kaylee Rose', 'Jordyn Shellhart', 'Madison Parks',
   'Callie Prince', 'Cassidy Daniels', 'Ashley Anne', 'Mackenzie Carpenter', 'Kirstie Kraus',
   'Tiera Kennedy', 'Danielle Bradbery', 'Sam Williams', 'Mason Ramsey', 'Sam Barber',

@@ -1,5 +1,7 @@
-import { getVisibleTitleTemplates } from '../lib/title-templates';
+import { useState } from 'react';
+import { getVisibleTitleTemplates, type TitleSlideTemplate } from '../lib/title-templates';
 import { useAuth } from '../lib/auth-context';
+import TitleTemplateBuilder from './TitleTemplateBuilder';
 
 interface Props {
   selected: string;
@@ -10,6 +12,8 @@ interface Props {
 export default function TitleTemplatePicker({ selected, onSelect, onHover }: Props) {
   const { user } = useAuth();
   const visibleTemplates = getVisibleTitleTemplates(user?.email || undefined);
+  const [showBuilder, setShowBuilder] = useState(false);
+  const [editTemplate, setEditTemplate] = useState<TitleSlideTemplate | undefined>(undefined);
 
   return (
     <div data-testid="title-template-picker" style={{ marginBottom: 16 }}>
@@ -44,13 +48,9 @@ export default function TitleTemplatePicker({ selected, onSelect, onHover }: Pro
           </span>
         </button>
 
-        {/* Create New — placeholder for custom title templates */}
+        {/* Create New */}
         <button
-          onClick={() => {
-            // For now, select the first visible template as starting point
-            const first = visibleTemplates[0];
-            if (first) onSelect(first.id);
-          }}
+          onClick={() => { setEditTemplate(undefined); setShowBuilder(true); }}
           style={{
             flexShrink: 0, width: 90, padding: 6, borderRadius: 8, cursor: 'pointer',
             border: '2px dashed var(--gold)',
@@ -59,7 +59,7 @@ export default function TitleTemplatePicker({ selected, onSelect, onHover }: Pro
             justifyContent: 'center', gap: 4,
             transition: 'all 0.15s',
           }}
-          title="Custom title template builder coming soon"
+          title="Create a custom title template"
         >
           <span style={{ fontSize: 'var(--fs-xl)', color: 'var(--gold)', lineHeight: 1 }}>+</span>
           <span style={{ fontSize: 'var(--fs-3xs)', fontWeight: 600, color: 'var(--gold)', textAlign: 'center' }}>
@@ -116,6 +116,18 @@ export default function TitleTemplatePicker({ selected, onSelect, onHover }: Pro
           );
         })}
       </div>
+
+      {showBuilder && (
+        <TitleTemplateBuilder
+          initial={editTemplate}
+          onSave={(customTemplate) => {
+            onSelect(customTemplate.id);
+            setShowBuilder(false);
+            setEditTemplate(undefined);
+          }}
+          onCancel={() => { setShowBuilder(false); setEditTemplate(undefined); }}
+        />
+      )}
     </div>
   );
 }

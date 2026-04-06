@@ -24,18 +24,19 @@ interface BrowseData {
   artists: BrowseArtist[];
 }
 
-/** Category definitions — used as fallback when R2 file doesn't exist yet */
+/** Showcase-based categories — used as fallback when R2 file doesn't exist yet */
 const FALLBACK_CATEGORIES = [
-  { id: 'breaking-through', name: 'Breaking Through', description: 'Rising artists gaining serious momentum right now', emoji: '\uD83D\uDE80' },
-  { id: 'the-establishment', name: 'The Establishment', description: 'Nashville\'s proven hitmakers and chart-toppers', emoji: '\uD83C\uDFC6' },
-  { id: 'songwriters-round', name: 'Songwriter\'s Round', description: 'The writers behind the hits', emoji: '\u270D\uFE0F' },
-  { id: 'neon-rhinestones', name: 'Neon & Rhinestones', description: 'Country-pop crossover artists', emoji: '\u2728' },
-  { id: 'outlaw-spirit', name: 'Outlaw Spirit', description: 'Americana, red dirt, and roots rebels', emoji: '\uD83E\uDD20' },
-  { id: 'fresh-ink', name: 'Fresh Ink', description: 'Newest voices on Music Row', emoji: '\uD83C\uDF31' },
-  { id: 'stadium-country', name: 'Stadium Country', description: 'Arena-filling superstars', emoji: '\uD83C\uDFDF\uFE0F' },
-  { id: 'whiskey-jam-alumni', name: 'Whiskey Jam Alumni', description: 'Graduated from Nashville\'s premier showcase', emoji: '\uD83E\uDD43' },
-  { id: 'opry-circle', name: 'Opry Circle', description: 'Grand Ole Opry members and regulars', emoji: '\uD83C\uDFB6' },
-  { id: 'sleeping-giants', name: 'Sleeping Giants', description: 'Prolific writers flying under the radar', emoji: '\uD83D\uDCA4' },
+  { id: 'whiskey_jam', name: 'Whiskey Jam', emoji: '\uD83E\uDD43', type: 'showcase' },
+  { id: 'song_suffragettes', name: 'Song Suffragettes', emoji: '\uD83C\uDFA4', type: 'showcase' },
+  { id: 'bluebird', name: 'Bluebird Cafe', emoji: '\uD83D\uDC26', type: 'showcase' },
+  { id: 'listening_room', name: 'The Listening Room', emoji: '\uD83C\uDFA7', type: 'showcase' },
+  { id: 'rowdy_round', name: 'Rowdy / Outside the Round', emoji: '\uD83C\uDFAF', type: 'showcase' },
+  { id: 'rebel_rouser', name: 'Rebel Rouser', emoji: '\uD83D\uDD25', type: 'showcase' },
+  { id: 'pindrop', name: 'PinDrop Writers Series', emoji: '\uD83D\uDCCC', type: 'showcase' },
+  { id: 'nashville_tour_stop', name: 'Nashville Tour Stop', emoji: '\uD83D\uDE8C', type: 'showcase' },
+  { id: 'opry', name: 'Grand Ole Opry', emoji: '\uD83C\uDFB6', type: 'showcase' },
+  { id: 'indie_americana', name: 'Indie/Americana', emoji: '\uD83C\uDFB8', type: 'genre' },
+  { id: 'crossover', name: 'Country Crossover', emoji: '\uD83D\uDD00', type: 'genre' },
 ];
 
 let _cachedData: BrowseData | null = null;
@@ -67,10 +68,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!category && !searchQuery) {
       return res.status(200).json({
         categories: FALLBACK_CATEGORIES.map(c => ({
-          id: c.id, name: c.name, description: c.description, emoji: c.emoji,
+          id: c.id, name: c.name, emoji: c.emoji, type: c.type,
         })),
         source: 'fallback',
-        message: 'Browse index not yet generated. Categories available but artist lists require a cascade run.',
+        message: 'Artist data populates after the next cascade run. Search by name works now.',
       });
     }
 
