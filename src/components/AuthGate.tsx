@@ -38,7 +38,14 @@ export default function AuthGate({ children }: Props) {
       if (isSignUp) await signUpWithEmail(email, password);
       else await signInWithEmail(email, password);
     } catch (e) {
-      setError((e as Error).message);
+      const msg = (e as Error).message;
+      if (msg.includes('security purposes') || msg.includes('rate limit')) {
+        setError('Please wait a moment before trying again. For faster access, use "Jump In" or sign in with Google.');
+      } else if (msg.includes('Invalid login')) {
+        setError('Invalid email or password. Try again or use "Jump In" to enter as a guest.');
+      } else {
+        setError(msg);
+      }
     } finally {
       setSubmitting(false);
     }
