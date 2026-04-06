@@ -411,6 +411,45 @@ button {
     scroll-snap-align: center;
     flex-shrink: 0;
   }
+
+  /* Frozen header: compact on mobile */
+  header[style] {
+    padding: 10px 12px !important;
+    gap: 8px !important;
+  }
+
+  header h1 {
+    font-size: var(--fs-lg) !important;
+  }
+
+  /* Toolbar rows: tighter on mobile */
+  header + div + div[style*="fixed"] {
+    padding: 6px 12px !important;
+  }
+
+  /* Card grid: minimum 2 columns */
+  .release-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important;
+  }
+
+  /* Template rows: smaller cards */
+  [data-testid="title-template-picker"] button,
+  [data-testid="source-selector"] button {
+    min-width: 70px;
+  }
+
+  /* Ensure touch targets are at least 44px */
+  .btn, .btn-sm, .filter-pill, button {
+    min-height: 36px;
+  }
+
+  /* Modal: full width on mobile */
+  .modal {
+    max-width: 100% !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    max-height: 100vh !important;
+  }
 }
 
 /* Minimum font sizes */
