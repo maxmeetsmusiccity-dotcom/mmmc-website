@@ -1094,10 +1094,10 @@ export default function NewMusicFriday() {
 
             {/* Row 2: Actions — exports + cover/aspect + generate + indicators */}
             <div style={{
-              padding: '8px 24px 10px',
+              padding: '12px 24px',
               borderTop: '1px solid var(--midnight-border)',
-              display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center',
-              fontSize: 'var(--fs-xs)',
+              display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center',
+              fontSize: 'var(--fs-xs)', minHeight: 44,
             }}>
               {/* Export scope toggle */}
               <div style={{ display: 'flex', gap: 2, marginRight: 4 }}>

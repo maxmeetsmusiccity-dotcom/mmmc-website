@@ -20,8 +20,9 @@ export default function TitleTemplatePicker({ selected, onSelect, onHover }: Pro
       <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginBottom: 8 }}>Title Slide Template</p>
       <div
         style={{
-          display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 8,
+          display: 'flex', gap: 10, overflowX: 'scroll', paddingBottom: 12,
           WebkitOverflowScrolling: 'touch', scrollSnapType: 'x mandatory',
+          scrollbarWidth: 'thin', scrollbarColor: 'var(--gold-dark) var(--midnight)',
         }}
         tabIndex={0}
         onKeyDown={(e) => {
