@@ -434,10 +434,12 @@ export async function generateTitleSlide(
   if (!tt.vinylRecord) {
     const rawHeadline = 'New Music Friday';
     const headline = tt.headlineCase === 'uppercase' ? rawHeadline.toUpperCase() : rawHeadline;
+    // Portrait: use fixed pixel positions in the top zone, not H fractions
+    const hlY = aspect === '3:4' ? Math.min(Math.round(H * tt.headlineY), 80) : Math.round(H * tt.headlineY);
     glowText(
       headline,
       W / 2,
-      Math.round(H * tt.headlineY),
+      hlY,
       `${tt.headlineWeight} ${Math.round(W * tt.headlineSize)}px ${tt.headlineFont}`,
       tt.textPrimary,
     );
@@ -445,7 +447,7 @@ export async function generateTitleSlide(
     if (tt.showDivider) {
       ctx.strokeStyle = tt.dividerColor;
       ctx.lineWidth = 1;
-      const divY = Math.round(H * (tt.subtitleY - 0.01));
+      const divY = aspect === '3:4' ? hlY + Math.round(W * tt.headlineSize) + 20 : Math.round(H * (tt.subtitleY - 0.01));
       ctx.beginPath();
       ctx.moveTo(W * 0.18, divY);
       ctx.lineTo(W * 0.82, divY);
@@ -541,11 +543,14 @@ export async function generateTitleSlide(
   // Featured image (non-vinyl templates)
   if (!tt.vinylRecord && coverFeature) {
     const img = await loadImage(coverFeature.track.cover_art_640);
-    // In portrait mode, scale featured image up by ~15% to use the extra vertical space
-    const sizeScale = aspect === '3:4' ? 1.15 : 1.0;
+    // In portrait mode, scale image slightly and center in the canvas middle zone
+    const sizeScale = aspect === '3:4' ? 1.10 : 1.0;
     const imgSize = Math.round(W * tt.featuredImageSize * sizeScale);
     const imgX = (W - imgSize) / 2;
-    const imgY = Math.round(H * tt.featuredImageY);
+    // Portrait: center image vertically in the canvas (not pushed to top by H fraction)
+    const imgY = aspect === '3:4'
+      ? Math.round((H - imgSize) / 2) - 40  // centered, nudged up for date room
+      : Math.round(H * tt.featuredImageY);
 
     ctx.save();
     if (tt.featuredRotation !== 0) {
@@ -591,39 +596,38 @@ export async function generateTitleSlide(
     ctx.fillText(coverFeature.track.track_name, W / 2, labelY + Math.round(W * 0.042));
   }
 
-  // Date Y: in portrait, position below the featured image content, not at canvas bottom
-  // For square: use the template fraction. For portrait: relative to image position
-  const squareDateY = Math.round(H * tt.dateY);
-  const portraitDateY = coverFeature
-    ? Math.round(H * tt.featuredImageY) + Math.round(W * tt.featuredImageSize * 1.15) + 140
-    : H - 200;
-  const dateY = aspect === '3:4' ? Math.min(portraitDateY, H - 80) : squareDateY;
+  // Date + swipe pill — ONLY for non-vinyl templates (vinyl renders its own date above)
+  if (!tt.vinylRecord) {
+    const squareDateY = Math.round(H * tt.dateY);
+    const portraitDateY = coverFeature
+      ? Math.round(H * tt.featuredImageY) + Math.round(W * tt.featuredImageSize * 1.15) + 140
+      : H - 200;
+    const dateY = aspect === '3:4' ? Math.min(portraitDateY, H - 80) : squareDateY;
 
-  // Swipe pill
-  if (tt.swipePill) {
-    const pillText = 'Swipe for all picks \u2192';
-    const pillFontSize = Math.round(W * 0.020);
-    ctx.font = `600 ${pillFontSize}px "DM Sans", sans-serif`;
-    const pillW = ctx.measureText(pillText).width + 40;
-    const pillY = dateY - 48;
-    ctx.fillStyle = 'rgba(0,0,0,0.35)';
-    ctx.beginPath();
-    ctx.roundRect((W - pillW) / 2, pillY, pillW, 32, 16);
-    ctx.fill();
-    ctx.fillStyle = '#FFFFFF';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
-    ctx.fillText(pillText, W / 2, pillY + 7);
+    if (tt.swipePill) {
+      const pillText = 'Swipe for all picks \u2192';
+      const pillFontSize = Math.round(W * 0.020);
+      ctx.font = `600 ${pillFontSize}px "DM Sans", sans-serif`;
+      const pillW = ctx.measureText(pillText).width + 40;
+      const pillY = dateY - 48;
+      ctx.fillStyle = 'rgba(0,0,0,0.35)';
+      ctx.beginPath();
+      ctx.roundRect((W - pillW) / 2, pillY, pillW, 32, 16);
+      ctx.fill();
+      ctx.fillStyle = '#FFFFFF';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.fillText(pillText, W / 2, pillY + 7);
+    }
+
+    glowText(
+      formatDate(weekDate),
+      W / 2,
+      dateY,
+      `700 ${Math.round(W * tt.dateSize)}px ${tt.dateFont}`,
+      tt.textPrimary,
+    );
   }
-
-  // Date
-  glowText(
-    formatDate(weekDate),
-    W / 2,
-    dateY,
-    `700 ${Math.round(W * tt.dateSize)}px ${tt.dateFont}`,
-    tt.textPrimary,
-  );
 
   // Overlay tint
   if (tt.overlay) {

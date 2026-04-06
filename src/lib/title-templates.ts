@@ -388,7 +388,101 @@ export const TITLE_TEMPLATES: TitleSlideTemplate[] = [
     swipePill: true,
   },
 
-  // 11. Vinyl Classic — Max's original cover slide: vinyl record + gold neon
+  // 11. Gold Frame — minimal luxury, thin gold inset border, clean editorial
+  {
+    id: 'gold_frame',
+    name: 'Gold Frame',
+    description: 'Thin gold frame, centered album art, elegant serif — minimal luxury',
+    background: '#0F1B33',
+    textPrimary: '#F5E6B8',
+    textSecondary: '#A8B4C8',
+    accent: '#D4A843',
+    headlineFont: '"Playfair Display", "Georgia", serif',
+    subtitleFont: '"DM Sans", sans-serif',
+    dateFont: '"Playfair Display", "Georgia", serif',
+    headlineWeight: 600,
+    headlineCase: 'uppercase',
+    headlineSize: 0.038,
+    subtitleSize: 0.022,
+    dateSize: 0.032,
+    headlineY: 0.06,
+    subtitleY: 0.11,
+    dateY: 0.90,
+    featuredImageY: 0.22,
+    featuredImageSize: 0.50,
+    glow: { color: 'rgba(212,168,67,0.1)', blur: 8, passes: 1 },
+    grain: 0.08,
+    vignette: 0.20,
+    showFrame: true, frameColor: '#D4A843', frameWidth: 3,
+    showDivider: true, dividerColor: 'rgba(212,168,67,0.3)',
+    featuredBorder: 10, featuredBorderColor: '#FFFFFF', featuredShadowBlur: 30, featuredRotation: 0,
+    swipePill: false,
+  },
+
+  // 12. Spotlight — radial gradient, floating album art, modern/technical feel
+  {
+    id: 'spotlight',
+    name: 'Spotlight',
+    description: 'Radial gradient, floating album art with deep shadow — modern feel',
+    background: '#0F1B33',
+    backgroundGradient: 'linear-gradient(180deg, #162544 0%, #0A1225 100%)',
+    textPrimary: '#FFFFFF',
+    textSecondary: '#A8B4C8',
+    accent: '#D4A843',
+    headlineFont: '"DM Sans", sans-serif',
+    subtitleFont: '"DM Sans", sans-serif',
+    dateFont: '"DM Mono", "Courier New", monospace',
+    headlineWeight: 700,
+    headlineCase: 'uppercase',
+    headlineSize: 0.042,
+    subtitleSize: 0.020,
+    dateSize: 0.028,
+    headlineY: 0.05,
+    subtitleY: 0.10,
+    dateY: 0.91,
+    featuredImageY: 0.24,
+    featuredImageSize: 0.48,
+    glow: { color: 'rgba(255,255,255,0.05)', blur: 4, passes: 0 },
+    grain: 0.14,
+    vignette: 0.35,
+    showFrame: false, frameColor: '', frameWidth: 0,
+    showDivider: false, dividerColor: '',
+    featuredBorder: 0, featuredBorderColor: '', featuredShadowBlur: 50, featuredRotation: 0,
+    swipePill: true,
+  },
+
+  // 13. Polaroid Stack — playful, Instagram-native, tilted white-framed photo
+  {
+    id: 'polaroid_stack',
+    name: 'Polaroid Stack',
+    description: 'Album art as a tilted Polaroid photo — playful, Instagram-native',
+    background: '#0F1B33',
+    textPrimary: '#F5E6B8',
+    textSecondary: '#FFFFFF',
+    accent: '#D4A843',
+    headlineFont: '"Dancing Script", cursive',
+    subtitleFont: '"DM Sans", sans-serif',
+    dateFont: '"Dancing Script", cursive',
+    headlineWeight: 700,
+    headlineCase: 'capitalize',
+    headlineSize: 0.058,
+    subtitleSize: 0.024,
+    dateSize: 0.040,
+    headlineY: 0.04,
+    subtitleY: 0.11,
+    dateY: 0.90,
+    featuredImageY: 0.22,
+    featuredImageSize: 0.46,
+    glow: { color: 'rgba(212,168,67,0.3)', blur: 30, passes: 3 },
+    grain: 0.10,
+    vignette: 0.25,
+    showFrame: false, frameColor: '', frameWidth: 0,
+    showDivider: false, dividerColor: '',
+    featuredBorder: 16, featuredBorderColor: '#FFFFFF', featuredShadowBlur: 35, featuredRotation: -3,
+    swipePill: false,
+  },
+
+  // 14. Vinyl Classic — Max's original cover slide: vinyl record + gold neon
   {
     id: 'vinyl_classic',
     name: 'Vinyl Classic',
@@ -423,7 +517,7 @@ export const TITLE_TEMPLATES: TitleSlideTemplate[] = [
 ];
 
 /** Title templates that are exclusive to Max's account */
-export const MAX_ONLY_TITLE_TEMPLATES = new Set(['nashville_neon', 'vinyl_classic']);
+export const MAX_ONLY_TITLE_TEMPLATES = new Set(['nashville_neon', 'vinyl_classic', 'gold_frame', 'spotlight', 'polaroid_stack']);
 
 export function getTitleTemplate(id: string): TitleSlideTemplate {
   return TITLE_TEMPLATES.find(t => t.id === id) || TITLE_TEMPLATES[0];

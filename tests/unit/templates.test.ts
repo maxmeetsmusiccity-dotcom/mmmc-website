@@ -46,8 +46,8 @@ describe('carousel templates', () => {
 });
 
 describe('title templates', () => {
-  it('has exactly 11 title templates', () => {
-    expect(TITLE_TEMPLATES.length).toBe(11);
+  it('has 14 title templates (11 original + 3 new)', () => {
+    expect(TITLE_TEMPLATES.length).toBe(14);
   });
 
   it('all title templates have required fields', () => {
