@@ -1108,8 +1108,8 @@ export default function NewMusicFriday() {
             </div>
           </div>
 
-          {/* Spacer — dynamically measured from actual header + toolbar heights */}
-          <div style={{ height: headerHeight + toolbarHeight }} />
+          {/* Spacer — exact height of frozen bars, no extra dead space */}
+          <div style={{ height: headerHeight + toolbarHeight + 4 }} />
 
           {/* ============================================================ */}
           {/*  STEP 1: SELECT TRACKS (scrollable grid below fixed bars)    */}
