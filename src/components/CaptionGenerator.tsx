@@ -27,7 +27,7 @@ export default function CaptionGenerator({ selections, handles, weekDate }: Prop
     // Collect unique artist handles
     const artistHandles = new Map<string, string>();
     for (const slot of selections) {
-      const names = slot.track.artist_names
+      const names = (slot.track.artist_names || 'Unknown Artist')
         .split(/,\s*|\s+feat\.?\s+|\s+ft\.?\s+|\s+x\s+|\s+&\s+/i)
         .map(n => n.trim())
         .filter(n => n.length > 0);
@@ -53,7 +53,7 @@ export default function CaptionGenerator({ selections, handles, weekDate }: Prop
     for (let s = 0; s < slides.length; s++) {
       if (slides.length > 1) lines.push(`Slide ${s + 1}:`);
       for (const slot of slides[s]) {
-        const primaryName = slot.track.artist_names.split(/,\s*|\s+feat\.?\s+|\s+ft\.?\s+|\s+x\s+|\s+&\s+/i)[0].trim();
+        const primaryName = (slot.track.artist_names || 'Unknown Artist').split(/,\s*|\s+feat\.?\s+|\s+ft\.?\s+|\s+x\s+|\s+&\s+/i)[0].trim();
         const handle = artistHandles.get(primaryName) || slot.track.artist_names;
         lines.push(`\u201c${slot.track.track_name}\u201d \u2014 ${handle}`);
       }
@@ -134,7 +134,7 @@ export default function CaptionGenerator({ selections, handles, weekDate }: Prop
           {charCount}/2,200 characters
         </span>
         <span style={{ fontSize: 'var(--fs-3xs)', color: 'var(--text-muted)' }}>
-          {selections.length} tracks &bull; {new Set(selections.map(s => s.track.artist_names.split(/,/)[0].trim())).size} artists
+          {selections.length} tracks &bull; {new Set(selections.map(s => (s.track.artist_names || '').split(/,/)[0].trim())).size} artists
         </span>
       </div>
     </div>

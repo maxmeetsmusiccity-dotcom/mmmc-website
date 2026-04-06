@@ -6,6 +6,7 @@ import { resolveInstagramHandle, type HandleResult } from '../lib/nd';
 const ARTIST_SPLIT = /,\s*|\s+feat\.?\s+|\s+ft\.?\s+|\s+x\s+|\s+&\s+/i;
 
 function splitArtistNames(raw: string): string[] {
+  if (!raw) return [];
   return raw.split(ARTIST_SPLIT).map(n => n.trim()).filter(n => n.length > 0);
 }
 

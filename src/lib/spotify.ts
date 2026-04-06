@@ -78,6 +78,12 @@ export interface ReleaseCluster {
 export function groupIntoReleases(tracks: TrackItem[]): ReleaseCluster[] {
   const map = new Map<string, TrackItem[]>();
   for (const t of tracks) {
+    // Guard against malformed track data
+    if (!t || !t.album_spotify_id) continue;
+    if (!t.artist_names) t.artist_names = 'Unknown Artist';
+    if (!t.album_name) t.album_name = t.track_name || 'Unknown';
+    if (!t.cover_art_640) t.cover_art_640 = '/placeholder-album.svg';
+    if (!t.cover_art_300) t.cover_art_300 = t.cover_art_640;
     const arr = map.get(t.album_spotify_id) || [];
     arr.push(t);
     map.set(t.album_spotify_id, arr);
