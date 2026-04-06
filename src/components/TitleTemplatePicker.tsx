@@ -18,10 +18,19 @@ export default function TitleTemplatePicker({ selected, onSelect, onHover }: Pro
   return (
     <div data-testid="title-template-picker" style={{ marginBottom: 16 }}>
       <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginBottom: 8 }}>Title Slide Template</p>
-      <div style={{
-        display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 8,
-        WebkitOverflowScrolling: 'touch',
-      }}>
+      <div
+        style={{
+          display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 8,
+          WebkitOverflowScrolling: 'touch', scrollSnapType: 'x mandatory',
+        }}
+        tabIndex={0}
+        onKeyDown={(e) => {
+          const allIds = ['none', ...visibleTemplates.map(t => t.id)];
+          const idx = allIds.indexOf(selected);
+          if (e.key === 'ArrowRight' && idx < allIds.length - 1) { e.preventDefault(); onSelect(allIds[idx + 1]); }
+          if (e.key === 'ArrowLeft' && idx > 0) { e.preventDefault(); onSelect(allIds[idx - 1]); }
+        }}
+      >
         {/* "No Title Slide" option */}
         <button
           onClick={() => onSelect('none')}

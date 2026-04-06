@@ -23,19 +23,12 @@ export default function ProductNav({ showAdmin, backTo, backLabel }: Props) {
           &larr;
         </Link>
       )}
-      <Link to="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
-        <img
-          src="/mmmc-logo-hires.png"
-          alt="MMMC"
-          style={{ width: 32, height: 32, borderRadius: 6, objectFit: 'cover' }}
-        />
-      </Link>
       <Link
         to="/newmusicfriday"
         style={{
           fontSize: 'var(--fs-sm)', padding: '5px 14px',
           textDecoration: 'none', borderRadius: 6,
-          fontWeight: 600, letterSpacing: '0.03em',
+          fontWeight: 700, letterSpacing: '0.03em',
           background: isNMF ? 'var(--gold)' : 'transparent',
           color: isNMF ? 'var(--midnight)' : 'var(--text-muted)',
           border: isNMF ? '1px solid var(--gold)' : '1px solid var(--midnight-border)',

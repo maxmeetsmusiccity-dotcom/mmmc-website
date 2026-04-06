@@ -98,10 +98,18 @@ export default function TemplateSelector({ selected, onSelect }: Props) {
   return (
     <div style={{ marginBottom: 16 }}>
       <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginBottom: 8 }}>Template</p>
-      <div style={{
-        display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 8,
-        WebkitOverflowScrolling: 'touch', scrollSnapType: 'x mandatory',
-      }}>
+      <div
+        style={{
+          display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 8,
+          WebkitOverflowScrolling: 'touch', scrollSnapType: 'x mandatory',
+        }}
+        tabIndex={0}
+        onKeyDown={(e) => {
+          const idx = allTemplates.findIndex(t => t.id === selected);
+          if (e.key === 'ArrowRight' && idx < allTemplates.length - 1) { e.preventDefault(); onSelect(allTemplates[idx + 1].id); }
+          if (e.key === 'ArrowLeft' && idx > 0) { e.preventDefault(); onSelect(allTemplates[idx - 1].id); }
+        }}
+      >
         {/* Create Your Own — FIRST in row */}
         <button
           onClick={() => { setEditTemplate(null); setShowBuilder(true); }}

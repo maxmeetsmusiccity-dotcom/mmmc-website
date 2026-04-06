@@ -668,11 +668,14 @@ export default function NewMusicFriday() {
         background: 'var(--midnight)',
         boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <ProductNav />
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-2xl)', fontWeight: 600 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Link to="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flexShrink: 0 }}>
+            <img src="/mmmc-logo-hires.png" alt="MMMC" style={{ width: 48, height: 48, borderRadius: 8, objectFit: 'cover' }} />
+          </Link>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-2xl)', fontWeight: 600, whiteSpace: 'nowrap' }}>
             New Music Friday
           </h1>
+          <ProductNav />
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           {/* Cover feature indicator */}
