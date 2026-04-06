@@ -120,6 +120,13 @@ export default function NewMusicFriday() {
   const [viewMode, setViewMode] = useState<'releases' | 'tracks'>('releases');
   const [loadedFromCache, setLoadedFromCache] = useState(false);
   const [resolvedHandles, setResolvedHandles] = useState<Map<string, any>>(new Map());
+
+  // Lifted carousel state (shared between toolbar and CarouselPreviewPanel)
+  const [carouselAspect, setCarouselAspect] = useState<'1:1' | '3:4'>('1:1');
+  const [allPreviews, setAllPreviews] = useState<string[]>([]);
+  const [generating, setGenerating] = useState(false);
+  const [exportScope, setExportScope] = useState<'all' | 'selects'>('selects');
+  const carouselRef = useRef<{ generate: () => void; downloadAll: () => void }>(null);
   const [cardSize, setCardSize] = useState(() => {
     try { return parseInt(localStorage.getItem('nmf_card_size') || '240'); } catch { return 240; }
   });
@@ -668,6 +675,30 @@ export default function NewMusicFriday() {
           </h1>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          {/* Cover feature indicator */}
+          {phase === 'results' && selections.length > 0 && (
+            (() => {
+              const cover = selections.find(s => s.isCoverFeature);
+              return cover ? (
+                <span style={{ color: 'var(--gold)', fontSize: 'var(--fs-xs)', fontWeight: 600 }}>
+                  &#9733; {cover.track.artist_names.split(/,/)[0]}
+                </span>
+              ) : (
+                <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)' }}>Set cover &#9733;</span>
+              );
+            })()
+          )}
+          {/* Aspect ratio toggle */}
+          {phase === 'results' && (
+            <div style={{ display: 'flex', gap: 2 }}>
+              <button className={`filter-pill ${carouselAspect === '1:1' ? 'active' : ''}`}
+                onClick={() => setCarouselAspect('1:1')}
+                style={{ fontSize: 'var(--fs-3xs)', padding: '2px 6px' }}>1:1</button>
+              <button className={`filter-pill ${carouselAspect === '3:4' ? 'active' : ''}`}
+                onClick={() => setCarouselAspect('3:4')}
+                style={{ fontSize: 'var(--fs-3xs)', padding: '2px 6px' }}>3:4</button>
+            </div>
+          )}
           {lastScanned && (
             <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-2xs)' }}>
               {new Date(lastScanned).toLocaleString()}
@@ -1081,30 +1112,76 @@ export default function NewMusicFriday() {
               </div>
             </div>
 
-            {/* Row 2: Downloads */}
+            {/* Row 2: Actions — export toggle + generate + ZIP + indicators */}
             <div style={{
-              padding: '10px 28px 12px',
+              padding: '8px 24px 10px',
               borderTop: '1px solid var(--midnight-border)',
               display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center',
-              fontSize: 'var(--fs-xs)', minHeight: 40,
+              fontSize: 'var(--fs-xs)',
             }}>
-              <button className="btn btn-sm" style={{ fontSize: 'var(--fs-2xs)', padding: '3px 8px' }} onClick={() => downloadCSV(allTracks, 'nmf-all-tracks.csv')}>CSV</button>
-              <button className="btn btn-sm" style={{ fontSize: 'var(--fs-2xs)', padding: '3px 8px' }} onClick={() => downloadJSON(allTracks, 'nmf-all-tracks.json')}>JSON</button>
-              <button className="btn btn-sm" style={{ fontSize: 'var(--fs-2xs)', padding: '3px 8px' }} onClick={async () => { setArtDownloading(true); try { await downloadArt(allTracks); } finally { setArtDownloading(false); } }} disabled={artDownloading}>
-                {artDownloading ? '...' : 'Art ZIP'}
-              </button>
-              {selections.length > 0 && (
-                <>
-                  <span style={{ color: 'var(--midnight-border)' }}>|</span>
-                  <span style={{ color: 'var(--gold)', fontWeight: 600 }}>{selections.length} selected:</span>
-                  <button className="btn btn-sm" style={{ fontSize: 'var(--fs-2xs)', padding: '3px 8px' }} onClick={() => downloadCSV(selectedTracks, 'nmf-curated.csv')}>CSV</button>
-                  <button className="btn btn-sm" style={{ fontSize: 'var(--fs-2xs)', padding: '3px 8px' }} onClick={() => downloadJSON(selectedTracks, 'nmf-curated.json')}>JSON</button>
-                  <button className="btn btn-sm" style={{ fontSize: 'var(--fs-2xs)', padding: '3px 8px' }} onClick={async () => {
+              {/* Export scope toggle */}
+              <div style={{ display: 'flex', gap: 2, marginRight: 4 }}>
+                <button className={`filter-pill ${exportScope === 'all' ? 'active' : ''}`}
+                  onClick={() => setExportScope('all')}
+                  style={{ fontSize: 'var(--fs-3xs)', padding: '2px 6px' }}>All Tracks</button>
+                <button className={`filter-pill ${exportScope === 'selects' ? 'active' : ''}`}
+                  onClick={() => setExportScope('selects')}
+                  style={{ fontSize: 'var(--fs-3xs)', padding: '2px 6px' }}>Selects</button>
+              </div>
+              <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-3xs)', fontWeight: 600 }}>Downloads:</span>
+              <button className="btn btn-sm" style={{ fontSize: 'var(--fs-2xs)', padding: '3px 8px' }}
+                onClick={() => downloadCSV(exportScope === 'selects' ? selectedTracks : allTracks, exportScope === 'selects' ? 'nmf-curated.csv' : 'nmf-all-tracks.csv')}>CSV</button>
+              <button className="btn btn-sm" style={{ fontSize: 'var(--fs-2xs)', padding: '3px 8px' }}
+                onClick={() => downloadJSON(exportScope === 'selects' ? selectedTracks : allTracks, exportScope === 'selects' ? 'nmf-curated.json' : 'nmf-all-tracks.json')}>JSON</button>
+              <button className="btn btn-sm" style={{ fontSize: 'var(--fs-2xs)', padding: '3px 8px' }}
+                onClick={async () => { setArtDownloading(true); try { await downloadArt(exportScope === 'selects' ? selectedTracks : allTracks); } finally { setArtDownloading(false); } }}
+                disabled={artDownloading}>{artDownloading ? '...' : 'Art ZIP'}</button>
+              {exportScope === 'selects' && (
+                <button className="btn btn-sm" style={{ fontSize: 'var(--fs-2xs)', padding: '3px 8px' }}
+                  onClick={async () => {
                     await navigator.clipboard.writeText(JSON.stringify(selectedTracks, null, 2));
                     setCopied(true); setTimeout(() => setCopied(false), 2000);
                   }}>{copied ? 'Copied!' : 'Manifest'}</button>
-                </>
               )}
+
+              <span style={{ color: 'var(--midnight-border)', margin: '0 2px' }}>|</span>
+
+              {/* Generate Carousel */}
+              <button className="btn btn-sm btn-gold" style={{ fontSize: 'var(--fs-2xs)', padding: '4px 12px', fontWeight: 700 }}
+                disabled={selections.length === 0 || generating}
+                onClick={() => carouselRef.current?.generate()}>
+                {generating ? 'Generating...' : '\u2605 Generate'}
+              </button>
+
+              {/* Download ZIP */}
+              {allPreviews.length > 0 && (
+                <button className="btn btn-sm" style={{ fontSize: 'var(--fs-2xs)', padding: '3px 10px' }}
+                  onClick={() => carouselRef.current?.downloadAll()}>
+                  \uD83D\uDCE6 ZIP ({allPreviews.length})
+                </button>
+              )}
+
+              <span style={{ color: 'var(--midnight-border)', margin: '0 2px' }}>|</span>
+
+              {/* Slide count */}
+              {selections.length > 0 && (
+                <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-3xs)' }}>
+                  {Math.ceil(selections.length / tracksPerSlide)} slides
+                </span>
+              )}
+
+              {/* Undo indicator */}
+              {selectionHistory.current.length > 0 && (
+                <button style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-3xs)', cursor: 'pointer', background: 'none', border: 'none', padding: '2px 4px' }}
+                  onClick={() => { const prev = selectionHistory.current.pop(); if (prev) setSelections(prev); }}
+                  title="Undo last selection change">
+                  \u21A9 {selectionHistory.current.length}
+                </button>
+              )}
+
+              {/* Keyboard shortcuts */}
+              <button style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-3xs)', cursor: 'pointer', background: 'none', padding: '2px 6px', borderRadius: 4, border: '1px solid var(--midnight-border)' }}
+                onClick={() => setShowShortcuts(true)} title="Keyboard shortcuts">?</button>
             </div>
           </div>
 
@@ -1424,10 +1501,17 @@ export default function NewMusicFriday() {
               </div>
 
               <CarouselPreviewPanel
+                ref={carouselRef}
                 selectedTracks={selectedTracks}
                 coverFeature={selections.find(s => s.isCoverFeature) || null}
                 onTracksPerSlideChange={setTracksPerSlide}
                 onCarouselGenerated={() => handleSaveWeek({ carousel_generated: true })}
+                carouselAspect={carouselAspect}
+                onAspectChange={setCarouselAspect}
+                generating={generating}
+                onGeneratingChange={setGenerating}
+                allPreviews={allPreviews}
+                onAllPreviewsChange={setAllPreviews}
               />
 
               {/* Collapsible extras */}

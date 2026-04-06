@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import type { TrackItem } from '../lib/spotify';
 import { getLastFriday } from '../lib/spotify';
 import { generateGridSlide, generateTitleSlide, downloadBlob, type CarouselAspect } from '../lib/canvas-grid';
@@ -72,9 +72,23 @@ interface Props {
   coverFeature: SelectionSlot | null;
   onTracksPerSlideChange?: (n: number) => void;
   onCarouselGenerated?: () => void;
+  carouselAspect: CarouselAspect;
+  onAspectChange: (a: CarouselAspect) => void;
+  generating: boolean;
+  onGeneratingChange: (g: boolean) => void;
+  allPreviews: string[];
+  onAllPreviewsChange: (urls: string[]) => void;
 }
 
-export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onTracksPerSlideChange, onCarouselGenerated }: Props) {
+export interface CarouselPanelHandle {
+  generate: () => void;
+  downloadAll: () => void;
+}
+
+const CarouselPreviewPanel = forwardRef<CarouselPanelHandle, Props>(function CarouselPreviewPanel({
+  selectedTracks, coverFeature, onTracksPerSlideChange, onCarouselGenerated,
+  carouselAspect, onAspectChange, generating, onGeneratingChange, allPreviews, onAllPreviewsChange,
+}, ref) {
   const { user } = useAuth();
   const [tracksPerSlide, setTracksPerSlide] = useState(8);
   // platformId kept for cross-platform export compatibility
@@ -92,13 +106,14 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
   const manualSplit = useRef(false);
   const [gridPreview, setGridPreview] = useState<string>('');
   const [titlePreview, setTitlePreview] = useState<string>('');
-  const [allPreviews, setAllPreviews] = useState<string[]>([]);
-  const [generating, setGenerating] = useState(false);
+  // allPreviews, generating, carouselAspect — lifted to parent via props
+  const setAllPreviews = onAllPreviewsChange;
+  const setGenerating = onGeneratingChange;
   const [error, setError] = useState('');
   const [activePreview, setActivePreview] = useState(0);
   const [logoUrl, setLogoUrl] = useState(localStorage.getItem('nmf_logo_url') || '/mmmc-logo.png');
   const logoFileRef = useRef<HTMLInputElement>(null);
-  const [carouselAspect, setCarouselAspect] = useState<CarouselAspect>('1:1');
+  const setCarouselAspect = onAspectChange;
   const [comparePreviews, setComparePreviews] = useState<{ id: string; name: string; url: string }[]>([]);
   const [showTitleEditor, setShowTitleEditor] = useState(false);
 
@@ -222,7 +237,8 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
         urls.push(URL.createObjectURL(blob));
       }
 
-      setAllPreviews(prev => { prev.forEach(URL.revokeObjectURL); return urls; });
+      allPreviews.forEach(URL.revokeObjectURL);
+      setAllPreviews(urls);
       setActivePreview(0);
       onCarouselGenerated?.();
     } catch (e) {
@@ -243,6 +259,12 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
     const zipBlob = await zip.generateAsync({ type: 'blob' });
     downloadBlob(zipBlob, `nmf-carousel-${weekDate}.zip`);
   };
+
+  // Expose generate and downloadAll to parent via ref
+  useImperativeHandle(ref, () => ({
+    generate: handleGenerate,
+    downloadAll: handleDownloadAll,
+  }));
 
   if (selectedTracks.length === 0) return null;
 
@@ -657,4 +679,6 @@ export default function CarouselPreviewPanel({ selectedTracks, coverFeature, onT
       )}
     </div>
   );
-}
+});
+
+export default CarouselPreviewPanel;

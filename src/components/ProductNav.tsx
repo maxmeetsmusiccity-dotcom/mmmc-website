@@ -23,17 +23,17 @@ export default function ProductNav({ showAdmin, backTo, backLabel }: Props) {
           &larr;
         </Link>
       )}
-      <Link to="/" style={{
-        color: 'var(--text-muted)', fontSize: 'var(--fs-sm)',
-        fontFamily: 'var(--font-display)', fontWeight: 600,
-        textDecoration: 'none', letterSpacing: '0.02em',
-      }}>
-        MMMC
+      <Link to="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
+        <img
+          src="/mmmc-logo-hires.png"
+          alt="MMMC"
+          style={{ width: 32, height: 32, borderRadius: 6, objectFit: 'cover' }}
+        />
       </Link>
       <Link
         to="/newmusicfriday"
         style={{
-          fontSize: 'var(--fs-xs)', padding: '4px 12px',
+          fontSize: 'var(--fs-sm)', padding: '5px 14px',
           textDecoration: 'none', borderRadius: 6,
           fontWeight: 600, letterSpacing: '0.03em',
           background: isNMF ? 'var(--gold)' : 'transparent',
@@ -41,9 +41,9 @@ export default function ProductNav({ showAdmin, backTo, backLabel }: Props) {
           border: isNMF ? '1px solid var(--gold)' : '1px solid var(--midnight-border)',
           transition: 'all 0.2s',
         }}
-        title="NMF Curator Studio"
+        title="Curator Studio"
       >
-        NMF Curator Studio
+        Curator Studio
       </Link>
       {showAdmin && (
         <Link
