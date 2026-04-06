@@ -1108,8 +1108,8 @@ export default function NewMusicFriday() {
             </div>
           </div>
 
-          {/* Spacer — tight fit, no dead space */}
-          <div style={{ height: headerHeight + toolbarHeight - 8 }} />
+          {/* Spacer for toolbar only (header spacer is already above) */}
+          <div style={{ height: toolbarHeight }} />
 
           {/* ============================================================ */}
           {/*  STEP 1: SELECT TRACKS (scrollable grid below fixed bars)    */}
