@@ -3,6 +3,14 @@ import type { TrackItem } from '../lib/spotify';
 import { NASHVILLE_SEED_ARTISTS, releasesToTrackItems, type NashvilleRelease } from '../lib/sources/nashville';
 import { supabase } from '../lib/supabase';
 
+interface ShowcaseCategory {
+  id: string;
+  name: string;
+  emoji: string;
+  type: string;
+  count: number;
+}
+
 interface Props {
   onImport: (tracks: TrackItem[]) => void;
 }
@@ -18,6 +26,37 @@ export default function NashvilleReleases({ onImport }: Props) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const scanning = useRef(false);
+
+  // Showcase filter state
+  const [showcases, setShowcases] = useState<ShowcaseCategory[]>([]);
+  const [activeShowcase, setActiveShowcase] = useState<string | null>(null);
+  const [showcaseArtists, setShowcaseArtists] = useState<Set<string>>(new Set());
+  const [loadingShowcase, setLoadingShowcase] = useState(false);
+
+  // Load showcase categories on mount
+  useEffect(() => {
+    fetch('/api/browse-artists')
+      .then(r => r.json())
+      .then(d => {
+        const cats = (d.categories || []).filter((c: ShowcaseCategory) => c.type === 'showcase');
+        setShowcases(cats);
+      })
+      .catch(() => {}); // non-critical
+  }, []);
+
+  // When a showcase is selected, fetch its artist list
+  useEffect(() => {
+    if (!activeShowcase) { setShowcaseArtists(new Set()); return; }
+    setLoadingShowcase(true);
+    fetch(`/api/browse-artists?category=${activeShowcase}`)
+      .then(r => r.json())
+      .then(d => {
+        const names = new Set<string>((d.artists || []).map((a: { name: string }) => a.name.toLowerCase()));
+        setShowcaseArtists(names);
+      })
+      .catch(() => setShowcaseArtists(new Set()))
+      .finally(() => setLoadingShowcase(false));
+  }, [activeShowcase]);
 
   const runScan = async () => {
     if (scanning.current) return;
@@ -109,7 +148,19 @@ export default function NashvilleReleases({ onImport }: Props) {
     })();
   }, []);
 
-  const filtered = chartFilter ? releases.filter(r => r.is_charting) : releases;
+  // Apply filters: chart + showcase
+  const filtered = (() => {
+    let list = chartFilter ? releases.filter(r => r.is_charting) : releases;
+    if (activeShowcase && showcaseArtists.size > 0) {
+      list = list.filter(r => {
+        // Match against primary artist name (before comma/feat)
+        const primary = (r.artist_name || '').split(/,|feat\.|ft\./i)[0].trim().toLowerCase();
+        return showcaseArtists.has(primary);
+      });
+    }
+    return list;
+  })();
+
   const chartingCount = releases.filter(r => r.is_charting).length;
 
   // Group by album for expandable view
@@ -153,11 +204,36 @@ export default function NashvilleReleases({ onImport }: Props) {
     onImport(releasesToTrackItems(toImport));
   };
 
+  // Showcase filter pills (rendered in multiple places)
+  const showcasePills = showcases.length > 0 ? (
+    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
+      <button
+        onClick={() => setActiveShowcase(null)}
+        className={`filter-pill ${!activeShowcase ? 'active' : ''}`}
+        style={{ fontSize: 'var(--fs-xs)', padding: '4px 10px' }}
+      >
+        All Nashville
+      </button>
+      {showcases.map(s => (
+        <button
+          key={s.id}
+          onClick={() => setActiveShowcase(activeShowcase === s.id ? null : s.id)}
+          className={`filter-pill ${activeShowcase === s.id ? 'active' : ''}`}
+          style={{ fontSize: 'var(--fs-xs)', padding: '4px 10px' }}
+          title={`${s.count} ${s.count === 1 ? 'artist' : 'artists'}`}
+        >
+          {s.emoji} {s.name}
+        </button>
+      ))}
+    </div>
+  ) : null;
+
   if (!loading && releases.length === 0 && !error) {
     return (
       <div style={{ padding: 24, textAlign: 'center' }}>
+        {showcasePills}
         <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--fs-lg)', marginBottom: 12 }}>
-          Scan {NASHVILLE_SEED_ARTISTS.length} Nashville artists for this week's new releases.
+          Scan {NASHVILLE_SEED_ARTISTS.length} Nashville {NASHVILLE_SEED_ARTISTS.length === 1 ? 'artist' : 'artists'} for this week's new releases.
         </p>
         <button
           className="btn btn-gold"
@@ -184,7 +260,7 @@ export default function NashvilleReleases({ onImport }: Props) {
           <div className="progress-bar-fill" style={{ width: `${pct}%` }} />
         </div>
         <p className="mono" style={{ color: 'var(--text-secondary)', fontSize: 'var(--fs-md)' }}>
-          {progress.current}/{progress.total} artists scanned &middot; {progress.found} releases found
+          {progress.current}/{progress.total} {progress.total === 1 ? 'artist' : 'artists'} scanned &middot; {progress.found} {progress.found === 1 ? 'release' : 'releases'} found
         </p>
         <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)', marginTop: 8 }}>
           {pct < 30 ? 'Getting started...' : pct < 70 ? 'Making progress...' : 'Almost done...'}
@@ -213,11 +289,11 @@ export default function NashvilleReleases({ onImport }: Props) {
           {week && <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginLeft: 8 }}>Week of {week}</span>}
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={selectAll} style={{ fontSize: 'var(--fs-xs)', color: 'var(--steel)', cursor: 'pointer', background: 'none', border: 'none' }}>
+          <button onClick={selectAll} style={{ fontSize: 'var(--fs-sm)', color: 'var(--steel)', cursor: 'pointer', background: 'none', border: 'none', fontWeight: 600 }}>
             Select All
           </button>
           {selected.size > 0 && (
-            <button onClick={() => setSelected(new Set())} style={{ fontSize: 'var(--fs-xs)', color: 'var(--mmmc-red)', cursor: 'pointer', background: 'none', border: 'none' }}>
+            <button onClick={() => setSelected(new Set())} style={{ fontSize: 'var(--fs-sm)', color: 'var(--mmmc-red)', cursor: 'pointer', background: 'none', border: 'none', fontWeight: 600 }}>
               Clear ({selected.size})
             </button>
           )}
@@ -230,12 +306,24 @@ export default function NashvilleReleases({ onImport }: Props) {
               opacity: filtered.length === 0 ? 0.4 : 1,
             }}
           >
-            Import {selected.size > 0 ? selected.size : filtered.length} releases
+            Import {selected.size > 0 ? selected.size : filtered.length} {(selected.size > 0 ? selected.size : filtered.length) === 1 ? 'release' : 'releases'}
           </button>
         </div>
       </div>
 
-      {/* Filters */}
+      {/* Showcase filter pills */}
+      {showcasePills}
+      {loadingShowcase && (
+        <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)', marginBottom: 8 }}>Loading showcase artists...</p>
+      )}
+      {activeShowcase && !loadingShowcase && showcaseArtists.size > 0 && (
+        <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)', marginBottom: 8 }}>
+          Showing releases from {showcaseArtists.size} {showcases.find(s => s.id === activeShowcase)?.name} {showcaseArtists.size === 1 ? 'artist' : 'artists'}
+          {filtered.length > 0 && <> &middot; {filtered.length} {filtered.length === 1 ? 'release' : 'releases'} this week</>}
+        </p>
+      )}
+
+      {/* Chart / All filters */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
         <button
           onClick={() => setChartFilter(false)}
@@ -252,6 +340,13 @@ export default function NashvilleReleases({ onImport }: Props) {
           Charting ({chartingCount})
         </button>
       </div>
+
+      {/* Empty state for showcase filter */}
+      {activeShowcase && filtered.length === 0 && !loadingShowcase && (
+        <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)' }}>
+          No releases this week from {showcases.find(s => s.id === activeShowcase)?.name} artists.
+        </div>
+      )}
 
       {/* Release list — grouped by album, selectable, expandable */}
       <div style={{ maxHeight: 600, overflowY: 'auto' }}>
@@ -312,7 +407,7 @@ export default function NashvilleReleases({ onImport }: Props) {
                     <span style={{ marginLeft: 6, fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
                       {g.type}
                     </span>
-                    {!isSingle && <span> &middot; {g.tracks.length} tracks</span>}
+                    {!isSingle && <span> &middot; {g.tracks.length} {g.tracks.length === 1 ? 'track' : 'tracks'}</span>}
                   </div>
                 </div>
                 {g.isCharting && (

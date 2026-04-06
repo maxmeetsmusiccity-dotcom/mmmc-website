@@ -159,14 +159,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   }
 
-  // If category has its own artists array, use those directly
+  // If category has its own artists array, use those directly — no cap for showcases
+  const isShowcase = (catObj.type || '') === 'showcase';
   const matched = catObj.artists?.length > 0
-    ? catObj.artists.slice(0, 100)
-    : artists.filter(a => (a.categories || []).includes(category!)).slice(0, 100);
+    ? (isShowcase ? catObj.artists : catObj.artists.slice(0, 200))
+    : artists.filter(a => (a.categories || []).includes(category!));
 
   res.setHeader('Cache-Control', 's-maxage=600, stale-while-revalidate=120');
   return res.status(200).json({
-    category: { id: category, ...catMeta },
+    category: { id: category, name: catObj.name || category, emoji: catObj.emoji || '', type: catObj.type || '', count: matched.length },
     artists: matched,
     total: matched.length,
     source: 'r2',

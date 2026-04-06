@@ -26,26 +26,28 @@ export default function SourceSelector({
             : source.id === 'apple-music' ? appleMusicConnected
             : true;
 
-          // Spotify is admin-only until Extended Quota Mode is approved
+          // Spotify + Apple Music are admin-only until quota / MusicKit approved
           const isSpotifyLocked = source.id === 'spotify' && !isAdmin;
+          const isAppleLocked = source.id === 'apple-music' && !isAdmin;
+          const isLocked = isSpotifyLocked || isAppleLocked;
 
           return (
             <button
               key={source.id}
               data-testid={`source-${source.id}`}
-              onClick={() => !isSpotifyLocked && onSelect(source.id)}
+              onClick={() => !isLocked && onSelect(source.id)}
               style={{
                 flex: 1, padding: '12px 10px', borderRadius: 10,
-                cursor: isSpotifyLocked ? 'not-allowed' : 'pointer',
+                cursor: isLocked ? 'not-allowed' : 'pointer',
                 background: isActive ? 'var(--midnight-hover)' : 'var(--midnight)',
                 border: isActive ? '2px solid var(--gold)' : '2px solid var(--midnight-border)',
                 transition: 'all 0.15s',
                 display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
-                opacity: isSpotifyLocked ? 0.55 : isActive ? 1 : 0.7,
+                opacity: isLocked ? 0.55 : isActive ? 1 : 0.7,
                 position: 'relative', overflow: 'hidden',
               }}
             >
-              {isSpotifyLocked && (
+              {isLocked && (
                 <div style={{
                   position: 'absolute', top: '50%', left: '50%',
                   transform: 'translate(-50%, -50%) rotate(-20deg)',
@@ -65,9 +67,9 @@ export default function SourceSelector({
                 {source.name}
               </span>
               <span style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)' }}>
-                {isSpotifyLocked ? 'Scan your library' : source.description}
+                {isLocked ? 'Scan your library' : source.description}
               </span>
-              {source.requiresAuth && !isSpotifyLocked && (
+              {source.requiresAuth && !isLocked && (
                 <span style={{
                   fontSize: 'var(--fs-3xs)', fontWeight: 600,
                   color: isConnected ? '#3DA877' : 'var(--text-muted)',

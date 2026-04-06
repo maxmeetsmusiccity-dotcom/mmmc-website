@@ -137,6 +137,7 @@ export default function NewMusicFriday() {
   // Quick Look: spacebar preview
   const [quickLookAlbum, setQuickLookAlbum] = useState<ReleaseCluster | null>(null);
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [showAddTracks, setShowAddTracks] = useState(false);
   const hoveredCluster = useRef<ReleaseCluster | null>(null);
 
   // Rubber-band drag select
@@ -670,7 +671,7 @@ export default function NewMusicFriday() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <Link to="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flexShrink: 0 }}>
-            <img src="/mmmc-logo-hires.png" alt="MMMC" style={{ width: 48, height: 48, borderRadius: 8, objectFit: 'cover' }} />
+            <img src="/mmmc-logo-hires.png" alt="MMMC" style={{ width: 67, height: 67, borderRadius: 8, objectFit: 'cover' }} />
           </Link>
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-2xl)', fontWeight: 600, whiteSpace: 'nowrap' }}>
             New Music Friday
@@ -684,18 +685,12 @@ export default function NewMusicFriday() {
               {new Date(lastScanned).toLocaleString()}
             </span>
           )}
-          {/* Re-scan: works with Spotify token OR via server-side scan */}
-          {phase === 'results' && (
+          {/* Re-scan (Spotify-connected only — admin) */}
+          {phase === 'results' && token && (
             <>
-              {token ? (
-                <>
-                  <button className="btn btn-sm" onClick={() => runScan(token)}>Re-scan</button>
-                  <button className="btn btn-sm" onClick={() => { localStorage.removeItem('nmf_followed_artists'); runScan(token); }}>Refresh Follows</button>
-                  <button className="btn btn-sm btn-danger" onClick={handleDisconnect} style={{ fontSize: 'var(--fs-2xs)' }}>Disconnect Spotify</button>
-                </>
-              ) : (
-                <button className="btn btn-sm" onClick={() => setPhase('ready')}>New Scan</button>
-              )}
+              <button className="btn btn-sm" onClick={() => runScan(token)}>Re-scan</button>
+              <button className="btn btn-sm" onClick={() => { localStorage.removeItem('nmf_followed_artists'); runScan(token); }}>Refresh Follows</button>
+              <button className="btn btn-sm btn-danger" onClick={handleDisconnect} style={{ fontSize: 'var(--fs-2xs)' }}>Disconnect Spotify</button>
             </>
           )}
           {/* Account */}
@@ -924,43 +919,74 @@ export default function NewMusicFriday() {
                     <option key={n} value={n}>{n} track{n !== 1 ? 's' : ''}</option>
                   ))}
                 </select>
-                {/* Source switcher — add more tracks from any source */}
-                <details style={{ position: 'relative', display: 'inline-block' }}>
-                  <summary style={{
+                {/* New Scan + Add Tracks buttons */}
+                <button
+                  className="btn btn-sm"
+                  onClick={() => setPhase('ready')}
+                  style={{ fontSize: 'var(--fs-2xs)', padding: '2px 8px' }}
+                >
+                  New Scan
+                </button>
+                <button
+                  onClick={() => setShowAddTracks(v => !v)}
+                  style={{
                     fontSize: 'var(--fs-2xs)', color: 'var(--gold)', cursor: 'pointer',
                     padding: '2px 8px', borderRadius: 6,
                     border: '1px solid var(--gold-dark)', background: 'rgba(212,168,67,0.08)',
-                    listStyle: 'none',
-                  }} title="Add more tracks from Spotify, CSV, or artist browser">
-                    + Add Tracks
-                  </summary>
-                  <div style={{
-                    position: 'absolute', top: '100%', left: 0, marginTop: 4, zIndex: 100,
-                    background: 'var(--midnight-raised)', border: '1px solid var(--midnight-border)',
-                    borderRadius: 8, padding: 12, minWidth: 280, maxHeight: '60vh', overflow: 'auto',
-                    boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
-                  }}>
-                    <ManualImport onImport={(tracks) => {
-                      setAllTracks(prev => {
-                        const existing = new Set(prev.map(t => t.track_id));
-                        const newTracks = tracks.filter(t => !existing.has(t.track_id));
-                        return [...prev, ...newTracks];
-                      });
-                      setReleases(groupIntoReleases([...allTracks, ...tracks]));
-                    }} />
-                    <button className="btn btn-sm" onClick={() => { setPhase('ready'); setActiveSource('nashville'); }} style={{ width: '100%', marginTop: 8, justifyContent: 'center' }}>
-                      Nashville Releases
-                    </button>
-                    <Link to="/artists" className="btn btn-sm" style={{ width: '100%', marginTop: 8, justifyContent: 'center', textDecoration: 'none', display: 'flex' }}>
-                      Browse Artists (A-Z)
-                    </Link>
-                    {token && (
-                      <button className="btn btn-sm btn-spotify" onClick={() => runScan(token)} style={{ width: '100%', marginTop: 8, justifyContent: 'center' }}>
-                        Re-scan Spotify
+                  }}
+                  title="Add more tracks from CSV, Nashville, or artist browser"
+                >
+                  + Add Tracks
+                </button>
+                {/* Add Tracks panel — centered overlay */}
+                {showAddTracks && (
+                  <>
+                    <div
+                      onClick={() => setShowAddTracks(false)}
+                      style={{ position: 'fixed', inset: 0, zIndex: 99, background: 'rgba(0,0,0,0.5)' }}
+                    />
+                    <div style={{
+                      position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+                      zIndex: 100, background: 'var(--midnight-raised)', border: '1px solid var(--midnight-border)',
+                      borderRadius: 12, padding: '20px 24px', width: 'min(480px, 90vw)', maxHeight: '75vh', overflow: 'auto',
+                      boxShadow: '0 12px 48px rgba(0,0,0,0.6)',
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                        <span style={{ fontSize: 'var(--fs-lg)', fontWeight: 600 }}>Add Tracks</span>
+                        <button
+                          onClick={() => setShowAddTracks(false)}
+                          style={{
+                            background: 'none', border: 'none', color: 'var(--text-muted)',
+                            fontSize: 'var(--fs-xl)', cursor: 'pointer', padding: '0 4px', lineHeight: 1,
+                          }}
+                          title="Close"
+                        >
+                          &times;
+                        </button>
+                      </div>
+                      <ManualImport onImport={(tracks) => {
+                        setAllTracks(prev => {
+                          const existing = new Set(prev.map(t => t.track_id));
+                          const newTracks = tracks.filter(t => !existing.has(t.track_id));
+                          return [...prev, ...newTracks];
+                        });
+                        setReleases(groupIntoReleases([...allTracks, ...tracks]));
+                        setShowAddTracks(false);
+                      }} />
+                      <button className="btn btn-sm" onClick={() => { setShowAddTracks(false); setPhase('ready'); setActiveSource('nashville'); }} style={{ width: '100%', marginTop: 12, justifyContent: 'center' }}>
+                        Nashville Releases
                       </button>
-                    )}
-                  </div>
-                </details>
+                      <Link to="/artists" className="btn btn-sm" onClick={() => setShowAddTracks(false)} style={{ width: '100%', marginTop: 8, justifyContent: 'center', textDecoration: 'none', display: 'flex' }}>
+                        Browse Artists (A-Z)
+                      </Link>
+                      {token && (
+                        <button className="btn btn-sm btn-spotify" onClick={() => { setShowAddTracks(false); runScan(token); }} style={{ width: '100%', marginTop: 8, justifyContent: 'center' }}>
+                          Re-scan Spotify
+                        </button>
+                      )}
+                    </div>
+                  </>
+                )}
                 <span style={{ color: 'var(--midnight-border)', margin: '0 2px' }}>|</span>
                 {/* Select All / Clear */}
                 <button

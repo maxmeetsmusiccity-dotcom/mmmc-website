@@ -154,7 +154,7 @@ export default function ArtistBrowser({ onScanArtists, scanning }: Props) {
             marginBottom: 8,
           }}>
             <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)' }}>
-              {displayArtists.length} artists
+              {displayArtists.length} {displayArtists.length === 1 ? 'artist' : 'artists'}
               {selectedNames.size > 0 && (
                 <span style={{ color: 'var(--gold)', fontWeight: 600, marginLeft: 8 }}>
                   {selectedNames.size} selected
@@ -239,7 +239,7 @@ export default function ArtistBrowser({ onScanArtists, scanning }: Props) {
             disabled={scanning}
             style={{ fontSize: 'var(--fs-md)', padding: '10px 24px' }}
           >
-            {scanning ? 'Scanning...' : `Scan ${selectedNames.size} Artists for New Releases`}
+            {scanning ? 'Scanning...' : `Scan ${selectedNames.size} ${selectedNames.size === 1 ? 'Artist' : 'Artists'} for New Releases`}
           </button>
           <button
             onClick={() => setSelectedNames(new Set())}

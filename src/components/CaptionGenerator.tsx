@@ -134,7 +134,7 @@ export default function CaptionGenerator({ selections, handles, weekDate }: Prop
           {charCount}/2,200 characters
         </span>
         <span style={{ fontSize: 'var(--fs-3xs)', color: 'var(--text-muted)' }}>
-          {selections.length} tracks &bull; {new Set(selections.map(s => (s.track.artist_names || '').split(/,/)[0].trim())).size} artists
+          {selections.length} {selections.length === 1 ? 'track' : 'tracks'} &bull; {(() => { const c = new Set(selections.map(s => (s.track.artist_names || '').split(/,/)[0].trim())).size; return `${c} ${c === 1 ? 'artist' : 'artists'}`; })()}
         </span>
       </div>
     </div>

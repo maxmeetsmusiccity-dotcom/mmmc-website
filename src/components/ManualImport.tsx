@@ -206,7 +206,7 @@ export default function ManualImport({ onImport, scanEndpoint = '/api/scan-artis
               {scanning ? 'Scanning...' : scanLabel}
             </button>
             <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)' }}>
-              {artistText.trim() ? `${artistText.split('\n').filter(s => s.trim()).length} artists` : ''}
+              {artistText.trim() ? (() => { const c = artistText.split('\n').filter(s => s.trim()).length; return `${c} ${c === 1 ? 'artist' : 'artists'}`; })() : ''}
               {scanStatus && ` · ${scanStatus}`}
             </span>
           </div>
