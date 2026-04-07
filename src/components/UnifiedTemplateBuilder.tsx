@@ -1,10 +1,12 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import type { CarouselTemplate } from '../lib/carousel-templates';
 import { TEMPLATES } from '../lib/carousel-templates';
 import type { TitleSlideTemplate } from '../lib/title-templates';
 import { getTitleTemplate, TITLE_TEMPLATES } from '../lib/title-templates';
 import { generateTemplatePreview, generateTitleSlide, type CarouselAspect } from '../lib/canvas-grid';
 import type { SelectionSlot } from '../lib/selection';
+import { titleTemplateToElements, gridTemplateToElements, type EditorElement } from '../lib/editor-elements';
+import CanvasOverlay from './CanvasOverlay';
 
 /* ------------------------------------------------------------------ */
 /*  Props                                                              */
@@ -257,6 +259,11 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
   const [rendering, setRendering] = useState(false);
   const previewTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
+  /* ---------- canvas overlay ---------- */
+  const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
+  const previewContainerRef = useRef<HTMLDivElement>(null);
+  const [previewRect, setPreviewRect] = useState({ w: 400, h: 400 });
+
   /* ================================================================ */
   /*  Build the output template from current state                     */
   /* ================================================================ */
@@ -382,6 +389,49 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
   }, [isGrid, buildGridTemplate, buildTitleTemplate]);
 
   /* ================================================================ */
+  /*  Editor elements (derived from current template state)            */
+  /* ================================================================ */
+
+  const editorElements = useMemo<EditorElement[]>(() => {
+    return isGrid ? gridTemplateToElements(buildGridTemplate()) : titleTemplateToElements(buildTitleTemplate());
+  }, [isGrid, buildGridTemplate, buildTitleTemplate]);
+
+  const handleElementUpdate = useCallback((id: string, patch: Partial<EditorElement>) => {
+    // Map overlay drag positions back to the corresponding state variables
+    if (!isGrid) {
+      // Title mode: map element positions to layout state
+      if (patch.y !== undefined) {
+        switch (id) {
+          case 'headline': setHeadlineY(patch.y); break;
+          case 'subtitle': setSubtitleY(patch.y); break;
+          case 'date': setDateY(patch.y); break;
+          case 'featured_image': setFeaturedImageY(patch.y); break;
+        }
+      }
+      if (patch.width !== undefined && id === 'featured_image') {
+        setFeaturedImageSize(patch.width);
+      }
+      if (patch.rotation !== undefined && id === 'featured_image') {
+        setFeaturedRotation(patch.rotation);
+      }
+    }
+  }, [isGrid]);
+
+  // Measure preview image for overlay sizing
+  useEffect(() => {
+    const container = previewContainerRef.current;
+    if (!container) return;
+    const measure = () => {
+      const img = container.querySelector('img');
+      if (img) setPreviewRect({ w: img.clientWidth, h: img.clientHeight });
+    };
+    measure();
+    const obs = new ResizeObserver(measure);
+    obs.observe(container);
+    return () => obs.disconnect();
+  }, [previewUrl]);
+
+  /* ================================================================ */
   /*  "Start from" base template loader                                */
   /* ================================================================ */
 
@@ -490,9 +540,8 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
         } else {
           setRendering(true);
           try {
-            // Use the selected base template for rendering
-            const templateId = baseTemplateId || (initial?.id?.startsWith('custom_') ? 'vintage_press' : initial?.id) || 'vintage_press';
-            const blob = await generateTitleSlide(coverFeature, weekDate || '', templateId, aspect);
+            // Pass live template object so edits are reflected in preview
+            const blob = await generateTitleSlide(coverFeature, weekDate || '', buildTitleTemplate(), aspect);
             const url = URL.createObjectURL(blob);
             setPreviewUrl(prev => { if (prev && prev.startsWith('blob:')) URL.revokeObjectURL(prev); return url; });
           } catch (e) {
@@ -1061,36 +1110,50 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
           </span>
         </div>
 
-        {/* Preview canvas area */}
+        {/* Preview canvas area with interactive overlay */}
         <div style={{
           flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
           padding: 24, overflow: 'hidden',
         }}>
-          {previewUrl ? (
-            <img
-              src={previewUrl}
-              alt={`${isGrid ? 'Grid' : 'Title'} template preview`}
-              style={{
-                maxWidth: '100%',
-                maxHeight: '100%',
-                borderRadius: 8,
+          <div ref={previewContainerRef} style={{ position: 'relative', display: 'inline-block' }}>
+            {previewUrl ? (
+              <img
+                src={previewUrl}
+                alt={`${isGrid ? 'Grid' : 'Title'} template preview`}
+                style={{
+                  maxWidth: '100%',
+                  maxHeight: 'calc(100vh - 160px)',
+                  borderRadius: 8,
+                  border: '1px solid var(--midnight-border)',
+                  objectFit: 'contain',
+                  display: 'block',
+                }}
+              />
+            ) : (
+              <div style={{
+                width: 400,
+                aspectRatio: aspect === '3:4' ? '3/4' : '1',
+                borderRadius: 12,
+                background: bg,
                 border: '1px solid var(--midnight-border)',
-                objectFit: 'contain',
-              }}
-            />
-          ) : (
-            <div style={{
-              width: 400,
-              aspectRatio: aspect === '3:4' ? '3/4' : '1',
-              borderRadius: 12,
-              background: bg,
-              border: '1px solid var(--midnight-border)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: accent, fontSize: 'var(--fs-md)',
-            }}>
-              Loading preview...
-            </div>
-          )}
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: accent, fontSize: 'var(--fs-md)',
+              }}>
+                Loading preview...
+              </div>
+            )}
+            {/* Interactive overlay for element selection and drag */}
+            {previewUrl && previewRect.w > 0 && (
+              <CanvasOverlay
+                elements={editorElements}
+                selectedId={selectedElementId}
+                onSelect={setSelectedElementId}
+                onElementUpdate={handleElementUpdate}
+                canvasWidth={previewRect.w}
+                canvasHeight={previewRect.h}
+              />
+            )}
+          </div>
         </div>
       </div>
     </div>

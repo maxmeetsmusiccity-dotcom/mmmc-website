@@ -1,7 +1,7 @@
 import type { SelectionSlot } from './selection';
 import type { CarouselTemplate } from './carousel-templates';
 import { getTemplate } from './carousel-templates';
-import { getTitleTemplate } from './title-templates';
+import { getTitleTemplate, type TitleSlideTemplate } from './title-templates';
 import { type GridConfig, getGridById, getGridsForCount, computeCellRects } from './grid-layouts';
 
 /** Canvas dimensions by aspect ratio */
@@ -360,10 +360,12 @@ export async function generateCoverSlide(
 export async function generateTitleSlide(
   coverFeature: SelectionSlot | null,
   weekDate: string,
-  titleTemplateId = 'nashville_neon',
+  templateOrId: string | TitleSlideTemplate = 'nashville_neon',
   aspect: CarouselAspect = '1:1',
 ): Promise<Blob> {
-  const tt = getTitleTemplate(titleTemplateId);
+  const tt = typeof templateOrId === 'string'
+    ? getTitleTemplate(templateOrId)
+    : templateOrId;
   const dim = getDimensions(aspect);
   const W = dim.w, H = dim.h;
 
