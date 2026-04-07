@@ -34,11 +34,14 @@ function getLastFriday(): string {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Verify this is a cron call or manual trigger
+  // ── Auth: fail-closed, header-only (no query param secrets) ──
+  const CRON_SECRET = process.env.CRON_SECRET;
+  if (!CRON_SECRET) {
+    console.error('[CRON] CRON_SECRET not configured — refusing to run');
+    return res.status(500).json({ error: 'Server misconfigured' });
+  }
   const authHeader = req.headers.authorization;
-  const isCron = authHeader === `Bearer ${process.env.CRON_SECRET}`;
-  const isManual = req.query.secret === process.env.CRON_SECRET;
-  if (!isCron && !isManual && process.env.CRON_SECRET) {
+  if (authHeader !== `Bearer ${CRON_SECRET}`) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
