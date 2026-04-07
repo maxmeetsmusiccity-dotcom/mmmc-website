@@ -5,7 +5,10 @@ import type { TitleSlideTemplate } from '../lib/title-templates';
 import { getTitleTemplate, TITLE_TEMPLATES } from '../lib/title-templates';
 import { generateTemplatePreview, generateTitleSlide, type CarouselAspect } from '../lib/canvas-grid';
 import type { SelectionSlot } from '../lib/selection';
-import { titleTemplateToElements, gridTemplateToElements, type EditorElement } from '../lib/editor-elements';
+import {
+  titleTemplateToElements, gridTemplateToElements, type EditorElement,
+  createCustomText, createCustomImage, createCustomShape, type ShapeKind,
+} from '../lib/editor-elements';
 import CanvasOverlay from './CanvasOverlay';
 import LayerPanel from './LayerPanel';
 
@@ -266,6 +269,7 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
   const [previewRect, setPreviewRect] = useState({ w: 400, h: 400 });
   const [layerOverrides, setLayerOverrides] = useState<Record<string, { visible?: boolean; locked?: boolean }>>({});
   const [layerOrder, setLayerOrder] = useState<string[] | null>(null);
+  const [customElements, setCustomElements] = useState<EditorElement[]>([]);
 
   /* ================================================================ */
   /*  Build the output template from current state                     */
@@ -397,8 +401,10 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
 
   const editorElements = useMemo<EditorElement[]>(() => {
     const raw = isGrid ? gridTemplateToElements(buildGridTemplate()) : titleTemplateToElements(buildTitleTemplate());
+    // Merge template-derived elements with custom user elements
+    const all = [...raw, ...customElements];
     // Apply visibility/lock overrides from layer panel
-    const withOverrides = raw.map(el => {
+    const withOverrides = all.map(el => {
       const ov = layerOverrides[el.id];
       if (!ov) return el;
       return { ...el, visible: ov.visible ?? el.visible, locked: ov.locked ?? el.locked };
@@ -408,12 +414,11 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
       const byId = new Map(withOverrides.map(el => [el.id, el]));
       const ordered: EditorElement[] = [];
       for (const id of layerOrder) { const el = byId.get(id); if (el) ordered.push(el); }
-      // Append any elements not in the order list (newly added)
       for (const el of withOverrides) { if (!layerOrder.includes(el.id)) ordered.push(el); }
       return ordered;
     }
     return withOverrides;
-  }, [isGrid, buildGridTemplate, buildTitleTemplate, layerOverrides, layerOrder]);
+  }, [isGrid, buildGridTemplate, buildTitleTemplate, layerOverrides, layerOrder, customElements]);
 
   const handleToggleVisible = useCallback((id: string) => {
     setLayerOverrides(prev => ({ ...prev, [id]: { ...prev[id], visible: !(prev[id]?.visible ?? editorElements.find(e => e.id === id)?.visible ?? true) } }));
@@ -430,10 +435,37 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
     setLayerOrder(ids);
   }, [editorElements]);
 
+  const handleAddText = useCallback(() => {
+    const el = createCustomText();
+    setCustomElements(prev => [...prev, el]);
+    setSelectedElementId(el.id);
+  }, []);
+
+  const handleAddImage = useCallback(() => {
+    const el = createCustomImage();
+    setCustomElements(prev => [...prev, el]);
+    setSelectedElementId(el.id);
+  }, []);
+
+  const handleAddShape = useCallback((kind: ShapeKind) => {
+    const el = createCustomShape(kind);
+    setCustomElements(prev => [...prev, el]);
+    setSelectedElementId(el.id);
+  }, []);
+
+  const handleDeleteElement = useCallback((id: string) => {
+    setCustomElements(prev => prev.filter(el => el.id !== id));
+    if (selectedElementId === id) setSelectedElementId(null);
+  }, [selectedElementId]);
+
   const handleElementUpdate = useCallback((id: string, patch: Partial<EditorElement>) => {
-    // Map overlay drag positions back to the corresponding state variables
+    // Custom elements: update directly in custom elements state
+    if (customElements.some(el => el.id === id)) {
+      setCustomElements(prev => prev.map(el => el.id === id ? { ...el, ...patch } : el));
+      return;
+    }
+    // Template-derived elements: map positions back to state variables
     if (!isGrid) {
-      // Title mode: map element positions to layout state
       if (patch.y !== undefined) {
         switch (id) {
           case 'headline': setHeadlineY(patch.y); break;
@@ -449,7 +481,7 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
         setFeaturedRotation(patch.rotation);
       }
     }
-  }, [isGrid]);
+  }, [isGrid, customElements]);
 
   // Measure preview image for overlay sizing
   useEffect(() => {
@@ -600,10 +632,15 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
         onSave(buildTemplate());
       }
       if (e.key === 'Escape') onCancel();
+      // Delete/Backspace removes selected custom element
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedElementId) {
+        const el = customElements.find(ce => ce.id === selectedElementId);
+        if (el) { e.preventDefault(); handleDeleteElement(selectedElementId); }
+      }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [buildTemplate, onSave, onCancel]);
+  }, [buildTemplate, onSave, onCancel, selectedElementId, customElements, handleDeleteElement]);
 
   /* ================================================================ */
   /*  JSON import / export (grid mode)                                 */
@@ -1094,6 +1131,113 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
             </details>
           )}
 
+          {/* ============================================= */}
+          {/* SELECTED CUSTOM ELEMENT PROPERTIES             */}
+          {/* ============================================= */}
+          {(() => {
+            const sel = selectedElementId ? customElements.find(e => e.id === selectedElementId) : null;
+            if (!sel) return null;
+            const updateProp = (key: string, val: unknown) => {
+              setCustomElements(prev => prev.map(el =>
+                el.id === sel.id ? { ...el, props: { ...el.props, [key]: val } } : el
+              ));
+            };
+            return (
+              <details open>
+                <summary style={sectionHeader}>{sel.label} Properties</summary>
+                <div style={sectionBody}>
+                  {/* Common: label */}
+                  <label style={labelStyle}>
+                    Label
+                    <input type="text" value={sel.label}
+                      onChange={e => setCustomElements(prev => prev.map(el => el.id === sel.id ? { ...el, label: e.target.value } : el))}
+                      style={inputStyle} />
+                  </label>
+
+                  {/* Text element properties */}
+                  {sel.type === 'text' && (
+                    <>
+                      <label style={labelStyle}>
+                        Text
+                        <input type="text" value={(sel.props.text as string) || ''}
+                          onChange={e => updateProp('text', e.target.value)} style={inputStyle} />
+                      </label>
+                      <FontSelect label="Font" value={(sel.props.font as string) || '"DM Sans", sans-serif'}
+                        onChange={v => updateProp('font', v)} />
+                      <Slider label="Font Size" value={(sel.props.fontSize as number) || 0.035}
+                        min={0.015} max={0.08} step={0.002} onChange={v => updateProp('fontSize', v)} />
+                      <label style={labelStyle}>
+                        Weight
+                        <select value={(sel.props.fontWeight as number) || 400}
+                          onChange={e => updateProp('fontWeight', parseInt(e.target.value))} style={selectStyle}>
+                          <option value="400">Regular</option>
+                          <option value="600">Semi-Bold</option>
+                          <option value="700">Bold</option>
+                          <option value="900">Black</option>
+                        </select>
+                      </label>
+                      <ColorField label="Color" value={(sel.props.color as string) || '#FFFFFF'}
+                        onChange={v => updateProp('color', v)} />
+                    </>
+                  )}
+
+                  {/* Image element properties */}
+                  {sel.type === 'image' && (
+                    <>
+                      <label style={labelStyle}>
+                        Image URL
+                        <input type="text" placeholder="Paste image URL..."
+                          value={(sel.props.src as string) || ''}
+                          onChange={e => updateProp('src', e.target.value)} style={inputStyle} />
+                      </label>
+                      <label style={labelStyle}>
+                        Upload
+                        <input type="file" accept="image/*" onChange={e => {
+                          const file = e.target.files?.[0];
+                          if (file) updateProp('src', URL.createObjectURL(file));
+                        }} style={{ fontSize: 'var(--fs-2xs)' }} />
+                      </label>
+                      <Slider label="Width" value={sel.width} min={0.05} max={0.8} step={0.01}
+                        onChange={v => setCustomElements(prev => prev.map(el => el.id === sel.id ? { ...el, width: v, height: v } : el))} />
+                      <Slider label="Border" value={(sel.props.borderWidth as number) || 0}
+                        min={0} max={20} step={1} onChange={v => updateProp('borderWidth', v)} suffix="px" />
+                      <ColorField label="Border Color" value={(sel.props.borderColor as string) || '#FFFFFF'}
+                        onChange={v => updateProp('borderColor', v)} />
+                      <Slider label="Opacity" value={(sel.props.opacity as number) ?? 1}
+                        min={0} max={1} step={0.05} onChange={v => updateProp('opacity', v)} />
+                    </>
+                  )}
+
+                  {/* Shape element properties */}
+                  {sel.type === 'shape' && (
+                    <>
+                      <Slider label="Width" value={sel.width} min={0.02} max={0.8} step={0.01}
+                        onChange={v => setCustomElements(prev => prev.map(el => el.id === sel.id ? { ...el, width: v } : el))} />
+                      <Slider label="Height" value={sel.height} min={0.002} max={0.8} step={0.005}
+                        onChange={v => setCustomElements(prev => prev.map(el => el.id === sel.id ? { ...el, height: v } : el))} />
+                      <ColorField label="Fill" value={(sel.props.fill as string) || 'transparent'}
+                        onChange={v => updateProp('fill', v)} />
+                      <ColorField label="Stroke" value={(sel.props.stroke as string) || '#D4A843'}
+                        onChange={v => updateProp('stroke', v)} />
+                      <Slider label="Stroke Width" value={(sel.props.strokeWidth as number) || 1}
+                        min={0} max={10} step={1} onChange={v => updateProp('strokeWidth', v)} suffix="px" />
+                      <Slider label="Rotation" value={sel.rotation} min={-180} max={180} step={1}
+                        onChange={v => setCustomElements(prev => prev.map(el => el.id === sel.id ? { ...el, rotation: v } : el))} suffix="deg" />
+                    </>
+                  )}
+
+                  {/* Position (all types) */}
+                  <div style={{ borderTop: '1px solid var(--midnight-border)', paddingTop: 8, marginTop: 4 }}>
+                    <Slider label="X Position" value={sel.x} min={0} max={1} step={0.005}
+                      onChange={v => setCustomElements(prev => prev.map(el => el.id === sel.id ? { ...el, x: v } : el))} />
+                    <Slider label="Y Position" value={sel.y} min={0} max={1} step={0.005}
+                      onChange={v => setCustomElements(prev => prev.map(el => el.id === sel.id ? { ...el, y: v } : el))} />
+                  </div>
+                </div>
+              </details>
+            );
+          })()}
+
         </div>
 
         {/* Save bar (pinned to bottom of left panel) */}
@@ -1120,6 +1264,10 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
         onToggleVisible={handleToggleVisible}
         onToggleLocked={handleToggleLocked}
         onReorder={handleReorder}
+        onAddText={handleAddText}
+        onAddImage={handleAddImage}
+        onAddShape={handleAddShape}
+        onDelete={handleDeleteElement}
       />
 
       {/* ============= RIGHT: Live Preview ============= */}

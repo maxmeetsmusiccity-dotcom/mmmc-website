@@ -7,6 +7,10 @@ interface Props {
   onToggleVisible: (id: string) => void;
   onToggleLocked: (id: string) => void;
   onReorder: (fromIndex: number, toIndex: number) => void;
+  onAddText: () => void;
+  onAddImage: () => void;
+  onAddShape: (kind: 'rectangle' | 'circle' | 'line') => void;
+  onDelete: (id: string) => void;
 }
 
 const LAYER_ICONS: Record<string, string> = {
@@ -22,6 +26,7 @@ const LAYER_ICONS: Record<string, string> = {
  */
 export default function LayerPanel({
   elements, selectedId, onSelect, onToggleVisible, onToggleLocked, onReorder,
+  onAddText, onAddImage, onAddShape, onDelete,
 }: Props) {
   return (
     <div style={{
@@ -31,14 +36,31 @@ export default function LayerPanel({
       display: 'flex', flexDirection: 'column',
       overflow: 'hidden',
     }}>
-      {/* Header */}
+      {/* Header + Add buttons */}
       <div style={{
-        padding: '12px 14px',
+        padding: '10px 14px',
         borderBottom: '1px solid var(--midnight-border)',
         background: 'var(--midnight-raised)',
-        fontSize: 'var(--fs-sm)', fontWeight: 600, color: 'var(--text-secondary)',
       }}>
-        Layers
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+          <span style={{ fontSize: 'var(--fs-sm)', fontWeight: 600, color: 'var(--text-secondary)' }}>Layers</span>
+          {selectedId && elements.find(e => e.id === selectedId)?.custom && (
+            <button
+              onClick={() => onDelete(selectedId)}
+              style={{ ...iconBtnStyle, color: 'var(--mmmc-red)', fontSize: 13 }}
+              title="Delete selected element"
+            >
+              &#10005;
+            </button>
+          )}
+        </div>
+        <div style={{ display: 'flex', gap: 4 }}>
+          <button onClick={onAddText} style={addBtnStyle} title="Add text">T+</button>
+          <button onClick={onAddImage} style={addBtnStyle} title="Add image">&#9633;+</button>
+          <button onClick={() => onAddShape('rectangle')} style={addBtnStyle} title="Add rectangle">&#9645;</button>
+          <button onClick={() => onAddShape('circle')} style={addBtnStyle} title="Add circle">&#9675;</button>
+          <button onClick={() => onAddShape('line')} style={addBtnStyle} title="Add line">&#8212;</button>
+        </div>
       </div>
 
       {/* Element list — render in reverse so topmost layer is at top */}
@@ -138,4 +160,11 @@ const iconBtnStyle: React.CSSProperties = {
   background: 'none', border: 'none', cursor: 'pointer',
   padding: '2px 3px', fontSize: 11, lineHeight: 1, flexShrink: 0,
   color: 'var(--text-muted)',
+};
+
+const addBtnStyle: React.CSSProperties = {
+  flex: 1, padding: '4px 0', fontSize: 12, fontWeight: 600,
+  background: 'var(--midnight)', border: '1px solid var(--midnight-border)',
+  borderRadius: 4, color: 'var(--text-secondary)', cursor: 'pointer',
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
 };

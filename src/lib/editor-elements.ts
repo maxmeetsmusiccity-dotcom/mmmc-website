@@ -7,10 +7,12 @@ import type { CarouselTemplate } from './carousel-templates';
 
 export interface EditorElement {
   id: string;
-  type: 'text' | 'image' | 'decoration' | 'background';
+  type: 'text' | 'image' | 'decoration' | 'background' | 'shape';
   label: string;
   visible: boolean;
   locked: boolean;
+  /** Whether this element was added by the user (vs derived from template) */
+  custom?: boolean;
   /** Horizontal center as fraction of canvas width (0-1) */
   x: number;
   /** Vertical position as fraction of canvas height (0-1) */
@@ -260,4 +262,160 @@ export function gridTemplateToElements(gt: CarouselTemplate): EditorElement[] {
       props: { size: gt.decorations.sparkleSize },
     },
   ];
+}
+
+/* ------------------------------------------------------------------ */
+/*  Custom Element Factories                                           */
+/* ------------------------------------------------------------------ */
+
+let _customCounter = 0;
+
+export function createCustomText(): EditorElement {
+  _customCounter++;
+  return {
+    id: `custom_text_${Date.now()}_${_customCounter}`,
+    type: 'text',
+    label: `Text ${_customCounter}`,
+    visible: true,
+    locked: false,
+    custom: true,
+    x: 0.5, y: 0.5, width: 0.6, height: 0.05, rotation: 0,
+    props: {
+      text: 'Custom Text',
+      font: '"DM Sans", sans-serif',
+      fontSize: 0.035,
+      fontWeight: 600,
+      color: '#FFFFFF',
+    },
+  };
+}
+
+export function createCustomImage(): EditorElement {
+  _customCounter++;
+  return {
+    id: `custom_image_${Date.now()}_${_customCounter}`,
+    type: 'image',
+    label: `Image ${_customCounter}`,
+    visible: true,
+    locked: false,
+    custom: true,
+    x: 0.5, y: 0.5, width: 0.3, height: 0.3, rotation: 0,
+    props: {
+      src: '',
+      borderWidth: 0,
+      borderColor: '#FFFFFF',
+      shadowBlur: 0,
+      opacity: 1,
+    },
+  };
+}
+
+export type ShapeKind = 'rectangle' | 'circle' | 'line';
+
+export function createCustomShape(kind: ShapeKind = 'rectangle'): EditorElement {
+  _customCounter++;
+  return {
+    id: `custom_shape_${Date.now()}_${_customCounter}`,
+    type: 'shape',
+    label: `${kind.charAt(0).toUpperCase() + kind.slice(1)} ${_customCounter}`,
+    visible: true,
+    locked: false,
+    custom: true,
+    x: 0.5, y: 0.5,
+    width: kind === 'line' ? 0.4 : 0.2,
+    height: kind === 'line' ? 0.005 : 0.2,
+    rotation: 0,
+    props: {
+      kind,
+      fill: kind === 'line' ? 'transparent' : 'rgba(212,168,67,0.2)',
+      stroke: '#D4A843',
+      strokeWidth: 2,
+    },
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/*  Render custom elements onto a canvas context                       */
+/* ------------------------------------------------------------------ */
+
+export async function drawCustomElements(
+  ctx: CanvasRenderingContext2D,
+  elements: EditorElement[],
+  canvasW: number,
+  canvasH: number,
+): Promise<void> {
+  for (const el of elements) {
+    if (!el.custom || !el.visible) continue;
+
+    const px = el.x * canvasW;
+    const py = el.y * canvasH;
+    const w = el.width * canvasW;
+    const h = el.height * canvasH;
+
+    ctx.save();
+
+    if (el.rotation !== 0) {
+      ctx.translate(px, py + h / 2);
+      ctx.rotate((el.rotation * Math.PI) / 180);
+      ctx.translate(-px, -(py + h / 2));
+    }
+
+    if (el.type === 'text') {
+      const fontSize = Math.round((el.props.fontSize as number) * canvasW);
+      const font = `${el.props.fontWeight || 400} ${fontSize}px ${el.props.font || 'system-ui'}`;
+      ctx.font = font;
+      ctx.fillStyle = (el.props.color as string) || '#FFFFFF';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.fillText((el.props.text as string) || '', px, py, w);
+    }
+
+    if (el.type === 'image' && el.props.src) {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      try {
+        await new Promise<void>((resolve, reject) => {
+          img.onload = () => resolve();
+          img.onerror = () => reject();
+          img.src = el.props.src as string;
+        });
+        const opacity = (el.props.opacity as number) ?? 1;
+        if (opacity < 1) ctx.globalAlpha = opacity;
+        const bw = (el.props.borderWidth as number) || 0;
+        if (bw > 0) {
+          ctx.fillStyle = (el.props.borderColor as string) || '#FFFFFF';
+          ctx.fillRect(px - w / 2 - bw, py - bw, w + bw * 2, h + bw * 2);
+        }
+        ctx.drawImage(img, px - w / 2, py, w, h);
+        ctx.globalAlpha = 1;
+      } catch { /* image failed to load */ }
+    }
+
+    if (el.type === 'shape') {
+      const kind = el.props.kind as ShapeKind;
+      const fill = el.props.fill as string;
+      const stroke = el.props.stroke as string;
+      const sw = (el.props.strokeWidth as number) || 1;
+
+      if (kind === 'rectangle') {
+        if (fill && fill !== 'transparent') { ctx.fillStyle = fill; ctx.fillRect(px - w / 2, py, w, h); }
+        if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = sw; ctx.strokeRect(px - w / 2, py, w, h); }
+      } else if (kind === 'circle') {
+        const rx = w / 2, ry = h / 2;
+        ctx.beginPath();
+        ctx.ellipse(px, py + ry, rx, ry, 0, 0, Math.PI * 2);
+        if (fill && fill !== 'transparent') { ctx.fillStyle = fill; ctx.fill(); }
+        if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = sw; ctx.stroke(); }
+      } else if (kind === 'line') {
+        ctx.strokeStyle = stroke || '#FFFFFF';
+        ctx.lineWidth = sw;
+        ctx.beginPath();
+        ctx.moveTo(px - w / 2, py);
+        ctx.lineTo(px + w / 2, py);
+        ctx.stroke();
+      }
+    }
+
+    ctx.restore();
+  }
 }
