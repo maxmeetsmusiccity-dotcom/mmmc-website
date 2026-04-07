@@ -156,6 +156,7 @@ export default function NewMusicFriday() {
   const toolbarRef = useRef<HTMLDivElement>(null);
   const [headerHeight, setHeaderHeight] = useState(56);
   const [toolbarHeight, setToolbarHeight] = useState(0);
+  const [mobileCollapsed, setMobileCollapsed] = useState(false);
 
   // Measure header + toolbar on every render so spacer stays correct
   useEffect(() => {
@@ -167,6 +168,17 @@ export default function NewMusicFriday() {
     window.addEventListener('resize', measure);
     return () => window.removeEventListener('resize', measure);
   });
+
+  // Mobile: collapse header on scroll down to reclaim viewport space
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.innerWidth >= 768) { setMobileCollapsed(false); return; }
+      setMobileCollapsed(window.scrollY > 60);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleScroll);
+    return () => { window.removeEventListener('scroll', handleScroll); window.removeEventListener('resize', handleScroll); };
+  }, []);
 
   // Step section refs for scroll-to
   const step1Ref = useRef<HTMLElement>(null);
@@ -659,51 +671,69 @@ export default function NewMusicFriday() {
 
   return (
     <div style={{ minHeight: '100vh' }}>
-      {/* Header — fixed at top, always visible */}
+      {/* Header — fixed at top, collapses to slim track-count bar on mobile scroll */}
       <header ref={headerRef} style={{
-        padding: '16px 24px',
+        padding: mobileCollapsed ? '4px 16px' : '16px 24px',
         borderBottom: '2px solid var(--gold-dark)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        flexWrap: 'wrap', gap: 14,
+        flexWrap: 'wrap', gap: mobileCollapsed ? 0 : 14,
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40,
         background: 'var(--midnight)',
         boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+        transition: 'padding 200ms ease, gap 200ms ease',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Link to="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flexShrink: 0 }}>
-            <img src="/mmmc-logo-hires.png" alt="MMMC" style={{ width: 67, height: 67, borderRadius: 8, objectFit: 'cover' }} />
-          </Link>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-2xl)', fontWeight: 600, whiteSpace: 'nowrap' }}>
-            New Music Friday
-          </h1>
-          <ProductNav />
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-          {/* Cover feature + aspect toggle moved to Row 2 */}
-          {lastScanned && (
-            <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-2xs)' }}>
-              {new Date(lastScanned).toLocaleString()}
+        {mobileCollapsed ? (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', height: 36 }}>
+            <span className="mono" style={{ fontSize: 14, fontWeight: 600, color: selections.length > 0 ? 'var(--gold)' : 'var(--text-muted)' }}>
+              {selections.length}/{allTracks.length} tracks
             </span>
-          )}
-          {/* Re-scan (Spotify-connected only — admin) */}
-          {phase === 'results' && token && (
-            <>
-              <button className="btn btn-sm" onClick={() => runScan(token)}>Re-scan</button>
-              <button className="btn btn-sm" onClick={() => { localStorage.removeItem('nmf_followed_artists'); runScan(token); }}>Refresh Follows</button>
-              <button className="btn btn-sm btn-danger" onClick={handleDisconnect} style={{ fontSize: 'var(--fs-2xs)' }}>Disconnect Spotify</button>
-            </>
-          )}
-          {/* Account */}
-          {user && (
-            <>
-              <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-3xs)' }}>{user.email}</span>
-              <button className="btn btn-sm" onClick={signOut} style={{ fontSize: 'var(--fs-2xs)' }}>Sign Out</button>
-            </>
-          )}
-          {!user && isGuest && (
-            <button className="btn btn-sm" onClick={signOut} style={{ fontSize: 'var(--fs-2xs)' }}>Sign Out</button>
-          )}
-        </div>
+            <button
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 18, padding: '0 4px', lineHeight: 1 }}
+              aria-label="Expand header"
+            >
+              &#9650;
+            </button>
+          </div>
+        ) : (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <Link to="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flexShrink: 0 }}>
+                <img src="/mmmc-logo-hires.png" alt="MMMC" style={{ width: 67, height: 67, borderRadius: 8, objectFit: 'cover' }} />
+              </Link>
+              <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-2xl)', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                New Music Friday
+              </h1>
+              <ProductNav />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              {/* Cover feature + aspect toggle moved to Row 2 */}
+              {lastScanned && (
+                <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-2xs)' }}>
+                  {new Date(lastScanned).toLocaleString()}
+                </span>
+              )}
+              {/* Re-scan (Spotify-connected only — admin) */}
+              {phase === 'results' && token && (
+                <>
+                  <button className="btn btn-sm" onClick={() => runScan(token)}>Re-scan</button>
+                  <button className="btn btn-sm" onClick={() => { localStorage.removeItem('nmf_followed_artists'); runScan(token); }}>Refresh Follows</button>
+                  <button className="btn btn-sm btn-danger" onClick={handleDisconnect} style={{ fontSize: 'var(--fs-2xs)' }}>Disconnect Spotify</button>
+                </>
+              )}
+              {/* Account */}
+              {user && (
+                <>
+                  <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-3xs)' }}>{user.email}</span>
+                  <button className="btn btn-sm" onClick={signOut} style={{ fontSize: 'var(--fs-2xs)' }}>Sign Out</button>
+                </>
+              )}
+              {!user && isGuest && (
+                <button className="btn btn-sm" onClick={signOut} style={{ fontSize: 'var(--fs-2xs)' }}>Sign Out</button>
+              )}
+            </div>
+          </>
+        )}
       </header>
       {/* Spacer for fixed header — measured dynamically */}
       <div style={{ height: headerHeight }} />
@@ -888,6 +918,7 @@ export default function NewMusicFriday() {
             position: 'fixed', top: headerHeight, left: 0, right: 0, zIndex: 35,
             background: 'var(--midnight)', borderBottom: '2px solid var(--midnight-border)',
             boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+            transition: 'top 200ms ease',
           }}>
             {/* Row 1: Selection counter + target + filters + stats */}
             <div style={{
