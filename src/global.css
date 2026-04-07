@@ -248,7 +248,10 @@ button {
   gap: 16px;
 }
 
-/* Responsive visibility utilities */
+/* Responsive visibility utilities
+   IMPORTANT: Never set display via inline style on elements using these classes.
+   If you need flex/grid layout, wrap in a plain visibility div:
+     <div className="desktop-only"><div style={{ display: 'flex' }}>...</div></div>  */
 .mobile-only { display: block; }
 .desktop-only { display: none; }
 

@@ -1197,7 +1197,8 @@ export default function NewMusicFriday() {
             </div>{/* end desktop-only */}
 
             {/* ---- Mobile compact toolbar ---- */}
-            <div className="mobile-only" style={{
+            <div className="mobile-only">
+            <div style={{
               display: 'flex', alignItems: 'center', gap: 6, padding: '8px 12px', minHeight: 44,
             }}>
               <span className="mono" style={{
@@ -1241,6 +1242,38 @@ export default function NewMusicFriday() {
                 &hellip;
               </button>
             </div>
+            {/* Mobile Select All / Clear row */}
+            {filteredReleases.length > 0 && (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 8, padding: '4px 12px 8px',
+                borderTop: '1px solid var(--midnight-border)',
+              }}>
+                <button
+                  style={{ fontSize: 'var(--fs-2xs)', color: 'var(--steel)', cursor: 'pointer', padding: '2px 6px', background: 'none', border: 'none' }}
+                  onClick={() => {
+                    haptic();
+                    const newSelections: typeof selections = [];
+                    for (const cluster of filteredReleases) {
+                      const track = cluster.tracks.find(t => t.track_id === cluster.titleTrackId) || cluster.tracks[0];
+                      if (!selections.some(s => s.track.track_id === track.track_id)) {
+                        newSelections.push({ track, albumId: cluster.album_spotify_id, selectionNumber: 0, slideGroup: 0, positionInSlide: 0, isCoverFeature: false });
+                      }
+                    }
+                    setSelections(prev => buildSlots([...prev, ...newSelections]));
+                  }}
+                >Select All</button>
+                {selections.length > 0 && (
+                  <button
+                    style={{ fontSize: 'var(--fs-2xs)', color: 'var(--mmmc-red)', cursor: 'pointer', padding: '2px 6px', background: 'none', border: 'none' }}
+                    onClick={() => { haptic(5); pushSelectionHistory(selections); setSelections([]); }}
+                  >Clear ({selections.length})</button>
+                )}
+                <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-2xs)', marginLeft: 'auto' }}>
+                  {filteredReleases.length} releases
+                </span>
+              </div>
+            )}
+            </div>{/* end mobile-only */}
           </div>
 
           {/* Spacer for toolbar only (header spacer is already above) */}

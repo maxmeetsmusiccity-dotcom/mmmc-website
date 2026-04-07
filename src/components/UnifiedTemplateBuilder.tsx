@@ -748,7 +748,8 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
       </div>
 
     {/* ============= DESKTOP: 3-column flex layout ============= */}
-    <div className="desktop-only" style={{ display: 'flex', height: 'calc(100vh - 52px)' }}>
+    <div className="desktop-only">
+    <div style={{ display: 'flex', height: 'calc(100vh - 52px)' }}>
       {/* ============= LEFT: Controls ============= */}
       <div style={{
         flex: 1, minWidth: 0,
@@ -1352,108 +1353,20 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
           </div>
         </div>
       </div>
+    </div>
     </div>{/* end desktop-only layout */}
 
-    {/* ============= MOBILE: stacked single-column ============= */}
-    <div className="mobile-only" style={{ padding: '16px' }}>
-      {/* Preview first on mobile */}
-      <div style={{ marginBottom: 16, textAlign: 'center' }}>
-        {previewUrl ? (
-          <img
-            src={previewUrl}
-            alt={`${isGrid ? 'Grid' : 'Title'} template preview`}
-            style={{ width: '100%', maxWidth: 400, borderRadius: 8, border: '1px solid var(--midnight-border)' }}
-          />
-        ) : (
-          <div style={{
-            width: '100%', maxWidth: 400, margin: '0 auto', aspectRatio: aspect === '3:4' ? '3/4' : '1',
-            borderRadius: 12, background: bg, border: '1px solid var(--midnight-border)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: accent, fontSize: 'var(--fs-md)',
-          }}>
-            Loading preview...
-          </div>
-        )}
-      </div>
-
-      {/* Aspect toggle */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16, justifyContent: 'center' }}>
-        <button className={`filter-pill ${aspect === '1:1' ? 'active' : ''}`} onClick={() => setAspect('1:1')}>1:1</button>
-        <button className={`filter-pill ${aspect === '3:4' ? 'active' : ''}`} onClick={() => setAspect('3:4')}>3:4</button>
-      </div>
-
-      {/* Base template selector */}
-      <div style={{ marginBottom: 16 }}>
-        <label style={labelStyle}>
-          Start from
-          <select value={baseTemplateId} onChange={e => { if (e.target.value) loadBaseTemplate(e.target.value); }} style={selectStyle}>
-            <option value="">Custom</option>
-            {isGrid
-              ? TEMPLATES.map(t => <option key={t.id} value={t.id}>{t.name}</option>)
-              : TITLE_TEMPLATES.map(t => <option key={t.id} value={t.id}>{t.name}</option>)
-            }
-          </select>
-        </label>
-      </div>
-
-      {/* Colors */}
-      <details open>
-        <summary style={sectionHeader}>Colors</summary>
-        <div style={sectionBody}>
-          <p style={fieldLabel}>Background</p>
-          <SwatchRow colors={PRESET_COLORS} selected={bg} onSelect={setBg} />
-          <p style={fieldLabel}>Accent</p>
-          <SwatchRow colors={ACCENT_COLORS} selected={accent} onSelect={setAccent} />
-          <div style={{ display: 'flex', gap: 10 }}>
-            <ColorField label="Text" value={textPrimary} onChange={setTextPrimary} />
-            <ColorField label="Secondary" value={textSecondary} onChange={setTextSecondary} />
-          </div>
-        </div>
-      </details>
-
-      {/* Typography (simplified for mobile) */}
-      <details>
-        <summary style={sectionHeader}>Typography</summary>
-        <div style={sectionBody}>
-          {isGrid ? (
-            <>
-              <FontSelect label="Header Font" value={scriptFont} onChange={setScriptFont} />
-              <FontSelect label="Body Font" value={bodyFont} onChange={setBodyFont} />
-              <Slider label="Header Size" value={headerFontSize} min={28} max={72} step={1} onChange={setHeaderFontSize} suffix="px" />
-            </>
-          ) : (
-            <>
-              <FontSelect label="Headline Font" value={headlineFont} onChange={setHeadlineFont} />
-              <FontSelect label="Date Font" value={dateFont} onChange={setDateFont} />
-              <Slider label="Headline Size" value={headlineSize} min={0.02} max={0.08} step={0.002} onChange={setHeadlineSize} />
-              <Slider label="Date Size" value={dateSize} min={0.02} max={0.06} step={0.002} onChange={setDateSize} />
-            </>
-          )}
-        </div>
-      </details>
-
-      {/* Effects (simplified) */}
-      <details>
-        <summary style={sectionHeader}>Effects</summary>
-        <div style={sectionBody}>
-          <Slider label="Glow" value={glowBlur} min={0} max={60} step={2} onChange={setGlowBlur} suffix="px" />
-          <Slider label="Grain" value={grainIntensity} min={0} max={0.5} step={0.01} onChange={setGrainIntensity} />
-          <Slider label="Vignette" value={vignetteIntensity} min={0} max={0.6} step={0.02} onChange={setVignetteIntensity} />
-        </div>
-      </details>
-
-      {/* Layout (title mode only) */}
-      {!isGrid && (
-        <details>
-          <summary style={sectionHeader}>Layout</summary>
-          <div style={sectionBody}>
-            <Slider label="Headline Y" value={headlineY} min={0.01} max={0.20} step={0.005} onChange={setHeadlineY} />
-            <Slider label="Date Y" value={dateY} min={0.70} max={0.98} step={0.005} onChange={setDateY} />
-            <Slider label="Album Art Y" value={featuredImageY} min={0.10} max={0.50} step={0.005} onChange={setFeaturedImageY} />
-            <Slider label="Album Art Size" value={featuredImageSize} min={0.20} max={0.65} step={0.01} onChange={setFeaturedImageSize} />
-          </div>
-        </details>
-      )}
+    {/* ============= MOBILE: desktop-only notice ============= */}
+    <div className="mobile-only" style={{ padding: '32px 24px', textAlign: 'center' }}>
+      <p style={{ fontSize: 'var(--fs-lg)', color: 'var(--text-secondary)', marginBottom: 12 }}>
+        Template editing is available on desktop.
+      </p>
+      <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginBottom: 20 }}>
+        Use a desktop browser to customize templates with the full visual editor.
+      </p>
+      <button className="btn btn-gold" onClick={onCancel} style={{ padding: '10px 24px' }}>
+        Back
+      </button>
     </div>
 
     </div>
