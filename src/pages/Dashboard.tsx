@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../lib/auth-context';
 import ProductNav from '../components/ProductNav';
+import NavBar from '../components/NavBar';
 import Footer from '../components/Footer';
 import { supabase } from '../lib/supabase';
 
@@ -119,12 +120,13 @@ export default function Dashboard() {
 
   return (
     <div style={{ minHeight: '100vh' }}>
+      <NavBar title="Dashboard" />
       <header style={{
         padding: '16px 24px', borderBottom: '1px solid var(--midnight-border)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <ProductNav showAdmin={isAdmin} backTo="/newmusicfriday" backLabel="Curator Studio" />
+          <ProductNav showAdmin={isAdmin} />
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-2xl)', fontWeight: 600 }}>
             NMF <span style={{ color: 'var(--gold)' }}>Intelligence</span>
           </h1>

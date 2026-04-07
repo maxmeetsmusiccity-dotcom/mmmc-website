@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import NavBar from '../components/NavBar';
 
 interface BrowseCategory {
   id: string;
@@ -150,9 +151,9 @@ export default function Artists() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a1a', color: '#e0e0e0', fontFamily: "'DM Sans', sans-serif" }}>
+      <NavBar title="Artist Directory" />
       {/* Header */}
       <header style={{ padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: 16 }}>
-        <Link to="/" style={{ color: '#F5C453', textDecoration: 'none', fontSize: 14 }}>&larr; Home</Link>
         <h1 style={{ fontSize: 20, fontWeight: 700, color: '#fff', margin: 0 }}>Artist Directory</h1>
         <span style={{ fontSize: 13, color: '#7A8CA0', marginLeft: 'auto' }}>
           {allArtists.length > 0 ? `${filtered.length} of ${allArtists.length} artists` : ''}

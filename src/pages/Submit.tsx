@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import ProductNav from '../components/ProductNav';
+import NavBar from '../components/NavBar';
 import Footer from '../components/Footer';
 
 export default function Submit() {
@@ -36,11 +37,12 @@ export default function Submit() {
 
   return (
     <div style={{ minHeight: '100vh' }}>
+      <NavBar title="Submit" />
       <header style={{
         padding: '16px 24px', borderBottom: '1px solid var(--midnight-border)',
         display: 'flex', alignItems: 'center', gap: 16,
       }}>
-        <ProductNav backTo="/newmusicfriday" backLabel="Curator Studio" />
+        <ProductNav />
         <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-2xl)', fontWeight: 600 }}>Submit a Track</h1>
       </header>
 

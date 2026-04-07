@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { getCarouselUrls } from '../lib/supabase';
 import { getLastFriday } from '../lib/spotify';
 import ProductNav from '../components/ProductNav';
+import NavBar from '../components/NavBar';
 import Footer from '../components/Footer';
 
 export default function Embed() {
@@ -77,8 +78,9 @@ export default function Embed() {
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
+      <NavBar title="Embed" />
       <header style={{ padding: '16px 24px', borderBottom: '1px solid var(--midnight-border)', display: 'flex', alignItems: 'center', gap: 16, width: '100%' }}>
-        <ProductNav backTo="/newmusicfriday" backLabel="Curator Studio" />
+        <ProductNav />
       </header>
       {/* Slide */}
       <div style={{ position: 'relative', width: '100%', aspectRatio: '1', overflow: 'hidden', borderRadius: 8 }}>

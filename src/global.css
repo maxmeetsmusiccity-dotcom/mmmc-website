@@ -248,7 +248,19 @@ button {
   gap: 16px;
 }
 
+/* Responsive visibility utilities */
+.mobile-only { display: block; }
+.desktop-only { display: none; }
+
+/* Bottom sheet slide-up animation */
+@keyframes sheetSlideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
 @media (min-width: 768px) {
+  .mobile-only { display: none; }
+  .desktop-only { display: block; }
   .release-grid {
     grid-template-columns: repeat(3, 1fr);
   }

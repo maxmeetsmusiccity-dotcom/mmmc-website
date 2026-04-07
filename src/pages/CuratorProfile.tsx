@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase, type NMFFeature } from '../lib/supabase';
 import ProductNav from '../components/ProductNav';
+import NavBar from '../components/NavBar';
 import Footer from '../components/Footer';
 
 interface Profile {
@@ -51,8 +52,9 @@ export default function CuratorProfile() {
 
   return (
     <div style={{ minHeight: '100vh' }}>
+      <NavBar title="Curator Profile" />
       <header style={{ padding: '16px 24px', borderBottom: '1px solid var(--midnight-border)', display: 'flex', alignItems: 'center', gap: 16 }}>
-        <ProductNav backTo="/newmusicfriday" backLabel="Curator Studio" />
+        <ProductNav />
       </header>
 
       <div style={{ maxWidth: 700, margin: '0 auto', padding: 32 }}>

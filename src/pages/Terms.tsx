@@ -1,10 +1,10 @@
-import { Link } from 'react-router-dom';
+import NavBar from '../components/NavBar';
 
 export default function Terms() {
   return (
     <div style={{ minHeight: '100vh' }}>
+      <NavBar title="Terms" />
       <header style={{ padding: '16px 24px', borderBottom: '1px solid var(--midnight-border)', display: 'flex', alignItems: 'center', gap: 16 }}>
-        <Link to="/" style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-md)' }}>MMMC</Link>
         <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-2xl)', fontWeight: 600 }}>Terms of Service</h1>
       </header>
 

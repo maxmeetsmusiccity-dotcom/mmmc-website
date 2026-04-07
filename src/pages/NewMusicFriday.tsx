@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { startAuth, exchangeCode, getToken, clearToken, refreshToken, isTokenExpired } from '../lib/auth';
 import {
   fetchFollowedArtists,
@@ -94,6 +94,7 @@ const DEMO_TRACKS: TrackItem[] = [
 export default function NewMusicFriday() {
   const { user, isGuest, signOut } = useAuth();
   const userId = user?.id || null;
+  const nmfNavigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [token, setToken] = useState<string | null>(getToken());
   const [phase, setPhase] = useState<Phase>('ready');
@@ -138,6 +139,7 @@ export default function NewMusicFriday() {
   const [quickLookAlbum, setQuickLookAlbum] = useState<ReleaseCluster | null>(null);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showAddTracks, setShowAddTracks] = useState(false);
+  const [showToolsSheet, setShowToolsSheet] = useState(false);
   const hoveredCluster = useRef<ReleaseCluster | null>(null);
 
   // Rubber-band drag select
@@ -684,9 +686,18 @@ export default function NewMusicFriday() {
       }}>
         {mobileCollapsed ? (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', height: 36 }}>
-            <span className="mono" style={{ fontSize: 14, fontWeight: 600, color: selections.length > 0 ? 'var(--gold)' : 'var(--text-muted)' }}>
-              {selections.length}/{allTracks.length} tracks
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <button
+                onClick={() => { const idx = window.history.state?.idx; if (idx != null && idx > 0) nmfNavigate(-1); else nmfNavigate('/'); }}
+                style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 14, padding: '0 4px' }}
+                aria-label="Go back"
+              >
+                &larr;
+              </button>
+              <span className="mono" style={{ fontSize: 14, fontWeight: 600, color: selections.length > 0 ? 'var(--gold)' : 'var(--text-muted)' }}>
+                {selections.length}/{allTracks.length} tracks
+              </span>
+            </div>
             <button
               onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
               style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 18, padding: '0 4px', lineHeight: 1 }}
@@ -920,6 +931,8 @@ export default function NewMusicFriday() {
             boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
             transition: 'top 200ms ease',
           }}>
+            {/* ---- Desktop toolbar (hidden on mobile) ---- */}
+            <div className="desktop-only">
             {/* Row 1: Selection counter + target + filters + stats */}
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -1181,10 +1194,197 @@ export default function NewMusicFriday() {
               <button className="btn btn-sm" style={{ fontSize: 'var(--fs-2xs)', padding: '3px 8px' }}
                 onClick={() => setShowShortcuts(true)} title="Keyboard shortcuts">Shortcuts</button>
             </div>
+            </div>{/* end desktop-only */}
+
+            {/* ---- Mobile compact toolbar ---- */}
+            <div className="mobile-only" style={{
+              display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', minHeight: 44,
+            }}>
+              <span className="mono" style={{
+                fontSize: 'var(--fs-lg)', fontWeight: 700, flexShrink: 0,
+                color: selections.length > targetCount ? 'var(--mmmc-red)' : selections.length > 0 ? 'var(--gold)' : 'var(--text-muted)',
+              }}>
+                {selections.length}<span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)', fontWeight: 400 }}>/{targetCount}</span>
+              </span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <FilterBar
+                  filter={filter} sort={sort} search={search}
+                  onFilterChange={setFilter} onSortChange={setSort} onSearchChange={setSearch}
+                />
+              </div>
+              <button
+                className="btn btn-sm btn-gold"
+                disabled={selections.length === 0 || generating}
+                onClick={() => carouselRef.current?.generate()}
+                style={{ fontSize: 'var(--fs-2xs)', padding: '4px 10px', fontWeight: 700, flexShrink: 0 }}
+              >
+                {generating ? '...' : '\u2605'}
+              </button>
+              <button
+                onClick={() => setShowToolsSheet(true)}
+                style={{
+                  background: 'none', border: '1px solid var(--midnight-border)', borderRadius: 6,
+                  color: 'var(--text-secondary)', cursor: 'pointer', padding: '4px 10px',
+                  fontSize: 'var(--fs-sm)', flexShrink: 0, lineHeight: 1,
+                }}
+              >
+                &hellip;
+              </button>
+            </div>
           </div>
 
           {/* Spacer for toolbar only (header spacer is already above) */}
           <div style={{ height: toolbarHeight }} />
+
+          {/* ---- Mobile bottom sheet (overflow tools) ---- */}
+          {showToolsSheet && (
+            <>
+              <div
+                onClick={() => setShowToolsSheet(false)}
+                style={{ position: 'fixed', inset: 0, zIndex: 98, background: 'rgba(0,0,0,0.5)' }}
+              />
+              <div style={{
+                position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 99,
+                background: 'var(--midnight-raised)', borderTop: '2px solid var(--gold-dark)',
+                borderRadius: '16px 16px 0 0', padding: '12px 16px 24px',
+                maxHeight: '75vh', overflowY: 'auto',
+                boxShadow: '0 -8px 32px rgba(0,0,0,0.6)',
+                animation: 'sheetSlideUp 200ms ease',
+              }}>
+                {/* Drag handle */}
+                <div style={{ width: 40, height: 4, borderRadius: 2, background: 'var(--midnight-border)', margin: '0 auto 14px' }} />
+
+                {/* Source actions */}
+                <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+                  <button className="btn btn-sm" onClick={() => { setShowToolsSheet(false); setPhase('ready'); }} style={{ flex: 1, justifyContent: 'center' }}>New Scan</button>
+                  <button className="btn btn-sm" onClick={() => { setShowToolsSheet(false); setShowAddTracks(true); }} style={{ flex: 1, justifyContent: 'center', color: 'var(--gold)', border: '1px solid var(--gold-dark)' }}>+ Add Tracks</button>
+                </div>
+
+                {/* Selection */}
+                <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+                  <button className="btn btn-sm" style={{ flex: 1, justifyContent: 'center' }} onClick={() => {
+                    haptic();
+                    const newSelections: typeof selections = [];
+                    for (const cluster of filteredReleases) {
+                      const track = cluster.tracks.find(t => t.track_id === cluster.titleTrackId) || cluster.tracks[0];
+                      if (!selections.some(s => s.track.track_id === track.track_id)) {
+                        newSelections.push({ track, albumId: cluster.album_spotify_id, selectionNumber: 0, slideGroup: 0, positionInSlide: 0, isCoverFeature: false });
+                      }
+                    }
+                    setSelections(prev => buildSlots([...prev, ...newSelections]));
+                  }}>Select All</button>
+                  {selections.length > 0 && (
+                    <button className="btn btn-sm" style={{ flex: 1, justifyContent: 'center', color: 'var(--mmmc-red)' }}
+                      onClick={() => { haptic(5); pushSelectionHistory(selections); setSelections([]); }}>
+                      Clear ({selections.length})
+                    </button>
+                  )}
+                </div>
+
+                {/* View mode + stats */}
+                <div style={{ borderTop: '1px solid var(--midnight-border)', paddingTop: 12, marginBottom: 14 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
+                    <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)' }}>
+                      {viewMode === 'releases' ? `${filteredReleases.length} releases (${allTracks.length} tracks)` : `${allTracks.length} tracks`}
+                    </span>
+                    <button className={`filter-pill ${viewMode === 'releases' ? 'active' : ''}`}
+                      onClick={() => setViewMode('releases')} style={{ fontSize: 'var(--fs-2xs)', padding: '2px 8px' }}>Albums</button>
+                    <button className={`filter-pill ${viewMode === 'tracks' ? 'active' : ''}`}
+                      onClick={() => setViewMode('tracks')} style={{ fontSize: 'var(--fs-2xs)', padding: '2px 8px' }}>Tracks</button>
+                    <Link to="/newmusicfriday/archive" className="filter-pill" onClick={() => setShowToolsSheet(false)}
+                      style={{ textDecoration: 'none', fontSize: 'var(--fs-2xs)', padding: '2px 8px', display: 'inline-flex', alignItems: 'center' }}>
+                      Archive
+                    </Link>
+                  </div>
+                  {/* Card size */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)' }}>Card Size</span>
+                    <input type="range" min="120" max="350" value={cardSize}
+                      onChange={e => { const v = Number(e.target.value); setCardSize(v); try { localStorage.setItem('nmf_card_size', String(v)); } catch {} }}
+                      style={{ flex: 1 }} />
+                    <span className="mono" style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)' }}>{cardSize}px</span>
+                  </div>
+                </div>
+
+                {/* Exports */}
+                <div style={{ borderTop: '1px solid var(--midnight-border)', paddingTop: 12, marginBottom: 14 }}>
+                  <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
+                    <button className={`filter-pill ${exportScope === 'all' ? 'active' : ''}`}
+                      onClick={() => setExportScope('all')} style={{ fontSize: 'var(--fs-2xs)', padding: '2px 8px' }}>All Tracks</button>
+                    <button className={`filter-pill ${exportScope === 'selects' ? 'active' : ''}`}
+                      onClick={() => setExportScope('selects')} style={{ fontSize: 'var(--fs-2xs)', padding: '2px 8px' }}>Selects</button>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <button className="btn btn-sm" style={{ fontSize: 'var(--fs-2xs)', padding: '3px 8px' }}
+                      onClick={() => downloadCSV(exportScope === 'selects' ? selectedTracks : allTracks, exportScope === 'selects' ? 'nmf-curated.csv' : 'nmf-all-tracks.csv')}>CSV</button>
+                    <button className="btn btn-sm" style={{ fontSize: 'var(--fs-2xs)', padding: '3px 8px' }}
+                      onClick={() => downloadJSON(exportScope === 'selects' ? selectedTracks : allTracks, exportScope === 'selects' ? 'nmf-curated.json' : 'nmf-all-tracks.json')}>JSON</button>
+                    <button className="btn btn-sm" style={{ fontSize: 'var(--fs-2xs)', padding: '3px 8px' }}
+                      onClick={async () => { setArtDownloading(true); try { await downloadArt(exportScope === 'selects' ? selectedTracks : allTracks); } finally { setArtDownloading(false); } }}
+                      disabled={artDownloading}>{artDownloading ? '...' : 'Art ZIP'}</button>
+                    {exportScope === 'selects' && (
+                      <button className="btn btn-sm" style={{ fontSize: 'var(--fs-2xs)', padding: '3px 8px' }}
+                        onClick={async () => {
+                          await navigator.clipboard.writeText(JSON.stringify(selectedTracks, null, 2));
+                          setCopied(true); setTimeout(() => setCopied(false), 2000);
+                        }}>{copied ? 'Copied!' : 'Manifest'}</button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Carousel settings */}
+                <div style={{ borderTop: '1px solid var(--midnight-border)', paddingTop: 12, marginBottom: 14 }}>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)' }}>Aspect:</span>
+                    <button className={`filter-pill ${carouselAspect === '1:1' ? 'active' : ''}`}
+                      onClick={() => setCarouselAspect('1:1')} style={{ fontSize: 'var(--fs-2xs)', padding: '3px 8px' }}>1:1</button>
+                    <button className={`filter-pill ${carouselAspect === '3:4' ? 'active' : ''}`}
+                      onClick={() => setCarouselAspect('3:4')} style={{ fontSize: 'var(--fs-2xs)', padding: '3px 8px' }}>3:4</button>
+                    {selections.length > 0 && (
+                      <span className="mono" style={{ color: 'var(--gold)', fontSize: 'var(--fs-md)', fontWeight: 700 }}>
+                        {Math.ceil(selections.length / tracksPerSlide)} slides
+                      </span>
+                    )}
+                  </div>
+                  {/* Cover feature indicator */}
+                  {selections.length > 0 && (
+                    <div style={{ marginTop: 8 }}>
+                      {(() => {
+                        const cover = selections.find(s => s.isCoverFeature);
+                        return cover ? (
+                          <span style={{ color: 'var(--gold)', fontSize: 'var(--fs-xs)', fontWeight: 600 }}>
+                            &#9733; {(cover.track.artist_names || '').split(/,/)[0]}
+                          </span>
+                        ) : (
+                          <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)' }}>Set cover &#9733;</span>
+                        );
+                      })()}
+                    </div>
+                  )}
+                </div>
+
+                {/* Utilities */}
+                <div style={{ display: 'flex', gap: 8, borderTop: '1px solid var(--midnight-border)', paddingTop: 12 }}>
+                  {allPreviews.length > 0 && (
+                    <button className="btn btn-sm" style={{ fontSize: 'var(--fs-2xs)', padding: '3px 10px' }}
+                      onClick={() => { setShowToolsSheet(false); carouselRef.current?.downloadAll(); }}>
+                      ZIP ({allPreviews.length})
+                    </button>
+                  )}
+                  {selectionHistory.current.length > 0 && (
+                    <button className="btn btn-sm" style={{ fontSize: 'var(--fs-2xs)', padding: '3px 8px' }}
+                      onClick={() => { const prev = selectionHistory.current.pop(); if (prev) setSelections(prev); }}>
+                      Undo ({selectionHistory.current.length})
+                    </button>
+                  )}
+                  <button className="btn btn-sm" style={{ fontSize: 'var(--fs-2xs)', padding: '3px 8px' }}
+                    onClick={() => { setShowToolsSheet(false); setShowShortcuts(true); }}>
+                    Shortcuts
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
 
           {/* ============================================================ */}
           {/*  STEP 1: SELECT TRACKS (scrollable grid below fixed bars)    */}

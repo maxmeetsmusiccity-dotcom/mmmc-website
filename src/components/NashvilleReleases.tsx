@@ -21,7 +21,6 @@ export default function NashvilleReleases({ onImport }: Props) {
   const [week, setWeek] = useState('');
   const [error, setError] = useState('');
   const [generatedAt, setGeneratedAt] = useState('');
-  const [chartFilter, setChartFilter] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0, found: 0 });
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -148,20 +147,17 @@ export default function NashvilleReleases({ onImport }: Props) {
     })();
   }, []);
 
-  // Apply filters: chart + showcase
+  // Apply showcase filter
   const filtered = (() => {
-    let list = chartFilter ? releases.filter(r => r.is_charting) : releases;
+    let list = releases;
     if (activeShowcase && showcaseArtists.size > 0) {
       list = list.filter(r => {
-        // Match against primary artist name (before comma/feat)
         const primary = (r.artist_name || '').split(/,|feat\.|ft\./i)[0].trim().toLowerCase();
         return showcaseArtists.has(primary);
       });
     }
     return list;
   })();
-
-  const chartingCount = releases.filter(r => r.is_charting).length;
 
   // Group by album for expandable view
   const grouped = (() => {
@@ -179,8 +175,6 @@ export default function NashvilleReleases({ onImport }: Props) {
       type: tracks[0].release_type,
       cover: tracks[0].cover_art_300,
       date: tracks[0].release_date,
-      isCharting: tracks.some(t => t.is_charting),
-      chartPos: tracks.find(t => t.is_charting)?.current_position,
       tracks,
     }));
   })();
@@ -204,8 +198,26 @@ export default function NashvilleReleases({ onImport }: Props) {
     onImport(releasesToTrackItems(toImport));
   };
 
-  // Showcase filter pills (rendered in multiple places)
-  const showcasePills = showcases.length > 0 ? (
+  // Showcase filter — dropdown on mobile, pills on desktop
+  const showcaseDropdown = showcases.length > 0 ? (
+    <select
+      value={activeShowcase || ''}
+      onChange={e => setActiveShowcase(e.target.value || null)}
+      style={{
+        background: 'var(--midnight)', border: '1px solid var(--midnight-border)',
+        borderRadius: 8, color: 'var(--text-secondary)', padding: '8px 12px',
+        fontSize: 'var(--fs-sm)', fontFamily: 'var(--font-mono)',
+        width: '100%', marginBottom: 12,
+      }}
+    >
+      <option value="">All Nashville ({releases.length})</option>
+      {showcases.map(s => (
+        <option key={s.id} value={s.id}>{s.emoji} {s.name} ({s.count})</option>
+      ))}
+    </select>
+  ) : null;
+
+  const showcaseDesktopPills = showcases.length > 0 ? (
     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
       <button
         onClick={() => setActiveShowcase(null)}
@@ -227,6 +239,15 @@ export default function NashvilleReleases({ onImport }: Props) {
       ))}
     </div>
   ) : null;
+
+  const showcasePills = (
+    <>
+      {/* Mobile: dropdown */}
+      <div className="mobile-only">{showcaseDropdown}</div>
+      {/* Desktop: pills */}
+      <div className="desktop-only">{showcaseDesktopPills}</div>
+    </>
+  );
 
   if (!loading && releases.length === 0 && !error) {
     return (
@@ -323,23 +344,14 @@ export default function NashvilleReleases({ onImport }: Props) {
         </p>
       )}
 
-      {/* Chart / All filters */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-        <button
-          onClick={() => setChartFilter(false)}
-          className={`filter-pill ${!chartFilter ? 'active' : ''}`}
-          style={{ fontSize: 'var(--fs-xs)' }}
-        >
-          All ({releases.length})
-        </button>
-        <button
-          onClick={() => setChartFilter(true)}
-          className={`filter-pill ${chartFilter ? 'active' : ''}`}
-          style={{ fontSize: 'var(--fs-xs)' }}
-        >
-          Charting ({chartingCount})
-        </button>
-      </div>
+      {/* Release count */}
+      {releases.length > 0 && (
+        <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)', marginBottom: 12 }}>
+          {filtered.length === releases.length
+            ? `${releases.length} releases`
+            : `${filtered.length} of ${releases.length} releases`}
+        </div>
+      )}
 
       {/* Empty state for showcase filter */}
       {activeShowcase && filtered.length === 0 && !loadingShowcase && (
@@ -410,15 +422,6 @@ export default function NashvilleReleases({ onImport }: Props) {
                     {!isSingle && <span> &middot; {g.tracks.length} {g.tracks.length === 1 ? 'track' : 'tracks'}</span>}
                   </div>
                 </div>
-                {g.isCharting && (
-                  <span style={{
-                    padding: '2px 8px', borderRadius: 10, fontSize: 'var(--fs-2xs)', fontWeight: 700,
-                    background: 'rgba(245,196,83,0.1)', color: 'var(--gold)', border: '1px solid rgba(245,196,83,0.2)',
-                    flexShrink: 0,
-                  }}>
-                    #{g.chartPos}
-                  </span>
-                )}
                 {!isSingle && (
                   <button
                     onClick={(e) => { e.stopPropagation(); setExpanded(prev => { const n = new Set(prev); if (n.has(g.key)) n.delete(g.key); else n.add(g.key); return n; }); }}
