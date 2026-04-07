@@ -1,25 +1,13 @@
 import { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
+import type { NashvilleRelease } from '../lib/sources/nashville';
 
-interface BrowseCategory {
+interface ShowcaseCategory {
   id: string;
   name: string;
-  description: string;
   emoji: string;
-}
-
-interface BrowseArtist {
-  pg_id: string;
-  name: string;
-  tier: string;
-  tier_display: string;
-  arc_display: string;
-  archetype_display: string;
-  spotify_genres: string[];
-  monthly_listeners: number;
-  spotify_popularity: number;
-  camp_name: string | null;
-  no1_songs: number;
-  credits: number;
+  type: string;
+  count: number;
 }
 
 interface Props {
@@ -28,237 +16,265 @@ interface Props {
   scanning: boolean;
 }
 
+/**
+ * ArtistBrowser — shows only artists who released music this week,
+ * filtered by showcase. Uses the same weekly Nashville release cache
+ * as the Nashville source. No full artist directory is exposed.
+ */
 export default function ArtistBrowser({ onScanArtists, scanning }: Props) {
-  const [categories, setCategories] = useState<BrowseCategory[]>([]);
-  const [activeCategory, setActiveCategory] = useState<string | null>(null);
-  const [artists, setArtists] = useState<BrowseArtist[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<(BrowseArtist & { categories: BrowseCategory[] })[]>([]);
+  const [showcases, setShowcases] = useState<ShowcaseCategory[]>([]);
+  const [activeShowcase, setActiveShowcase] = useState<string | null>(null);
+  const [showcaseArtists, setShowcaseArtists] = useState<Set<string>>(new Set());
+  const [loadingShowcase, setLoadingShowcase] = useState(false);
+  const [releases, setReleases] = useState<NashvilleRelease[]>([]);
   const [selectedNames, setSelectedNames] = useState<Set<string>>(new Set());
-  const [error, setError] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
-  // Load categories on mount
+  // Load showcase categories on mount
   useEffect(() => {
     fetch('/api/browse-artists')
       .then(r => r.json())
-      .then(d => setCategories(d.categories || []))
-      .catch(() => setError('Could not load categories'));
+      .then(d => {
+        const cats = (d.categories || []).filter((c: ShowcaseCategory) => c.type === 'showcase');
+        setShowcases(cats);
+      })
+      .catch(() => {});
   }, []);
 
-  // Load artists when category changes
+  // Load weekly Nashville releases from Supabase cache (same as NashvilleReleases)
   useEffect(() => {
-    if (!activeCategory) { setArtists([]); return; }
-    setLoading(true);
-    setError('');
-    fetch(`/api/browse-artists?category=${activeCategory}`)
+    (async () => {
+      if (!supabase) return;
+      const { data } = await supabase
+        .from('weekly_nashville_releases')
+        .select('*')
+        .order('artist_name');
+      if (data && data.length > 0) {
+        setReleases(data.map(r => ({
+          pg_id: r.spotify_artist_id || '',
+          artist_name: r.artist_name,
+          track_name: r.track_name,
+          album_name: r.album_name,
+          release_type: r.album_type || 'single',
+          release_date: r.release_date,
+          spotify_track_id: r.track_id,
+          spotify_album_id: r.album_id || '',
+          cover_art_url: r.cover_art_640 || '',
+          cover_art_300: r.cover_art_300 || '',
+          track_number: r.track_number || 1,
+          duration_ms: r.duration_ms || 0,
+          explicit: r.explicit || false,
+          total_tracks: r.total_tracks || 1,
+          is_charting: false,
+        })));
+      }
+    })();
+  }, []);
+
+  // When a showcase is selected, fetch its artist list for filtering
+  useEffect(() => {
+    if (!activeShowcase) { setShowcaseArtists(new Set()); return; }
+    setLoadingShowcase(true);
+    fetch(`/api/browse-artists?category=${activeShowcase}`)
       .then(r => r.json())
       .then(d => {
-        setArtists(d.artists || []);
-        if (d.artists?.length === 0) setError('No artists found in this category yet.');
+        const names = new Set<string>((d.artists || []).map((a: { name: string }) => a.name.toLowerCase()));
+        setShowcaseArtists(names);
       })
-      .catch(() => setError('Failed to load artists'))
-      .finally(() => setLoading(false));
-  }, [activeCategory]);
+      .catch(() => setShowcaseArtists(new Set()))
+      .finally(() => setLoadingShowcase(false));
+  }, [activeShowcase]);
 
-  // Search with debounce
-  useEffect(() => {
-    if (searchQuery.length < 2) { setSearchResults([]); return; }
-    const timer = setTimeout(() => {
-      fetch(`/api/browse-artists?q=${encodeURIComponent(searchQuery)}`)
-        .then(r => r.json())
-        .then(d => setSearchResults(d.results || []))
-        .catch(() => {});
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
+  // Filter releases: only show artists who released this week AND match showcase
+  const filtered = (() => {
+    let list = releases;
+    if (activeShowcase && showcaseArtists.size > 0) {
+      list = list.filter(r => {
+        const primary = (r.artist_name || '').split(/,|feat\.|ft\./i)[0].trim().toLowerCase();
+        return showcaseArtists.has(primary);
+      });
+    }
+    if (searchQuery.length >= 2) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(r =>
+        r.artist_name.toLowerCase().includes(q) ||
+        r.track_name.toLowerCase().includes(q)
+      );
+    }
+    return list;
+  })();
+
+  // Group by artist
+  const artistGroups = (() => {
+    const map = new Map<string, NashvilleRelease[]>();
+    for (const r of filtered) {
+      const key = (r.artist_name || '').split(/,|feat\.|ft\./i)[0].trim();
+      const arr = map.get(key) || [];
+      arr.push(r);
+      map.set(key, arr);
+    }
+    return [...map.entries()].map(([name, tracks]) => ({
+      name,
+      tracks: tracks.sort((a, b) => (a.track_number || 0) - (b.track_number || 0)),
+      cover: tracks[0].cover_art_300,
+    })).sort((a, b) => a.name.localeCompare(b.name));
+  })();
 
   const toggleArtist = (name: string) => {
     setSelectedNames(prev => {
       const next = new Set(prev);
-      if (next.has(name)) next.delete(name);
-      else next.add(name);
+      if (next.has(name)) next.delete(name); else next.add(name);
       return next;
     });
   };
 
-  const selectAll = () => {
-    const names = new Set(selectedNames);
-    for (const a of artists) names.add(a.name);
-    setSelectedNames(names);
-  };
-
-  const formatListeners = (n: number) => {
-    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-    if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K`;
-    return n.toString();
-  };
-
-  const displayArtists = searchQuery.length >= 2 ? searchResults : artists;
+  // Weekly release count per showcase
+  const showcaseWeeklyCount = activeShowcase && showcaseArtists.size > 0
+    ? releases.filter(r => {
+        const primary = (r.artist_name || '').split(/,|feat\.|ft\./i)[0].trim().toLowerCase();
+        return showcaseArtists.has(primary);
+      }).length
+    : null;
 
   return (
     <div>
-      {/* Search bar */}
+      {/* Search */}
       <div style={{ marginBottom: 12 }}>
         <input
           type="text"
           className="search-input"
-          placeholder="Search artists by name..."
+          placeholder="Search this week's artists..."
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
           style={{ width: '100%', fontSize: 'var(--fs-md)', padding: '8px 12px' }}
         />
       </div>
 
-      {/* Category dropdown */}
-      {searchQuery.length < 2 && categories.length > 0 && (
+      {/* Showcase dropdown */}
+      {showcases.length > 0 && (
         <select
-          value={activeCategory || ''}
-          onChange={e => setActiveCategory(e.target.value || null)}
+          value={activeShowcase || ''}
+          onChange={e => setActiveShowcase(e.target.value || null)}
           style={{
-            width: '100%', padding: '8px 12px', borderRadius: 8, marginBottom: 16,
+            width: '100%', padding: '8px 12px', borderRadius: 8, marginBottom: 12,
             background: 'var(--midnight)', border: '1px solid var(--midnight-border)',
             color: 'var(--text-secondary)', fontSize: 'var(--fs-sm)',
             fontFamily: 'var(--font-mono)', cursor: 'pointer',
           }}
         >
-          <option value="">Select a showcase or category...</option>
-          {categories.map(cat => (
-            <option key={cat.id} value={cat.id}>{cat.emoji} {cat.name}</option>
+          <option value="">All Nashville ({releases.length} releases this week)</option>
+          {showcases.map(s => (
+            <option key={s.id} value={s.id}>
+              {s.emoji} {s.name}{s.id === activeShowcase && showcaseWeeklyCount !== null ? ` (${showcaseWeeklyCount} releases)` : ''}
+            </option>
           ))}
         </select>
       )}
 
-      {/* Category description */}
-      {activeCategory && !searchQuery && (
-        <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)', marginBottom: 12 }}>
-          {categories.find(c => c.id === activeCategory)?.description}
-        </p>
+      {loadingShowcase && (
+        <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)', marginBottom: 8 }}>Loading...</p>
       )}
 
-      {/* Artist grid */}
-      {loading && (
-        <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-md)', textAlign: 'center', padding: 24 }}>
-          Loading artists...
-        </p>
-      )}
-
-      {error && (
-        <p style={{ color: 'var(--mmmc-red)', fontSize: 'var(--fs-sm)', marginBottom: 12 }}>{error}</p>
-      )}
-
-      {displayArtists.length > 0 && (
-        <>
-          <div style={{
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            marginBottom: 8,
-          }}>
-            <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)' }}>
-              {displayArtists.length} {displayArtists.length === 1 ? 'artist' : 'artists'}
-              {selectedNames.size > 0 && (
-                <span style={{ color: 'var(--gold)', fontWeight: 600, marginLeft: 8 }}>
-                  {selectedNames.size} selected
-                </span>
-              )}
-            </span>
-            {!searchQuery && artists.length > 0 && (
-              <button
-                onClick={selectAll}
-                style={{ fontSize: 'var(--fs-2xs)', color: 'var(--steel)', cursor: 'pointer' }}
-              >
-                Select All
-              </button>
-            )}
-          </div>
-
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-            gap: 8, maxHeight: 400, overflowY: 'auto',
-            padding: 4,
-          }}>
-            {displayArtists.map(artist => {
-              const isSelected = selectedNames.has(artist.name);
-              return (
-                <button
-                  key={artist.pg_id}
-                  onClick={() => toggleArtist(artist.name)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 10,
-                    padding: '8px 12px', borderRadius: 8, cursor: 'pointer',
-                    background: isSelected ? 'rgba(212,168,67,0.12)' : 'var(--midnight)',
-                    border: isSelected ? '1px solid var(--gold-dark)' : '1px solid var(--midnight-border)',
-                    transition: 'all 0.15s', textAlign: 'left',
-                  }}
-                >
-                  {/* Checkbox indicator */}
-                  <div style={{
-                    width: 18, height: 18, borderRadius: 4, flexShrink: 0,
-                    border: isSelected ? '2px solid var(--gold)' : '2px solid var(--midnight-border)',
-                    background: isSelected ? 'var(--gold)' : 'transparent',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: 'var(--midnight)', fontSize: 'var(--fs-2xs)', fontWeight: 700,
-                  }}>
-                    {isSelected ? '\u2713' : ''}
-                  </div>
-
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{
-                      fontSize: 'var(--fs-md)', fontWeight: 600,
-                      color: isSelected ? 'var(--gold)' : 'var(--text-primary)',
-                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                    }}>
-                      {artist.name}
-                    </div>
-                    <div style={{
-                      fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)',
-                      display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 2,
-                    }}>
-                      <span>{(artist.tier_display || artist.tier || '').split(' (')[0]}</span>
-                      {artist.monthly_listeners > 0 && (
-                        <span>{formatListeners(artist.monthly_listeners)} listeners</span>
-                      )}
-                      {artist.no1_songs > 0 && (
-                        <span style={{ color: 'var(--gold)' }}>{artist.no1_songs} #1s</span>
-                      )}
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </>
-      )}
-
-      {/* Scan button */}
+      {/* Selected artists bar — always visible when selections exist */}
       {selectedNames.size > 0 && (
-        <div style={{ marginTop: 16, display: 'flex', gap: 8, alignItems: 'center' }}>
-          <button
-            className="btn btn-gold"
-            onClick={() => onScanArtists([...selectedNames])}
-            disabled={scanning}
-            style={{ fontSize: 'var(--fs-md)', padding: '10px 24px' }}
-          >
-            {scanning ? 'Scanning...' : `Scan ${selectedNames.size} ${selectedNames.size === 1 ? 'Artist' : 'Artists'} for New Releases`}
-          </button>
-          <button
-            onClick={() => setSelectedNames(new Set())}
-            style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)', cursor: 'pointer' }}
-          >
-            Clear
+        <div style={{
+          padding: '8px 12px', marginBottom: 12, borderRadius: 8,
+          background: 'rgba(212,168,67,0.08)', border: '1px solid var(--gold-dark)',
+          display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
+        }}>
+          <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--gold)', fontWeight: 600 }}>
+            {selectedNames.size} selected:
+          </span>
+          {[...selectedNames].map(name => (
+            <span key={name} style={{
+              fontSize: 'var(--fs-2xs)', background: 'var(--gold)', color: 'var(--midnight)',
+              padding: '2px 8px', borderRadius: 10, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4,
+            }}>
+              {name}
+              <button onClick={() => toggleArtist(name)} style={{
+                background: 'none', border: 'none', cursor: 'pointer', color: 'var(--midnight)',
+                fontSize: 10, lineHeight: 1, padding: 0,
+              }}>&times;</button>
+            </span>
+          ))}
+          <button onClick={() => setSelectedNames(new Set())}
+            style={{ fontSize: 'var(--fs-2xs)', color: 'var(--mmmc-red)', cursor: 'pointer', marginLeft: 'auto', background: 'none', border: 'none' }}>
+            Clear All
           </button>
         </div>
       )}
 
-      {/* Empty state */}
-      {!loading && !searchQuery && !activeCategory && categories.length > 0 && (
-        <div style={{
-          textAlign: 'center', padding: '24px 16px',
-          color: 'var(--text-muted)', fontSize: 'var(--fs-md)',
-        }}>
-          Pick a category above or search for artists to build your follow list.
-          <br />
-          <span style={{ fontSize: 'var(--fs-xs)' }}>No Spotify login required.</span>
+      {/* Stats */}
+      {artistGroups.length > 0 && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+          <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)' }}>
+            {artistGroups.length} artists with new music this week
+          </span>
+          <button onClick={() => { for (const g of artistGroups) selectedNames.add(g.name); setSelectedNames(new Set(selectedNames)); }}
+            style={{ fontSize: 'var(--fs-2xs)', color: 'var(--steel)', cursor: 'pointer', background: 'none', border: 'none' }}>
+            Select All
+          </button>
+        </div>
+      )}
+
+      {/* Artist list */}
+      <div style={{ maxHeight: 400, overflowY: 'auto' }}>
+        {artistGroups.map(g => {
+          const isSelected = selectedNames.has(g.name);
+          return (
+            <div key={g.name} style={{
+              display: 'flex', alignItems: 'center', gap: 10, padding: '8px 4px',
+              borderBottom: '1px solid var(--midnight-border)', cursor: 'pointer',
+              background: isSelected ? 'rgba(212,168,67,0.06)' : 'transparent',
+            }} onClick={() => toggleArtist(g.name)}>
+              <div style={{
+                width: 18, height: 18, borderRadius: 4, flexShrink: 0,
+                border: isSelected ? '2px solid var(--gold)' : '2px solid var(--midnight-border)',
+                background: isSelected ? 'var(--gold)' : 'transparent',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: 'var(--midnight)', fontSize: 11, fontWeight: 700,
+              }}>
+                {isSelected ? '\u2713' : ''}
+              </div>
+              {g.cover && (
+                <img src={g.cover} alt="" style={{ width: 36, height: 36, borderRadius: 4, flexShrink: 0 }} />
+              )}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 'var(--fs-sm)', fontWeight: 600, color: isSelected ? 'var(--gold)' : 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {g.name}
+                </div>
+                <div style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)' }}>
+                  {g.tracks.length} {g.tracks.length === 1 ? 'track' : 'tracks'} this week
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Empty states */}
+      {!loadingShowcase && releases.length === 0 && (
+        <div style={{ textAlign: 'center', padding: 24, color: 'var(--text-muted)' }}>
+          No weekly release data loaded yet. Try the Nashville source first.
+        </div>
+      )}
+      {!loadingShowcase && releases.length > 0 && artistGroups.length === 0 && activeShowcase && (
+        <div style={{ textAlign: 'center', padding: 24, color: 'var(--text-muted)' }}>
+          No releases this week from {showcases.find(s => s.id === activeShowcase)?.name} artists.
+        </div>
+      )}
+
+      {/* Scan button */}
+      {selectedNames.size > 0 && (
+        <div style={{ marginTop: 16 }}>
+          <button
+            className="btn btn-gold"
+            onClick={() => onScanArtists([...selectedNames])}
+            disabled={scanning}
+            style={{ width: '100%', fontSize: 'var(--fs-md)', padding: '10px 24px', justifyContent: 'center' }}
+          >
+            {scanning ? 'Scanning...' : `Scan ${selectedNames.size} ${selectedNames.size === 1 ? 'Artist' : 'Artists'} for New Releases`}
+          </button>
         </div>
       )}
     </div>

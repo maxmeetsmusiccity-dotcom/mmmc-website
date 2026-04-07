@@ -198,7 +198,22 @@ export default function NashvilleReleases({ onImport }: Props) {
     onImport(releasesToTrackItems(toImport));
   };
 
-  // Showcase filter — dropdown on mobile, pills on desktop
+  // Compute weekly release counts per showcase (how many releases this week, not total artists)
+  const showcaseWeeklyCounts = new Map<string, number>();
+  for (const s of showcases) {
+    // We need the showcase artist names to count matches. If we've already fetched them for
+    // the active showcase, use that. Otherwise just show the releases.length for "All".
+    // For non-active showcases, we don't have the artist list yet — leave count blank.
+    if (s.id === activeShowcase && showcaseArtists.size > 0) {
+      const count = releases.filter(r => {
+        const primary = (r.artist_name || '').split(/,|feat\.|ft\./i)[0].trim().toLowerCase();
+        return showcaseArtists.has(primary);
+      }).length;
+      showcaseWeeklyCounts.set(s.id, count);
+    }
+  }
+
+  // Showcase filter dropdown
   const showcaseDropdown = showcases.length > 0 ? (
     <select
       value={activeShowcase || ''}
@@ -210,10 +225,15 @@ export default function NashvilleReleases({ onImport }: Props) {
         width: '100%', marginBottom: 12,
       }}
     >
-      <option value="">All Nashville ({releases.length})</option>
-      {showcases.map(s => (
-        <option key={s.id} value={s.id}>{s.emoji} {s.name} ({s.count})</option>
-      ))}
+      <option value="">All Nashville ({releases.length} releases)</option>
+      {showcases.map(s => {
+        const weeklyCount = showcaseWeeklyCounts.get(s.id);
+        return (
+          <option key={s.id} value={s.id}>
+            {s.emoji} {s.name}{weeklyCount !== undefined ? ` (${weeklyCount} releases)` : ''}
+          </option>
+        );
+      })}
     </select>
   ) : null;
 
@@ -397,7 +417,7 @@ export default function NashvilleReleases({ onImport }: Props) {
                     onClick={(e) => { e.stopPropagation(); setExpanded(prev => { const n = new Set(prev); if (n.has(g.key)) n.delete(g.key); else n.add(g.key); return n; }); }}
                     style={{ color: 'var(--gold)', fontSize: 'var(--fs-xs)', background: 'none', border: 'none', cursor: 'pointer', flexShrink: 0, padding: '4px 8px' }}
                   >
-                    {isExpanded ? '\u25BE' : '\u25B8'} tracks
+                    {isExpanded ? '\u25BE Collapse' : '\u25B8 Expand Tracks'}
                   </button>
                 )}
                 <span style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)', flexShrink: 0, width: 50, textAlign: 'right' }}>
@@ -408,7 +428,7 @@ export default function NashvilleReleases({ onImport }: Props) {
               {/* Expanded tracks for albums/EPs */}
               {!isSingle && isExpanded && (
                 <div style={{ paddingLeft: 36, paddingBottom: 8 }}>
-                  {g.tracks.map(t => (
+                  {[...g.tracks].sort((a, b) => (a.track_number || 0) - (b.track_number || 0)).map(t => (
                     <div key={t.spotify_track_id} style={{
                       display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0',
                       cursor: 'pointer', fontSize: 'var(--fs-xs)',
