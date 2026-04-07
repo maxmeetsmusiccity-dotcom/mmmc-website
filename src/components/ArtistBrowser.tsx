@@ -110,23 +110,23 @@ export default function ArtistBrowser({ onScanArtists, scanning }: Props) {
         />
       </div>
 
-      {/* Category pills */}
-      {searchQuery.length < 2 && (
-        <div style={{
-          display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 16,
-        }}>
+      {/* Category dropdown */}
+      {searchQuery.length < 2 && categories.length > 0 && (
+        <select
+          value={activeCategory || ''}
+          onChange={e => setActiveCategory(e.target.value || null)}
+          style={{
+            width: '100%', padding: '8px 12px', borderRadius: 8, marginBottom: 16,
+            background: 'var(--midnight)', border: '1px solid var(--midnight-border)',
+            color: 'var(--text-secondary)', fontSize: 'var(--fs-sm)',
+            fontFamily: 'var(--font-mono)', cursor: 'pointer',
+          }}
+        >
+          <option value="">Select a showcase or category...</option>
           {categories.map(cat => (
-            <button
-              key={cat.id}
-              className={`filter-pill ${activeCategory === cat.id ? 'active' : ''}`}
-              onClick={() => setActiveCategory(activeCategory === cat.id ? null : cat.id)}
-              style={{ fontSize: 'var(--fs-xs)', padding: '5px 12px' }}
-              title={cat.description}
-            >
-              {cat.emoji} {cat.name}
-            </button>
+            <option key={cat.id} value={cat.id}>{cat.emoji} {cat.name}</option>
           ))}
-        </div>
+        </select>
       )}
 
       {/* Category description */}
