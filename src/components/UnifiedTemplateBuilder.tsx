@@ -7,6 +7,7 @@ import { generateTemplatePreview, generateTitleSlide, type CarouselAspect } from
 import type { SelectionSlot } from '../lib/selection';
 import { titleTemplateToElements, gridTemplateToElements, type EditorElement } from '../lib/editor-elements';
 import CanvasOverlay from './CanvasOverlay';
+import LayerPanel from './LayerPanel';
 
 /* ------------------------------------------------------------------ */
 /*  Props                                                              */
@@ -259,10 +260,12 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
   const [rendering, setRendering] = useState(false);
   const previewTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  /* ---------- canvas overlay ---------- */
+  /* ---------- canvas overlay + layers ---------- */
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
   const previewContainerRef = useRef<HTMLDivElement>(null);
   const [previewRect, setPreviewRect] = useState({ w: 400, h: 400 });
+  const [layerOverrides, setLayerOverrides] = useState<Record<string, { visible?: boolean; locked?: boolean }>>({});
+  const [layerOrder, setLayerOrder] = useState<string[] | null>(null);
 
   /* ================================================================ */
   /*  Build the output template from current state                     */
@@ -393,8 +396,39 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
   /* ================================================================ */
 
   const editorElements = useMemo<EditorElement[]>(() => {
-    return isGrid ? gridTemplateToElements(buildGridTemplate()) : titleTemplateToElements(buildTitleTemplate());
-  }, [isGrid, buildGridTemplate, buildTitleTemplate]);
+    const raw = isGrid ? gridTemplateToElements(buildGridTemplate()) : titleTemplateToElements(buildTitleTemplate());
+    // Apply visibility/lock overrides from layer panel
+    const withOverrides = raw.map(el => {
+      const ov = layerOverrides[el.id];
+      if (!ov) return el;
+      return { ...el, visible: ov.visible ?? el.visible, locked: ov.locked ?? el.locked };
+    });
+    // Apply custom ordering if set
+    if (layerOrder) {
+      const byId = new Map(withOverrides.map(el => [el.id, el]));
+      const ordered: EditorElement[] = [];
+      for (const id of layerOrder) { const el = byId.get(id); if (el) ordered.push(el); }
+      // Append any elements not in the order list (newly added)
+      for (const el of withOverrides) { if (!layerOrder.includes(el.id)) ordered.push(el); }
+      return ordered;
+    }
+    return withOverrides;
+  }, [isGrid, buildGridTemplate, buildTitleTemplate, layerOverrides, layerOrder]);
+
+  const handleToggleVisible = useCallback((id: string) => {
+    setLayerOverrides(prev => ({ ...prev, [id]: { ...prev[id], visible: !(prev[id]?.visible ?? editorElements.find(e => e.id === id)?.visible ?? true) } }));
+  }, [editorElements]);
+
+  const handleToggleLocked = useCallback((id: string) => {
+    setLayerOverrides(prev => ({ ...prev, [id]: { ...prev[id], locked: !(prev[id]?.locked ?? editorElements.find(e => e.id === id)?.locked ?? false) } }));
+  }, [editorElements]);
+
+  const handleReorder = useCallback((fromIdx: number, toIdx: number) => {
+    const ids = editorElements.map(e => e.id);
+    const [moved] = ids.splice(fromIdx, 1);
+    ids.splice(toIdx, 0, moved);
+    setLayerOrder(ids);
+  }, [editorElements]);
 
   const handleElementUpdate = useCallback((id: string, patch: Partial<EditorElement>) => {
     // Map overlay drag positions back to the corresponding state variables
@@ -1077,6 +1111,16 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
           </button>
         </div>
       </div>
+
+      {/* ============= CENTER: Layer Panel ============= */}
+      <LayerPanel
+        elements={editorElements}
+        selectedId={selectedElementId}
+        onSelect={setSelectedElementId}
+        onToggleVisible={handleToggleVisible}
+        onToggleLocked={handleToggleLocked}
+        onReorder={handleReorder}
+      />
 
       {/* ============= RIGHT: Live Preview ============= */}
       <div style={{
