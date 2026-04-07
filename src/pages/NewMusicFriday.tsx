@@ -1087,16 +1087,20 @@ export default function NewMusicFriday() {
                 <Link to="/newmusicfriday/archive" className="filter-pill" style={{ textDecoration: 'none', fontSize: 'var(--fs-2xs)', padding: '2px 8px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
                   Archive
                 </Link>
-                {/* Thumbnail size slider */}
+                {/* Thumbnail size: -/reset/+ buttons + slider */}
                 <span style={{ color: 'var(--midnight-border)', margin: '0 2px' }}>|</span>
-                <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-3xs)' }}>Compact</span>
+                <button onClick={() => { const v = Math.max(120, cardSize - 40); setCardSize(v); try { localStorage.setItem('nmf_card_size', String(v)); } catch {} }}
+                  style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 14, padding: '0 4px' }} title="Smaller">&#8722;</button>
+                <button onClick={() => { setCardSize(200); try { localStorage.setItem('nmf_card_size', '200'); } catch {} }}
+                  style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 'var(--fs-3xs)', padding: '0 4px' }} title="Reset to default">Reset</button>
+                <button onClick={() => { const v = Math.min(350, cardSize + 40); setCardSize(v); try { localStorage.setItem('nmf_card_size', String(v)); } catch {} }}
+                  style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 14, padding: '0 4px' }} title="Larger">+</button>
                 <input
                   type="range" min="120" max="350" value={cardSize}
                   onChange={e => { const v = Number(e.target.value); setCardSize(v); try { localStorage.setItem('nmf_card_size', String(v)); } catch {} }}
-                  style={{ width: 80 }}
+                  style={{ width: 60 }}
                   title={`Card size: ${cardSize}px`}
                 />
-                <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-3xs)' }}>Detail</span>
                 <span className="mono" style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-3xs)', minWidth: 32, textAlign: 'right' }}>{cardSize}px</span>
               </div>
             </div>

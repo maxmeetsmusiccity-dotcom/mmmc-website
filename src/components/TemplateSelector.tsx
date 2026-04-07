@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { type CarouselTemplate, getVisibleTemplates } from '../lib/carousel-templates';
+import { type CarouselTemplate, getVisibleTemplates, registerCustomTemplates } from '../lib/carousel-templates';
 import { generateTemplatePreview } from '../lib/canvas-grid';
 import { saveCustomTemplate, deleteCustomTemplate, getCustomTemplates } from '../lib/supabase';
 import UnifiedTemplateBuilder from './UnifiedTemplateBuilder';
@@ -48,9 +48,12 @@ export default function TemplateSelector({ selected, onSelect }: Props) {
       if (serverTemplates.length > 0) {
         const merged = serverTemplates as unknown as CarouselTemplate[];
         setCustomTemplates(merged);
+        registerCustomTemplates(merged);
         saveLocalTemplates(merged, user.id);
       } else {
-        setCustomTemplates(loadLocalTemplates(user.id));
+        const local = loadLocalTemplates(user.id);
+        setCustomTemplates(local);
+        registerCustomTemplates(local);
       }
     });
   }, [user?.id]);
@@ -74,6 +77,7 @@ export default function TemplateSelector({ selected, onSelect }: Props) {
     const updated = customTemplates.filter(t => t.id !== template.id);
     updated.push(template);
     setCustomTemplates(updated);
+    registerCustomTemplates(updated);
     saveLocalTemplates(updated, user?.id);
     if (user?.id) {
       saveCustomTemplate(user.id, template as unknown as Record<string, unknown>);

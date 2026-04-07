@@ -80,6 +80,8 @@ export interface CarouselTemplate {
   colorOverlay?: string;
   colorOverlayBlend?: 'screen' | 'multiply' | 'overlay';
   backgroundBlur?: number;
+  /** Custom user-added elements (text banners, images, shapes) */
+  customElements?: import('./editor-elements').EditorElement[];
 }
 
 export const TEMPLATES: CarouselTemplate[] = [
@@ -370,8 +372,12 @@ export const TEMPLATES: CarouselTemplate[] = [
 /** Templates that are exclusive to Max's account */
 export const MAX_ONLY_TEMPLATES = new Set(['mmmc_classic', 'neon_rose', 'golden_hour']);
 
+/** Runtime registry for custom templates (set by TemplateSelector when loading from storage) */
+let _customTemplateRegistry: CarouselTemplate[] = [];
+export function registerCustomTemplates(templates: CarouselTemplate[]) { _customTemplateRegistry = templates; }
+
 export function getTemplate(id: string): CarouselTemplate {
-  return TEMPLATES.find(t => t.id === id) || TEMPLATES[0];
+  return TEMPLATES.find(t => t.id === id) || _customTemplateRegistry.find(t => t.id === id) || TEMPLATES[0];
 }
 
 /** Get templates visible to a user (filters out Max-only for other users) */

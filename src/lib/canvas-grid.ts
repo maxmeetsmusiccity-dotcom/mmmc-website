@@ -2,6 +2,7 @@ import type { SelectionSlot } from './selection';
 import type { CarouselTemplate } from './carousel-templates';
 import { getTemplate } from './carousel-templates';
 import { getTitleTemplate, type TitleSlideTemplate } from './title-templates';
+import { drawCustomElements, type EditorElement } from './editor-elements';
 import { type GridConfig, getGridById, getGridsForCount, computeCellRects } from './grid-layouts';
 
 /** Canvas dimensions by aspect ratio */
@@ -362,6 +363,7 @@ export async function generateTitleSlide(
   weekDate: string,
   templateOrId: string | TitleSlideTemplate = 'nashville_neon',
   aspect: CarouselAspect = '1:1',
+  customElements?: EditorElement[],
 ): Promise<Blob> {
   const tt = typeof templateOrId === 'string'
     ? getTitleTemplate(templateOrId)
@@ -637,6 +639,12 @@ export async function generateTitleSlide(
     ctx.fillRect(0, 0, W, H);
   }
 
+  // Custom user elements (text banners, images, shapes)
+  const titleCustom = [...(tt.customElements || []), ...(customElements || [])];
+  if (titleCustom.length > 0) {
+    await drawCustomElements(ctx, titleCustom, W, H);
+  }
+
   // Vignette
   if (tt.vignette > 0) drawVignette(ctx, tt.vignette);
 
@@ -864,9 +872,12 @@ export async function generateGridSlide(
   logoUrl = '/mmmc-logo.png',
   layoutId?: string,
   aspect: CarouselAspect = '1:1',
+  customElements?: EditorElement[],
 ): Promise<Blob> {
   const t = getTemplate(templateId);
   await loadAllAssets(t);
+  // Merge custom elements from template + explicit param
+  const allCustom = [...(t.customElements || []), ...(customElements || [])];
   const dim = getDimensions(aspect);
   const canvas = document.createElement('canvas');
   canvas.width = dim.w; canvas.height = dim.h;
@@ -946,6 +957,11 @@ export async function generateGridSlide(
 
   // Per-template post-processing (scanlines, textures, spotlight, etc.)
   postProcessGrid(ctx, t);
+
+  // Custom user elements (text banners, images, shapes)
+  if (allCustom.length > 0) {
+    await drawCustomElements(ctx, allCustom, dim.w, dim.h);
+  }
 
   // Premium finishing
   drawVignette(ctx, t.vignetteIntensity ?? 0.2);

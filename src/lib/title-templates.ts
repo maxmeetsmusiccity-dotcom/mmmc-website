@@ -63,6 +63,8 @@ export interface TitleSlideTemplate {
   texture?: 'grain' | 'halftone' | 'leather' | 'denim' | 'none';
   swipePill: boolean;
   vinylRecord?: boolean;
+  /** Custom user-added elements (text banners, images, shapes) */
+  customElements?: import('./editor-elements').EditorElement[];
 }
 
 export const TITLE_TEMPLATES: TitleSlideTemplate[] = [

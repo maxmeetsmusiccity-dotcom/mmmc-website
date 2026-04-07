@@ -332,13 +332,14 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
       scanlineSpacing,
       colorOverlay: colorOverlay || undefined,
       colorOverlayBlend,
+      customElements: customElements.length > 0 ? customElements : undefined,
     };
   }, [
     name, description, bg, accent, textPrimary, textSecondary, scriptFont, bodyFont,
     gridGap, rotation, cellBorder, cellBorderWidth, cellBorderColor, cellCornerRadius,
     cellShadow, cellShadowBlur, showNotes, showSparkles, showVinyl, vinylOpacity,
     showChevrons, noteSize, sparkleSize, grainIntensity, vignetteIntensity,
-    scanlineSpacing, colorOverlay, colorOverlayBlend, bgFrameUrl, useGradient,
+    scanlineSpacing, colorOverlay, colorOverlayBlend, bgFrameUrl, useGradient, customElements,
     gradientEnd, gradientAngle, glowBlur, glowColor, headerFontSize,
     letterSpacing, textTransform, initial?.id,
   ]);
@@ -379,6 +380,7 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
       featuredShadowBlur,
       featuredRotation,
       swipePill,
+      customElements: customElements.length > 0 ? customElements : undefined,
     };
   }, [
     name, description, bg, useGradient, gradientAngle, gradientEnd,
@@ -387,7 +389,7 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
     headlineY, subtitleY, dateY, featuredImageY, featuredImageSize,
     glowColor, glowBlur, glowPasses, grainIntensity, vignetteIntensity,
     showFrame, frameColor, frameWidth, showDivider, dividerColor,
-    featuredBorder, featuredBorderColor, featuredShadowBlur, featuredRotation,
+    featuredBorder, featuredBorderColor, featuredShadowBlur, featuredRotation, customElements,
     swipePill, initial?.id,
   ]);
 
@@ -1319,7 +1321,7 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
                 alt={`${isGrid ? 'Grid' : 'Title'} template preview`}
                 style={{
                   maxWidth: '100%',
-                  maxHeight: 'calc(100vh - 160px)',
+                  maxHeight: 'calc(100vh - 80px)',
                   borderRadius: 8,
                   border: '1px solid var(--midnight-border)',
                   objectFit: 'contain',
