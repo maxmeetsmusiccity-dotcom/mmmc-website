@@ -29,23 +29,6 @@ interface BrowseArtist {
 
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
-/** Map category IDs to badge image paths (from CWC/ND badge assets) */
-const BADGE_IMAGES: Record<string, string> = {
-  whiskey_jam: '/badges/whiskeyjam.png',
-  song_suffragettes: '/badges/suffragettes.png',
-  bluebird: '/badges/bluebird.png',
-  '3rd_lindsley': '/badges/3rdlindsley.png',
-  listening_room: '/badges/listeningroom.png',
-  nashville_tour_stop: '/badges/nashvilletourstop.jpg',
-  rowdy_round: '/badges/rowdy.png',
-  rebel_rouser: '/badges/rebelrouser.jpg',
-  pindrop: '/badges/pindrop.jpg',
-  opry: '/badges/opry.png',
-  cma: '/badges/cma.png',
-  acm: '/badges/acm.png',
-  grammy: '/badges/grammy.png',
-};
-
 const TIER_COLORS: Record<string, string> = {
   marquee: '#F5C453',
   rising: '#6aacda',
@@ -227,49 +210,35 @@ export default function Artists() {
           ))}
         </div>
 
-        {/* Category filters — grouped by type */}
-        {categories.length > 0 && (() => {
-          const showcases = categories.filter(c => c.type === 'showcase');
-          const genres = categories.filter(c => c.type === 'genre');
-          const other = categories.filter(c => !c.type || (c.type !== 'showcase' && c.type !== 'genre'));
-          const groups = [
-            ...(showcases.length > 0 ? [{ label: 'Browse by Showcase', cats: showcases, color: '#3EE6C3' }] : []),
-            ...(genres.length > 0 ? [{ label: 'Browse by Genre', cats: genres, color: '#6aacda' }] : []),
-            ...(other.length > 0 ? [{ label: 'Browse by Category', cats: other, color: '#F5C453' }] : []),
-          ];
-          // If no type field at all, show all as one group
-          if (groups.length === 0 && categories.length > 0) {
-            groups.push({ label: 'Browse', cats: categories, color: '#F5C453' });
-          }
-          return groups.map(group => (
-            <div key={group.label} style={{ marginBottom: 12 }}>
-              <p style={{ fontSize: 11, color: '#7A8CA0', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>
-                {group.label}
-              </p>
-              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                {group.cats.map(c => (
-                  <button
-                    key={c.id}
-                    onClick={() => setActiveCategory(activeCategory === c.id ? null : c.id)}
-                    style={{
-                      padding: '5px 12px', borderRadius: 16, border: '1px solid',
-                      borderColor: activeCategory === c.id ? group.color : 'rgba(255,255,255,0.08)',
-                      background: activeCategory === c.id ? `${group.color}14` : 'transparent',
-                      color: activeCategory === c.id ? group.color : '#aaa',
-                      fontSize: 12, cursor: 'pointer', whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {BADGE_IMAGES[c.id]
-                      ? <img src={BADGE_IMAGES[c.id]} alt="" style={{ width: 18, height: 18, objectFit: 'contain', verticalAlign: 'middle', marginRight: 4 }} />
-                      : <span style={{ marginRight: 2 }}>{c.emoji}</span>
-                    }
-                    {c.name}{c.count ? ` (${c.count})` : ''}
-                  </button>
+        {/* Category filter — dropdown */}
+        {categories.length > 0 && (
+          <select
+            value={activeCategory || ''}
+            onChange={e => setActiveCategory(e.target.value || null)}
+            style={{
+              width: '100%', padding: '10px 14px', borderRadius: 8,
+              background: '#0F1B33', border: '1px solid rgba(255,255,255,0.12)',
+              color: '#e0e0e0', fontSize: 14, fontFamily: "'DM Sans', sans-serif",
+              marginBottom: 16, cursor: 'pointer',
+            }}
+          >
+            <option value="">All Artists ({allArtists.length})</option>
+            {categories.filter(c => c.type === 'showcase').length > 0 && (
+              <optgroup label="Showcases">
+                {categories.filter(c => c.type === 'showcase').map(c => (
+                  <option key={c.id} value={c.id}>{c.emoji} {c.name}{c.count ? ` (${c.count})` : ''}</option>
                 ))}
-              </div>
-            </div>
-          ));
-        })()}
+              </optgroup>
+            )}
+            {categories.filter(c => c.type === 'genre').length > 0 && (
+              <optgroup label="Categories">
+                {categories.filter(c => c.type === 'genre').map(c => (
+                  <option key={c.id} value={c.id}>{c.emoji} {c.name}{c.count ? ` (${c.count})` : ''}</option>
+                ))}
+              </optgroup>
+            )}
+          </select>
+        )}
 
         {/* Loading / empty states */}
         {loading && <div style={{ color: '#7A8CA0', padding: 40, textAlign: 'center' }}>Loading artist directory...</div>}
