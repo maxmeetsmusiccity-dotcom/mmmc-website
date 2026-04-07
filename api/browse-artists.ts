@@ -3,7 +3,6 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 // R2 is now private — fetch through Workers R2 binding with HMAC auth
 const ND_API_BASE = process.env.ND_API_BASE_URL || '';
 const ND_AUTH_SECRET = process.env.ND_AUTH_TOKEN_SECRET || '';
-const ND_AUTH_USER = process.env.ND_AUTH_USERNAME || '';
 
 interface BrowseArtist {
   pg_id: string;
@@ -46,27 +45,26 @@ let _cachedData: BrowseData | null = null;
 let _cacheTime = 0;
 const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
 
-async function generateHmacToken(): Promise<string> {
-  const today = new Date().toISOString().split('T')[0];
-  const payload = `${today}:${ND_AUTH_USER.toLowerCase()}`;
+async function generateApiToken(): Promise<string> {
+  const ts = Date.now().toString();
   const encoder = new TextEncoder();
   const key = await crypto.subtle.importKey(
     'raw', encoder.encode(ND_AUTH_SECRET),
     { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'],
   );
-  const sig = await crypto.subtle.sign('HMAC', key, encoder.encode(payload));
-  return [...new Uint8Array(sig)].map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 16);
+  const sig = await crypto.subtle.sign('HMAC', key, encoder.encode('api-access:' + ts));
+  return ts + ':' + [...new Uint8Array(sig)].map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 async function fetchBrowseData(): Promise<BrowseData | null> {
   if (_cachedData && Date.now() - _cacheTime < CACHE_TTL) return _cachedData;
 
-  if (!ND_API_BASE || !ND_AUTH_SECRET || !ND_AUTH_USER) return null;
+  if (!ND_API_BASE || !ND_AUTH_SECRET) return null;
 
   try {
-    const token = await generateHmacToken();
-    const res = await fetch(`${ND_API_BASE}/api/r2?key=browse_artists.json&token=${token}`, {
-      headers: { 'Content-Type': 'application/json' },
+    const apiToken = await generateApiToken();
+    const res = await fetch(`${ND_API_BASE}/api/r2?key=browse_artists.json`, {
+      headers: { 'Content-Type': 'application/json', 'X-ND-Token': apiToken },
     });
     if (!res.ok) return null;
     _cachedData = await res.json() as BrowseData;

@@ -8,16 +8,15 @@ const ND_API_BASE = process.env.ND_API_BASE_URL || '';
 const ND_AUTH_SECRET = process.env.ND_AUTH_TOKEN_SECRET || '';
 const ND_AUTH_USER = process.env.ND_AUTH_USERNAME || '';
 
-async function generateHmacToken(): Promise<string> {
-  const today = new Date().toISOString().split('T')[0];
-  const payload = `${today}:${ND_AUTH_USER.toLowerCase()}`;
+async function generateApiToken(): Promise<string> {
+  const ts = Date.now().toString();
   const encoder = new TextEncoder();
   const key = await crypto.subtle.importKey(
     'raw', encoder.encode(ND_AUTH_SECRET),
     { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'],
   );
-  const sig = await crypto.subtle.sign('HMAC', key, encoder.encode(payload));
-  return [...new Uint8Array(sig)].map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 16);
+  const sig = await crypto.subtle.sign('HMAC', key, encoder.encode('api-access:' + ts));
+  return ts + ':' + [...new Uint8Array(sig)].map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 /** Hardcoded seed list — used when R2 browse_artists.json doesn't exist */
@@ -76,9 +75,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Try to load artist list from R2
   let artistNames: string[] = SEED_ARTISTS;
   try {
-    const hmacToken = ND_API_BASE && ND_AUTH_SECRET && ND_AUTH_USER ? await generateHmacToken() : '';
-    const r2Url = hmacToken ? `${ND_API_BASE}/api/r2?key=browse_artists.json&token=${hmacToken}` : '';
-    const r2Resp = r2Url ? await fetch(r2Url, { headers: { 'Content-Type': 'application/json' } }) : { ok: false, json: async () => ({}) };
+    const apiToken = ND_API_BASE && ND_AUTH_SECRET ? await generateApiToken() : '';
+    const r2Url = apiToken ? `${ND_API_BASE}/api/r2?key=browse_artists.json` : '';
+    const r2Resp = r2Url ? await fetch(r2Url, { headers: { 'Content-Type': 'application/json', 'X-ND-Token': apiToken } }) : { ok: false, json: async () => ({}) };
     if (r2Resp.ok) {
       const r2Data = await r2Resp.json();
       // R2 file may have artists at top level OR nested in categories
