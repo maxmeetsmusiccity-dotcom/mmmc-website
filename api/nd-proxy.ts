@@ -7,6 +7,7 @@ const ALLOWED_PATH_PREFIXES = [
   '/api/nmf/instagram',
   '/api/nmf/releases',
   '/api/search',
+  '/api/profile/',
 ];
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -36,23 +37,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(500).json({ error: 'ND API not configured' });
   }
 
-  // Generate HMAC daily token
-  const today = new Date().toISOString().split('T')[0];
-  const payload = `${today}:${username.toLowerCase()}`;
+  // Generate api-access HMAC token (matches Workers auth middleware format)
+  const ts = Date.now().toString();
   const encoder = new TextEncoder();
   const key = await crypto.subtle.importKey(
     'raw', encoder.encode(secret),
     { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'],
   );
-  const sig = await crypto.subtle.sign('HMAC', key, encoder.encode(payload));
-  const token = [...new Uint8Array(sig)].map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 16);
+  const sig = await crypto.subtle.sign('HMAC', key, encoder.encode('api-access:' + ts));
+  const token = ts + ':' + [...new Uint8Array(sig)].map(b => b.toString(16).padStart(2, '0')).join('');
 
-  const url = `${baseUrl}${path}${path.includes('?') ? '&' : '?'}token=${token}`;
+  const url = `${baseUrl}${path}`;
 
   try {
     const upstream = await fetch(url, {
       method: req.method,
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-ND-Token': token,
+      },
       ...(req.method === 'POST' && req.body ? { body: JSON.stringify(req.body) } : {}),
     });
 
