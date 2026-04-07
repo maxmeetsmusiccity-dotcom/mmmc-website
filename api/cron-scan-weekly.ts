@@ -3,7 +3,22 @@ import { createClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://kpwklxrcysokuyjhuhun.supabase.co';
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || '';
-const R2_BASE = 'https://pub-639573660a1e48d2b2075b4563f00cd3.r2.dev';
+// R2 is private — fetch through Workers R2 binding with HMAC auth
+const ND_API_BASE = process.env.ND_API_BASE_URL || '';
+const ND_AUTH_SECRET = process.env.ND_AUTH_TOKEN_SECRET || '';
+const ND_AUTH_USER = process.env.ND_AUTH_USERNAME || '';
+
+async function generateHmacToken(): Promise<string> {
+  const today = new Date().toISOString().split('T')[0];
+  const payload = `${today}:${ND_AUTH_USER.toLowerCase()}`;
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    'raw', encoder.encode(ND_AUTH_SECRET),
+    { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'],
+  );
+  const sig = await crypto.subtle.sign('HMAC', key, encoder.encode(payload));
+  return [...new Uint8Array(sig)].map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 16);
+}
 
 /** Hardcoded seed list — used when R2 browse_artists.json doesn't exist */
 const SEED_ARTISTS = [
@@ -61,7 +76,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Try to load artist list from R2
   let artistNames: string[] = SEED_ARTISTS;
   try {
-    const r2Resp = await fetch(`${R2_BASE}/browse_artists.json`);
+    const hmacToken = ND_API_BASE && ND_AUTH_SECRET && ND_AUTH_USER ? await generateHmacToken() : '';
+    const r2Url = hmacToken ? `${ND_API_BASE}/api/r2?key=browse_artists.json&token=${hmacToken}` : '';
+    const r2Resp = r2Url ? await fetch(r2Url, { headers: { 'Content-Type': 'application/json' } }) : { ok: false, json: async () => ({}) };
     if (r2Resp.ok) {
       const r2Data = await r2Resp.json();
       // R2 file may have artists at top level OR nested in categories
