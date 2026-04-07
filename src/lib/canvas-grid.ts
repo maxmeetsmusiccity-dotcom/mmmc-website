@@ -891,9 +891,18 @@ export async function generateGridSlide(
   const [images, logo] = await Promise.all([Promise.all(imagePromises), logoPromise]);
 
   // Always use layout-aware renderer — resolve layout from ID or auto-select
-  const resolvedLayout = layoutId
-    ? getGridById(slots.length, layoutId)
-    : null;
+  // Try the exact slot count first, then try larger counts up to 16 so a user-selected
+  // layout (e.g. 4×2 for 8) still renders when fewer tracks are actually selected.
+  let resolvedLayout: GridConfig | null = null;
+  if (layoutId) {
+    resolvedLayout = getGridById(slots.length, layoutId);
+    if (!resolvedLayout) {
+      for (let n = slots.length + 1; n <= 16; n++) {
+        resolvedLayout = getGridById(n, layoutId);
+        if (resolvedLayout) break;
+      }
+    }
+  }
   const gridX = 74;
   const gridW = dim.w - 74 * 2;
 

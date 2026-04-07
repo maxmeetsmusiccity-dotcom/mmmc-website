@@ -82,22 +82,35 @@ export default function TitleTemplatePicker({ selected, onSelect, onHover }: Pro
         {visibleTemplates.map(t => {
           const isActive = selected === t.id;
           return (
-            <button
+            <div
               key={t.id}
               data-testid={`title-template-${t.id}`}
-              onClick={() => onSelect(t.id)}
-              onMouseEnter={() => onHover?.(t.id)}
-              onMouseLeave={() => onHover?.(null)}
               style={{
                 flexShrink: 0, width: 90, padding: 6, borderRadius: 8, cursor: 'pointer',
                 background: isActive ? 'var(--midnight-hover)' : 'var(--midnight)',
                 border: isActive ? `2px solid ${t.accent}` : '2px solid var(--midnight-border)',
-                transition: 'all 0.15s',
+                transition: 'all 0.15s', position: 'relative',
                 display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
               }}
             >
+              {/* Edit/customize badge */}
+              <button
+                onClick={(e) => { e.stopPropagation(); setEditTemplate(t); setShowBuilder(true); }}
+                title={`Customize ${t.name}`}
+                style={{
+                  position: 'absolute', top: 3, right: 3, zIndex: 2,
+                  width: 20, height: 20, borderRadius: '50%',
+                  background: 'rgba(0,0,0,0.6)', color: 'var(--text-muted)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '10px', cursor: 'pointer', border: 'none',
+                }}
+              >&#9998;</button>
               {/* Mini color preview */}
-              <div style={{
+              <div
+                onClick={() => onSelect(t.id)}
+                onMouseEnter={() => onHover?.(t.id)}
+                onMouseLeave={() => onHover?.(null)}
+                style={{
                 width: '100%', height: 60, borderRadius: 4, overflow: 'hidden',
                 background: t.background,
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
@@ -116,7 +129,9 @@ export default function TitleTemplatePicker({ selected, onSelect, onHover }: Pro
                   border: t.featuredBorder > 0 ? `1px solid ${t.featuredBorderColor}` : 'none',
                 }} />
               </div>
-              <span style={{
+              <span
+                onClick={() => onSelect(t.id)}
+                style={{
                 fontSize: 'var(--fs-3xs)', fontWeight: 600,
                 color: isActive ? t.accent : 'var(--text-secondary)',
                 overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
@@ -124,7 +139,7 @@ export default function TitleTemplatePicker({ selected, onSelect, onHover }: Pro
               }}>
                 {t.name}
               </span>
-            </button>
+            </div>
           );
         })}
       </div>
