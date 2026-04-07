@@ -217,37 +217,7 @@ export default function NashvilleReleases({ onImport }: Props) {
     </select>
   ) : null;
 
-  const showcaseDesktopPills = showcases.length > 0 ? (
-    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
-      <button
-        onClick={() => setActiveShowcase(null)}
-        className={`filter-pill ${!activeShowcase ? 'active' : ''}`}
-        style={{ fontSize: 'var(--fs-xs)', padding: '4px 10px' }}
-      >
-        All Nashville
-      </button>
-      {showcases.map(s => (
-        <button
-          key={s.id}
-          onClick={() => setActiveShowcase(activeShowcase === s.id ? null : s.id)}
-          className={`filter-pill ${activeShowcase === s.id ? 'active' : ''}`}
-          style={{ fontSize: 'var(--fs-xs)', padding: '4px 10px' }}
-          title={`${s.count} ${s.count === 1 ? 'artist' : 'artists'}`}
-        >
-          {s.emoji} {s.name}
-        </button>
-      ))}
-    </div>
-  ) : null;
-
-  const showcasePills = (
-    <>
-      {/* Mobile: dropdown */}
-      <div className="mobile-only">{showcaseDropdown}</div>
-      {/* Desktop: pills */}
-      <div className="desktop-only">{showcaseDesktopPills}</div>
-    </>
-  );
+  const showcasePills = showcaseDropdown;
 
   if (!loading && releases.length === 0 && !error) {
     return (
