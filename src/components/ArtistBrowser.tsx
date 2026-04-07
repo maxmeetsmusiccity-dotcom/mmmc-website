@@ -128,14 +128,6 @@ export default function ArtistBrowser({ onScanArtists, scanning }: Props) {
     });
   };
 
-  // Weekly release count per showcase
-  const showcaseWeeklyCount = activeShowcase && showcaseArtists.size > 0
-    ? releases.filter(r => {
-        const primary = (r.artist_name || '').split(/,|feat\.|ft\./i)[0].trim().toLowerCase();
-        return showcaseArtists.has(primary);
-      }).length
-    : null;
-
   return (
     <div>
       {/* Search */}
@@ -162,11 +154,9 @@ export default function ArtistBrowser({ onScanArtists, scanning }: Props) {
             fontFamily: 'var(--font-mono)', cursor: 'pointer',
           }}
         >
-          <option value="">All Nashville ({releases.length} releases this week)</option>
+          <option value="">All Nashville ({artistGroups.length} artists this week)</option>
           {showcases.map(s => (
-            <option key={s.id} value={s.id}>
-              {s.emoji} {s.name}{s.id === activeShowcase && showcaseWeeklyCount !== null ? ` (${showcaseWeeklyCount} releases)` : ''}
-            </option>
+            <option key={s.id} value={s.id}>{s.emoji} {s.name}</option>
           ))}
         </select>
       )}

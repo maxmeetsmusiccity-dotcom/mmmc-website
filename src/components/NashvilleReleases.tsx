@@ -159,6 +159,14 @@ export default function NashvilleReleases({ onImport }: Props) {
     return list;
   })();
 
+  // Count releases (unique albums) vs tracks (individual songs)
+  const countStats = (items: NashvilleRelease[]) => {
+    const albumIds = new Set(items.map(r => r.spotify_album_id || `${r.artist_name}_${r.album_name}`));
+    return { releases: albumIds.size, tracks: items.length };
+  };
+  const allStats = countStats(releases);
+  const filteredStats = countStats(filtered);
+
   // Group by album for expandable view
   const grouped = (() => {
     const map = new Map<string, NashvilleRelease[]>();
@@ -198,21 +206,6 @@ export default function NashvilleReleases({ onImport }: Props) {
     onImport(releasesToTrackItems(toImport));
   };
 
-  // Compute weekly release counts per showcase (how many releases this week, not total artists)
-  const showcaseWeeklyCounts = new Map<string, number>();
-  for (const s of showcases) {
-    // We need the showcase artist names to count matches. If we've already fetched them for
-    // the active showcase, use that. Otherwise just show the releases.length for "All".
-    // For non-active showcases, we don't have the artist list yet — leave count blank.
-    if (s.id === activeShowcase && showcaseArtists.size > 0) {
-      const count = releases.filter(r => {
-        const primary = (r.artist_name || '').split(/,|feat\.|ft\./i)[0].trim().toLowerCase();
-        return showcaseArtists.has(primary);
-      }).length;
-      showcaseWeeklyCounts.set(s.id, count);
-    }
-  }
-
   // Showcase filter dropdown
   const showcaseDropdown = showcases.length > 0 ? (
     <select
@@ -225,15 +218,10 @@ export default function NashvilleReleases({ onImport }: Props) {
         width: '100%', marginBottom: 12,
       }}
     >
-      <option value="">All Nashville ({releases.length} releases)</option>
-      {showcases.map(s => {
-        const weeklyCount = showcaseWeeklyCounts.get(s.id);
-        return (
-          <option key={s.id} value={s.id}>
-            {s.emoji} {s.name}{weeklyCount !== undefined ? ` (${weeklyCount} releases)` : ''}
-          </option>
-        );
-      })}
+      <option value="">All Nashville ({allStats.releases} releases, {allStats.tracks} tracks)</option>
+      {showcases.map(s => (
+        <option key={s.id} value={s.id}>{s.emoji} {s.name}</option>
+      ))}
     </select>
   ) : null;
 
@@ -317,7 +305,7 @@ export default function NashvilleReleases({ onImport }: Props) {
               opacity: filtered.length === 0 ? 0.4 : 1,
             }}
           >
-            Import {selected.size > 0 ? selected.size : filtered.length} {(selected.size > 0 ? selected.size : filtered.length) === 1 ? 'release' : 'releases'}
+            Import {selected.size > 0 ? `${selected.size} tracks` : `${filteredStats.releases} releases`}
           </button>
         </div>
       </div>
@@ -325,21 +313,15 @@ export default function NashvilleReleases({ onImport }: Props) {
       {/* Showcase filter pills */}
       {showcasePills}
       {loadingShowcase && (
-        <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)', marginBottom: 8 }}>Loading showcase artists...</p>
-      )}
-      {activeShowcase && !loadingShowcase && showcaseArtists.size > 0 && (
-        <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)', marginBottom: 8 }}>
-          Showing releases from {showcaseArtists.size} {showcases.find(s => s.id === activeShowcase)?.name} {showcaseArtists.size === 1 ? 'artist' : 'artists'}
-          {filtered.length > 0 && <> &middot; {filtered.length} {filtered.length === 1 ? 'release' : 'releases'} this week</>}
-        </p>
+        <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)', marginBottom: 8 }}>Loading...</p>
       )}
 
-      {/* Release count */}
+      {/* Release/track count */}
       {releases.length > 0 && (
         <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)', marginBottom: 12 }}>
-          {filtered.length === releases.length
-            ? `${releases.length} releases`
-            : `${filtered.length} of ${releases.length} releases`}
+          {activeShowcase
+            ? `${filteredStats.releases} releases (${filteredStats.tracks} tracks)`
+            : `${allStats.releases} releases (${allStats.tracks} tracks)`}
         </div>
       )}
 

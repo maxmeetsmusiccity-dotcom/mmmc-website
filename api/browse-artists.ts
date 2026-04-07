@@ -63,17 +63,10 @@ async function fetchBrowseData(): Promise<BrowseData | null> {
 
   try {
     const apiToken = await generateApiToken();
-    const url = `${ND_API_BASE}/api/r2?key=browse_artists.json`;
-    console.log('[browse-artists] Fetching R2 via Workers:', url.slice(0, 60) + '...');
-    const res = await fetch(url, {
+    const res = await fetch(`${ND_API_BASE}/api/r2?key=browse_artists.json`, {
       headers: { 'Content-Type': 'application/json', 'X-ND-Token': apiToken },
     });
-    console.log('[browse-artists] Workers response:', res.status, res.statusText);
-    if (!res.ok) {
-      const body = await res.text().catch(() => '');
-      console.error('[browse-artists] Workers error body:', body.slice(0, 200));
-      return null;
-    }
+    if (!res.ok) return null;
     _cachedData = await res.json() as BrowseData;
     _cacheTime = Date.now();
     return _cachedData;
