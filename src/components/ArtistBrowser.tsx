@@ -154,7 +154,7 @@ export default function ArtistBrowser({ onScanArtists, scanning }: Props) {
             fontFamily: 'var(--font-mono)', cursor: 'pointer',
           }}
         >
-          <option value="">All Nashville ({artistGroups.length} artists this week)</option>
+          <option value="">All Nashville ({artistGroups.length} artists, {(() => { const ids = new Set(releases.map(r => r.spotify_album_id || `${r.artist_name}_${r.album_name}`)); return ids.size; })()} releases, {releases.length} tracks)</option>
           {showcases.map(s => (
             <option key={s.id} value={s.id}>{s.emoji} {s.name}</option>
           ))}
@@ -198,7 +198,7 @@ export default function ArtistBrowser({ onScanArtists, scanning }: Props) {
       {artistGroups.length > 0 && (
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
           <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)' }}>
-            {artistGroups.length} artists with new music this week
+            {artistGroups.length} artists &middot; {(() => { const ids = new Set(filtered.map(r => r.spotify_album_id || `${r.artist_name}_${r.album_name}`)); return ids.size; })()} releases &middot; {filtered.length} tracks
           </span>
           <button onClick={() => { for (const g of artistGroups) selectedNames.add(g.name); setSelectedNames(new Set(selectedNames)); }}
             style={{ fontSize: 'var(--fs-2xs)', color: 'var(--steel)', cursor: 'pointer', background: 'none', border: 'none' }}>
