@@ -409,13 +409,13 @@ const CarouselPreviewPanel = forwardRef<CarouselPanelHandle, Props>(function Car
           </div>
 
           {/* Grid Slide Style Template */}
-          <div style={{ marginBottom: 20, overflow: 'hidden', maxWidth: '100%' }}>
+          <div style={{ marginBottom: 20, maxWidth: '100%' }}>
             <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginBottom: 8 }}>Grid Slide Style Template</p>
             <TemplateSelector selected={gridTemplateId} onSelect={handleGridTemplateChange} />
           </div>
 
           {/* Title Slide Template */}
-          <div style={{ marginBottom: 20, overflow: 'hidden', maxWidth: '100%' }}>
+          <div style={{ marginBottom: 20, maxWidth: '100%' }}>
             <div style={{ marginBottom: 4 }}>
               <TitleTemplatePicker
                 selected={titleTemplateId}

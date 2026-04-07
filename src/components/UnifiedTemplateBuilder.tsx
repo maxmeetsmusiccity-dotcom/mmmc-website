@@ -724,33 +724,37 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
     <div style={{
       position: 'fixed', inset: 0, zIndex: 500,
       background: 'rgba(0,0,0,0.94)',
-      display: 'flex',
       fontFamily: 'var(--font-body)',
+      overflowY: 'auto',
     }}>
+      {/* Shared header — always visible */}
+      <div style={{
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        padding: '12px 16px',
+        borderBottom: '1px solid var(--midnight-border)',
+        background: 'var(--midnight-raised)',
+        position: 'sticky', top: 0, zIndex: 10,
+      }}>
+        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-xl)', color: 'var(--gold)', margin: 0 }}>
+          {isGrid ? 'Grid Template' : 'Title Template'}
+        </h2>
+        <div style={{ display: 'flex', gap: 6 }}>
+          <button className="btn btn-sm desktop-only" onClick={handleExportJSON} title="Export template as JSON">Export</button>
+          <button className="btn btn-sm desktop-only" onClick={() => jsonImportRef.current?.click()} title="Import template from JSON">Import</button>
+          <input ref={jsonImportRef} type="file" accept=".json" onChange={handleImportJSON} style={{ display: 'none' }} />
+          <button className="btn btn-sm" onClick={onCancel} style={{ fontWeight: 600 }}>Close</button>
+          <button className="btn btn-sm btn-gold" onClick={() => onSave(buildTemplate())} style={{ fontWeight: 600 }}>Save</button>
+        </div>
+      </div>
+
+    {/* ============= DESKTOP: 3-column flex layout ============= */}
+    <div className="desktop-only" style={{ display: 'flex', height: 'calc(100vh - 52px)' }}>
       {/* ============= LEFT: Controls ============= */}
       <div style={{
         flex: 1, minWidth: 0,
         display: 'flex', flexDirection: 'column',
         borderRight: '1px solid var(--midnight-border)',
       }}>
-        {/* Header bar */}
-        <div style={{
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          padding: '16px 24px',
-          borderBottom: '1px solid var(--midnight-border)',
-          background: 'var(--midnight-raised)',
-          flexShrink: 0,
-        }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-2xl)', color: 'var(--gold)', margin: 0 }}>
-            {isGrid ? 'Grid Template Builder' : 'Title Template Builder'}
-          </h2>
-          <div style={{ display: 'flex', gap: 6 }}>
-            <button className="btn btn-sm" onClick={handleExportJSON} title="Export template as JSON">Export</button>
-            <button className="btn btn-sm" onClick={() => jsonImportRef.current?.click()} title="Import template from JSON">Import</button>
-            <input ref={jsonImportRef} type="file" accept=".json" onChange={handleImportJSON} style={{ display: 'none' }} />
-            <button className="btn btn-sm" onClick={onCancel}>Cancel</button>
-          </div>
-        </div>
 
         {/* Scrollable controls */}
         <div style={{
@@ -1348,6 +1352,110 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
           </div>
         </div>
       </div>
+    </div>{/* end desktop-only layout */}
+
+    {/* ============= MOBILE: stacked single-column ============= */}
+    <div className="mobile-only" style={{ padding: '16px' }}>
+      {/* Preview first on mobile */}
+      <div style={{ marginBottom: 16, textAlign: 'center' }}>
+        {previewUrl ? (
+          <img
+            src={previewUrl}
+            alt={`${isGrid ? 'Grid' : 'Title'} template preview`}
+            style={{ width: '100%', maxWidth: 400, borderRadius: 8, border: '1px solid var(--midnight-border)' }}
+          />
+        ) : (
+          <div style={{
+            width: '100%', maxWidth: 400, margin: '0 auto', aspectRatio: aspect === '3:4' ? '3/4' : '1',
+            borderRadius: 12, background: bg, border: '1px solid var(--midnight-border)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: accent, fontSize: 'var(--fs-md)',
+          }}>
+            Loading preview...
+          </div>
+        )}
+      </div>
+
+      {/* Aspect toggle */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16, justifyContent: 'center' }}>
+        <button className={`filter-pill ${aspect === '1:1' ? 'active' : ''}`} onClick={() => setAspect('1:1')}>1:1</button>
+        <button className={`filter-pill ${aspect === '3:4' ? 'active' : ''}`} onClick={() => setAspect('3:4')}>3:4</button>
+      </div>
+
+      {/* Base template selector */}
+      <div style={{ marginBottom: 16 }}>
+        <label style={labelStyle}>
+          Start from
+          <select value={baseTemplateId} onChange={e => { if (e.target.value) loadBaseTemplate(e.target.value); }} style={selectStyle}>
+            <option value="">Custom</option>
+            {isGrid
+              ? TEMPLATES.map(t => <option key={t.id} value={t.id}>{t.name}</option>)
+              : TITLE_TEMPLATES.map(t => <option key={t.id} value={t.id}>{t.name}</option>)
+            }
+          </select>
+        </label>
+      </div>
+
+      {/* Colors */}
+      <details open>
+        <summary style={sectionHeader}>Colors</summary>
+        <div style={sectionBody}>
+          <p style={fieldLabel}>Background</p>
+          <SwatchRow colors={PRESET_COLORS} selected={bg} onSelect={setBg} />
+          <p style={fieldLabel}>Accent</p>
+          <SwatchRow colors={ACCENT_COLORS} selected={accent} onSelect={setAccent} />
+          <div style={{ display: 'flex', gap: 10 }}>
+            <ColorField label="Text" value={textPrimary} onChange={setTextPrimary} />
+            <ColorField label="Secondary" value={textSecondary} onChange={setTextSecondary} />
+          </div>
+        </div>
+      </details>
+
+      {/* Typography (simplified for mobile) */}
+      <details>
+        <summary style={sectionHeader}>Typography</summary>
+        <div style={sectionBody}>
+          {isGrid ? (
+            <>
+              <FontSelect label="Header Font" value={scriptFont} onChange={setScriptFont} />
+              <FontSelect label="Body Font" value={bodyFont} onChange={setBodyFont} />
+              <Slider label="Header Size" value={headerFontSize} min={28} max={72} step={1} onChange={setHeaderFontSize} suffix="px" />
+            </>
+          ) : (
+            <>
+              <FontSelect label="Headline Font" value={headlineFont} onChange={setHeadlineFont} />
+              <FontSelect label="Date Font" value={dateFont} onChange={setDateFont} />
+              <Slider label="Headline Size" value={headlineSize} min={0.02} max={0.08} step={0.002} onChange={setHeadlineSize} />
+              <Slider label="Date Size" value={dateSize} min={0.02} max={0.06} step={0.002} onChange={setDateSize} />
+            </>
+          )}
+        </div>
+      </details>
+
+      {/* Effects (simplified) */}
+      <details>
+        <summary style={sectionHeader}>Effects</summary>
+        <div style={sectionBody}>
+          <Slider label="Glow" value={glowBlur} min={0} max={60} step={2} onChange={setGlowBlur} suffix="px" />
+          <Slider label="Grain" value={grainIntensity} min={0} max={0.5} step={0.01} onChange={setGrainIntensity} />
+          <Slider label="Vignette" value={vignetteIntensity} min={0} max={0.6} step={0.02} onChange={setVignetteIntensity} />
+        </div>
+      </details>
+
+      {/* Layout (title mode only) */}
+      {!isGrid && (
+        <details>
+          <summary style={sectionHeader}>Layout</summary>
+          <div style={sectionBody}>
+            <Slider label="Headline Y" value={headlineY} min={0.01} max={0.20} step={0.005} onChange={setHeadlineY} />
+            <Slider label="Date Y" value={dateY} min={0.70} max={0.98} step={0.005} onChange={setDateY} />
+            <Slider label="Album Art Y" value={featuredImageY} min={0.10} max={0.50} step={0.005} onChange={setFeaturedImageY} />
+            <Slider label="Album Art Size" value={featuredImageSize} min={0.20} max={0.65} step={0.01} onChange={setFeaturedImageSize} />
+          </div>
+        </details>
+      )}
+    </div>
+
     </div>
   );
 }

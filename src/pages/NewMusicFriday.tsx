@@ -1198,7 +1198,7 @@ export default function NewMusicFriday() {
 
             {/* ---- Mobile compact toolbar ---- */}
             <div className="mobile-only" style={{
-              display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', minHeight: 44,
+              display: 'flex', alignItems: 'center', gap: 6, padding: '8px 12px', minHeight: 44,
             }}>
               <span className="mono" style={{
                 fontSize: 'var(--fs-lg)', fontWeight: 700, flexShrink: 0,
@@ -1212,13 +1212,23 @@ export default function NewMusicFriday() {
                   onFilterChange={setFilter} onSortChange={setSort} onSearchChange={setSearch}
                 />
               </div>
+              {/* Cover artist indicator */}
+              {(() => {
+                const cover = selections.find(s => s.isCoverFeature);
+                return cover ? (
+                  <span style={{ fontSize: 'var(--fs-2xs)', color: 'var(--gold)', fontWeight: 600, flexShrink: 0, maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    &#9733; {(cover.track.artist_names || '').split(/,/)[0]}
+                  </span>
+                ) : null;
+              })()}
+              {/* Generate button */}
               <button
                 className="btn btn-sm btn-gold"
                 disabled={selections.length === 0 || generating}
                 onClick={() => carouselRef.current?.generate()}
-                style={{ fontSize: 'var(--fs-2xs)', padding: '4px 10px', fontWeight: 700, flexShrink: 0 }}
+                style={{ fontSize: 'var(--fs-2xs)', padding: '4px 8px', fontWeight: 700, flexShrink: 0, whiteSpace: 'nowrap' }}
               >
-                {generating ? '...' : '\u2605'}
+                {generating ? '...' : 'Generate'}
               </button>
               <button
                 onClick={() => setShowToolsSheet(true)}
