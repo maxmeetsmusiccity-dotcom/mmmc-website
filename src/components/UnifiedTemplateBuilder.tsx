@@ -263,6 +263,15 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
   const [rendering, setRendering] = useState(false);
   const previewTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
+  /* ---------- undo/redo ---------- */
+  const undoStack = useRef<EditorElement[][]>([]);
+  const redoStack = useRef<EditorElement[][]>([]);
+  const pushUndo = useCallback((elements: EditorElement[]) => {
+    undoStack.current.push(JSON.parse(JSON.stringify(elements)));
+    if (undoStack.current.length > 30) undoStack.current.shift();
+    redoStack.current = []; // clear redo on new action
+  }, []);
+
   /* ---------- canvas overlay + layers ---------- */
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
   const previewContainerRef = useRef<HTMLDivElement>(null);
@@ -438,18 +447,21 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
   }, [editorElements]);
 
   const handleAddText = useCallback(() => {
+    pushUndo(customElements);
     const el = createCustomText();
     setCustomElements(prev => [...prev, el]);
     setSelectedElementId(el.id);
   }, []);
 
   const handleAddImage = useCallback(() => {
+    pushUndo(customElements);
     const el = createCustomImage();
     setCustomElements(prev => [...prev, el]);
     setSelectedElementId(el.id);
   }, []);
 
   const handleAddShape = useCallback((kind: ShapeKind) => {
+    pushUndo(customElements);
     const el = createCustomShape(kind);
     setCustomElements(prev => [...prev, el]);
     setSelectedElementId(el.id);
@@ -632,15 +644,27 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
         onSave(buildTemplate());
       }
       if (e.key === 'Escape') onCancel();
+      // Undo: Cmd+Z
+      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key === 'z') {
+        e.preventDefault();
+        const prev = undoStack.current.pop();
+        if (prev) { redoStack.current.push(JSON.parse(JSON.stringify(customElements))); setCustomElements(prev); }
+      }
+      // Redo: Cmd+Shift+Z
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'z') {
+        e.preventDefault();
+        const next = redoStack.current.pop();
+        if (next) { undoStack.current.push(JSON.parse(JSON.stringify(customElements))); setCustomElements(next); }
+      }
       // Delete/Backspace removes selected custom element
       if ((e.key === 'Delete' || e.key === 'Backspace') && selectedElementId) {
         const el = customElements.find(ce => ce.id === selectedElementId);
-        if (el) { e.preventDefault(); handleDeleteElement(selectedElementId); }
+        if (el) { e.preventDefault(); pushUndo(customElements); handleDeleteElement(selectedElementId); }
       }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [buildTemplate, onSave, onCancel, selectedElementId, customElements, handleDeleteElement]);
+  }, [buildTemplate, onSave, onCancel, selectedElementId, customElements, handleDeleteElement, pushUndo]);
 
   /* ================================================================ */
   /*  JSON import / export (grid mode)                                 */
