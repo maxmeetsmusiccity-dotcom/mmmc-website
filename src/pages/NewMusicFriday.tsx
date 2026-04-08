@@ -243,6 +243,20 @@ export default function NewMusicFriday() {
     }
   }, [searchParams, setSearchParams]);
 
+  // Pre-authorize MusicKit for Apple-signed-in users so scan doesn't need a second login
+  useEffect(() => {
+    if (user?.app_metadata?.provider !== 'apple') return;
+    (async () => {
+      try {
+        const { authorizeAppleMusic } = await import('../lib/sources/apple-music');
+        await authorizeAppleMusic();
+        console.log('[AM] Pre-authorized MusicKit for Apple user');
+      } catch {
+        // User may decline or popup may be blocked — that's OK, scan button will retry
+      }
+    })();
+  }, [user?.app_metadata?.provider]);
+
   // On mount: try to load cached results. Guests see empty state.
   useEffect(() => {
     // Guests/admin-bypass: no cached data, start fresh
