@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import type { CarouselTemplate } from '../lib/carousel-templates';
-import { TEMPLATES } from '../lib/carousel-templates';
+import { TEMPLATES, registerTempTemplate, clearTempTemplate } from '../lib/carousel-templates';
 import type { TitleSlideTemplate } from '../lib/title-templates';
 import { getTitleTemplate, TITLE_TEMPLATES } from '../lib/title-templates';
 import { generateTemplatePreview, generateTitleSlide, generateGridSlide, type CarouselAspect } from '../lib/canvas-grid';
@@ -34,12 +34,43 @@ interface Props {
 /* ------------------------------------------------------------------ */
 
 const FONT_OPTIONS = [
-  { label: 'Dancing Script', value: '"Dancing Script", cursive' },
-  { label: 'Playfair Display', value: '"Playfair Display", "Georgia", serif' },
-  { label: 'DM Sans', value: '"DM Sans", sans-serif' },
-  { label: 'Source Serif', value: '"Source Serif 4", Georgia, serif' },
-  { label: 'DM Mono', value: '"DM Mono", "Courier New", monospace' },
-  { label: 'System', value: 'system-ui, sans-serif' },
+  // Sans-serif
+  { label: 'DM Sans', value: '"DM Sans", sans-serif', cat: 'sans' },
+  { label: 'Inter', value: '"Inter", sans-serif', cat: 'sans' },
+  { label: 'Montserrat', value: '"Montserrat", sans-serif', cat: 'sans' },
+  { label: 'Poppins', value: '"Poppins", sans-serif', cat: 'sans' },
+  { label: 'Raleway', value: '"Raleway", sans-serif', cat: 'sans' },
+  { label: 'Space Grotesk', value: '"Space Grotesk", sans-serif', cat: 'sans' },
+  { label: 'Oswald', value: '"Oswald", sans-serif', cat: 'sans' },
+  { label: 'Roboto Condensed', value: '"Roboto Condensed", sans-serif', cat: 'sans' },
+  { label: 'Barlow Condensed', value: '"Barlow Condensed", sans-serif', cat: 'sans' },
+  // Serif
+  { label: 'Playfair Display', value: '"Playfair Display", Georgia, serif', cat: 'serif' },
+  { label: 'Source Serif', value: '"Source Serif 4", Georgia, serif', cat: 'serif' },
+  { label: 'Lora', value: '"Lora", serif', cat: 'serif' },
+  { label: 'Merriweather', value: '"Merriweather", serif', cat: 'serif' },
+  { label: 'Roboto Slab', value: '"Roboto Slab", serif', cat: 'serif' },
+  { label: 'Cormorant Garamond', value: '"Cormorant Garamond", serif', cat: 'serif' },
+  { label: 'Cinzel', value: '"Cinzel", serif', cat: 'serif' },
+  // Display
+  { label: 'Bebas Neue', value: '"Bebas Neue", sans-serif', cat: 'display' },
+  { label: 'Abril Fatface', value: '"Abril Fatface", serif', cat: 'display' },
+  { label: 'Alfa Slab One', value: '"Alfa Slab One", serif', cat: 'display' },
+  { label: 'Anton', value: '"Anton", sans-serif', cat: 'display' },
+  { label: 'Archivo Black', value: '"Archivo Black", sans-serif', cat: 'display' },
+  { label: 'Righteous', value: '"Righteous", sans-serif', cat: 'display' },
+  { label: 'Permanent Marker', value: '"Permanent Marker", cursive', cat: 'display' },
+  // Handwriting / Script
+  { label: 'Dancing Script', value: '"Dancing Script", cursive', cat: 'script' },
+  { label: 'Caveat', value: '"Caveat", cursive', cat: 'script' },
+  { label: 'Great Vibes', value: '"Great Vibes", cursive', cat: 'script' },
+  { label: 'Satisfy', value: '"Satisfy", cursive', cat: 'script' },
+  { label: 'Pacifico', value: '"Pacifico", cursive', cat: 'script' },
+  // Mono
+  { label: 'JetBrains Mono', value: '"JetBrains Mono", monospace', cat: 'mono' },
+  { label: 'DM Mono', value: '"DM Mono", "Courier New", monospace', cat: 'mono' },
+  // System
+  { label: 'System', value: 'system-ui, sans-serif', cat: 'sans' },
 ];
 
 const PRESET_COLORS = [
@@ -139,23 +170,35 @@ function FontSelect({ label, value, onChange }: { label: string; value: string; 
         <div style={{
           position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 20,
           background: 'var(--midnight-raised)', border: '1px solid var(--midnight-border)',
-          borderRadius: 6, maxHeight: 200, overflowY: 'auto',
+          borderRadius: 6, maxHeight: 320, overflowY: 'auto',
           boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
         }}>
-          {FONT_OPTIONS.map(f => (
-            <button key={f.value}
-              onClick={() => { onChange(f.value); setOpen(false); }}
-              style={{
-                display: 'block', width: '100%', textAlign: 'left', padding: '8px 12px',
-                background: f.value === value ? 'var(--midnight-hover)' : 'transparent',
-                border: 'none', cursor: 'pointer',
-                fontFamily: f.value, fontSize: 'var(--fs-md)',
-                color: f.value === value ? 'var(--gold)' : 'var(--text-primary)',
-              }}
-            >
-              {f.label}
-            </button>
-          ))}
+          {(['sans', 'serif', 'display', 'script', 'mono'] as const).map(cat => {
+            const fonts = FONT_OPTIONS.filter(f => f.cat === cat);
+            if (fonts.length === 0) return null;
+            const catLabel = { sans: 'Sans-Serif', serif: 'Serif', display: 'Display', script: 'Script', mono: 'Monospace' }[cat];
+            return (
+              <div key={cat}>
+                <div style={{ padding: '6px 12px 2px', fontSize: 'var(--fs-3xs)', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>
+                  {catLabel}
+                </div>
+                {fonts.map(f => (
+                  <button key={f.value}
+                    onClick={() => { onChange(f.value); setOpen(false); }}
+                    style={{
+                      display: 'block', width: '100%', textAlign: 'left', padding: '6px 12px',
+                      background: f.value === value ? 'var(--midnight-hover)' : 'transparent',
+                      border: 'none', cursor: 'pointer',
+                      fontFamily: f.value, fontSize: 'var(--fs-md)',
+                      color: f.value === value ? 'var(--gold)' : 'var(--text-primary)',
+                    }}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+            );
+          })}
         </div>
       )}
     </label>
@@ -613,6 +656,9 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
     }
   }, [isGrid]);
 
+  // Clean up temp template on unmount
+  useEffect(() => () => clearTempTemplate(), []);
+
   /* ================================================================ */
   /*  Debounced live preview (300ms)                                   */
   /* ================================================================ */
@@ -621,6 +667,9 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
     clearTimeout(previewTimer.current);
     previewTimer.current = setTimeout(async () => {
       if (isGrid) {
+        const tpl = buildGridTemplate();
+        // Register so generateGridSlide can find it by ID
+        registerTempTemplate(tpl);
         if (selectedTracks && selectedTracks.length > 0) {
           // Use real album art when tracks are available
           setRendering(true);
@@ -630,18 +679,17 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
             positionInSlide: i + 1, isCoverFeature: false,
           })));
           const wd = weekDate || new Date().toISOString().split('T')[0];
-          generateGridSlide(slots, wd, buildGridTemplate().id || 'mmmc_classic', logoUrl || '/mmmc-logo.png', gridLayoutId, aspect)
+          generateGridSlide(slots, wd, tpl.id, logoUrl || '/mmmc-logo.png', gridLayoutId, aspect)
             .then(blob => {
               const url = URL.createObjectURL(blob);
               setPreviewUrl(prev => { if (prev?.startsWith('blob:')) URL.revokeObjectURL(prev); return url; });
             })
             .catch(() => {
-              // Fallback to placeholder
-              setPreviewUrl(generateTemplatePreview(buildGridTemplate(), 600));
+              setPreviewUrl(generateTemplatePreview(tpl, 600));
             })
             .finally(() => setRendering(false));
         } else {
-          setPreviewUrl(generateTemplatePreview(buildGridTemplate(), 600));
+          setPreviewUrl(generateTemplatePreview(tpl, 600));
         }
       } else {
         // Title mode: render live preview with current template settings

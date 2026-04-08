@@ -376,7 +376,13 @@ export const MAX_ONLY_TEMPLATES = new Set(['mmmc_classic', 'neon_rose', 'golden_
 let _customTemplateRegistry: CarouselTemplate[] = [];
 export function registerCustomTemplates(templates: CarouselTemplate[]) { _customTemplateRegistry = templates; }
 
+/** Register a single ephemeral template for live preview (overwritten on each call) */
+let _tempTemplate: CarouselTemplate | null = null;
+export function registerTempTemplate(t: CarouselTemplate) { _tempTemplate = t; }
+export function clearTempTemplate() { _tempTemplate = null; }
+
 export function getTemplate(id: string): CarouselTemplate {
+  if (_tempTemplate && _tempTemplate.id === id) return _tempTemplate;
   return TEMPLATES.find(t => t.id === id) || _customTemplateRegistry.find(t => t.id === id) || TEMPLATES[0];
 }
 
