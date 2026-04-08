@@ -36,7 +36,7 @@ export const SOURCES: MusicSource[] = [
   },
   {
     id: 'manual',
-    name: 'Artist List',
+    name: 'Manual',
     icon: '📋',
     description: 'Paste names or import CSV',
     requiresAuth: false,
