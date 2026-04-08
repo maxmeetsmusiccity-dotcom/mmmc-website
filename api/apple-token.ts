@@ -3,7 +3,7 @@ import { SignJWT, importPKCS8 } from 'jose';
 import { createClient } from '@supabase/supabase-js';
 
 const TEAM_ID = 'G46PBQ4ZQL';
-const KEY_ID = 'H8V2P37FRA';
+const KEY_ID = 'P4CJV5BNMH';
 const TOKEN_TTL = 60 * 60 * 12; // 12 hours
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
