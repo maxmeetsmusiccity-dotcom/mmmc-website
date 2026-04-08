@@ -228,8 +228,8 @@ export default function NashvilleReleases({ onImport }: Props) {
     return artists;
   })();
 
-  // For backward compat, keep grouped as flat album list
-  const grouped = albumGroups;
+  // Flat album list used by selectAll
+  void albumGroups; // referenced by artistGroups
 
   // Selected items with track names for the persistence bar
   const selectedItems = (() => {
@@ -349,18 +349,6 @@ export default function NashvilleReleases({ onImport }: Props) {
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={selectAll} style={{ fontSize: 'var(--fs-sm)', color: 'var(--steel)', cursor: 'pointer', background: 'none', border: 'none', fontWeight: 600 }}>
             Select All
-          </button>
-          <button onClick={() => {
-            // Auto-select one track per release (title tracks), up to 8
-            const picks = new Set<string>();
-            for (const g of grouped) {
-              if (picks.size >= 8) break;
-              picks.add(g.tracks[0].spotify_track_id);
-            }
-            setSelected(picks);
-          }} style={{ fontSize: 'var(--fs-sm)', color: 'var(--gold)', cursor: 'pointer', background: 'none', border: 'none', fontWeight: 600 }}
-          title="Auto-select the first track from each release (up to 8)">
-            Best 8
           </button>
           {selected.size > 0 && (
             <button onClick={() => setSelected(new Set())} style={{ fontSize: 'var(--fs-sm)', color: 'var(--mmmc-red)', cursor: 'pointer', background: 'none', border: 'none', fontWeight: 600 }}>

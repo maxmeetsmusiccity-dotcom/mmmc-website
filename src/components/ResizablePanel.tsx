@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect, type ReactNode } from 'react';
 
 const STORAGE_KEY = 'nmf_panel_ratio';
-const DEFAULT_RATIO = 0.35;
+const DEFAULT_RATIO = 0.5;
 const MIN_LEFT = 280;
 const MIN_RIGHT = 300;
 
@@ -130,32 +130,32 @@ export default function ResizablePanel({ left, right }: Props) {
         </div>
       </div>
 
-      {/* Divider */}
+      {/* Divider — thick, clearly draggable */}
       <div
         onMouseDown={handleMouseDown}
         onTouchStart={handleTouchStart}
         style={{
-          width: 4,
+          width: 12,
           flexShrink: 0,
           cursor: 'col-resize',
           background: 'var(--midnight-border)',
-          borderRadius: 2,
+          borderRadius: 6,
           transition: 'background 0.15s',
           position: 'relative',
         }}
         onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'var(--gold-dark)'; }}
         onMouseLeave={e => { if (!dragging.current) (e.currentTarget as HTMLDivElement).style.background = 'var(--midnight-border)'; }}
       >
-        {/* Grab indicator dots */}
+        {/* Grab indicator dots — larger and more visible */}
         <div style={{
           position: 'absolute', top: '50%', left: '50%',
           transform: 'translate(-50%, -50%)',
-          display: 'flex', flexDirection: 'column', gap: 3,
+          display: 'flex', flexDirection: 'column', gap: 5,
         }}>
-          {[0, 1, 2].map(i => (
+          {[0, 1, 2, 3, 4].map(i => (
             <div key={i} style={{
-              width: 2, height: 2, borderRadius: '50%',
-              background: 'var(--text-muted)',
+              width: 4, height: 4, borderRadius: '50%',
+              background: 'var(--text-secondary)',
             }} />
           ))}
         </div>
