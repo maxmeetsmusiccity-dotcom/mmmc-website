@@ -34,6 +34,12 @@ export default function NashvilleReleases({ onImport }: Props) {
   const [sortBy, setSortBy] = useState<'artist' | 'date' | 'title'>('artist');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
+  // Search
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // View mode: list or grid tiles
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+
   // Coming Soon toggle — shows future-dated releases
   const [showComingSoon, setShowComingSoon] = useState(false);
 
@@ -174,7 +180,7 @@ export default function NashvilleReleases({ onImport }: Props) {
   const currentReleases = releases.filter(r => (r.release_date || '') <= today);
   const comingSoonReleases = releases.filter(r => (r.release_date || '') > today);
 
-  // Apply showcase filter to the active set
+  // Apply showcase + search filters to the active set
   const filtered = (() => {
     let list = showComingSoon ? comingSoonReleases : currentReleases;
     if (activeShowcase && showcaseArtists.size > 0) {
@@ -182,6 +188,14 @@ export default function NashvilleReleases({ onImport }: Props) {
         const primary = (r.artist_name || '').split(/,|feat\.|ft\./i)[0].trim().toLowerCase();
         return showcaseArtists.has(primary);
       });
+    }
+    if (searchQuery.length >= 2) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(r =>
+        r.artist_name.toLowerCase().includes(q) ||
+        r.track_name.toLowerCase().includes(q) ||
+        r.album_name.toLowerCase().includes(q)
+      );
     }
     return list;
   })();
@@ -409,6 +423,42 @@ export default function NashvilleReleases({ onImport }: Props) {
         </div>
       )}
 
+      {/* Search + View toggle */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 10, alignItems: 'center' }}>
+        <input
+          type="text"
+          className="search-input"
+          placeholder="Search artists, tracks, albums..."
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          style={{ flex: 1, fontSize: 'var(--fs-sm)', padding: '8px 12px', minWidth: 0 }}
+        />
+        <div style={{ display: 'flex', gap: 2, flexShrink: 0 }}>
+          <button
+            onClick={() => setViewMode('list')}
+            title="List view"
+            style={{
+              padding: '6px 10px', borderRadius: '6px 0 0 6px', cursor: 'pointer',
+              background: viewMode === 'list' ? 'var(--midnight-hover)' : 'var(--midnight)',
+              border: viewMode === 'list' ? '1px solid var(--gold)' : '1px solid var(--midnight-border)',
+              color: viewMode === 'list' ? 'var(--gold)' : 'var(--text-muted)',
+              fontSize: 'var(--fs-sm)',
+            }}
+          >☰</button>
+          <button
+            onClick={() => setViewMode('grid')}
+            title="Grid view"
+            style={{
+              padding: '6px 10px', borderRadius: '0 6px 6px 0', cursor: 'pointer',
+              background: viewMode === 'grid' ? 'var(--midnight-hover)' : 'var(--midnight)',
+              border: viewMode === 'grid' ? '1px solid var(--gold)' : '1px solid var(--midnight-border)',
+              color: viewMode === 'grid' ? 'var(--gold)' : 'var(--text-muted)',
+              fontSize: 'var(--fs-sm)',
+            }}
+          >⊞</button>
+        </div>
+      </div>
+
       {/* View toggle: This Week / Coming Soon */}
       {comingSoonReleases.length > 0 && (
         <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
@@ -460,9 +510,46 @@ export default function NashvilleReleases({ onImport }: Props) {
         </div>
       )}
 
-      {/* Release list — grouped by artist → release → tracks */}
+      {/* Release list / grid — grouped by artist → release → tracks */}
       <div style={{ maxHeight: 600, overflowY: 'auto' }}>
-        {artistGroups.map(artist => (
+        {viewMode === 'grid' ? (
+          /* ── Grid tile view ── */
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 10 }}>
+            {albumGroups.map(g => {
+              const isSingle = g.tracks.length === 1;
+              const titleTrack = g.tracks[0];
+              const isSelected = g.tracks.some(t => selected.has(t.spotify_track_id));
+              return (
+                <div key={g.key}
+                  onClick={() => {
+                    if (isSingle) toggleSelect(titleTrack.spotify_track_id);
+                    else { setExpanded(prev => { const n = new Set(prev); if (n.has(g.key)) n.delete(g.key); else n.add(g.key); return n; }); }
+                  }}
+                  style={{
+                    borderRadius: 8, overflow: 'hidden', cursor: 'pointer',
+                    border: isSelected ? '2px solid var(--gold)' : '2px solid transparent',
+                    background: isSelected ? 'rgba(212,168,67,0.06)' : 'var(--midnight)',
+                  }}>
+                  <img src={g.cover || ''} alt=""
+                    style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', display: 'block' }}
+                    onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                  <div style={{ padding: '6px 8px' }}>
+                    <div style={{ fontSize: 'var(--fs-sm)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      color: isSelected ? 'var(--gold)' : 'var(--text-primary)' }}>
+                      {isSingle ? titleTrack.track_name : g.album}
+                    </div>
+                    <div style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {g.artist}
+                      {!isSingle && ` · ${g.tracks.length} tracks`}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          /* ── List view (grouped by artist) ── */
+          artistGroups.map(artist => (
           <div key={artist.name} style={{ marginBottom: 12 }}>
             {/* Artist header */}
             <div style={{
@@ -501,7 +588,6 @@ export default function NashvilleReleases({ onImport }: Props) {
                   if (isSingle) {
                     toggleSelect(titleTrack.spotify_track_id);
                   } else {
-                    // Expand to show track picker — let user choose which track
                     setExpanded(prev => {
                       const next = new Set(prev);
                       if (next.has(g.key)) next.delete(g.key); else next.add(g.key);
@@ -579,7 +665,8 @@ export default function NashvilleReleases({ onImport }: Props) {
           );
         })}
           </div>
-        ))}
+        ))
+        )}
       </div>
 
       {generatedAt && (
