@@ -567,7 +567,17 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
         setFeaturedRotation(patch.rotation);
       }
     }
-  }, [isGrid, customElements]);
+    // Grid-derived elements: store overrides as custom elements so drag persists
+    if (isGrid && !customElements.some(el => el.id === id)) {
+      // Find the template element and clone it with the patch as a custom override
+      const templateEls = gridTemplateToElements(buildGridTemplate());
+      const base = templateEls.find(el => el.id === id);
+      if (base) {
+        setCustomElements(prev => [...prev, { ...base, ...patch, locked: false }]);
+        return;
+      }
+    }
+  }, [isGrid, customElements, buildGridTemplate]);
 
   // Measure preview image for overlay sizing
   useEffect(() => {

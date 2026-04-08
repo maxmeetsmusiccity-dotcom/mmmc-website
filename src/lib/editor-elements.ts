@@ -234,7 +234,7 @@ export function gridTemplateToElements(gt: CarouselTemplate): EditorElement[] {
       type: 'decoration',
       label: 'Track Grid',
       visible: true,
-      locked: true,
+      locked: false,
       x: 0.5, y: 0.55, width: 0.9, height: 0.75, rotation: 0,
       props: {
         gap: gt.grid.gap,
