@@ -471,7 +471,7 @@ const CarouselPreviewPanel = forwardRef<CarouselPanelHandle, Props>(function Car
                 alt="Grid slide preview"
                 onClick={() => setEditingPreview(editingPreview === 'grid' ? null : 'grid')}
                 style={{
-                  width: '100%', borderRadius: 8, cursor: 'pointer',
+                  width: '75%', maxWidth: 400, borderRadius: 8, cursor: 'pointer', display: 'block', margin: '0 auto',
                   border: editingPreview === 'grid' ? '2px solid var(--gold)' : '1px solid var(--midnight-border)',
                   aspectRatio: carouselAspect === '3:4' ? '3/4' : '1',
                 }}
@@ -521,7 +521,7 @@ const CarouselPreviewPanel = forwardRef<CarouselPanelHandle, Props>(function Car
                   alt="Title slide preview"
                   onClick={() => setEditingPreview(editingPreview === 'title' ? null : 'title')}
                   style={{
-                    width: '100%', borderRadius: 8, cursor: 'pointer',
+                    width: '75%', maxWidth: 400, borderRadius: 8, cursor: 'pointer', display: 'block', margin: '0 auto',
                     border: editingPreview === 'title' ? '2px solid var(--gold)' : '1px solid var(--midnight-border)',
                     aspectRatio: carouselAspect === '3:4' ? '3/4' : '1',
                   }}

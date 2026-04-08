@@ -785,7 +785,7 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 500,
-      background: 'rgba(0,0,0,0.94)',
+      background: 'var(--midnight)',
       fontFamily: 'var(--font-body)',
       overflowY: 'auto',
     }}>
@@ -797,9 +797,14 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
         background: 'var(--midnight-raised)',
         position: 'sticky', top: 0, zIndex: 10,
       }}>
-        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-xl)', color: 'var(--gold)', margin: 0 }}>
-          {isGrid ? 'Grid Template' : 'Title Template'}
-        </h2>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <button onClick={onCancel}
+            style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 18, padding: '0 4px' }}
+            aria-label="Go back">&larr;</button>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-xl)', color: 'var(--gold)', margin: 0 }}>
+            {isGrid ? 'Grid Template' : 'Title Template'}
+          </h2>
+        </div>
         <div style={{ display: 'flex', gap: 6 }}>
           <button className="btn btn-sm desktop-only" onClick={handleExportJSON} title="Export template as JSON">Export</button>
           <button className="btn btn-sm desktop-only" onClick={() => jsonImportRef.current?.click()} title="Import template from JSON">Import</button>
