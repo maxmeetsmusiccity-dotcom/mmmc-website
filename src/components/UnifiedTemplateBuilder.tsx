@@ -1347,6 +1347,11 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
                 selectedId={selectedElementId}
                 onSelect={setSelectedElementId}
                 onElementUpdate={handleElementUpdate}
+                onTextEdit={(id, text) => {
+                  setCustomElements(prev => prev.map(el =>
+                    el.id === id ? { ...el, props: { ...el.props, text } } : el
+                  ));
+                }}
                 canvasWidth={previewRect.w}
                 canvasHeight={previewRect.h}
               />
