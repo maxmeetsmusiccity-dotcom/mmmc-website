@@ -103,7 +103,7 @@ export default function AuthGate({ children }: Props) {
         <button
           className="btn"
           onClick={() => { sessionStorage.setItem('nmf_entered', '1'); signInWithApple(); }}
-          style={{ width: '100%', justifyContent: 'center', fontSize: 'var(--fs-lg)', padding: '12px 0', marginBottom: 12, background: '#000', color: '#fff' }}
+          style={{ width: '100%', justifyContent: 'center', fontSize: 'var(--fs-lg)', padding: '12px 0', marginBottom: 12 }}
         >
            Sign in with Apple
         </button>
