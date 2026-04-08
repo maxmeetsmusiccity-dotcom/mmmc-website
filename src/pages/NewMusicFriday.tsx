@@ -839,7 +839,7 @@ export default function NewMusicFriday() {
 
             {/* Apple Music source — scan your library */}
             {activeSource === 'apple-music' && (
-              <div className="animate-float-up" style={{ marginTop: 16, maxWidth: 500, width: '100%' }}>
+              <div className="animate-float-up" style={{ marginTop: 16, maxWidth: 500, width: '100%', margin: '16px auto 0', textAlign: 'center' }}>
                 <p style={{ color: 'var(--text-secondary)', marginBottom: 16, fontSize: 'var(--fs-md)', lineHeight: 1.6 }}>
                   Connect your Apple Music account to scan your library for new releases from artists you follow.
                 </p>
