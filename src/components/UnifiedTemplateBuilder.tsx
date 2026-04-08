@@ -864,21 +864,6 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
           </h2>
         </div>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-          <button className="btn btn-sm" onClick={() => {
-            const prev = undoStack.current.pop();
-            if (prev) { redoStack.current.push(JSON.parse(JSON.stringify(customElements))); setCustomElements(prev); }
-          }} disabled={undoStack.current.length === 0}
-            title="Undo (Cmd+Z)" style={{ fontSize: 'var(--fs-sm)', padding: '4px 8px', opacity: undoStack.current.length === 0 ? 0.3 : 1 }}>
-            Undo
-          </button>
-          <button className="btn btn-sm" onClick={() => {
-            const next = redoStack.current.pop();
-            if (next) { undoStack.current.push(JSON.parse(JSON.stringify(customElements))); setCustomElements(next); }
-          }} disabled={redoStack.current.length === 0}
-            title="Redo (Cmd+Shift+Z)" style={{ fontSize: 'var(--fs-sm)', padding: '4px 8px', opacity: redoStack.current.length === 0 ? 0.3 : 1 }}>
-            Redo
-          </button>
-          <span style={{ width: 1, height: 20, background: 'var(--midnight-border)' }} />
           <button className="btn btn-sm desktop-only" onClick={handleExportJSON} title="Export template as JSON">Export</button>
           <button className="btn btn-sm desktop-only" onClick={() => jsonImportRef.current?.click()} title="Import template from JSON">Import</button>
           <input ref={jsonImportRef} type="file" accept=".json" onChange={handleImportJSON} style={{ display: 'none' }} />
@@ -1498,6 +1483,21 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
             style={{ fontSize: 'var(--fs-sm)' }}
           >
             3:4
+          </button>
+          <span style={{ width: 1, height: 20, background: 'var(--midnight-border)', margin: '0 4px' }} />
+          <button className="btn btn-sm" onClick={() => {
+            const prev = undoStack.current.pop();
+            if (prev) { redoStack.current.push(JSON.parse(JSON.stringify(customElements))); setCustomElements(prev); }
+          }} disabled={undoStack.current.length === 0}
+            title="Undo (Cmd+Z)" style={{ fontSize: 'var(--fs-sm)', padding: '4px 8px', opacity: undoStack.current.length === 0 ? 0.3 : 1 }}>
+            Undo
+          </button>
+          <button className="btn btn-sm" onClick={() => {
+            const next = redoStack.current.pop();
+            if (next) { undoStack.current.push(JSON.parse(JSON.stringify(customElements))); setCustomElements(next); }
+          }} disabled={redoStack.current.length === 0}
+            title="Redo (Cmd+Shift+Z)" style={{ fontSize: 'var(--fs-sm)', padding: '4px 8px', opacity: redoStack.current.length === 0 ? 0.3 : 1 }}>
+            Redo
           </button>
           <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-3xs)', marginLeft: 'auto' }}>
             {rendering ? 'Rendering...' : 'Cmd+S to save \u2022 Esc to cancel'}
