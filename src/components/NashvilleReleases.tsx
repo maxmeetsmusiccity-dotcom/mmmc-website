@@ -30,6 +30,10 @@ export default function NashvilleReleases({ onImport }: Props) {
   const [availableWeeks, setAvailableWeeks] = useState<string[]>([]);
   const [selectedWeek, setSelectedWeek] = useState<string | null>(null);
 
+  // Sort state
+  const [sortBy, setSortBy] = useState<'artist' | 'date' | 'title'>('artist');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+
   // Showcase filter state
   const [showcases, setShowcases] = useState<ShowcaseCategory[]>([]);
   const [activeShowcase, setActiveShowcase] = useState<string | null>(null);
@@ -191,7 +195,7 @@ export default function NashvilleReleases({ onImport }: Props) {
       arr.push(r);
       map.set(key, arr);
     }
-    return [...map.entries()].map(([key, tracks]) => ({
+    const groups = [...map.entries()].map(([key, tracks]) => ({
       key,
       album: tracks[0].album_name,
       artist: tracks[0].artist_name,
@@ -200,6 +204,12 @@ export default function NashvilleReleases({ onImport }: Props) {
       date: tracks[0].release_date,
       tracks,
     }));
+    // Sort
+    const dir = sortDir === 'asc' ? 1 : -1;
+    if (sortBy === 'artist') groups.sort((a, b) => dir * a.artist.localeCompare(b.artist));
+    else if (sortBy === 'date') groups.sort((a, b) => dir * (a.date || '').localeCompare(b.date || ''));
+    else if (sortBy === 'title') groups.sort((a, b) => dir * a.album.localeCompare(b.album));
+    return groups;
   })();
 
   const toggleSelect = (trackId: string) => {
@@ -342,7 +352,20 @@ export default function NashvilleReleases({ onImport }: Props) {
         </div>
       </div>
 
-      {/* Showcase filter pills */}
+      {/* Sort controls */}
+      <div style={{ display: 'flex', gap: 6, marginBottom: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        <span style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)' }}>Sort:</span>
+        {(['artist', 'date', 'title'] as const).map(s => (
+          <button key={s}
+            className={`filter-pill ${sortBy === s ? 'active' : ''}`}
+            onClick={() => { if (sortBy === s) setSortDir(d => d === 'asc' ? 'desc' : 'asc'); else { setSortBy(s); setSortDir('asc'); } }}
+            style={{ fontSize: 'var(--fs-2xs)', padding: '2px 8px' }}>
+            {s.charAt(0).toUpperCase() + s.slice(1)} {sortBy === s ? (sortDir === 'asc' ? '↑' : '↓') : ''}
+          </button>
+        ))}
+      </div>
+
+      {/* Showcase filter */}
       {showcasePills}
       {loadingShowcase && (
         <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)', marginBottom: 8 }}>Loading...</p>

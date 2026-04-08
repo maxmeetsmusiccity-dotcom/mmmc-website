@@ -119,7 +119,10 @@ export default function NewMusicFriday() {
   const [copied, setCopied] = useState(false);
   const [appleEnriching, setAppleEnriching] = useState(false);
   const [featureCounts, setFeatureCounts] = useState<Map<string, number>>(new Map());
-  const [activeSource, setActiveSource] = useState<MusicSource['id']>('nashville');
+  const [activeSource, setActiveSource] = useState<MusicSource['id']>(() => {
+    // Default Apple-signed-in users to Apple Music source
+    return user?.app_metadata?.provider === 'apple' ? 'apple-music' : 'nashville';
+  });
   const [tracksPerSlide, setTracksPerSlide] = useState(8);
   const [viewMode, setViewMode] = useState<'releases' | 'tracks'>('releases');
   const [loadedFromCache, setLoadedFromCache] = useState(false);
@@ -838,75 +841,66 @@ export default function NewMusicFriday() {
             )}
 
             {/* Apple Music source — scan your library */}
-            {activeSource === 'apple-music' && (() => {
-              const isAppleUser = user?.app_metadata?.provider === 'apple';
-              const runAppleScan = async () => {
-                setPhase('scanning');
-                setScanStatus(isAppleUser ? 'Scanning your library...' : 'Connecting to Apple Music...');
-                setScanProgress({ current: 0, total: 0 });
-                try {
-                  const { authorizeAppleMusic, scanAppleMusicLibrary } = await import('../lib/sources/apple-music');
-                  await authorizeAppleMusic();
-                  setScanStatus('Scanning your library...');
-                  const cutoff = getScanCutoff();
-                  let artistCount = 0;
-                  const tracks = await scanAppleMusicLibrary({
-                    cutoffDate: cutoff,
-                    onProgress: (current, total, found) => {
-                      artistCount = total;
-                      setScanProgress({ current, total });
-                      setScanStatus(`${current}/${total} artists · ${found} releases found`);
-                    },
-                    onReleasesFound: (tracks) => {
-                      setAllTracks(tracks);
-                      setReleases(groupIntoReleases(tracks));
-                    },
-                  });
-                  if (tracks.length > 0) {
-                    setAllTracks(tracks);
-                    setReleases(groupIntoReleases(tracks));
-                    setPhase('results');
-                    setLastScanned(new Date().toISOString());
-                    setIsDemoMode(false);
-                  } else if (artistCount === 0) {
-                    setError('No artists found in your Apple Music library. Favorite some artists in Apple Music, then scan again.');
-                    setPhase('ready');
-                  } else {
-                    setError(`Scanned ${artistCount} artists but none released new music since last Friday. Try the Nashville source.`);
-                    setPhase('ready');
-                  }
-                } catch (e) {
-                  setError((e as Error).message);
-                  setPhase('ready');
-                }
-              };
-              // Auto-trigger scan for Apple-signed-in users
-              if (isAppleUser && phase === 'ready') {
-                setTimeout(runAppleScan, 100);
-              }
-              return (
+            {activeSource === 'apple-music' && (
               <div className="animate-float-up" style={{ marginTop: 16, maxWidth: 500, width: '100%', margin: '16px auto 0', textAlign: 'center' }}>
-                {isAppleUser ? (
-                  <p style={{ color: 'var(--gold)', fontSize: 'var(--fs-md)' }}>
-                    Starting Apple Music scan automatically...
-                  </p>
-                ) : (
-                  <>
-                    <p style={{ color: 'var(--text-secondary)', marginBottom: 16, fontSize: 'var(--fs-md)', lineHeight: 1.6 }}>
-                      Connect your Apple Music account to scan your library for new releases from artists you follow.
-                    </p>
-                    <button className="btn btn-gold" onClick={runAppleScan}
-                      style={{ fontSize: 'var(--fs-lg)', padding: '14px 32px' }}>
-                      Connect Apple Music &amp; Scan
-                    </button>
-                    <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)', marginTop: 12 }}>
-                      Opens an Apple ID sign-in popup. We only read your library — nothing is modified.
-                    </p>
-                  </>
-                )}
+                <p style={{ color: 'var(--text-secondary)', marginBottom: 16, fontSize: 'var(--fs-md)', lineHeight: 1.6 }}>
+                  {user?.app_metadata?.provider === 'apple'
+                    ? 'Scan your favorited artists on Apple Music for new releases this week.'
+                    : 'Connect your Apple Music account to scan for new releases from artists you follow.'}
+                </p>
+                <button
+                  className="btn btn-gold"
+                  onClick={async () => {
+                    setPhase('scanning');
+                    setScanStatus('Connecting to Apple Music...');
+                    setScanProgress({ current: 0, total: 0 });
+                    try {
+                      const { authorizeAppleMusic, scanAppleMusicLibrary } = await import('../lib/sources/apple-music');
+                      await authorizeAppleMusic();
+                      setScanStatus('Scanning your library...');
+                      const cutoff = getScanCutoff();
+                      let artistCount = 0;
+                      const tracks = await scanAppleMusicLibrary({
+                        cutoffDate: cutoff,
+                        onProgress: (current, total, found) => {
+                          artistCount = total;
+                          setScanProgress({ current, total });
+                          setScanStatus(`${current}/${total} artists · ${found} releases found`);
+                        },
+                        onReleasesFound: (tracks) => {
+                          setAllTracks(tracks);
+                          setReleases(groupIntoReleases(tracks));
+                        },
+                      });
+                      if (tracks.length > 0) {
+                        setAllTracks(tracks);
+                        setReleases(groupIntoReleases(tracks));
+                        setPhase('results');
+                        setLastScanned(new Date().toISOString());
+                        setIsDemoMode(false);
+                      } else if (artistCount === 0) {
+                        setError('No artists found in your Apple Music library. Favorite some artists in Apple Music, then scan again.');
+                        setPhase('ready');
+                      } else {
+                        setError(`Scanned ${artistCount} artists but none released new music since last Friday. Try the Nashville source.`);
+                        setPhase('ready');
+                      }
+                    } catch (e) {
+                      setError((e as Error).message);
+                      setPhase('ready');
+                    }
+                  }}
+                  style={{ fontSize: 'var(--fs-lg)', padding: '14px 32px' }}
+                >
+                  Scan All Favorited Artists
+                </button>
+                <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)', marginTop: 12 }}>
+                  {user?.app_metadata?.provider === 'apple'
+                    ? 'Scans your Apple Music library for releases since last Friday.'
+                    : 'Opens an Apple ID sign-in popup. We only read your library — nothing is modified.'}
+                </p>
               </div>
-              );
-            })()}
+            )}
 
             {/* Nashville releases source — zero-login experience */}
             {activeSource === 'nashville' && (

@@ -29,6 +29,8 @@ export default function ArtistBrowser({ onScanArtists, scanning }: Props) {
   const [releases, setReleases] = useState<NashvilleRelease[]>([]);
   const [selectedNames, setSelectedNames] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<'name' | 'tracks'>('name');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
   // Load showcase categories on mount
   useEffect(() => {
@@ -117,7 +119,11 @@ export default function ArtistBrowser({ onScanArtists, scanning }: Props) {
       name,
       tracks: tracks.sort((a, b) => (a.track_number || 0) - (b.track_number || 0)),
       cover: tracks[0].cover_art_300,
-    })).sort((a, b) => a.name.localeCompare(b.name));
+    })).sort((a, b) => {
+      const dir = sortDir === 'asc' ? 1 : -1;
+      if (sortBy === 'tracks') return dir * (a.tracks.length - b.tracks.length);
+      return dir * a.name.localeCompare(b.name);
+    });
   })();
 
   const toggleArtist = (name: string) => {
@@ -191,6 +197,21 @@ export default function ArtistBrowser({ onScanArtists, scanning }: Props) {
             style={{ fontSize: 'var(--fs-2xs)', color: 'var(--mmmc-red)', cursor: 'pointer', marginLeft: 'auto', background: 'none', border: 'none' }}>
             Clear All
           </button>
+        </div>
+      )}
+
+      {/* Sort */}
+      {artistGroups.length > 0 && (
+        <div style={{ display: 'flex', gap: 6, marginBottom: 8, alignItems: 'center' }}>
+          <span style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)' }}>Sort:</span>
+          {(['name', 'tracks'] as const).map(s => (
+            <button key={s}
+              className={`filter-pill ${sortBy === s ? 'active' : ''}`}
+              onClick={() => { if (sortBy === s) setSortDir(d => d === 'asc' ? 'desc' : 'asc'); else { setSortBy(s); setSortDir(s === 'tracks' ? 'desc' : 'asc'); } }}
+              style={{ fontSize: 'var(--fs-2xs)', padding: '2px 8px' }}>
+              {s === 'name' ? 'Name' : 'Tracks'} {sortBy === s ? (sortDir === 'asc' ? '↑' : '↓') : ''}
+            </button>
+          ))}
         </div>
       )}
 
