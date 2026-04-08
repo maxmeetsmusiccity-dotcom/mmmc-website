@@ -34,6 +34,9 @@ export default function NashvilleReleases({ onImport }: Props) {
   const [sortBy, setSortBy] = useState<'artist' | 'date' | 'title'>('artist');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
+  // Coming Soon toggle — shows future-dated releases
+  const [showComingSoon, setShowComingSoon] = useState(false);
+
   // Showcase filter state
   const [showcases, setShowcases] = useState<ShowcaseCategory[]>([]);
   const [activeShowcase, setActiveShowcase] = useState<string | null>(null);
@@ -166,9 +169,14 @@ export default function NashvilleReleases({ onImport }: Props) {
     })();
   }, [selectedWeek]);
 
-  // Apply showcase filter
+  // Split current vs future releases
+  const today = new Date().toISOString().split('T')[0];
+  const currentReleases = releases.filter(r => (r.release_date || '') <= today);
+  const comingSoonReleases = releases.filter(r => (r.release_date || '') > today);
+
+  // Apply showcase filter to the active set
   const filtered = (() => {
-    let list = releases;
+    let list = showComingSoon ? comingSoonReleases : currentReleases;
     if (activeShowcase && showcaseArtists.size > 0) {
       list = list.filter(r => {
         const primary = (r.artist_name || '').split(/,|feat\.|ft\./i)[0].trim().toLowerCase();
@@ -397,6 +405,22 @@ export default function NashvilleReleases({ onImport }: Props) {
           <button onClick={() => setSelected(new Set())}
             style={{ fontSize: 'var(--fs-2xs)', color: 'var(--mmmc-red)', cursor: 'pointer', marginLeft: 'auto', background: 'none', border: 'none' }}>
             Clear All
+          </button>
+        </div>
+      )}
+
+      {/* View toggle: This Week / Coming Soon */}
+      {comingSoonReleases.length > 0 && (
+        <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
+          <button className={`filter-pill ${!showComingSoon ? 'active' : ''}`}
+            onClick={() => setShowComingSoon(false)}
+            style={{ fontSize: 'var(--fs-xs)', padding: '4px 12px' }}>
+            This Week ({currentReleases.length} {currentReleases.length === 1 ? 'track' : 'tracks'})
+          </button>
+          <button className={`filter-pill ${showComingSoon ? 'active' : ''}`}
+            onClick={() => setShowComingSoon(true)}
+            style={{ fontSize: 'var(--fs-xs)', padding: '4px 12px', opacity: 0.7 }}>
+            Coming Soon ({comingSoonReleases.length})
           </button>
         </div>
       )}
