@@ -81,17 +81,6 @@ export default function AuthGate({ children }: Props) {
           This tool exists because your work matters. You listen to everything, you find the gems, and you share them with the world. We're here to save you time so you can focus on what you do best.
         </p>
 
-        {/* Already signed in — show a quick "Continue" instead of full auth */}
-        {user && (
-          <button
-            className="btn btn-gold"
-            onClick={() => { sessionStorage.setItem('nmf_entered', '1'); window.location.reload(); }}
-            style={{ width: '100%', justifyContent: 'center', fontSize: 'var(--fs-lg)', padding: '14px 0', marginBottom: 12 }}
-          >
-            Continue as {user.email?.split('@')[0] || 'User'}
-          </button>
-        )}
-
         {/* Continue as Guest */}
         <button
           className="btn btn-gold"
