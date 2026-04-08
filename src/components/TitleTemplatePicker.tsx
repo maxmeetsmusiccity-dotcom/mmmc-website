@@ -127,9 +127,8 @@ export default function TitleTemplatePicker({ selected, onSelect, onHover }: Pro
       <div
         ref={scrollRef}
         style={{
-          display: 'flex', gap: 10, overflowX: 'scroll', paddingBottom: 12,
+          display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 8,
           WebkitOverflowScrolling: 'touch', scrollSnapType: 'x mandatory',
-          scrollbarWidth: 'thin', scrollbarColor: 'var(--gold-dark) var(--midnight)',
         }}
         tabIndex={0}
         onKeyDown={(e) => {
