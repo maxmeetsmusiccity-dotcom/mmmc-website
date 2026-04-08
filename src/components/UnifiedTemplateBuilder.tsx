@@ -305,9 +305,13 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
   const [cellShadowBlur, setCellShadowBlur] = useState(gridInit?.cellShadowBlur ?? 16);
 
   /* ---------- title layout ---------- */
+  const [headlineX, setHeadlineX] = useState(titleInit?.headlineX ?? 0.5);
   const [headlineY, setHeadlineY] = useState(titleInit?.headlineY ?? 0.04);
+  const [subtitleX, setSubtitleX] = useState(titleInit?.subtitleX ?? 0.5);
   const [subtitleY, setSubtitleY] = useState(titleInit?.subtitleY ?? 0.12);
+  const [dateX, setDateX] = useState(titleInit?.dateX ?? 0.5);
   const [dateY, setDateY] = useState(titleInit?.dateY ?? 0.90);
+  const [featuredImageX, setFeaturedImageX] = useState(titleInit?.featuredImageX ?? 0.5);
   const [featuredImageY, setFeaturedImageY] = useState(titleInit?.featuredImageY ?? 0.18);
   const [featuredImageSize, setFeaturedImageSize] = useState(titleInit?.featuredImageSize ?? 0.52);
   const [featuredRotation, setFeaturedRotation] = useState(titleInit?.featuredRotation ?? 0);
@@ -453,10 +457,10 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
       headlineSize,
       subtitleSize,
       dateSize,
-      headlineY,
-      subtitleY,
-      dateY,
-      featuredImageY,
+      headlineX, headlineY,
+      subtitleX, subtitleY,
+      dateX, dateY,
+      featuredImageX, featuredImageY,
       featuredImageSize,
       glow: { color: glowColor, blur: glowBlur, passes: glowPasses },
       grain: grainIntensity,
@@ -480,7 +484,7 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
     name, description, bg, useGradient, gradientAngle, gradientEnd, titleBgImage, titleBgBlur, titleBgDarken,
     textPrimary, textSecondary, accent, headlineFont, dateFont,
     headlineWeight, headlineCase, headlineSize, subtitleSize, dateSize,
-    headlineY, subtitleY, dateY, featuredImageY, featuredImageSize,
+    headlineX, headlineY, subtitleX, subtitleY, dateX, dateY, featuredImageX, featuredImageY, featuredImageSize,
     glowColor, glowBlur, glowPasses, grainIntensity, vignetteIntensity,
     showFrame, frameColor, frameWidth, showDivider, dividerColor,
     featuredBorder, featuredBorderColor, featuredShadowBlur, featuredRotation, customElements,
@@ -557,6 +561,14 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
 
     // Title template elements: map to state variables so the canvas renderer picks them up
     if (!isGrid && TITLE_STATE_IDS.has(id)) {
+      if (patch.x !== undefined) {
+        switch (id) {
+          case 'headline': setHeadlineX(patch.x); break;
+          case 'subtitle': setSubtitleX(patch.x); break;
+          case 'date': setDateX(patch.x); break;
+          case 'featured_image': setFeaturedImageX(patch.x); break;
+        }
+      }
       if (patch.y !== undefined) {
         switch (id) {
           case 'headline': setHeadlineY(patch.y); break;
@@ -652,10 +664,10 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
       setHeadlineSize(t.headlineSize);
       setSubtitleSize(t.subtitleSize);
       setDateSize(t.dateSize);
-      setHeadlineY(t.headlineY);
-      setSubtitleY(t.subtitleY);
-      setDateY(t.dateY);
-      setFeaturedImageY(t.featuredImageY);
+      setHeadlineX(t.headlineX ?? 0.5); setHeadlineY(t.headlineY);
+      setSubtitleX(t.subtitleX ?? 0.5); setSubtitleY(t.subtitleY);
+      setDateX(t.dateX ?? 0.5); setDateY(t.dateY);
+      setFeaturedImageX(t.featuredImageX ?? 0.5); setFeaturedImageY(t.featuredImageY);
       setFeaturedImageSize(t.featuredImageSize);
       setFeaturedRotation(t.featuredRotation);
       setFeaturedBorder(t.featuredBorder);

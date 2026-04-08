@@ -463,7 +463,7 @@ export async function generateTitleSlide(
     const hlY = aspect === '3:4' ? Math.min(Math.round(H * tt.headlineY), 80) : Math.round(H * tt.headlineY);
     glowText(
       headline,
-      W / 2,
+      Math.round(W * (tt.headlineX ?? 0.5)),
       hlY,
       `${tt.headlineWeight} ${Math.round(W * tt.headlineSize)}px ${tt.headlineFont}`,
       tt.textPrimary,
@@ -571,7 +571,7 @@ export async function generateTitleSlide(
     // In portrait mode, scale image slightly and center in the canvas middle zone
     const sizeScale = aspect === '3:4' ? 1.10 : 1.0;
     const imgSize = Math.round(W * tt.featuredImageSize * sizeScale);
-    const imgX = (W - imgSize) / 2;
+    const imgX = Math.round(W * (tt.featuredImageX ?? 0.5)) - imgSize / 2;
     // Portrait: center image vertically in the canvas (not pushed to top by H fraction)
     const imgY = aspect === '3:4'
       ? Math.round((H - imgSize) / 2) - 40  // centered, nudged up for date room
@@ -607,9 +607,10 @@ export async function generateTitleSlide(
 
     // Artist name + track name below image
     const labelY = imgY + imgSize + (tt.featuredBorder || 0) + 16;
+    const labelCx = Math.round(W * (tt.featuredImageX ?? 0.5));
     glowText(
       coverFeature.track.artist_names,
-      W / 2,
+      labelCx,
       labelY,
       `700 ${Math.round(W * 0.035)}px ${tt.headlineFont}`,
       tt.textPrimary,
@@ -618,7 +619,7 @@ export async function generateTitleSlide(
     ctx.font = `400 ${Math.round(W * 0.024)}px ${tt.subtitleFont}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
-    ctx.fillText(coverFeature.track.track_name, W / 2, labelY + Math.round(W * 0.042));
+    ctx.fillText(coverFeature.track.track_name, labelCx, labelY + Math.round(W * 0.042));
   }
 
   // Date + swipe pill — ONLY for non-vinyl templates (vinyl renders its own date above)
@@ -642,12 +643,12 @@ export async function generateTitleSlide(
       ctx.fillStyle = '#FFFFFF';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'top';
-      ctx.fillText(pillText, W / 2, pillY + 7);
+      ctx.fillText(pillText, Math.round(W * (tt.dateX ?? 0.5)), pillY + 7);
     }
 
     glowText(
       formatDate(weekDate),
-      W / 2,
+      Math.round(W * (tt.dateX ?? 0.5)),
       dateY,
       `700 ${Math.round(W * tt.dateSize)}px ${tt.dateFont}`,
       tt.textPrimary,
