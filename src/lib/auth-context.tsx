@@ -16,6 +16,7 @@ interface AuthState {
   tier: SubscriptionTier;
   loading: boolean;
   signInWithGoogle: () => Promise<void>;
+  signInWithApple: () => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<void>;
   signUpWithEmail: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -85,10 +86,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogle = async () => {
     if (!supabase) return;
-    // Use clean URL without hash/query — Supabase appends #access_token
     const redirectTo = window.location.origin + window.location.pathname;
     await supabase.auth.signInWithOAuth({
       provider: 'google',
+      options: { redirectTo },
+    });
+  };
+
+  const signInWithApple = async () => {
+    if (!supabase) return;
+    const redirectTo = window.location.origin + window.location.pathname;
+    await supabase.auth.signInWithOAuth({
+      provider: 'apple',
       options: { redirectTo },
     });
   };
@@ -136,7 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user, session, mode, loading,
       role: effectiveRole,
       tier: effectiveTier,
-      signInWithGoogle, signInWithEmail, signUpWithEmail, signOut, continueAsGuest,
+      signInWithGoogle, signInWithApple, signInWithEmail, signUpWithEmail, signOut, continueAsGuest,
       isGuest: !user && guestMode,
       isAdmin: mode === 'admin',
       isPublicist: effectiveRole === 'publicist' || effectiveRole === 'admin',

@@ -6,7 +6,7 @@ interface Props {
 }
 
 export default function AuthGate({ children }: Props) {
-  const { user, loading, isGuest, signInWithGoogle, signInWithEmail, signUpWithEmail, continueAsGuest } = useAuth();
+  const { user, loading, isGuest, signInWithGoogle, signInWithApple, signInWithEmail, signUpWithEmail, continueAsGuest } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
@@ -92,13 +92,20 @@ export default function AuthGate({ children }: Props) {
           Jump In
         </button>
 
-        {/* Google Sign-In */}
+        {/* Sign-In Options */}
         <button
           className="btn"
           onClick={() => { sessionStorage.setItem('nmf_entered', '1'); signInWithGoogle(); }}
-          style={{ width: '100%', justifyContent: 'center', fontSize: 'var(--fs-lg)', padding: '12px 0', marginBottom: 12 }}
+          style={{ width: '100%', justifyContent: 'center', fontSize: 'var(--fs-lg)', padding: '12px 0', marginBottom: 8 }}
         >
           Sign in with Google
+        </button>
+        <button
+          className="btn"
+          onClick={() => { sessionStorage.setItem('nmf_entered', '1'); signInWithApple(); }}
+          style={{ width: '100%', justifyContent: 'center', fontSize: 'var(--fs-lg)', padding: '12px 0', marginBottom: 12, background: '#000', color: '#fff' }}
+        >
+           Sign in with Apple
         </button>
 
         {/* Email */}
