@@ -863,7 +863,22 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
             {isGrid ? 'Grid Template' : 'Title Template'}
           </h2>
         </div>
-        <div style={{ display: 'flex', gap: 6 }}>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          <button className="btn btn-sm" onClick={() => {
+            const prev = undoStack.current.pop();
+            if (prev) { redoStack.current.push(JSON.parse(JSON.stringify(customElements))); setCustomElements(prev); }
+          }} disabled={undoStack.current.length === 0}
+            title="Undo (Cmd+Z)" style={{ fontSize: 'var(--fs-sm)', padding: '4px 8px', opacity: undoStack.current.length === 0 ? 0.3 : 1 }}>
+            Undo
+          </button>
+          <button className="btn btn-sm" onClick={() => {
+            const next = redoStack.current.pop();
+            if (next) { undoStack.current.push(JSON.parse(JSON.stringify(customElements))); setCustomElements(next); }
+          }} disabled={redoStack.current.length === 0}
+            title="Redo (Cmd+Shift+Z)" style={{ fontSize: 'var(--fs-sm)', padding: '4px 8px', opacity: redoStack.current.length === 0 ? 0.3 : 1 }}>
+            Redo
+          </button>
+          <span style={{ width: 1, height: 20, background: 'var(--midnight-border)' }} />
           <button className="btn btn-sm desktop-only" onClick={handleExportJSON} title="Export template as JSON">Export</button>
           <button className="btn btn-sm desktop-only" onClick={() => jsonImportRef.current?.click()} title="Import template from JSON">Import</button>
           <input ref={jsonImportRef} type="file" accept=".json" onChange={handleImportJSON} style={{ display: 'none' }} />

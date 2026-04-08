@@ -162,6 +162,20 @@ export default function CanvasOverlay({
                   }
                 }}
               />
+              {/* Live text rendered in SVG — moves instantly with drag */}
+              {el.type === 'text' && typeof el.props.text === 'string' && el.props.text && (isSelected || dragging?.id === el.id) && (
+                <text
+                  x={px} y={ry + h * 0.7}
+                  fill={String(el.props.color || '#fff')}
+                  fontSize={Math.round((Number(el.props.fontSize) || 0.04) * canvasHeight)}
+                  fontFamily={String(el.props.fontFamily || 'system-ui')}
+                  fontWeight={Number(el.props.fontWeight) || 700}
+                  textAnchor="middle"
+                  style={{ pointerEvents: 'none' }}
+                >
+                  {el.props.text}
+                </text>
+              )}
               {/* Selection handles + resize */}
               {isSelected && !el.locked && (
                 <>
