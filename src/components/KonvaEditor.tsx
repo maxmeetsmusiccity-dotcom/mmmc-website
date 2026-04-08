@@ -49,7 +49,7 @@ export default function KonvaEditor({
 
     if (selectedId) {
       const node = stage.findOne(`#${selectedId}`);
-      if (node && !(node as any)._isLocked) {
+      if (node) {
         tr.nodes([node as Konva.Node]);
       } else {
         tr.nodes([]);
@@ -71,7 +71,6 @@ export default function KonvaEditor({
   const syncFromNode = useCallback((id: string, node: Konva.Node) => {
     const scaleX = node.scaleX();
     const scaleY = node.scaleY();
-    // Reset scale, bake into width/height
     node.scaleX(1);
     node.scaleY(1);
     onElementUpdate(id, {
@@ -105,7 +104,7 @@ export default function KonvaEditor({
         )}
       </Layer>
 
-      {/* Layer 2: Interactive elements */}
+      {/* Layer 2: Interactive elements — only visible when selected */}
       <Layer>
         {visibleElements.map(el => {
           const px = el.x * canvasWidth;
@@ -115,18 +114,8 @@ export default function KonvaEditor({
           const isLocked = el.locked;
           const isSelected = el.id === selectedId;
 
-          const commonProps = {
-            id: el.id,
-            x: px,
-            y: py,
-            offsetX: w / 2,
-            offsetY: 0,
-            width: w,
-            height: h,
-            rotation: el.rotation || 0,
-            draggable: !isLocked,
-            // Only show Konva element when selected — background canvas renders it otherwise
-            opacity: isSelected ? 1 : 0,
+          // Common event handlers
+          const interactionProps = {
             onClick: (e: Konva.KonvaEventObject<MouseEvent>) => {
               e.cancelBubble = true;
               onSelect(el.id);
@@ -143,7 +132,29 @@ export default function KonvaEditor({
             },
           };
 
-          // Mark locked nodes for transformer check
+          // ALL element types: render a transparent hit-area rect that's always clickable.
+          // The actual visual content (text, image) only renders when selected.
+          // This avoids double-rendering with the background canvas.
+          if (!isSelected) {
+            return (
+              <KRect
+                key={el.id}
+                id={el.id}
+                x={px}
+                y={py}
+                offsetX={w / 2}
+                width={w}
+                height={h}
+                rotation={el.rotation || 0}
+                fill="transparent"
+                draggable={!isLocked}
+                listening={!isLocked}
+                {...interactionProps}
+              />
+            );
+          }
+
+          // SELECTED: render the actual content so user can see what they're manipulating
           if (el.type === 'text') {
             const fontSize = typeof el.props.fontSize === 'number'
               ? Math.round(el.props.fontSize * canvasHeight)
@@ -151,7 +162,13 @@ export default function KonvaEditor({
             return (
               <KText
                 key={el.id}
-                {...commonProps}
+                id={el.id}
+                x={px}
+                y={py}
+                offsetX={w / 2}
+                width={w}
+                height={h}
+                rotation={el.rotation || 0}
                 text={String(el.props.text || '')}
                 fontSize={fontSize}
                 fontFamily={String(el.props.font || el.props.fontFamily || 'system-ui')}
@@ -159,7 +176,9 @@ export default function KonvaEditor({
                 fill={String(el.props.color || '#fff')}
                 align="center"
                 verticalAlign="top"
+                draggable={!isLocked}
                 listening={!isLocked}
+                {...interactionProps}
                 onDblClick={() => {
                   if (onTextEdit && !isLocked) {
                     const newText = prompt('Edit text:', String(el.props.text || ''));
@@ -174,35 +193,39 @@ export default function KonvaEditor({
             return (
               <KImage
                 key={el.id}
-                {...commonProps}
+                id={el.id}
+                x={px}
+                y={py}
+                offsetX={w / 2}
+                width={w}
+                height={h}
+                rotation={el.rotation || 0}
                 image={coverImage}
+                draggable={!isLocked}
                 listening={!isLocked}
+                {...interactionProps}
               />
             );
           }
 
-          if (el.type === 'decoration') {
-            // Render decorations as transparent hit areas (content is in the background)
-            return (
-              <KRect
-                key={el.id}
-                {...commonProps}
-                fill="transparent"
-                stroke={el.id === selectedId ? '#D4A843' : 'transparent'}
-                strokeWidth={el.id === selectedId ? 1 : 0}
-                dash={[4, 2]}
-                listening={!isLocked}
-              />
-            );
-          }
-
-          // Fallback: transparent hit area
+          // Decoration or fallback: transparent rect with selection indicator
           return (
             <KRect
               key={el.id}
-              {...commonProps}
+              id={el.id}
+              x={px}
+              y={py}
+              offsetX={w / 2}
+              width={w}
+              height={h}
+              rotation={el.rotation || 0}
               fill="transparent"
+              stroke="#D4A843"
+              strokeWidth={1}
+              dash={[4, 2]}
+              draggable={!isLocked}
               listening={!isLocked}
+              {...interactionProps}
             />
           );
         })}
