@@ -285,8 +285,11 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
   const [dividerColor, setDividerColor] = useState(titleInit?.dividerColor || 'rgba(255,255,255,0.3)');
   const [swipePill, setSwipePill] = useState(titleInit?.swipePill ?? true);
 
-  /* ---------- background image (grid) ---------- */
+  /* ---------- background image ---------- */
   const [bgFrameUrl, setBgFrameUrl] = useState<string | null>(null);
+  const [titleBgImage, setTitleBgImage] = useState<string>(initial?.backgroundImage || '');
+  const [titleBgBlur, setTitleBgBlur] = useState(initial?.backgroundBlur ?? 0);
+  const [titleBgDarken, setTitleBgDarken] = useState(initial?.backgroundDarken ?? 0.4);
   const fileRef = useRef<HTMLInputElement>(null);
 
   /* ---------- preview ---------- */
@@ -421,10 +424,13 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
       featuredShadowBlur,
       featuredRotation,
       swipePill,
+      backgroundImage: titleBgImage || undefined,
+      backgroundBlur: titleBgBlur || undefined,
+      backgroundDarken: titleBgDarken || undefined,
       customElements: customElements.length > 0 ? customElements : undefined,
     };
   }, [
-    name, description, bg, useGradient, gradientAngle, gradientEnd,
+    name, description, bg, useGradient, gradientAngle, gradientEnd, titleBgImage, titleBgBlur, titleBgDarken,
     textPrimary, textSecondary, accent, headlineFont, dateFont,
     headlineWeight, headlineCase, headlineSize, subtitleSize, dateSize,
     headlineY, subtitleY, dateY, featuredImageY, featuredImageSize,
@@ -848,6 +854,26 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
           {/* ============================================= */}
           <details open>
             <summary style={sectionHeader}>Colors &amp; Background</summary>
+            {/* Eyedropper — pick color from preview */}
+            {previewUrl && (
+              <button onClick={() => {
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = () => {
+                  const c = document.createElement('canvas');
+                  c.width = img.width; c.height = img.height;
+                  const cx = c.getContext('2d')!;
+                  cx.drawImage(img, 0, 0);
+                  // Pick center pixel as default, or let user click
+                  const d = cx.getImageData(img.width / 2, img.height / 3, 1, 1).data;
+                  const hex = '#' + [d[0], d[1], d[2]].map(v => v.toString(16).padStart(2, '0')).join('');
+                  setAccent(hex);
+                };
+                img.src = previewUrl;
+              }} style={{ fontSize: 'var(--fs-2xs)', color: 'var(--gold)', cursor: 'pointer', background: 'none', border: '1px solid var(--gold-dark)', borderRadius: 4, padding: '3px 8px', marginBottom: 8 }}>
+                Pick accent from preview center
+              </button>
+            )}
             <div style={sectionBody}>
               <p style={fieldLabel}>Background</p>
               <SwatchRow colors={PRESET_COLORS} selected={bg} onSelect={setBg} />
@@ -1169,28 +1195,54 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
           </details>
 
           {/* ============================================= */}
-          {/* BACKGROUND IMAGE (grid mode only)              */}
+          {/* BACKGROUND IMAGE                               */}
           {/* ============================================= */}
-          {isGrid && (
-            <details>
-              <summary style={sectionHeader}>Background Image</summary>
-              <div style={sectionBody}>
-                <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp"
-                  onChange={handleBgUpload} style={{ fontSize: 'var(--fs-sm)' }} />
-                {bgFrameUrl && (
-                  <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <img src={bgFrameUrl} alt="Background" style={{ width: 48, height: 48, borderRadius: 4, objectFit: 'cover' }} />
-                    <button className="btn btn-sm btn-danger" onClick={() => {
-                      setBgFrameUrl(null);
-                      if (fileRef.current) fileRef.current.value = '';
-                    }}>
-                      Remove
-                    </button>
-                  </div>
+          <details>
+            <summary style={sectionHeader}>Background Image</summary>
+            <div style={sectionBody}>
+              {isGrid ? (
+                <>
+                  <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp"
+                    onChange={handleBgUpload} style={{ fontSize: 'var(--fs-sm)' }} />
+                  {bgFrameUrl && (
+                    <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <img src={bgFrameUrl} alt="Background" style={{ width: 48, height: 48, borderRadius: 4, objectFit: 'cover' }} />
+                      <button className="btn btn-sm btn-danger" onClick={() => {
+                        setBgFrameUrl(null);
+                        if (fileRef.current) fileRef.current.value = '';
+                      }}>Remove</button>
+                    </div>
                 )}
-              </div>
-            </details>
-          )}
+                </>
+              ) : (
+                <>
+                  <label style={labelStyle}>
+                    Image URL
+                    <input type="text" placeholder="Paste image URL..."
+                      value={titleBgImage}
+                      onChange={e => setTitleBgImage(e.target.value)} style={inputStyle} />
+                  </label>
+                  <label style={labelStyle}>
+                    Upload
+                    <input type="file" accept="image/*" onChange={e => {
+                      const file = e.target.files?.[0];
+                      if (file) setTitleBgImage(URL.createObjectURL(file));
+                    }} style={{ fontSize: 'var(--fs-2xs)' }} />
+                  </label>
+                  {titleBgImage && (
+                    <>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                        <img src={titleBgImage} alt="" style={{ width: 48, height: 48, borderRadius: 4, objectFit: 'cover' }} />
+                        <button className="btn btn-sm btn-danger" onClick={() => setTitleBgImage('')}>Remove</button>
+                      </div>
+                      <Slider label="Blur" value={titleBgBlur} min={0} max={20} step={1} onChange={setTitleBgBlur} suffix="px" />
+                      <Slider label="Darken" value={titleBgDarken} min={0} max={0.8} step={0.05} onChange={setTitleBgDarken} />
+                    </>
+                  )}
+                </>
+              )}
+            </div>
+          </details>
 
           {/* ============================================= */}
           {/* SELECTED CUSTOM ELEMENT PROPERTIES             */}

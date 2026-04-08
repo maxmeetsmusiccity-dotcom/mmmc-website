@@ -26,6 +26,10 @@ export default function NashvilleReleases({ onImport }: Props) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const scanning = useRef(false);
 
+  // Week selector
+  const [availableWeeks, setAvailableWeeks] = useState<string[]>([]);
+  const [selectedWeek, setSelectedWeek] = useState<string | null>(null);
+
   // Showcase filter state
   const [showcases, setShowcases] = useState<ShowcaseCategory[]>([]);
   const [activeShowcase, setActiveShowcase] = useState<string | null>(null);
@@ -117,10 +121,21 @@ export default function NashvilleReleases({ onImport }: Props) {
     (async () => {
       try {
         if (!supabase) return;
-        const { data, error: err } = await supabase
+        // Fetch available weeks
+        const { data: weekRows } = await supabase
           .from('weekly_nashville_releases')
-          .select('*')
-          .order('artist_name');
+          .select('scan_week')
+          .order('scan_week', { ascending: false });
+        if (weekRows) {
+          const uniqueWeeks = [...new Set(weekRows.map(r => r.scan_week))];
+          setAvailableWeeks(uniqueWeeks);
+          if (!selectedWeek && uniqueWeeks.length > 0) setSelectedWeek(uniqueWeeks[0]);
+        }
+        // Load releases for selected week (or most recent)
+        const weekFilter = selectedWeek || (weekRows?.[0]?.scan_week);
+        let query = supabase.from('weekly_nashville_releases').select('*').order('artist_name');
+        if (weekFilter) query = query.eq('scan_week', weekFilter);
+        const { data, error: err } = await query;
         if (!err && data && data.length > 0) {
           const mapped: NashvilleRelease[] = data.map(r => ({
             pg_id: r.spotify_artist_id || '',
@@ -145,7 +160,7 @@ export default function NashvilleReleases({ onImport }: Props) {
         }
       } catch { /* no cache, user can trigger scan */ }
     })();
-  }, []);
+  }, [selectedWeek]);
 
   // Apply showcase filter
   const filtered = (() => {
@@ -285,7 +300,12 @@ export default function NashvilleReleases({ onImport }: Props) {
           <span style={{ fontSize: 'var(--fs-lg)', fontWeight: 600 }}>
             Nashville Releases
           </span>
-          {week && <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginLeft: 8 }}>Week of {week}</span>}
+          {availableWeeks.length > 1 ? (
+            <select value={selectedWeek || ''} onChange={e => setSelectedWeek(e.target.value)}
+              style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', background: 'var(--midnight)', border: '1px solid var(--midnight-border)', borderRadius: 4, padding: '2px 6px', marginLeft: 8 }}>
+              {availableWeeks.map(w => <option key={w} value={w}>Week of {w}</option>)}
+            </select>
+          ) : week && <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginLeft: 8 }}>Week of {week}</span>}
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={selectAll} style={{ fontSize: 'var(--fs-sm)', color: 'var(--steel)', cursor: 'pointer', background: 'none', border: 'none', fontWeight: 600 }}>

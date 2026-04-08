@@ -388,6 +388,25 @@ export async function generateTitleSlide(
   ctx.fillStyle = tt.background;
   ctx.fillRect(0, 0, W, H);
 
+  // Background image (with optional blur + darken)
+  if (tt.backgroundImage) {
+    const bgImg = await loadImage(tt.backgroundImage);
+    if (bgImg) {
+      if (tt.backgroundBlur && tt.backgroundBlur > 0) {
+        ctx.filter = `blur(${tt.backgroundBlur}px)`;
+        // Draw slightly oversized to cover blur edges
+        ctx.drawImage(bgImg, -20, -20, W + 40, H + 40);
+        ctx.filter = 'none';
+      } else {
+        ctx.drawImage(bgImg, 0, 0, W, H);
+      }
+      if (tt.backgroundDarken && tt.backgroundDarken > 0) {
+        ctx.fillStyle = `rgba(0,0,0,${tt.backgroundDarken})`;
+        ctx.fillRect(0, 0, W, H);
+      }
+    }
+  }
+
   // Background gradient
   if (tt.backgroundGradient) {
     const colors = tt.backgroundGradient.match(/#[0-9A-Fa-f]{6}/g);

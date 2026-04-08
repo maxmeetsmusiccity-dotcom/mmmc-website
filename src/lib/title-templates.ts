@@ -63,6 +63,12 @@ export interface TitleSlideTemplate {
   texture?: 'grain' | 'halftone' | 'leather' | 'denim' | 'none';
   swipePill: boolean;
   vinylRecord?: boolean;
+  /** Background image URL (uploaded or pasted) */
+  backgroundImage?: string;
+  /** Background image blur (0-20px) */
+  backgroundBlur?: number;
+  /** Background image darken overlay (0-1 opacity) */
+  backgroundDarken?: number;
   /** Custom user-added elements (text banners, images, shapes) */
   customElements?: import('./editor-elements').EditorElement[];
 }
