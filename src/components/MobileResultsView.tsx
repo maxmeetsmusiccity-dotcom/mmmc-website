@@ -2,7 +2,6 @@ import { useState, useMemo, useCallback, useRef } from 'react';
 import type { TrackItem, ReleaseCluster } from '../lib/spotify';
 import type { SelectionSlot } from '../lib/selection';
 import { buildSlots } from '../lib/selection';
-import ClusterCard from './ClusterCard';
 
 interface Props {
   allTracks: TrackItem[];
@@ -30,8 +29,8 @@ type SortMode = 'artist' | 'date' | 'title';
 
 export default function MobileResultsView({
   allTracks, releases, selections, onSelectionChange,
-  selectionsByAlbum, onSelectRelease, onDeselect, onSetCoverFeature,
-  featureCounts, generating, onGenerate, allPreviews,
+  selectionsByAlbum: _selectionsByAlbum, onSelectRelease, onDeselect: _onDeselect, onSetCoverFeature,
+  featureCounts: _featureCounts, generating, onGenerate, allPreviews,
   onDownloadAll, onDownloadSlide, onGenerateStory,
   tracksPerSlide, pushSelectionHistory,
 }: Props) {
@@ -42,6 +41,7 @@ export default function MobileResultsView({
   const [search, setSearch] = useState('');
   const [showSlides, setShowSlides] = useState(false);
   const [activeSlide, setActiveSlide] = useState(0);
+  const [expandedAlbum, setExpandedAlbum] = useState<string | null>(null);
   const slideContainerRef = useRef<HTMLDivElement>(null);
 
   // Filter + sort releases
@@ -221,58 +221,139 @@ export default function MobileResultsView({
 
       {/* Track grid / list */}
       <div style={{ padding: '12px' }}>
-        {viewMode === 'grid' ? (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
-            {filtered.map(cluster => (
-              <ClusterCard
-                key={cluster.album_spotify_id}
-                cluster={cluster}
-                selectionSlot={selections.find(s => s.albumId === cluster.album_spotify_id) || null}
-                selectedSlots={selectionsByAlbum.get(cluster.album_spotify_id)}
-                hasSelections={selections.length > 0}
-                onSelectRelease={onSelectRelease}
-                onDeselect={onDeselect}
-                onSetCoverFeature={onSetCoverFeature}
-                featureCount={featureCounts.get(cluster.album_spotify_id) || 0}
-              />
-            ))}
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {filtered.map(cluster => {
-              const isSelected = selections.some(s => s.albumId === cluster.album_spotify_id);
-              return (
-                <div key={cluster.album_spotify_id}
-                  onClick={() => onSelectRelease(cluster)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 10, padding: '8px 4px',
-                    borderBottom: '1px solid var(--midnight-border)', cursor: 'pointer',
-                    background: isSelected ? 'rgba(212,168,67,0.06)' : 'transparent',
-                  }}>
-                  <img src={cluster.tracks[0]?.cover_art_300 || cluster.tracks[0]?.cover_art_640}
-                    alt="" style={{ width: 48, height: 48, borderRadius: 4, flexShrink: 0,
-                    border: isSelected ? '2px solid var(--gold)' : '2px solid transparent' }} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 'var(--fs-sm)', fontWeight: 600, color: isSelected ? 'var(--gold)' : 'var(--text-primary)',
-                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {cluster.album_name}
+        {/* Render function for a single release card (shared by grid and list) */}
+        {(() => {
+          const handleTap = (cluster: ReleaseCluster) => {
+            if (cluster.isSingle || cluster.tracks.length === 1) {
+              // Single track — toggle selection directly
+              onSelectRelease(cluster);
+            } else {
+              // Multi-track — expand to show track picker
+              setExpandedAlbum(expandedAlbum === cluster.album_spotify_id ? null : cluster.album_spotify_id);
+            }
+          };
+
+          const renderTrackPicker = (cluster: ReleaseCluster) => {
+            if (expandedAlbum !== cluster.album_spotify_id) return null;
+            return (
+              <div style={{
+                padding: '8px 12px', background: 'var(--midnight-raised)',
+                borderRadius: '0 0 8px 8px', marginTop: -4,
+                border: '1px solid var(--midnight-border)', borderTop: 'none',
+              }}>
+                <p style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)', marginBottom: 6 }}>
+                  Choose a track from {cluster.album_name}:
+                </p>
+                {cluster.tracks.sort((a, b) => (a.track_number || 0) - (b.track_number || 0)).map(track => {
+                  const isTrackSelected = selections.some(s => s.track.track_id === track.track_id);
+                  return (
+                    <div key={track.track_id}
+                      onClick={() => onSelectRelease(cluster, track.track_id)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 8, padding: '8px 4px',
+                        borderBottom: '1px solid var(--midnight-border)', cursor: 'pointer',
+                      }}>
+                      <div style={{
+                        width: 20, height: 20, borderRadius: 4, flexShrink: 0,
+                        border: isTrackSelected ? '2px solid var(--gold)' : '2px solid var(--midnight-border)',
+                        background: isTrackSelected ? 'var(--gold)' : 'transparent',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 11, color: 'var(--midnight)', fontWeight: 700,
+                      }}>
+                        {isTrackSelected ? '✓' : ''}
+                      </div>
+                      <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-2xs)', width: 20, textAlign: 'right' }}>
+                        {track.track_number}
+                      </span>
+                      <span style={{
+                        flex: 1, fontSize: 'var(--fs-sm)',
+                        color: isTrackSelected ? 'var(--gold)' : 'var(--text-primary)',
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      }}>
+                        {track.track_name}
+                      </span>
+                      {isTrackSelected && (
+                        <button onClick={e => { e.stopPropagation(); onSetCoverFeature(track.track_id); }}
+                          style={{ background: 'none', border: 'none', fontSize: 16, cursor: 'pointer', flexShrink: 0,
+                            color: selections.find(s => s.track.track_id === track.track_id && s.isCoverFeature) ? 'var(--gold)' : 'var(--text-muted)' }}>
+                          ★
+                        </button>
+                      )}
                     </div>
-                    <div style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)',
-                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {cluster.artist_names} &middot; {cluster.isSingle ? 'Single' : `${cluster.tracks.length} tracks`}
+                  );
+                })}
+              </div>
+            );
+          };
+
+          return viewMode === 'grid' ? (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
+              {filtered.map(cluster => {
+                const isSelected = selections.some(s => s.albumId === cluster.album_spotify_id);
+                const isExpanded = expandedAlbum === cluster.album_spotify_id;
+                return (
+                  <div key={cluster.album_spotify_id} style={{ gridColumn: isExpanded ? '1 / -1' : undefined }}>
+                    <div onClick={() => handleTap(cluster)} style={{
+                      borderRadius: 8, overflow: 'hidden', cursor: 'pointer',
+                      border: isSelected ? '2px solid var(--gold)' : '2px solid transparent',
+                      background: isSelected ? 'rgba(212,168,67,0.06)' : 'var(--midnight)',
+                    }}>
+                      <img src={cluster.tracks[0]?.cover_art_300 || cluster.tracks[0]?.cover_art_640}
+                        alt="" style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', display: 'block' }} />
+                      <div style={{ padding: '6px 8px' }}>
+                        <div style={{ fontSize: 'var(--fs-sm)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                          color: isSelected ? 'var(--gold)' : 'var(--text-primary)' }}>
+                          {cluster.album_name}
+                        </div>
+                        <div style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {cluster.artist_names}
+                          {!cluster.isSingle && ` · ${cluster.tracks.length} tracks`}
+                        </div>
+                      </div>
                     </div>
+                    {renderTrackPicker(cluster)}
                   </div>
-                  {isSelected && (
-                    <button onClick={e => { e.stopPropagation(); onSetCoverFeature(cluster.tracks[0].track_id); }}
-                      style={{ background: 'none', border: 'none', color: selections.find(s => s.albumId === cluster.album_spotify_id && s.isCoverFeature) ? 'var(--gold)' : 'var(--text-muted)', fontSize: 20, cursor: 'pointer', flexShrink: 0 }}>
-                      ★
-                    </button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
+                );
+              })}
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+              {filtered.map(cluster => {
+                const isSelected = selections.some(s => s.albumId === cluster.album_spotify_id);
+                return (
+                  <div key={cluster.album_spotify_id}>
+                    <div onClick={() => handleTap(cluster)} style={{
+                      display: 'flex', alignItems: 'center', gap: 10, padding: '10px 4px',
+                      borderBottom: '1px solid var(--midnight-border)', cursor: 'pointer',
+                      background: isSelected ? 'rgba(212,168,67,0.06)' : 'transparent',
+                    }}>
+                      <img src={cluster.tracks[0]?.cover_art_300 || cluster.tracks[0]?.cover_art_640}
+                        alt="" style={{ width: 52, height: 52, borderRadius: 6, flexShrink: 0,
+                        border: isSelected ? '2px solid var(--gold)' : '2px solid transparent' }} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 'var(--fs-sm)', fontWeight: 600, color: isSelected ? 'var(--gold)' : 'var(--text-primary)',
+                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {cluster.album_name}
+                        </div>
+                        <div style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)' }}>
+                          {cluster.artist_names} · {cluster.isSingle ? 'Single' : `${cluster.tracks.length} tracks ▸`}
+                        </div>
+                      </div>
+                      {isSelected && (
+                        <button onClick={e => { e.stopPropagation(); onSetCoverFeature(cluster.tracks[0].track_id); }}
+                          style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', flexShrink: 0,
+                            color: selections.find(s => s.albumId === cluster.album_spotify_id && s.isCoverFeature) ? 'var(--gold)' : 'var(--text-muted)' }}>
+                          ★
+                        </button>
+                      )}
+                    </div>
+                    {renderTrackPicker(cluster)}
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
       </div>
 
       {/* Sticky bottom action bar */}
