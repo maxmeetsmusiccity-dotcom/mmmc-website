@@ -141,20 +141,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
   };
 
+  /** Clear ALL user-specific data from browser storage */
+  const clearAllUserData = () => {
+    // Supabase session
+    sessionStorage.clear();
+    // Spotify tokens
+    sessionStorage.removeItem('spotify_token');
+    sessionStorage.removeItem('spotify_refresh_token');
+    sessionStorage.removeItem('spotify_token_expires');
+    sessionStorage.removeItem('pkce_verifier');
+    // MusicKit — deauthorize if loaded
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const MK = (window as any).MusicKit;
+      if (MK) {
+        const music = MK.getInstance();
+        if (music?.isAuthorized) music.unauthorize();
+      }
+    } catch { /* MusicKit not loaded */ }
+    // User-specific localStorage
+    localStorage.removeItem('nmf_guest_mode');
+    localStorage.removeItem('nmf_followed_artists');
+    localStorage.removeItem('nmf_recent_release_artists');
+    localStorage.removeItem('nmf_template');
+    localStorage.removeItem('nmf_title_template');
+    localStorage.removeItem('nmf_logo_url');
+    localStorage.removeItem('nmf_card_size');
+    localStorage.removeItem('nmf_panel_ratio');
+    // Custom templates (user-scoped keys)
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i);
+      if (key?.startsWith('nmf_custom_templates_') || key?.startsWith('nmf_scan_')) {
+        localStorage.removeItem(key);
+      }
+    }
+  };
+
   const signOut = async () => {
-    // Clear Supabase auth
     if (supabase) await supabase.auth.signOut();
     setUser(null);
     setSession(null);
     setGuestMode(false);
-    // Clear all cached state
-    localStorage.removeItem('nmf_guest_mode');
-    localStorage.removeItem('nmf_followed_artists');
-    localStorage.removeItem('nmf_recent_release_artists');
-    sessionStorage.clear();
+    clearAllUserData();
   };
 
   const continueAsGuest = () => {
+    // Fresh guest session — clear any previous user's data
+    clearAllUserData();
     setGuestMode(true);
     localStorage.setItem('nmf_guest_mode', '1');
     setLoading(false);
