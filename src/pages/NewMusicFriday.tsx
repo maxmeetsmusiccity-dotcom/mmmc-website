@@ -37,6 +37,7 @@ import CaptionGenerator from '../components/CaptionGenerator';
 import type { MusicSource } from '../lib/sources/types';
 import ToastContainer from '../components/Toast';
 import KeyboardHelp from '../components/KeyboardHelp';
+import Onboarding from '../components/Onboarding';
 import { checkScanHealth } from '../lib/spotify';
 import { useAuth } from '../lib/auth-context';
 
@@ -1932,6 +1933,7 @@ export default function NewMusicFriday() {
       )}
       <ToastContainer />
       <KeyboardHelp />
+      <Onboarding />
     </div>
   );
 }
