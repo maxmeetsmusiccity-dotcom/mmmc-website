@@ -492,6 +492,10 @@ const CarouselPreviewPanel = forwardRef<CarouselPanelHandle, Props>(function Car
               <UnifiedTemplateBuilder
                 mode="grid"
                 initial={getVisibleTemplates(user?.email || undefined).find(t => t.id === gridTemplateId)}
+                selectedTracks={selectedTracks}
+                weekDate={weekDate}
+                logoUrl={logoUrl}
+                gridLayoutId={gridLayoutId}
                 onSave={(t) => {
                   setGridTemplateId(t.id);
                   localStorage.setItem('nmf_template', t.id);

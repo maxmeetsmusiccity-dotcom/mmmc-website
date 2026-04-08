@@ -4,14 +4,14 @@ import type { CarouselTemplate } from '../lib/carousel-templates';
 import { TEMPLATES } from '../lib/carousel-templates';
 import type { TitleSlideTemplate } from '../lib/title-templates';
 import { getTitleTemplate, TITLE_TEMPLATES } from '../lib/title-templates';
-import { generateTemplatePreview, generateTitleSlide, type CarouselAspect } from '../lib/canvas-grid';
+import { generateTemplatePreview, generateTitleSlide, generateGridSlide, type CarouselAspect } from '../lib/canvas-grid';
+import { buildSlots } from '../lib/selection';
 import type { SelectionSlot } from '../lib/selection';
 import {
   titleTemplateToElements, gridTemplateToElements, type EditorElement,
   createCustomText, createCustomImage, createCustomShape, type ShapeKind,
 } from '../lib/editor-elements';
 import CanvasOverlay from './CanvasOverlay';
-import LayerPanel from './LayerPanel';
 
 /* ------------------------------------------------------------------ */
 /*  Props                                                              */
@@ -24,6 +24,9 @@ interface Props {
   initial?: any; // CarouselTemplate or TitleSlideTemplate
   coverFeature?: SelectionSlot | null; // for title preview
   weekDate?: string; // for title preview
+  selectedTracks?: import('../lib/spotify').TrackItem[]; // for grid preview with real album art
+  logoUrl?: string; // for grid preview
+  gridLayoutId?: string; // for grid preview
 }
 
 /* ------------------------------------------------------------------ */
@@ -177,7 +180,7 @@ void _defaultGrid; void _defaultTitle; // used for type reference
 /*  Main Component                                                     */
 /* ------------------------------------------------------------------ */
 
-export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial, coverFeature, weekDate }: Props) {
+export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial, coverFeature, weekDate, selectedTracks, logoUrl, gridLayoutId }: Props) {
   const isGrid = mode === 'grid';
 
   /* ---------- identity ---------- */
@@ -312,8 +315,8 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
   const previewContainerRef = useRef<HTMLDivElement>(null);
   const [previewRect, setPreviewRect] = useState({ w: 400, h: 400 });
-  const [layerOverrides, setLayerOverrides] = useState<Record<string, { visible?: boolean; locked?: boolean }>>({});
-  const [layerOrder, setLayerOrder] = useState<string[] | null>(null);
+  const [layerOverrides] = useState<Record<string, { visible?: boolean; locked?: boolean }>>({});
+  const [layerOrder] = useState<string[] | null>(null);
   const [customElements, setCustomElements] = useState<EditorElement[]>([]);
 
   /* ================================================================ */
@@ -470,20 +473,7 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
     return withOverrides;
   }, [isGrid, buildGridTemplate, buildTitleTemplate, layerOverrides, layerOrder, customElements]);
 
-  const handleToggleVisible = useCallback((id: string) => {
-    setLayerOverrides(prev => ({ ...prev, [id]: { ...prev[id], visible: !(prev[id]?.visible ?? editorElements.find(e => e.id === id)?.visible ?? true) } }));
-  }, [editorElements]);
-
-  const handleToggleLocked = useCallback((id: string) => {
-    setLayerOverrides(prev => ({ ...prev, [id]: { ...prev[id], locked: !(prev[id]?.locked ?? editorElements.find(e => e.id === id)?.locked ?? false) } }));
-  }, [editorElements]);
-
-  const handleReorder = useCallback((fromIdx: number, toIdx: number) => {
-    const ids = editorElements.map(e => e.id);
-    const [moved] = ids.splice(fromIdx, 1);
-    ids.splice(toIdx, 0, moved);
-    setLayerOrder(ids);
-  }, [editorElements]);
+  void layerOverrides; void layerOrder; // reserved for future layer panel restoration
 
   const handleAddText = useCallback(() => {
     pushUndo(customElements);
@@ -631,9 +621,28 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
     clearTimeout(previewTimer.current);
     previewTimer.current = setTimeout(async () => {
       if (isGrid) {
-        const t = buildGridTemplate();
-        const url = generateTemplatePreview(t, 600);
-        setPreviewUrl(url);
+        if (selectedTracks && selectedTracks.length > 0) {
+          // Use real album art when tracks are available
+          setRendering(true);
+          const slots = buildSlots(selectedTracks.slice(0, 8).map((t, i) => ({
+            track: t, albumId: t.album_spotify_id,
+            selectionNumber: i + 1, slideGroup: 1,
+            positionInSlide: i + 1, isCoverFeature: false,
+          })));
+          const wd = weekDate || new Date().toISOString().split('T')[0];
+          generateGridSlide(slots, wd, buildGridTemplate().id || 'mmmc_classic', logoUrl || '/mmmc-logo.png', gridLayoutId, aspect)
+            .then(blob => {
+              const url = URL.createObjectURL(blob);
+              setPreviewUrl(prev => { if (prev?.startsWith('blob:')) URL.revokeObjectURL(prev); return url; });
+            })
+            .catch(() => {
+              // Fallback to placeholder
+              setPreviewUrl(generateTemplatePreview(buildGridTemplate(), 600));
+            })
+            .finally(() => setRendering(false));
+        } else {
+          setPreviewUrl(generateTemplatePreview(buildGridTemplate(), 600));
+        }
       } else {
         // Title mode: render live preview with current template settings
         if (!coverFeature) {
@@ -1251,6 +1260,31 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
           </details>
 
           {/* ============================================= */}
+          {/* ADD ELEMENTS                                   */}
+          {/* ============================================= */}
+          <details>
+            <summary style={sectionHeader}>Custom Elements</summary>
+            <div style={sectionBody}>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+                <button className="btn btn-sm" onClick={handleAddText} style={{ flex: 1, justifyContent: 'center', fontSize: 'var(--fs-2xs)' }}>+ Text</button>
+                <button className="btn btn-sm" onClick={handleAddImage} style={{ flex: 1, justifyContent: 'center', fontSize: 'var(--fs-2xs)' }}>+ Image</button>
+                <button className="btn btn-sm" onClick={() => handleAddShape('rectangle')} style={{ flex: 1, justifyContent: 'center', fontSize: 'var(--fs-2xs)' }}>+ Shape</button>
+              </div>
+              {customElements.length > 0 && (
+                <div style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)' }}>
+                  {customElements.length} custom element{customElements.length !== 1 ? 's' : ''}
+                  {selectedElementId && customElements.find(e => e.id === selectedElementId) && (
+                    <button onClick={() => handleDeleteElement(selectedElementId!)}
+                      style={{ marginLeft: 8, color: 'var(--mmmc-red)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 'var(--fs-2xs)' }}>
+                      Delete Selected
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          </details>
+
+          {/* ============================================= */}
           {/* SELECTED CUSTOM ELEMENT PROPERTIES             */}
           {/* ============================================= */}
           {(() => {
@@ -1374,20 +1408,6 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
           </button>
         </div>
       </div>
-
-      {/* ============= CENTER: Layer Panel ============= */}
-      <LayerPanel
-        elements={editorElements}
-        selectedId={selectedElementId}
-        onSelect={setSelectedElementId}
-        onToggleVisible={handleToggleVisible}
-        onToggleLocked={handleToggleLocked}
-        onReorder={handleReorder}
-        onAddText={handleAddText}
-        onAddImage={handleAddImage}
-        onAddShape={handleAddShape}
-        onDelete={handleDeleteElement}
-      />
 
       {/* ============= RIGHT: Live Preview ============= */}
       <div style={{
