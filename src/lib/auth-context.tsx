@@ -58,34 +58,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!supabase) { setLoading(false); setGuestMode(true); return; }
 
-    // Handle OAuth redirect: if URL has auth params, let Supabase process them first
-    const hashParams = window.location.hash;
-    const searchParams = window.location.search;
-    const isOAuthReturn = hashParams.includes('access_token') || searchParams.includes('code=');
-
-    const initSession = async () => {
-      if (isOAuthReturn && supabase) {
-        console.log('[AUTH] OAuth redirect detected, processing...');
-        try {
-          const code = new URLSearchParams(searchParams).get('code');
-          if (code && supabase.auth.exchangeCodeForSession) {
-            await supabase.auth.exchangeCodeForSession(code);
-          }
-        } catch (e) {
-          console.warn('[AUTH] Code exchange error:', (e as Error).message);
-        }
-        // Clean URL hash/params
-        if (window.location.hash || searchParams.includes('code=')) {
-          window.history.replaceState(null, '', window.location.pathname);
-        }
-      }
-      const { data: { session } } = await supabase!.auth.getSession();
+    // Let Supabase auto-detect OAuth tokens in the URL hash/params.
+    // DO NOT clean the URL before getSession() — Supabase needs to read it.
+    supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) loadProfile(session.user.id);
       setLoading(false);
-    };
-    initSession();
+      // Clean URL after session is established
+      if (window.location.hash.includes('access_token') || window.location.search.includes('code=')) {
+        window.history.replaceState(null, '', window.location.pathname);
+      }
+    });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
