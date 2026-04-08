@@ -410,13 +410,10 @@ export default function NashvilleReleases({ onImport }: Props) {
                   if (isSingle) {
                     toggleSelect(titleTrack.spotify_track_id);
                   } else {
-                    // Toggle all tracks in this release
-                    const allIn = g.tracks.every(t => selected.has(t.spotify_track_id));
-                    setSelected(prev => {
+                    // Expand to show track picker — let user choose which track
+                    setExpanded(prev => {
                       const next = new Set(prev);
-                      for (const t of g.tracks) {
-                        if (allIn) next.delete(t.spotify_track_id); else next.add(t.spotify_track_id);
-                      }
+                      if (next.has(g.key)) next.delete(g.key); else next.add(g.key);
                       return next;
                     });
                   }
