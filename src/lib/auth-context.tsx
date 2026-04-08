@@ -58,18 +58,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!supabase) { setLoading(false); setGuestMode(true); return; }
 
-    // Let Supabase auto-detect OAuth tokens in the URL hash/params.
-    // DO NOT clean the URL before getSession() — Supabase needs to read it.
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) loadProfile(session.user.id);
-      setLoading(false);
-      // Clean URL after session is established
-      if (window.location.hash.includes('access_token') || window.location.search.includes('code=')) {
-        window.history.replaceState(null, '', window.location.pathname);
+    // OAuth callback handling — supports both PKCE (code) and implicit (hash) flows
+    const urlCode = new URLSearchParams(window.location.search).get('code');
+    const hasHashToken = window.location.hash.includes('access_token');
+
+    (async () => {
+      try {
+        // PKCE flow: exchange the code for a session
+        if (urlCode) {
+          console.log('[AUTH] PKCE code detected, exchanging...');
+          const { error } = await supabase.auth.exchangeCodeForSession(urlCode);
+          if (error) console.error('[AUTH] Code exchange failed:', error.message);
+          else console.log('[AUTH] Code exchange succeeded');
+        }
+
+        // Get session (works for both PKCE after exchange and implicit via hash)
+        const { data: { session } } = await supabase.auth.getSession();
+        console.log('[AUTH] getSession result:', session ? `user=${session.user.email}` : 'no session');
+        console.log('[AUTH] URL state: code=' + !!urlCode + ' hash_token=' + hasHashToken);
+
+        setSession(session);
+        setUser(session?.user ?? null);
+        if (session?.user) loadProfile(session.user.id);
+
+        // Clean URL after everything is processed
+        if (urlCode || hasHashToken) {
+          window.history.replaceState(null, '', window.location.pathname);
+        }
+      } catch (e) {
+        console.error('[AUTH] Init error:', (e as Error).message);
+      } finally {
+        setLoading(false);
       }
-    });
+    })();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
