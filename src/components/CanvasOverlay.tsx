@@ -71,12 +71,20 @@ export default function CanvasOverlay({
     });
   }, [onSelect, toPixel, canvasHeight]);
 
-  // Mouse move — drag or resize
+  // Mouse move — drag or resize (with dead zone for move mode)
+  const dragActive = useRef(false);
   useEffect(() => {
-    if (!dragging) return;
+    if (!dragging) { dragActive.current = false; return; }
     const handleMove = (e: MouseEvent) => {
       const dx = e.clientX - dragging.startX;
       const dy = e.clientY - dragging.startY;
+
+      // Dead zone: don't start move until mouse moves 4px (allows click-to-select)
+      if (dragging.mode === 'move' && !dragActive.current) {
+        if (Math.abs(dx) < 4 && Math.abs(dy) < 4) return;
+        dragActive.current = true;
+      }
+
       const { fx, fy } = toFrac(dx, dy);
 
       if (dragging.mode === 'move') {
