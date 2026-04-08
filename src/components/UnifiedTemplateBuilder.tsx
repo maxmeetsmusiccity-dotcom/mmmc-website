@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import type { CarouselTemplate } from '../lib/carousel-templates';
 import { TEMPLATES } from '../lib/carousel-templates';
 import type { TitleSlideTemplate } from '../lib/title-templates';
@@ -782,9 +783,9 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
   /*  Render                                                           */
   /* ================================================================ */
 
-  return (
+  return createPortal(
     <div style={{
-      position: 'fixed', inset: 0, zIndex: 500,
+      position: 'fixed', inset: 0, zIndex: 9999,
       background: 'var(--midnight)',
       fontFamily: 'var(--font-body)',
       overflowY: 'auto',
@@ -1488,7 +1489,8 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
       </button>
     </div>
 
-    </div>
+    </div>,
+    document.body
   );
 }
 

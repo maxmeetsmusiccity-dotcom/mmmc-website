@@ -60,7 +60,7 @@ export default function GridLayoutSelector({ trackCount, selected, onSelect, onC
 
   return (
     <div style={{ marginBottom: 16 }}>
-      <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginBottom: 6 }}>
+      <p style={{ fontSize: 'var(--fs-lg)', color: 'var(--text-muted)', marginBottom: 6 }}>
         Grid Layout <span className="mono" style={{ color: 'var(--gold)' }}>({trackCount} tracks &middot; {allGrids.length} options)</span>
       </p>
 

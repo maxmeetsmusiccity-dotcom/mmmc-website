@@ -101,7 +101,7 @@ export default function TemplateSelector({ selected, onSelect }: Props) {
 
   return (
     <div style={{ marginBottom: 16 }}>
-      <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginBottom: 8 }}>Template</p>
+      <p style={{ fontSize: 'var(--fs-lg)', color: 'var(--text-muted)', marginBottom: 8 }}>Template</p>
       <div
         style={{
           display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 8,

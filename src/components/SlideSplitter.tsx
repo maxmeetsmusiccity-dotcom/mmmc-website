@@ -163,7 +163,7 @@ export default function SlideSplitter({ tracks, defaultTracksPerSlide, onSplitCh
   return (
     <div data-testid="slide-splitter" style={{ marginBottom: 16 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-        <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)' }}>
+        <p style={{ fontSize: 'var(--fs-lg)', color: 'var(--text-muted)' }}>
           Slide Split <span className="mono" style={{ color: 'var(--gold)' }}>({groups.length} slide{groups.length !== 1 ? 's' : ''})</span>
         </p>
         <button
@@ -204,7 +204,7 @@ export default function SlideSplitter({ tracks, defaultTracksPerSlide, onSplitCh
                 style={{
                   display: 'flex', alignItems: 'center', gap: 8,
                   padding: '6px 8px', borderRadius: 4,
-                  fontSize: 'var(--fs-md)', cursor: 'grab',
+                  fontSize: 'var(--fs-sm)', cursor: 'grab',
                   background: isDragOver ? 'rgba(212,168,67,0.1)' : 'transparent',
                   borderTop: isDragOver ? '2px solid var(--gold)' : '2px solid transparent',
                   transition: 'background 0.1s',

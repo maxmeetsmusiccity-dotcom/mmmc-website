@@ -301,7 +301,7 @@ const CarouselPreviewPanel = forwardRef<CarouselPanelHandle, Props>(function Car
         left={<div style={{ minWidth: 0, overflow: 'hidden' }}>
           {/* Carousel Shape */}
           <div style={{ marginBottom: 20 }}>
-            <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginBottom: 8 }}>Carousel Shape</p>
+            <p style={{ fontSize: 'var(--fs-lg)', color: 'var(--text-muted)', marginBottom: 8 }}>Carousel Shape</p>
             <div style={{ display: 'flex', gap: 8 }}>
               {([
                 { value: '1:1' as CarouselAspect, label: 'Square', sub: '1080×1080', icon: '◻' },
@@ -337,7 +337,7 @@ const CarouselPreviewPanel = forwardRef<CarouselPanelHandle, Props>(function Car
 
           {/* Tracks per slide */}
           <div style={{ marginBottom: 20 }}>
-            <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginBottom: 8 }}>Tracks per slide</p>
+            <p style={{ fontSize: 'var(--fs-lg)', color: 'var(--text-muted)', marginBottom: 8 }}>Tracks per slide</p>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               {getTracksPerSlideOptions(selectedTracks.length).map(opt => (
                 <button
@@ -387,7 +387,7 @@ const CarouselPreviewPanel = forwardRef<CarouselPanelHandle, Props>(function Car
 
           {/* Center Logo */}
           <div style={{ marginBottom: 20 }}>
-            <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginBottom: 6 }}>Center Logo</p>
+            <p style={{ fontSize: 'var(--fs-lg)', color: 'var(--text-muted)', marginBottom: 6 }}>Center Logo</p>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <img
                 src={logoUrl}
@@ -431,7 +431,7 @@ const CarouselPreviewPanel = forwardRef<CarouselPanelHandle, Props>(function Car
 
           {/* Grid Slide Style Template */}
           <div style={{ marginBottom: 20, maxWidth: '100%' }}>
-            <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginBottom: 8 }}>Grid Slide Style Template</p>
+            <p style={{ fontSize: 'var(--fs-lg)', color: 'var(--text-muted)', marginBottom: 8 }}>Grid Slide Style Template</p>
             <TemplateSelector selected={gridTemplateId} onSelect={handleGridTemplateChange} />
           </div>
 
@@ -471,7 +471,7 @@ const CarouselPreviewPanel = forwardRef<CarouselPanelHandle, Props>(function Car
                 alt="Grid slide preview"
                 onClick={() => setEditingPreview(editingPreview === 'grid' ? null : 'grid')}
                 style={{
-                  width: '75%', maxWidth: 400, borderRadius: 8, cursor: 'pointer', display: 'block', margin: '0 auto',
+                  width: '85%', maxWidth: 480, borderRadius: 8, cursor: 'pointer', display: 'block', margin: '0 auto',
                   border: editingPreview === 'grid' ? '2px solid var(--gold)' : '1px solid var(--midnight-border)',
                   aspectRatio: carouselAspect === '3:4' ? '3/4' : '1',
                 }}
@@ -521,7 +521,7 @@ const CarouselPreviewPanel = forwardRef<CarouselPanelHandle, Props>(function Car
                   alt="Title slide preview"
                   onClick={() => setEditingPreview(editingPreview === 'title' ? null : 'title')}
                   style={{
-                    width: '75%', maxWidth: 400, borderRadius: 8, cursor: 'pointer', display: 'block', margin: '0 auto',
+                    width: '85%', maxWidth: 480, borderRadius: 8, cursor: 'pointer', display: 'block', margin: '0 auto',
                     border: editingPreview === 'title' ? '2px solid var(--gold)' : '1px solid var(--midnight-border)',
                     aspectRatio: carouselAspect === '3:4' ? '3/4' : '1',
                   }}

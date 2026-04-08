@@ -123,7 +123,7 @@ export default function TitleTemplatePicker({ selected, onSelect, onHover }: Pro
 
   return (
     <div data-testid="title-template-picker" style={{ marginBottom: 16 }}>
-      <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginBottom: 8 }}>Title Slide Template</p>
+      <p style={{ fontSize: 'var(--fs-lg)', color: 'var(--text-muted)', marginBottom: 8 }}>Title Slide Template</p>
       <div
         ref={scrollRef}
         style={{
