@@ -186,8 +186,8 @@ export default function NashvilleReleases({ onImport }: Props) {
   const allStats = countStats(releases);
   const filteredStats = countStats(filtered);
 
-  // Group by album for expandable view
-  const grouped = (() => {
+  // Group by album
+  const albumGroups = (() => {
     const map = new Map<string, NashvilleRelease[]>();
     for (const r of filtered) {
       const key = r.spotify_album_id || `${r.artist_name}_${r.album_name}`;
@@ -195,7 +195,7 @@ export default function NashvilleReleases({ onImport }: Props) {
       arr.push(r);
       map.set(key, arr);
     }
-    const groups = [...map.entries()].map(([key, tracks]) => ({
+    return [...map.entries()].map(([key, tracks]) => ({
       key,
       album: tracks[0].album_name,
       artist: tracks[0].artist_name,
@@ -204,12 +204,41 @@ export default function NashvilleReleases({ onImport }: Props) {
       date: tracks[0].release_date,
       tracks,
     }));
-    // Sort
+  })();
+
+  // Group by artist → releases
+  const artistGroups = (() => {
+    const map = new Map<string, typeof albumGroups>();
+    for (const g of albumGroups) {
+      const artistKey = (g.artist || '').split(/,|feat\.|ft\./i)[0].trim();
+      const arr = map.get(artistKey) || [];
+      arr.push(g);
+      map.set(artistKey, arr);
+    }
+    const artists = [...map.entries()].map(([name, releases]) => ({
+      name,
+      releases: releases.sort((a, b) => (a.date || '').localeCompare(b.date || '')),
+      cover: releases[0].cover,
+      trackCount: releases.reduce((sum, r) => sum + r.tracks.length, 0),
+    }));
     const dir = sortDir === 'asc' ? 1 : -1;
-    if (sortBy === 'artist') groups.sort((a, b) => dir * a.artist.localeCompare(b.artist));
-    else if (sortBy === 'date') groups.sort((a, b) => dir * (a.date || '').localeCompare(b.date || ''));
-    else if (sortBy === 'title') groups.sort((a, b) => dir * a.album.localeCompare(b.album));
-    return groups;
+    if (sortBy === 'artist') artists.sort((a, b) => dir * a.name.localeCompare(b.name));
+    else if (sortBy === 'date') artists.sort((a, b) => dir * (a.releases[0]?.date || '').localeCompare(b.releases[0]?.date || ''));
+    else if (sortBy === 'title') artists.sort((a, b) => dir * (a.releases[0]?.album || '').localeCompare(b.releases[0]?.album || ''));
+    return artists;
+  })();
+
+  // For backward compat, keep grouped as flat album list
+  const grouped = albumGroups;
+
+  // Selected items with track names for the persistence bar
+  const selectedItems = (() => {
+    const items: { trackId: string; artist: string; track: string }[] = [];
+    for (const trackId of selected) {
+      const r = releases.find(rel => rel.spotify_track_id === trackId);
+      if (r) items.push({ trackId, artist: (r.artist_name || '').split(/,|feat\./i)[0].trim(), track: r.track_name });
+    }
+    return items;
   })();
 
   const toggleSelect = (trackId: string) => {
@@ -352,6 +381,38 @@ export default function NashvilleReleases({ onImport }: Props) {
         </div>
       </div>
 
+      {/* Selection persistence bar */}
+      {selectedItems.length > 0 && (
+        <div style={{
+          padding: '8px 12px', marginBottom: 10, borderRadius: 8,
+          background: 'rgba(212,168,67,0.08)', border: '1px solid var(--gold-dark)',
+          display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap',
+        }}>
+          <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--gold)', fontWeight: 600 }}>
+            {selectedItems.length} selected:
+          </span>
+          {selectedItems.map(item => (
+            <span key={item.trackId} style={{
+              fontSize: 'var(--fs-2xs)', background: 'var(--gold)', color: 'var(--midnight)',
+              padding: '2px 8px', borderRadius: 10, fontWeight: 600,
+              display: 'inline-flex', alignItems: 'center', gap: 4, maxWidth: 200,
+            }}>
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {item.artist} — {item.track}
+              </span>
+              <button onClick={() => toggleSelect(item.trackId)} style={{
+                background: 'none', border: 'none', cursor: 'pointer', color: 'var(--midnight)',
+                fontSize: 10, lineHeight: 1, padding: 0,
+              }}>&times;</button>
+            </span>
+          ))}
+          <button onClick={() => setSelected(new Set())}
+            style={{ fontSize: 'var(--fs-2xs)', color: 'var(--mmmc-red)', cursor: 'pointer', marginLeft: 'auto', background: 'none', border: 'none' }}>
+            Clear All
+          </button>
+        </div>
+      )}
+
       {/* Sort controls */}
       <div style={{ display: 'flex', gap: 6, marginBottom: 8, alignItems: 'center', flexWrap: 'wrap' }}>
         <span style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)' }}>Sort:</span>
@@ -387,9 +448,27 @@ export default function NashvilleReleases({ onImport }: Props) {
         </div>
       )}
 
-      {/* Release list — grouped by album, selectable, expandable */}
+      {/* Release list — grouped by artist → release → tracks */}
       <div style={{ maxHeight: 600, overflowY: 'auto' }}>
-        {grouped.map(g => {
+        {artistGroups.map(artist => (
+          <div key={artist.name} style={{ marginBottom: 12 }}>
+            {/* Artist header */}
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0',
+              borderBottom: '1px solid var(--midnight-border)',
+            }}>
+              {artist.cover && (
+                <img src={artist.cover} alt="" style={{ width: 32, height: 32, borderRadius: '50%', flexShrink: 0 }} />
+              )}
+              <span style={{ fontWeight: 700, fontSize: 'var(--fs-md)', color: 'var(--text-primary)' }}>
+                {artist.name}
+              </span>
+              <span style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)' }}>
+                {artist.releases.length} {artist.releases.length === 1 ? 'release' : 'releases'} · {artist.trackCount} {artist.trackCount === 1 ? 'track' : 'tracks'}
+              </span>
+            </div>
+            {/* Releases for this artist */}
+            {artist.releases.map(g => {
           const isSingle = g.tracks.length === 1;
           const isExpanded = expanded.has(g.key);
           const titleTrack = g.tracks[0];
@@ -487,6 +566,8 @@ export default function NashvilleReleases({ onImport }: Props) {
             </div>
           );
         })}
+          </div>
+        ))}
       </div>
 
       {generatedAt && (
