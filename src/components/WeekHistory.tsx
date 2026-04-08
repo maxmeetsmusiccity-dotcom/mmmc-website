@@ -52,7 +52,7 @@ export default function WeekHistory({ onLoadWeek, currentWeekDate }: Props) {
                 )}
               </div>
               <div style={{ display: 'flex', gap: 12, fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)' }}>
-                <span className="mono">{selections.length} tracks</span>
+                <span className="mono">{selections.length} {selections.length === 1 ? 'track' : 'tracks'}</span>
                 {week.playlist_master_pushed && (
                   <span style={{ color: 'var(--spotify-green)' }}>Playlist pushed</span>
                 )}

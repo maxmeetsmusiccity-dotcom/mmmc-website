@@ -80,7 +80,7 @@ export default function MobileResultsView({
             &larr; Back to tracks
           </button>
           <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)', marginLeft: 'auto' }}>
-            {allPreviews.length} slides
+            {allPreviews.length} {allPreviews.length === 1 ? 'slide' : 'slides'}
           </span>
         </div>
 
@@ -121,7 +121,7 @@ export default function MobileResultsView({
         <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
           <button className="btn btn-gold" onClick={onDownloadAll}
             style={{ width: '100%', justifyContent: 'center', fontSize: 'var(--fs-lg)', padding: '14px 0' }}>
-            Download All ({allPreviews.length} slides)
+            Download All ({allPreviews.length} {allPreviews.length === 1 ? 'slide' : 'slides'})
           </button>
           <button className="btn" onClick={() => onDownloadSlide(activeSlide)}
             style={{ width: '100%', justifyContent: 'center' }}>
@@ -307,7 +307,7 @@ export default function MobileResultsView({
                         </div>
                         <div style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {cluster.artist_names}
-                          {!cluster.isSingle && ` · ${cluster.tracks.length} tracks`}
+                          {!cluster.isSingle && ` · ${cluster.tracks.length} ${cluster.tracks.length === 1 ? 'track' : 'tracks'}`}
                         </div>
                       </div>
                     </div>
@@ -336,7 +336,7 @@ export default function MobileResultsView({
                           {cluster.album_name}
                         </div>
                         <div style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)' }}>
-                          {cluster.artist_names} · {cluster.isSingle ? 'Single' : `${cluster.tracks.length} tracks ▸`}
+                          {cluster.artist_names} · {cluster.isSingle ? 'Single' : `${cluster.tracks.length} ${cluster.tracks.length === 1 ? 'track' : 'tracks'} ▸`}
                         </div>
                       </div>
                       {isSelected && (

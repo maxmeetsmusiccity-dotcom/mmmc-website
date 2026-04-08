@@ -138,7 +138,7 @@ export default memo(function ClusterCard({ cluster, selectionSlot, selectedSlots
             {cluster.artist_names}
             <span style={{ color: 'var(--text-muted)' }}>
               {' · '}<span className={`badge ${badgeClass}`} style={{ fontSize: 'var(--fs-3xs)', verticalAlign: 'middle' }}>{badgeLabel}</span>
-              {!cluster.isSingle && ` · ${cluster.total_tracks} tracks`}
+              {!cluster.isSingle && ` · ${cluster.total_tracks} ${cluster.total_tracks === 1 ? 'track' : 'tracks'}`}
               {featureCount && featureCount > 0 ? ` · ${featureCount}x featured` : ''}
             </span>
           </p>

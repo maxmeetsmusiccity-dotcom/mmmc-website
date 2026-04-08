@@ -577,7 +577,7 @@ const CarouselPreviewPanel = forwardRef<CarouselPanelHandle, Props>(function Car
         {allPreviews.length > 0 && (
           <>
             <button className="btn btn-gold" onClick={handleDownloadAll} title="Download all slides as a ZIP file" style={{ fontSize: 'var(--fs-md)', padding: '10px 24px' }}>
-              Download ZIP ({allPreviews.length} slides)
+              Download ZIP ({allPreviews.length} {allPreviews.length === 1 ? 'slide' : 'slides'})
             </button>
             {coverFeature && (
               <button className="btn btn-sm" onClick={handleGenerateStory} disabled={generating}
