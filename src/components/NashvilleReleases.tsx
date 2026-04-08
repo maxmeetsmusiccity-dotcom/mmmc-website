@@ -551,7 +551,7 @@ export default function NashvilleReleases({ onImport }: Props) {
               <div key={r.name} style={{
                 display: 'flex', alignItems: 'center', gap: 10, padding: '10px 4px',
                 borderBottom: '1px solid var(--midnight-border)',
-                opacity: 0.4, cursor: 'default',
+                opacity: 0.6, cursor: 'default',
               }}>
                 <div style={{
                   width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
