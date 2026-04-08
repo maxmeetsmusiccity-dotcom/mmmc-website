@@ -30,7 +30,7 @@ export default function LayerPanel({
 }: Props) {
   return (
     <div style={{
-      width: 200, flexShrink: 0,
+      width: 160, flexShrink: 0,
       borderRight: '1px solid var(--midnight-border)',
       background: 'var(--midnight)',
       display: 'flex', flexDirection: 'column',

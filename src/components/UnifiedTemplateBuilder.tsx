@@ -581,12 +581,10 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
     previewTimer.current = setTimeout(async () => {
       if (isGrid) {
         const t = buildGridTemplate();
-        const url = generateTemplatePreview(t, 400);
+        const url = generateTemplatePreview(t, 600);
         setPreviewUrl(url);
       } else {
-        // Title mode: generate from the closest base template ID
-        // since generateTitleSlide only accepts a template ID.
-        // We render the base and the final save captures all edits.
+        // Title mode: render live preview with current template settings
         if (!coverFeature) {
           // Generate a placeholder colored canvas
           const canvas = document.createElement('canvas');
@@ -1007,7 +1005,7 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
           {/* TITLE LAYOUT (title mode only)                 */}
           {/* ============================================= */}
           {!isGrid && (
-            <details open>
+            <details>
               <summary style={sectionHeader}>Title Layout</summary>
               <div style={sectionBody}>
                 <Slider label="Headline Y" value={headlineY} min={0.01} max={0.20} step={0.005}
@@ -1279,7 +1277,7 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
 
       {/* ============= RIGHT: Live Preview ============= */}
       <div style={{
-        flex: 1, minWidth: 0,
+        flex: 2, minWidth: 0,
         display: 'flex', flexDirection: 'column',
         background: 'var(--midnight)',
       }}>
@@ -1317,11 +1315,12 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
           <div ref={previewContainerRef} style={{ position: 'relative', display: 'inline-block' }}>
             {previewUrl ? (
               <img
+                key={previewUrl}
                 src={previewUrl}
                 alt={`${isGrid ? 'Grid' : 'Title'} template preview`}
                 style={{
                   maxWidth: '100%',
-                  maxHeight: 'calc(100vh - 80px)',
+                  maxHeight: 'calc(100vh - 100px)',
                   borderRadius: 8,
                   border: '1px solid var(--midnight-border)',
                   objectFit: 'contain',

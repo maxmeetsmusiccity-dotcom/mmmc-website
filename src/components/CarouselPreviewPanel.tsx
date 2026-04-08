@@ -8,6 +8,7 @@ import { getGridsForCount } from '../lib/grid-layouts';
 import { generatePlatformImage, PLATFORM_LIST, type PlatformId } from '../lib/cross-platform';
 import TemplateSelector from './TemplateSelector';
 import TitleTemplatePicker from './TitleTemplatePicker';
+import UnifiedTemplateBuilder from './UnifiedTemplateBuilder';
 import GridLayoutSelector from './GridLayoutSelector';
 import SlideSplitter, { type SlideGroup } from './SlideSplitter';
 import ResizablePanel from './ResizablePanel';
@@ -106,6 +107,7 @@ const CarouselPreviewPanel = forwardRef<CarouselPanelHandle, Props>(function Car
   const manualSplit = useRef(false);
   const [gridPreview, setGridPreview] = useState<string>('');
   const [titlePreview, setTitlePreview] = useState<string>('');
+  const [editingPreview, setEditingPreview] = useState<'grid' | 'title' | null>(null);
   // allPreviews, generating, carouselAspect — lifted to parent via props
   const setAllPreviews = onAllPreviewsChange;
   const setGenerating = onGeneratingChange;
@@ -433,18 +435,25 @@ const CarouselPreviewPanel = forwardRef<CarouselPanelHandle, Props>(function Car
           />
         </div>}
         right={<div style={{ position: 'sticky', top: 80, marginTop: 20 }}>
-          {/* Grid slide preview */}
+          {/* Grid slide preview — click to edit */}
           <div style={{ marginBottom: 16 }}>
-            <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)', marginBottom: 6 }}>
-              Grid Slide Preview
-            </p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+              <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)', margin: 0 }}>Grid Slide Preview</p>
+              {gridPreview && (
+                <button onClick={() => setEditingPreview(editingPreview === 'grid' ? null : 'grid')}
+                  style={{ fontSize: 'var(--fs-2xs)', color: 'var(--gold)', cursor: 'pointer', background: 'none', border: 'none' }}>
+                  {editingPreview === 'grid' ? 'Close Editor' : '✏ Customize'}
+                </button>
+              )}
+            </div>
             {gridPreview ? (
               <img
                 src={gridPreview}
                 alt="Grid slide preview"
+                onClick={() => setEditingPreview(editingPreview === 'grid' ? null : 'grid')}
                 style={{
-                  width: '100%', borderRadius: 8,
-                  border: '1px solid var(--midnight-border)',
+                  width: '100%', borderRadius: 8, cursor: 'pointer',
+                  border: editingPreview === 'grid' ? '2px solid var(--gold)' : '1px solid var(--midnight-border)',
                   aspectRatio: carouselAspect === '3:4' ? '3/4' : '1',
                 }}
               />
@@ -459,21 +468,42 @@ const CarouselPreviewPanel = forwardRef<CarouselPanelHandle, Props>(function Car
                 Select tracks to see preview
               </div>
             )}
+            {/* Inline grid template editor */}
+            {editingPreview === 'grid' && (
+              <UnifiedTemplateBuilder
+                mode="grid"
+                initial={getVisibleTemplates(user?.email || undefined).find(t => t.id === gridTemplateId)}
+                onSave={(t) => {
+                  setGridTemplateId(t.id);
+                  localStorage.setItem('nmf_template', t.id);
+                  setAllPreviews([]);
+                  setEditingPreview(null);
+                }}
+                onCancel={() => setEditingPreview(null)}
+              />
+            )}
           </div>
 
-          {/* Title slide preview */}
+          {/* Title slide preview — click to edit */}
           {titleTemplateId !== 'none' && (
             <div style={{ marginBottom: 16 }}>
-              <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)', marginBottom: 6 }}>
-                Title Slide Preview
-              </p>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)', margin: 0 }}>Title Slide Preview</p>
+                {titlePreview && (
+                  <button onClick={() => setEditingPreview(editingPreview === 'title' ? null : 'title')}
+                    style={{ fontSize: 'var(--fs-2xs)', color: 'var(--gold)', cursor: 'pointer', background: 'none', border: 'none' }}>
+                    {editingPreview === 'title' ? 'Close Editor' : '✏ Customize'}
+                  </button>
+                )}
+              </div>
               {titlePreview ? (
                 <img
                   src={titlePreview}
                   alt="Title slide preview"
+                  onClick={() => setEditingPreview(editingPreview === 'title' ? null : 'title')}
                   style={{
-                    width: '100%', borderRadius: 8,
-                    border: '1px solid var(--midnight-border)',
+                    width: '100%', borderRadius: 8, cursor: 'pointer',
+                    border: editingPreview === 'title' ? '2px solid var(--gold)' : '1px solid var(--midnight-border)',
                     aspectRatio: carouselAspect === '3:4' ? '3/4' : '1',
                   }}
                 />
@@ -487,6 +517,22 @@ const CarouselPreviewPanel = forwardRef<CarouselPanelHandle, Props>(function Car
                 }}>
                   {coverFeature ? 'Rendering...' : 'Set a cover feature (★) to preview'}
                 </div>
+              )}
+              {/* Inline title template editor */}
+              {editingPreview === 'title' && (
+                <UnifiedTemplateBuilder
+                  mode="title"
+                  initial={undefined}
+                  coverFeature={coverFeature}
+                  weekDate={weekDate}
+                  onSave={(t) => {
+                    setTitleTemplateId(t.id);
+                    localStorage.setItem('nmf_title_template', t.id);
+                    setAllPreviews([]);
+                    setEditingPreview(null);
+                  }}
+                  onCancel={() => setEditingPreview(null)}
+                />
               )}
             </div>
           )}

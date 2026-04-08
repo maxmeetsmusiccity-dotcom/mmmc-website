@@ -125,7 +125,7 @@ export default function ResizablePanel({ left, right }: Props) {
         overflow: 'hidden',
         flexShrink: 0,
       }}>
-        <div style={{ overflowY: 'auto', overflowX: 'auto', paddingRight: 12 }}>
+        <div style={{ overflowY: 'auto', overflowX: 'auto', paddingRight: 12, minWidth: 0 }}>
           {left}
         </div>
       </div>
