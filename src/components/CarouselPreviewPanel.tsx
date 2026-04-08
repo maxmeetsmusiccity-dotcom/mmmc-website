@@ -250,6 +250,23 @@ const CarouselPreviewPanel = forwardRef<CarouselPanelHandle, Props>(function Car
     }
   };
 
+  const handleGenerateStory = async () => {
+    if (!coverFeature) { setError('Star a release to generate a Story slide'); return; }
+    setGenerating(true);
+    try {
+      const storyBlob = await generateTitleSlide(coverFeature, weekDate, titleTemplateId, '9:16');
+      const url = URL.createObjectURL(storyBlob);
+      // Download directly
+      downloadBlob(storyBlob, `nmf-story-${weekDate}.png`);
+      // Also add to previews so user can see it
+      setAllPreviews([...allPreviews, url]);
+    } catch (e) {
+      setError(`Story generation failed: ${(e as Error).message}`);
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   const handleDownloadAll = async () => {
     const JSZip = (await import('jszip')).default;
     const zip = new JSZip();
@@ -265,6 +282,7 @@ const CarouselPreviewPanel = forwardRef<CarouselPanelHandle, Props>(function Car
   // Expose generate and downloadAll to parent via ref
   useImperativeHandle(ref, () => ({
     generate: handleGenerate,
+    generateStory: handleGenerateStory,
     downloadAll: handleDownloadAll,
   }));
 
@@ -557,9 +575,18 @@ const CarouselPreviewPanel = forwardRef<CarouselPanelHandle, Props>(function Car
           {generating ? 'Generating...' : allPreviews.length > 0 ? 'Regenerate All Slides' : 'Generate Carousel'}
         </button>
         {allPreviews.length > 0 && (
-          <button className="btn btn-gold" onClick={handleDownloadAll} title="Download all slides as a ZIP file" style={{ fontSize: 'var(--fs-md)', padding: '10px 24px' }}>
-            Download ZIP ({allPreviews.length} slides)
-          </button>
+          <>
+            <button className="btn btn-gold" onClick={handleDownloadAll} title="Download all slides as a ZIP file" style={{ fontSize: 'var(--fs-md)', padding: '10px 24px' }}>
+              Download ZIP ({allPreviews.length} slides)
+            </button>
+            {coverFeature && (
+              <button className="btn btn-sm" onClick={handleGenerateStory} disabled={generating}
+                title="Generate a 9:16 Story version of the title slide"
+                style={{ fontSize: 'var(--fs-sm)', padding: '8px 16px' }}>
+                {generating ? '...' : '▮ Story (9:16)'}
+              </button>
+            )}
+          </>
         )}
       </div>
       {/* Template comparison */}
