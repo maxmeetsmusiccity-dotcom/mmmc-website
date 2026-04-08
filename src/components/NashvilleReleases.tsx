@@ -34,8 +34,11 @@ export default function NashvilleReleases({ onImport }: Props) {
   const [sortBy, setSortBy] = useState<'artist' | 'date' | 'title'>('artist');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
-  // Search
+  // Search — queries full Nashville universe via API when 3+ chars
   const [searchQuery, setSearchQuery] = useState('');
+  const [universeResults, setUniverseResults] = useState<{ name: string; hasRelease: boolean }[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // View mode: list or grid tiles
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
@@ -73,6 +76,32 @@ export default function NashvilleReleases({ onImport }: Props) {
       .catch(() => setShowcaseArtists(new Set()))
       .finally(() => setLoadingShowcase(false));
   }, [activeShowcase]);
+
+  // Debounced search across the full Nashville universe
+  useEffect(() => {
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    if (searchQuery.length < 3) { setUniverseResults([]); return; }
+    setSearchLoading(true);
+    searchTimer.current = setTimeout(() => {
+      fetch(`/api/browse-artists?q=${encodeURIComponent(searchQuery.trim())}`)
+        .then(r => r.json())
+        .then(d => {
+          const releaseArtists = new Set(
+            releases.map(r => (r.artist_name || '').split(/,|feat\.|ft\./i)[0].trim().toLowerCase())
+          );
+          const results = ((d.results || []) as { name: string }[]).map(a => ({
+            name: a.name,
+            hasRelease: releaseArtists.has(a.name.toLowerCase()),
+          }));
+          // Sort: artists with releases first
+          results.sort((a, b) => (b.hasRelease ? 1 : 0) - (a.hasRelease ? 1 : 0));
+          setUniverseResults(results);
+        })
+        .catch(() => setUniverseResults([]))
+        .finally(() => setSearchLoading(false));
+    }, 300);
+    return () => { if (searchTimer.current) clearTimeout(searchTimer.current); };
+  }, [searchQuery, releases]);
 
   const runScan = async () => {
     if (scanning.current) return;
@@ -507,6 +536,45 @@ export default function NashvilleReleases({ onImport }: Props) {
       {activeShowcase && filtered.length === 0 && !loadingShowcase && (
         <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)' }}>
           No releases this week from {showcases.find(s => s.id === activeShowcase)?.name} artists.
+        </div>
+      )}
+
+      {/* Universe search results (when searching 3+ chars) */}
+      {searchQuery.length >= 3 && (universeResults.length > 0 || searchLoading) && (
+        <div style={{ maxHeight: 400, overflowY: 'auto', marginBottom: 12 }}>
+          {searchLoading && (
+            <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)', padding: 8 }}>Searching Nashville universe...</p>
+          )}
+          {universeResults.map(r => {
+            if (r.hasRelease) return null; // already shown in the release list below
+            return (
+              <div key={r.name} style={{
+                display: 'flex', alignItems: 'center', gap: 10, padding: '10px 4px',
+                borderBottom: '1px solid var(--midnight-border)',
+                opacity: 0.4, cursor: 'default',
+              }}>
+                <div style={{
+                  width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+                  background: 'var(--midnight-border)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)',
+                }}>—</div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, fontSize: 'var(--fs-sm)', color: 'var(--text-muted)' }}>
+                    {r.name}
+                  </div>
+                  <div style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                    No new music this week
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+          {!searchLoading && universeResults.length === 0 && (
+            <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)', padding: 8 }}>
+              No artists found matching "{searchQuery}"
+            </p>
+          )}
         </div>
       )}
 
