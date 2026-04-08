@@ -84,7 +84,7 @@ export default function AuthGate({ children }: Props) {
         {/* Continue as Guest */}
         <button
           className="btn btn-gold"
-          onClick={() => { sessionStorage.setItem('nmf_entered', '1'); continueAsGuest(); }}
+          onClick={() => { continueAsGuest(); sessionStorage.setItem('nmf_entered', '1'); }}
           style={{ width: '100%', justifyContent: 'center', fontSize: 'var(--fs-lg)', padding: '14px 0', marginBottom: 12 }}
         >
           Jump In
