@@ -639,44 +639,69 @@ const CarouselPreviewPanel = forwardRef<CarouselPanelHandle, Props>(function Car
         </details>
       )}
 
-      {/* Full carousel preview with navigation */}
+      {/* Multi-slide preview strip + main viewer */}
       {allPreviews.length > 0 && (
         <div>
-          <div style={{ display: 'flex', gap: 6, justifyContent: 'center', marginBottom: 12 }}>
-            {allPreviews.map((_, i) => (
-              <button
+          {/* Thumbnail strip — drag to reorder */}
+          <div style={{
+            display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8, marginBottom: 16,
+            WebkitOverflowScrolling: 'touch', scrollSnapType: 'x mandatory',
+          }}>
+            {allPreviews.map((url, i) => (
+              <div
                 key={i}
+                draggable
+                onDragStart={e => { e.dataTransfer.setData('text/plain', String(i)); e.dataTransfer.effectAllowed = 'move'; }}
+                onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
+                onDrop={e => {
+                  e.preventDefault();
+                  const from = parseInt(e.dataTransfer.getData('text/plain'));
+                  const to = i;
+                  if (from === to) return;
+                  const reordered = [...allPreviews];
+                  const [moved] = reordered.splice(from, 1);
+                  reordered.splice(to, 0, moved);
+                  setAllPreviews(reordered);
+                  setActivePreview(to);
+                }}
                 onClick={() => setActivePreview(i)}
                 style={{
-                  width: activePreview === i ? 24 : 8, height: 8, borderRadius: 4,
-                  background: activePreview === i ? 'var(--gold)' : 'var(--midnight-border)',
-                  transition: 'all 0.2s', cursor: 'pointer',
+                  flexShrink: 0, scrollSnapAlign: 'start', cursor: 'grab',
+                  width: 80, position: 'relative',
+                  border: activePreview === i ? '2px solid var(--gold)' : '2px solid transparent',
+                  borderRadius: 6, overflow: 'hidden',
+                  opacity: activePreview === i ? 1 : 0.7,
+                  transition: 'all 0.15s',
                 }}
-              />
+              >
+                <img src={url} alt={`Slide ${i + 1}`}
+                  style={{ width: '100%', display: 'block', borderRadius: 4 }} />
+                <span style={{
+                  position: 'absolute', bottom: 2, right: 4,
+                  fontSize: 9, color: '#fff', fontFamily: 'var(--font-mono)',
+                  textShadow: '0 1px 3px rgba(0,0,0,0.8)',
+                }}>
+                  {i + 1}
+                </span>
+              </div>
             ))}
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 16 }}>
-            <button
-              onClick={() => setActivePreview(Math.max(0, activePreview - 1))}
-              disabled={activePreview === 0}
-              style={{ fontSize: 'var(--fs-3xl)', color: activePreview === 0 ? 'var(--midnight-border)' : 'var(--gold)', cursor: 'pointer', alignSelf: 'center' }}
-            >
-              ‹
-            </button>
-            <div style={{ position: 'relative' }}>
-              <img
-                src={allPreviews[activePreview]}
-                alt={`Slide ${activePreview + 1}`}
-                style={{ width: '100%', maxWidth: 480, borderRadius: 8, border: '1px solid var(--midnight-border)' }}
-              />
-              <span style={{
-                position: 'absolute', bottom: 8, right: 8,
-                background: 'rgba(0,0,0,0.7)', padding: '2px 8px',
-                borderRadius: 4, fontSize: 'var(--fs-2xs)', color: '#fff', fontFamily: 'var(--font-mono)',
-              }}>
-                {activePreview + 1}/{allPreviews.length}
-              </span>
+          {/* Main preview — selected slide */}
+          <div style={{ position: 'relative', textAlign: 'center' }}>
+            <img
+              src={allPreviews[activePreview]}
+              alt={`Slide ${activePreview + 1}`}
+              style={{ width: '100%', maxWidth: 540, borderRadius: 8, border: '1px solid var(--midnight-border)' }}
+            />
+            <span style={{
+              position: 'absolute', bottom: 8, right: 8,
+              background: 'rgba(0,0,0,0.7)', padding: '2px 8px',
+              borderRadius: 4, fontSize: 'var(--fs-2xs)', color: '#fff', fontFamily: 'var(--font-mono)',
+            }}>
+              {activePreview + 1}/{allPreviews.length}
+            </span>
+            <div style={{ position: 'absolute', top: 8, right: 8, display: 'flex', gap: 4 }}>
               <button
                 className="btn btn-sm"
                 onClick={async () => {
@@ -684,18 +709,27 @@ const CarouselPreviewPanel = forwardRef<CarouselPanelHandle, Props>(function Car
                   const blob = await res.blob();
                   downloadBlob(blob, `nmf-${platformId}-slide-${activePreview + 1}.png`);
                 }}
-                style={{ position: 'absolute', top: 8, right: 8, fontSize: 'var(--fs-2xs)', padding: '3px 8px' }}
+                style={{ fontSize: 'var(--fs-2xs)', padding: '3px 8px' }}
               >
                 Download
               </button>
             </div>
-            <button
-              onClick={() => setActivePreview(Math.min(allPreviews.length - 1, activePreview + 1))}
-              disabled={activePreview === allPreviews.length - 1}
-              style={{ fontSize: 'var(--fs-3xl)', color: activePreview === allPreviews.length - 1 ? 'var(--midnight-border)' : 'var(--gold)', cursor: 'pointer', alignSelf: 'center' }}
-            >
-              ›
-            </button>
+            {/* Arrow navigation */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
+              <button
+                onClick={() => setActivePreview(Math.max(0, activePreview - 1))}
+                disabled={activePreview === 0}
+                style={{ fontSize: 'var(--fs-xl)', color: activePreview === 0 ? 'var(--midnight-border)' : 'var(--gold)', cursor: 'pointer', background: 'none', border: 'none' }}
+              >&larr; Prev</button>
+              <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)' }}>
+                Drag thumbnails above to reorder slides
+              </span>
+              <button
+                onClick={() => setActivePreview(Math.min(allPreviews.length - 1, activePreview + 1))}
+                disabled={activePreview === allPreviews.length - 1}
+                style={{ fontSize: 'var(--fs-xl)', color: activePreview === allPreviews.length - 1 ? 'var(--midnight-border)' : 'var(--gold)', cursor: 'pointer', background: 'none', border: 'none' }}
+              >Next &rarr;</button>
+            </div>
           </div>
         </div>
       )}
