@@ -148,15 +148,48 @@ export async function scanAppleMusicLibrary(options: AppleMusicScanOptions): Pro
 
   console.log(`[AM SCAN] Found ${artists.length} library artists`);
 
-  // For each artist, fetch albums sequentially
+  // For each library artist, look up their CATALOG ID, then check catalog for new releases
   for (let i = 0; i < artists.length; i++) {
     const artist = artists[i];
     const artistName = artist.attributes?.name || 'Unknown';
 
     try {
+      // Step 1: Get the catalog ID for this library artist
+      // Library artists have a different ID than catalog artists
+      let catalogArtistId: string | null = null;
+      await enforceGap();
+      try {
+        const catalogLookup = await music.api.music(
+          `/v1/me/library/artists/${artist.id}`,
+          { include: 'catalog' }
+        );
+        lastCallTime = Date.now();
+        const relationships = catalogLookup?.data?.data?.[0]?.relationships?.catalog?.data;
+        if (relationships && relationships.length > 0) {
+          catalogArtistId = relationships[0].id;
+        }
+      } catch {
+        // Fallback: search catalog by name
+        await enforceGap();
+        try {
+          const searchRes = await music.api.music(
+            `/v1/catalog/us/search`,
+            { term: artistName, types: 'artists', limit: 1 }
+          );
+          lastCallTime = Date.now();
+          catalogArtistId = searchRes?.data?.results?.artists?.data?.[0]?.id || null;
+        } catch { /* skip this artist */ }
+      }
+
+      if (!catalogArtistId) {
+        // Can't find catalog entry — skip
+        continue;
+      }
+
+      // Step 2: Fetch CATALOG albums (all releases, not just what's in user's library)
       await enforceGap();
       const albumRes = await music.api.music(
-        `/v1/me/library/artists/${artist.id}/albums`,
+        `/v1/catalog/us/artists/${catalogArtistId}/albums`,
         { limit: 20 }
       );
       lastCallTime = Date.now();
