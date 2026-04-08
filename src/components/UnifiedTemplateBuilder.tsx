@@ -544,14 +544,19 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
     if (selectedElementId === id) setSelectedElementId(null);
   }, [selectedElementId]);
 
+  // IDs that have dedicated state variables — never promote these to customElements
+  const TITLE_STATE_IDS = new Set(['headline', 'subtitle', 'date', 'featured_image']);
+
   const handleElementUpdate = useCallback((id: string, patch: Partial<EditorElement>) => {
-    // Custom elements: update directly in custom elements state
+    // User-added custom elements: update directly
     if (customElements.some(el => el.id === id)) {
       setCustomElements(prev => prev.map(el => el.id === id ? { ...el, ...patch } : el));
-      return;
+      // For title elements that also have state vars, fall through (don't return)
+      if (isGrid || !TITLE_STATE_IDS.has(id)) return;
     }
-    // Template-derived elements: map known positions back to state variables
-    if (!isGrid) {
+
+    // Title template elements: map to state variables so the canvas renderer picks them up
+    if (!isGrid && TITLE_STATE_IDS.has(id)) {
       if (patch.y !== undefined) {
         switch (id) {
           case 'headline': setHeadlineY(patch.y); break;
@@ -566,10 +571,10 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
       if (patch.rotation !== undefined && id === 'featured_image') {
         setFeaturedRotation(patch.rotation);
       }
+      return; // handled via state variables — don't promote
     }
-    // For any template-derived element not fully handled above (e.g. rotation on
-    // headline, x-position changes, grid elements), promote to custom elements
-    // so the change persists in the overlay
+
+    // Grid-derived or unknown elements: promote to customElements so changes persist
     if (!customElements.some(el => el.id === id)) {
       const templateEls = isGrid
         ? gridTemplateToElements(buildGridTemplate())
