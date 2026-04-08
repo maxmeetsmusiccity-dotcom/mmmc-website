@@ -205,7 +205,7 @@ export async function scanAppleMusicLibrary(options: AppleMusicScanOptions): Pro
       await enforceGap();
       const albumRes = await music.api.music(
         `/v1/catalog/us/artists/${catalogArtistId}/albums`,
-        { limit: 20 }
+        { limit: 100 }
       );
       lastCallTime = Date.now();
 
