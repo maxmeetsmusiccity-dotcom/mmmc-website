@@ -432,7 +432,8 @@ const CarouselPreviewPanel = forwardRef<CarouselPanelHandle, Props>(function Car
           {/* Grid Slide Style Template */}
           <div style={{ marginBottom: 20, maxWidth: '100%' }}>
             <p style={{ fontSize: 'var(--fs-lg)', color: 'var(--text-muted)', marginBottom: 8 }}>Grid Slide Style Template</p>
-            <TemplateSelector selected={gridTemplateId} onSelect={handleGridTemplateChange} />
+            <TemplateSelector selected={gridTemplateId} onSelect={handleGridTemplateChange}
+              selectedTracks={selectedTracks} weekDate={weekDate} logoUrl={logoUrl} gridLayoutId={gridLayoutId} />
           </div>
 
           {/* Title Slide Template */}
@@ -441,6 +442,8 @@ const CarouselPreviewPanel = forwardRef<CarouselPanelHandle, Props>(function Car
               <TitleTemplatePicker
                 selected={titleTemplateId}
                 onSelect={id => { hasUserChangedTitle.current = true; setTitleTemplateId(id); localStorage.setItem('nmf_title_template', id); setAllPreviews([]); }}
+                coverFeature={coverFeature}
+                weekDate={weekDate}
               />
             </div>
             {/* Title customization now via "Create New" in TitleTemplatePicker */}

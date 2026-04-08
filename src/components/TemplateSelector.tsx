@@ -9,6 +9,10 @@ import { useAuth } from '../lib/auth-context';
 interface Props {
   selected: string;
   onSelect: (id: string) => void;
+  selectedTracks?: import('../lib/spotify').TrackItem[];
+  weekDate?: string;
+  logoUrl?: string;
+  gridLayoutId?: string;
 }
 
 function getCustomKey(userId?: string) {
@@ -26,7 +30,7 @@ function saveLocalTemplates(templates: CarouselTemplate[], userId?: string) {
   try { localStorage.setItem(getCustomKey(userId), JSON.stringify(templates)); } catch {}
 }
 
-export default function TemplateSelector({ selected, onSelect }: Props) {
+export default function TemplateSelector({ selected, onSelect, selectedTracks, weekDate, logoUrl, gridLayoutId }: Props) {
   const { user } = useAuth();
   const [showImporter, setShowImporter] = useState(false);
   const [previews, setPreviews] = useState<Map<string, string>>(new Map());
@@ -229,6 +233,10 @@ export default function TemplateSelector({ selected, onSelect }: Props) {
         <UnifiedTemplateBuilder
           mode="grid"
           initial={editTemplate || undefined}
+          selectedTracks={selectedTracks}
+          weekDate={weekDate}
+          logoUrl={logoUrl}
+          gridLayoutId={gridLayoutId}
           onSave={(t) => { handleSaveCustom(t); setEditTemplate(null); }}
           onCancel={() => { setShowBuilder(false); setEditTemplate(null); }}
         />

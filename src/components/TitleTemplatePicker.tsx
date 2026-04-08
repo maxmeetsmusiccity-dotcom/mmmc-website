@@ -7,6 +7,8 @@ interface Props {
   selected: string;
   onSelect: (id: string) => void;
   onHover?: (id: string | null) => void;
+  coverFeature?: import('../lib/selection').SelectionSlot | null;
+  weekDate?: string;
 }
 
 /** Generate a small canvas preview for a title template */
@@ -104,7 +106,7 @@ function generateTitlePreview(t: TitleSlideTemplate, size = 200): string {
   return canvas.toDataURL();
 }
 
-export default function TitleTemplatePicker({ selected, onSelect, onHover }: Props) {
+export default function TitleTemplatePicker({ selected, onSelect, onHover, coverFeature, weekDate }: Props) {
   const { user } = useAuth();
   const visibleTemplates = getVisibleTitleTemplates(user?.email || undefined);
   const [showBuilder, setShowBuilder] = useState(false);
@@ -247,6 +249,8 @@ export default function TitleTemplatePicker({ selected, onSelect, onHover }: Pro
         <UnifiedTemplateBuilder
           mode="title"
           initial={editTemplate}
+          coverFeature={coverFeature}
+          weekDate={weekDate}
           onSave={(customTemplate) => {
             onSelect(customTemplate.id);
             setShowBuilder(false);
