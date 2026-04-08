@@ -22,9 +22,18 @@ export default function AuthGate({ children }: Props) {
     );
   }
 
-  // Even if signed in, show the landing page until user explicitly enters this session
+  // If signed in via OAuth redirect (URL has access_token or code), auto-enter
+  const isOAuthReturn = window.location.hash.includes('access_token') || window.location.search.includes('code=');
+  if (user && isOAuthReturn && sessionStorage.getItem('nmf_entered') !== '1') {
+    sessionStorage.setItem('nmf_entered', '1');
+  }
+  // If signed in (any method), auto-enter — no need to show landing page again
+  if (user) {
+    if (sessionStorage.getItem('nmf_entered') !== '1') sessionStorage.setItem('nmf_entered', '1');
+    return <>{children}</>;
+  }
   const hasEntered = sessionStorage.getItem('nmf_entered') === '1';
-  if ((user || isGuest) && hasEntered) return <>{children}</>;
+  if (isGuest && hasEntered) return <>{children}</>;
 
   const handleEmail = async () => {
     if (isSignUp && !tosAccepted) {
