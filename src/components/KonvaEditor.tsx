@@ -113,6 +113,7 @@ export default function KonvaEditor({
           const w = el.width * canvasWidth;
           const h = (el.height || 0.06) * canvasHeight;
           const isLocked = el.locked;
+          const isSelected = el.id === selectedId;
 
           const commonProps = {
             id: el.id,
@@ -124,6 +125,8 @@ export default function KonvaEditor({
             height: h,
             rotation: el.rotation || 0,
             draggable: !isLocked,
+            // Only show Konva element when selected — background canvas renders it otherwise
+            opacity: isSelected ? 1 : 0,
             onClick: (e: Konva.KonvaEventObject<MouseEvent>) => {
               e.cancelBubble = true;
               onSelect(el.id);
