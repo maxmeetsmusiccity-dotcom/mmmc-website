@@ -854,9 +854,11 @@ export default function NewMusicFriday() {
                       await authorizeAppleMusic();
                       setScanStatus('Scanning your library...');
                       const cutoff = getScanCutoff();
+                      let artistCount = 0;
                       const tracks = await scanAppleMusicLibrary({
                         cutoffDate: cutoff,
                         onProgress: (current, total, found) => {
+                          artistCount = total;
                           setScanProgress({ current, total });
                           setScanStatus(`${current}/${total} artists · ${found} releases found`);
                         },
@@ -871,8 +873,11 @@ export default function NewMusicFriday() {
                         setPhase('results');
                         setLastScanned(new Date().toISOString());
                         setIsDemoMode(false);
+                      } else if (artistCount === 0) {
+                        setError('No artists found in your Apple Music library. Add artists to your library in the Apple Music app, then scan again. Or try the Nashville source for this week\'s releases.');
+                        setPhase('ready');
                       } else {
-                        setError('No new releases found in your Apple Music library this week.');
+                        setError(`Scanned ${artistCount} artists from your library but none released new music since last Friday. Try the Nashville source to see all Nashville releases this week.`);
                         setPhase('ready');
                       }
                     } catch (e) {
