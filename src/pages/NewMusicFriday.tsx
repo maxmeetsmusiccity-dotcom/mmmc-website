@@ -123,7 +123,7 @@ export default function NewMusicFriday() {
   const [resolvedHandles, setResolvedHandles] = useState<Map<string, any>>(new Map());
 
   // Lifted carousel state (shared between toolbar and CarouselPreviewPanel)
-  const [carouselAspect, setCarouselAspect] = useState<'1:1' | '3:4'>('1:1');
+  const [carouselAspect, setCarouselAspect] = useState<import('../lib/canvas-grid').CarouselAspect>('1:1');
   const [allPreviews, setAllPreviews] = useState<string[]>([]);
   const [generating, setGenerating] = useState(false);
   const [exportScope, setExportScope] = useState<'all' | 'selects'>('selects');

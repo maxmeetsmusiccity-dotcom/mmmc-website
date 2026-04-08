@@ -116,12 +116,44 @@ function ColorField({ label, value, onChange }: { label: string; value: string; 
 }
 
 function FontSelect({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const current = FONT_OPTIONS.find(f => f.value === value) || FONT_OPTIONS[0];
   return (
-    <label style={{ ...labelStyle, flex: 1 }}>
+    <label style={{ ...labelStyle, flex: 1, position: 'relative' }}>
       {label}
-      <select value={value} onChange={e => onChange(e.target.value)} style={selectStyle}>
-        {FONT_OPTIONS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
-      </select>
+      <button
+        onClick={() => setOpen(!open)}
+        style={{
+          ...selectStyle, textAlign: 'left', cursor: 'pointer',
+          fontFamily: current.value, display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        }}
+      >
+        <span>{current.label}</span>
+        <span style={{ fontSize: 10 }}>{open ? '\u25B2' : '\u25BC'}</span>
+      </button>
+      {open && (
+        <div style={{
+          position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 20,
+          background: 'var(--midnight-raised)', border: '1px solid var(--midnight-border)',
+          borderRadius: 6, maxHeight: 200, overflowY: 'auto',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+        }}>
+          {FONT_OPTIONS.map(f => (
+            <button key={f.value}
+              onClick={() => { onChange(f.value); setOpen(false); }}
+              style={{
+                display: 'block', width: '100%', textAlign: 'left', padding: '8px 12px',
+                background: f.value === value ? 'var(--midnight-hover)' : 'transparent',
+                border: 'none', cursor: 'pointer',
+                fontFamily: f.value, fontSize: 'var(--fs-md)',
+                color: f.value === value ? 'var(--gold)' : 'var(--text-primary)',
+              }}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+      )}
     </label>
   );
 }

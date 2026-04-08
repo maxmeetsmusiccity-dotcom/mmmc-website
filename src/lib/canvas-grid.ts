@@ -6,7 +6,7 @@ import { drawCustomElements, type EditorElement } from './editor-elements';
 import { type GridConfig, getGridById, getGridsForCount, computeCellRects } from './grid-layouts';
 
 /** Canvas dimensions by aspect ratio */
-export type CarouselAspect = '1:1' | '3:4';
+export type CarouselAspect = '1:1' | '3:4' | '9:16';
 
 export interface CanvasDimensions {
   w: number;
@@ -20,10 +20,12 @@ export interface CanvasDimensions {
 }
 
 export function getDimensions(aspect: CarouselAspect = '1:1'): CanvasDimensions {
+  if (aspect === '9:16') {
+    // Story: 1080x1920 — tall format for Instagram Stories
+    return { w: 1080, h: 1920, gridY: 200, gridH: 1200, fontScale: 1.0 };
+  }
   if (aspect === '3:4') {
     // Portrait: PURPOSE-BUILT layout, not stretched square.
-    // Grid occupies the CENTER ~900px, leaving ~160px header zone and ~380px bottom zone
-    // for logo, date, and decorations. Square cells won't stretch vertically.
     return { w: 1080, h: 1440, gridY: 160, gridH: 900, fontScale: 1.0 };
   }
   return { w: 1080, h: 1080, gridY: 90, gridH: 932, fontScale: 1.0 };
