@@ -170,6 +170,7 @@ export default function CanvasOverlay({
                 strokeWidth={isSelected ? 2 : 0}
                 style={{ cursor: el.locked ? 'not-allowed' : 'grab', pointerEvents: 'all' }}
                 onMouseDown={e => handleMouseDown(e, el)}
+                onClick={e => e.stopPropagation()}
                 onDoubleClick={e => handleDoubleClick(e, el)}
                 onMouseEnter={e => {
                   if (!isSelected && !el.locked) {
