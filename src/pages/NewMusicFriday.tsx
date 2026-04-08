@@ -852,7 +852,7 @@ export default function NewMusicFriday() {
                     try {
                       const { authorizeAppleMusic, scanAppleMusicLibrary } = await import('../lib/sources/apple-music');
                       await authorizeAppleMusic();
-                      setScanStatus('Scanning your library...');
+                      setScanStatus('Authorized! Scanning your library...');
                       const cutoff = getScanCutoff();
                       let artistCount = 0;
                       const tracks = await scanAppleMusicLibrary({

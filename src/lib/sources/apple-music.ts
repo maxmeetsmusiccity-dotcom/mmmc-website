@@ -93,14 +93,49 @@ export async function scanAppleMusicLibrary(options: AppleMusicScanOptions): Pro
   let offset = 0;
   const limit = 100;
 
-  console.log(`[AM SCAN START] Fetching library artists...`);
+  // Verify authorization before scanning
+  if (!music.isAuthorized) {
+    console.error('[AM SCAN] Not authorized — attempting authorization...');
+    try {
+      await music.authorize();
+    } catch (authErr) {
+      throw new Error('Apple Music authorization was declined or failed. Please try again and approve the popup.');
+    }
+    if (!music.isAuthorized) {
+      throw new Error('Apple Music authorization failed. Make sure you have an active Apple Music subscription and approved library access.');
+    }
+  }
+  console.log(`[AM SCAN START] Authorized. musicUserToken length: ${(music.musicUserToken || '').length}. Fetching library artists...`);
 
   while (true) {
     await enforceGap();
     try {
-      const res = await music.api.music(`/v1/me/library/artists`, { limit, offset });
-      lastCallTime = Date.now();
-      const items = res?.data?.data || [];
+      // MusicKit v3: music.api.music() returns { data: { data: [...] } }
+      // Some versions use music.api.library.artists() instead
+      let items: any[] = [];
+      try {
+        const res = await music.api.music(`/v1/me/library/artists`, { limit, offset });
+        lastCallTime = Date.now();
+        items = res?.data?.data || res?.data || [];
+        console.log(`[AM SCAN] API response at offset ${offset}: ${items.length} items, keys: ${Object.keys(res?.data || {}).join(',')}`);
+      } catch (apiErr: any) {
+        // Fallback: try the catalog-style fetch
+        console.warn(`[AM SCAN] Primary API failed at offset ${offset}:`, apiErr?.message || apiErr);
+        try {
+          const fallback = await fetch(`https://api.music.apple.com/v1/me/library/artists?limit=${limit}&offset=${offset}`, {
+            headers: { 'Authorization': `Bearer ${await getDeveloperToken()}`, 'Music-User-Token': music.musicUserToken },
+          });
+          if (fallback.ok) {
+            const fbData = await fallback.json();
+            items = fbData?.data || [];
+            console.log(`[AM SCAN] Fallback fetch worked: ${items.length} items`);
+          } else {
+            console.warn(`[AM SCAN] Fallback fetch failed: ${fallback.status} ${fallback.statusText}`);
+          }
+        } catch (fbErr) {
+          console.warn(`[AM SCAN] Both methods failed at offset ${offset}`);
+        }
+      }
       if (items.length === 0) break;
       artists = artists.concat(items);
       offset += items.length;
