@@ -11,7 +11,7 @@ import {
   titleTemplateToElements, gridTemplateToElements, type EditorElement,
   createCustomText, createCustomImage, createCustomShape, type ShapeKind,
 } from '../lib/editor-elements';
-import CanvasOverlay from './CanvasOverlay';
+import KonvaEditor from './KonvaEditor';
 
 /* ------------------------------------------------------------------ */
 /*  Props                                                              */
@@ -361,7 +361,7 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
   /* ---------- canvas overlay + layers ---------- */
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
   const previewContainerRef = useRef<HTMLDivElement>(null);
-  const [previewRect, setPreviewRect] = useState({ w: 400, h: 400 });
+  // previewRect removed — KonvaEditor handles its own sizing
   const [layerOverrides] = useState<Record<string, { visible?: boolean; locked?: boolean }>>({});
   const [layerOrder] = useState<string[] | null>(null);
   const [customElements, setCustomElements] = useState<EditorElement[]>([]);
@@ -598,21 +598,7 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
     }
   }, [isGrid, customElements, buildGridTemplate, buildTitleTemplate]);
 
-  // Measure preview image for overlay sizing — never shrink to 0 (prevents unmount flicker)
-  useEffect(() => {
-    const container = previewContainerRef.current;
-    if (!container) return;
-    const measure = () => {
-      const img = container.querySelector('img');
-      if (img && img.clientWidth > 0 && img.clientHeight > 0) {
-        setPreviewRect({ w: img.clientWidth, h: img.clientHeight });
-      }
-    };
-    measure();
-    const obs = new ResizeObserver(measure);
-    obs.observe(container);
-    return () => obs.disconnect();
-  }, [previewUrl]);
+  // previewRect measurement removed — KonvaEditor handles its own layout
 
   /* ================================================================ */
   /*  "Start from" base template loader                                */
@@ -1535,56 +1521,39 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
           </span>
         </div>
 
-        {/* Preview canvas area with interactive overlay */}
-        <div style={{
+        {/* Preview canvas area — Konva-based interactive editor */}
+        <div ref={previewContainerRef} style={{
           flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
           padding: 24, overflow: 'hidden',
         }}>
-          <div ref={previewContainerRef} style={{ position: 'relative', display: 'inline-block' }}>
-            {previewUrl ? (
-              <img
-                key={previewUrl}
-                src={previewUrl}
-                alt={`${isGrid ? 'Grid' : 'Title'} template preview`}
-                style={{
-                  maxWidth: '100%',
-                  maxHeight: 'calc(100vh - 100px)',
-                  borderRadius: 8,
-                  border: '1px solid var(--midnight-border)',
-                  objectFit: 'contain',
-                  display: 'block',
-                }}
-              />
-            ) : (
-              <div style={{
-                width: 400,
-                aspectRatio: aspect === '3:4' ? '3/4' : '1',
-                borderRadius: 12,
-                background: bg,
-                border: '1px solid var(--midnight-border)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: accent, fontSize: 'var(--fs-md)',
-              }}>
-                Loading preview...
+          {(() => {
+            // Compute stage dimensions to fit within the available space
+            const maxW = 540;
+            const maxH = typeof window !== 'undefined' ? window.innerHeight - 120 : 700;
+            const ratio = aspect === '3:4' ? 3 / 4 : aspect === '9:16' ? 9 / 16 : 1;
+            let stageW = maxW;
+            let stageH = stageW / ratio;
+            if (stageH > maxH) { stageH = maxH; stageW = stageH * ratio; }
+            return (
+              <div style={{ borderRadius: 8, overflow: 'hidden', border: '1px solid var(--midnight-border)' }}>
+                <KonvaEditor
+                  elements={editorElements}
+                  selectedId={selectedElementId}
+                  onSelect={setSelectedElementId}
+                  onElementUpdate={handleElementUpdate}
+                  onTextEdit={(id, text) => {
+                    setCustomElements(prev => prev.map(el =>
+                      el.id === id ? { ...el, props: { ...el.props, text } } : el
+                    ));
+                  }}
+                  backgroundSrc={previewUrl}
+                  coverArtSrc={coverFeature?.track?.cover_art_640 || undefined}
+                  canvasWidth={Math.round(stageW)}
+                  canvasHeight={Math.round(stageH)}
+                />
               </div>
-            )}
-            {/* Interactive overlay for element selection and drag — always mounted once preview exists */}
-            {previewRect.w > 0 && (
-              <CanvasOverlay
-                elements={editorElements}
-                selectedId={selectedElementId}
-                onSelect={setSelectedElementId}
-                onElementUpdate={handleElementUpdate}
-                onTextEdit={(id, text) => {
-                  setCustomElements(prev => prev.map(el =>
-                    el.id === id ? { ...el, props: { ...el.props, text } } : el
-                  ));
-                }}
-                canvasWidth={previewRect.w}
-                canvasHeight={previewRect.h}
-              />
-            )}
-          </div>
+            );
+          })()}
         </div>
       </div>
     </div>
