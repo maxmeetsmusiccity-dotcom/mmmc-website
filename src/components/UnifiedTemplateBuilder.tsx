@@ -586,13 +586,15 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
     }
   }, [isGrid, customElements, buildGridTemplate, buildTitleTemplate]);
 
-  // Measure preview image for overlay sizing
+  // Measure preview image for overlay sizing — never shrink to 0 (prevents unmount flicker)
   useEffect(() => {
     const container = previewContainerRef.current;
     if (!container) return;
     const measure = () => {
       const img = container.querySelector('img');
-      if (img) setPreviewRect({ w: img.clientWidth, h: img.clientHeight });
+      if (img && img.clientWidth > 0 && img.clientHeight > 0) {
+        setPreviewRect({ w: img.clientWidth, h: img.clientHeight });
+      }
     };
     measure();
     const obs = new ResizeObserver(measure);
@@ -1554,8 +1556,8 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
                 Loading preview...
               </div>
             )}
-            {/* Interactive overlay for element selection and drag */}
-            {previewUrl && previewRect.w > 0 && (
+            {/* Interactive overlay for element selection and drag — always mounted once preview exists */}
+            {previewRect.w > 0 && (
               <CanvasOverlay
                 elements={editorElements}
                 selectedId={selectedElementId}
