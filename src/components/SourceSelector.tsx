@@ -26,10 +26,9 @@ export default function SourceSelector({
             : source.id === 'apple-music' ? appleMusicConnected
             : true;
 
-          // Spotify + Apple Music are admin-only until quota / MusicKit approved
+          // Spotify is admin-only until quota approved. Apple Music is open to all.
           const isSpotifyLocked = source.id === 'spotify' && !isAdmin;
-          const isAppleLocked = source.id === 'apple-music' && !isAdmin;
-          const isLocked = isSpotifyLocked || isAppleLocked;
+          const isLocked = isSpotifyLocked;
 
           return (
             <button

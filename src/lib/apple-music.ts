@@ -1,5 +1,3 @@
-import { supabase } from './supabase';
-
 let cachedToken: { token: string; expiresAt: number } | null = null;
 
 export async function getDeveloperToken(): Promise<string> {
@@ -7,16 +5,7 @@ export async function getDeveloperToken(): Promise<string> {
     return cachedToken.token;
   }
 
-  // Get current Supabase session for auth
-  const headers: Record<string, string> = {};
-  if (supabase) {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session?.access_token) {
-      headers['Authorization'] = `Bearer ${session.access_token}`;
-    }
-  }
-
-  const res = await fetch('/api/apple-token', { headers });
+  const res = await fetch('/api/apple-token');
   if (!res.ok) throw new Error(`Apple token fetch failed: ${res.status}`);
   const data = await res.json();
   cachedToken = {

@@ -837,19 +837,56 @@ export default function NewMusicFriday() {
               </div>
             )}
 
-            {/* Apple Music source — coming soon */}
+            {/* Apple Music source — scan your library */}
             {activeSource === 'apple-music' && (
-              <div style={{ marginTop: 16, textAlign: 'left' }}>
-                <p style={{ color: 'var(--text-secondary)', marginBottom: 12, fontSize: 'var(--fs-md)' }}>
-                  Search the Apple Music catalog for new releases. No login required.
+              <div className="animate-float-up" style={{ marginTop: 16, maxWidth: 500, width: '100%' }}>
+                <p style={{ color: 'var(--text-secondary)', marginBottom: 16, fontSize: 'var(--fs-md)', lineHeight: 1.6 }}>
+                  Connect your Apple Music account to scan your library for new releases from artists you follow.
                 </p>
-                <ManualImport onImport={(tracks) => {
-                  setAllTracks(tracks);
-                  setReleases(groupIntoReleases(tracks));
-                  setPhase('results');
-                  setLastScanned(new Date().toISOString());
-                  setIsDemoMode(false);
-                }} scanEndpoint="/api/search-apple" scanLabel="Search Apple Music" />
+                <button
+                  className="btn btn-gold"
+                  onClick={async () => {
+                    setPhase('scanning');
+                    setScanStatus('Connecting to Apple Music...');
+                    setScanProgress({ current: 0, total: 0 });
+                    try {
+                      const { authorizeAppleMusic, scanAppleMusicLibrary } = await import('../lib/sources/apple-music');
+                      await authorizeAppleMusic();
+                      setScanStatus('Scanning your library...');
+                      const cutoff = getScanCutoff();
+                      const tracks = await scanAppleMusicLibrary({
+                        cutoffDate: cutoff,
+                        onProgress: (current, total, found) => {
+                          setScanProgress({ current, total });
+                          setScanStatus(`${current}/${total} artists · ${found} releases found`);
+                        },
+                        onReleasesFound: (tracks) => {
+                          setAllTracks(tracks);
+                          setReleases(groupIntoReleases(tracks));
+                        },
+                      });
+                      if (tracks.length > 0) {
+                        setAllTracks(tracks);
+                        setReleases(groupIntoReleases(tracks));
+                        setPhase('results');
+                        setLastScanned(new Date().toISOString());
+                        setIsDemoMode(false);
+                      } else {
+                        setError('No new releases found in your Apple Music library this week.');
+                        setPhase('ready');
+                      }
+                    } catch (e) {
+                      setError((e as Error).message);
+                      setPhase('ready');
+                    }
+                  }}
+                  style={{ fontSize: 'var(--fs-lg)', padding: '14px 32px' }}
+                >
+                  Connect Apple Music &amp; Scan
+                </button>
+                <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)', marginTop: 12 }}>
+                  Opens an Apple ID sign-in popup. We only read your library — nothing is modified.
+                </p>
               </div>
             )}
 
