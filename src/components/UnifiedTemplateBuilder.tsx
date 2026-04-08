@@ -550,7 +550,7 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
       setCustomElements(prev => prev.map(el => el.id === id ? { ...el, ...patch } : el));
       return;
     }
-    // Template-derived elements: map positions back to state variables
+    // Template-derived elements: map known positions back to state variables
     if (!isGrid) {
       if (patch.y !== undefined) {
         switch (id) {
@@ -567,17 +567,19 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
         setFeaturedRotation(patch.rotation);
       }
     }
-    // Grid-derived elements: store overrides as custom elements so drag persists
-    if (isGrid && !customElements.some(el => el.id === id)) {
-      // Find the template element and clone it with the patch as a custom override
-      const templateEls = gridTemplateToElements(buildGridTemplate());
+    // For any template-derived element not fully handled above (e.g. rotation on
+    // headline, x-position changes, grid elements), promote to custom elements
+    // so the change persists in the overlay
+    if (!customElements.some(el => el.id === id)) {
+      const templateEls = isGrid
+        ? gridTemplateToElements(buildGridTemplate())
+        : titleTemplateToElements(buildTitleTemplate());
       const base = templateEls.find(el => el.id === id);
       if (base) {
         setCustomElements(prev => [...prev, { ...base, ...patch, locked: false }]);
-        return;
       }
     }
-  }, [isGrid, customElements, buildGridTemplate]);
+  }, [isGrid, customElements, buildGridTemplate, buildTitleTemplate]);
 
   // Measure preview image for overlay sizing
   useEffect(() => {
@@ -670,7 +672,7 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
   useEffect(() => () => clearTempTemplate(), []);
 
   /* ================================================================ */
-  /*  Debounced live preview (300ms)                                   */
+  /*  Debounced live preview (80ms — fast enough for drag feedback)     */
   /* ================================================================ */
 
   useEffect(() => {
@@ -735,7 +737,7 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
           }
         }
       }
-    }, 300);
+    }, 80);
     return () => clearTimeout(previewTimer.current);
   }, [buildGridTemplate, buildTitleTemplate, isGrid, coverFeature, weekDate, aspect, bg, textPrimary, textSecondary, baseTemplateId, initial?.id]);
 

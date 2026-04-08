@@ -22,8 +22,9 @@ export default function CanvasOverlay({
   const svgRef = useRef<SVGSVGElement>(null);
   const [dragging, setDragging] = useState<{
     id: string; startX: number; startY: number; origX: number; origY: number;
-    mode: 'move' | 'resize';
-    handleIdx?: number; origW?: number; origH?: number;
+    mode: 'move' | 'resize' | 'rotate';
+    handleIdx?: number; origW?: number; origH?: number; origRotation?: number;
+    centerPx?: number; centerPy?: number;
   } | null>(null);
   const [editingTextId, setEditingTextId] = useState<string | null>(null);
   const [snapLines, setSnapLines] = useState<{ x?: number; y?: number }[]>([]);
@@ -54,17 +55,21 @@ export default function CanvasOverlay({
     return snaps;
   }, [elements, canvasWidth, canvasHeight]);
 
-  // Mouse down — move or resize
-  const handleMouseDown = useCallback((e: React.MouseEvent, el: EditorElement, mode: 'move' | 'resize' = 'move', handleIdx?: number) => {
+  // Mouse down — move, resize, or rotate
+  const handleMouseDown = useCallback((e: React.MouseEvent, el: EditorElement, mode: 'move' | 'resize' | 'rotate' = 'move', handleIdx?: number) => {
     if (el.locked) return;
     e.stopPropagation();
     onSelect(el.id);
+    const { px, py } = toPixel(el.x, el.y);
+    const h = (el.height || 0.06) * canvasHeight;
     setDragging({
       id: el.id, startX: e.clientX, startY: e.clientY,
       origX: el.x, origY: el.y, mode,
       handleIdx, origW: el.width, origH: el.height,
+      origRotation: el.rotation || 0,
+      centerPx: px, centerPy: py + h / 2,
     });
-  }, [onSelect]);
+  }, [onSelect, toPixel, canvasHeight]);
 
   // Mouse move — drag or resize
   useEffect(() => {
@@ -80,10 +85,20 @@ export default function CanvasOverlay({
         setSnapLines(findSnaps(dragging.id, newX, newY, dragging.origW || 0));
         onElementUpdate(dragging.id, { x: newX, y: newY });
       } else if (dragging.mode === 'resize') {
-        // Resize from bottom-right handle
         const newW = Math.max(0.02, (dragging.origW || 0.1) + fx);
         const newH = Math.max(0.02, (dragging.origH || 0.06) + fy);
         onElementUpdate(dragging.id, { width: newW, height: newH });
+      } else if (dragging.mode === 'rotate' && svgRef.current) {
+        // Calculate angle from element center to mouse position
+        const rect = svgRef.current.getBoundingClientRect();
+        const scaleX = canvasWidth / rect.width;
+        const scaleY = canvasHeight / rect.height;
+        const mx = (e.clientX - rect.left) * scaleX;
+        const my = (e.clientY - rect.top) * scaleY;
+        const cx = dragging.centerPx || 0;
+        const cy = dragging.centerPy || 0;
+        const angle = Math.atan2(mx - cx, -(my - cy)) * (180 / Math.PI);
+        onElementUpdate(dragging.id, { rotation: Math.round(angle) });
       }
     };
     const handleUp = () => { setDragging(null); setSnapLines([]); };
@@ -113,7 +128,7 @@ export default function CanvasOverlay({
         viewBox={`0 0 ${canvasWidth} ${canvasHeight}`}
         style={{
           position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
-          cursor: dragging ? (dragging.mode === 'resize' ? 'nwse-resize' : 'grabbing') : 'default',
+          cursor: dragging ? (dragging.mode === 'resize' ? 'nwse-resize' : dragging.mode === 'rotate' ? 'crosshair' : 'grabbing') : 'default',
           pointerEvents: 'all',
         }}
         onClick={handleBackgroundClick}
@@ -191,10 +206,19 @@ export default function CanvasOverlay({
                     style={{ cursor: 'nwse-resize', pointerEvents: 'all' }}
                     onMouseDown={e => handleMouseDown(e, el, 'resize', 3)}
                   />
-                  {/* Label */}
-                  <text x={rx} y={ry - 6} fill="#D4A843" fontSize={11} fontFamily="system-ui"
+                  {/* Rotation handle — circle above element, connected by a line */}
+                  <line x1={px} y1={ry} x2={px} y2={ry - 24}
+                    stroke="#D4A843" strokeWidth={1} strokeDasharray="3 2" />
+                  <circle
+                    cx={px} cy={ry - 28} r={6}
+                    fill="#D4A843" stroke="#0F1B33" strokeWidth={1}
+                    style={{ cursor: 'crosshair', pointerEvents: 'all' }}
+                    onMouseDown={e => handleMouseDown(e, el, 'rotate')}
+                  />
+                  {/* Label + rotation */}
+                  <text x={rx} y={ry - 36} fill="#D4A843" fontSize={11} fontFamily="system-ui"
                     style={{ pointerEvents: 'none' }}>
-                    {el.label}{el.type === 'text' ? ' (double-click to edit)' : ''}
+                    {el.label}{el.rotation ? ` ${el.rotation}°` : ''}
                   </text>
                 </>
               )}
