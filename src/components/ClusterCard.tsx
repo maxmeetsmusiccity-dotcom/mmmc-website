@@ -167,6 +167,21 @@ export default memo(function ClusterCard({ cluster, selectionSlot, selectedSlots
             >
               Spotify
             </a>
+            {cluster.tracks[0]?.apple_music_url && (
+              <a
+                href={cluster.tracks[0].apple_music_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  fontSize: 'var(--fs-3xs)', color: '#FC3C44',
+                  padding: '1px 6px', border: '1px solid rgba(252,60,68,0.3)', borderRadius: 4,
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                Apple Music
+              </a>
+            )}
             <a
               href={`https://nashvilledecoder.com/search?q=${encodeURIComponent(cluster.artist_names)}`}
               target="_blank"

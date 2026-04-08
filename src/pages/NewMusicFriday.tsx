@@ -35,6 +35,8 @@ import ManualImport from '../components/ManualImport';
 import NashvilleReleases from '../components/NashvilleReleases';
 import CaptionGenerator from '../components/CaptionGenerator';
 import type { MusicSource } from '../lib/sources/types';
+import ToastContainer from '../components/Toast';
+import KeyboardHelp from '../components/KeyboardHelp';
 import { checkScanHealth } from '../lib/spotify';
 import { useAuth } from '../lib/auth-context';
 
@@ -1928,6 +1930,8 @@ export default function NewMusicFriday() {
           <span>NMF Curator Studio v1.0</span>
         </div>
       )}
+      <ToastContainer />
+      <KeyboardHelp />
     </div>
   );
 }
