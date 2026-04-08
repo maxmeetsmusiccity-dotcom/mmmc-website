@@ -71,6 +71,8 @@ export interface AppleMusicScanOptions {
   cutoffDate: string;
   onProgress?: (current: number, total: number, releasesFound: number) => void;
   onReleasesFound?: (tracks: TrackItem[]) => void;
+  /** Called with upcoming/future releases (release date > today) */
+  onComingSoon?: (tracks: TrackItem[]) => void;
 }
 
 /**
@@ -78,13 +80,15 @@ export interface AppleMusicScanOptions {
  * Sequential at ~2.5 req/s. Returns TrackItem[] compatible with the pipeline.
  */
 export async function scanAppleMusicLibrary(options: AppleMusicScanOptions): Promise<TrackItem[]> {
-  const { cutoffDate, onProgress, onReleasesFound } = options;
+  const { cutoffDate, onProgress, onReleasesFound, onComingSoon } = options;
+  const today = new Date().toISOString().split('T')[0];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const MK = (window as any).MusicKit;
   if (!MK) throw new Error('MusicKit not loaded');
   const music = MK.getInstance();
 
   const allTracks: TrackItem[] = [];
+  const comingSoonTracks: TrackItem[] = [];
   const seenAlbumIds = new Set<string>();
 
   // Fetch library artists — paginate with limit 100
@@ -155,10 +159,11 @@ export async function scanAppleMusicLibrary(options: AppleMusicScanOptions): Pro
 
     try {
       // Step 1: Get the catalog ID for this library artist
-      // Library artists have a different ID than catalog artists
       let catalogArtistId: string | null = null;
-      await enforceGap();
+
+      // Method A: relationship lookup
       try {
+        await enforceGap();
         const catalogLookup = await music.api.music(
           `/v1/me/library/artists/${artist.id}`,
           { include: 'catalog' }
@@ -168,21 +173,31 @@ export async function scanAppleMusicLibrary(options: AppleMusicScanOptions): Pro
         if (relationships && relationships.length > 0) {
           catalogArtistId = relationships[0].id;
         }
-      } catch {
-        // Fallback: search catalog by name
-        await enforceGap();
+      } catch (relErr) {
+        console.log(`[AM SCAN] Relationship lookup failed for "${artistName}": ${(relErr as Error).message}`);
+      }
+
+      // Method B: search catalog by name (always try if method A didn't work)
+      if (!catalogArtistId) {
         try {
+          await enforceGap();
           const searchRes = await music.api.music(
             `/v1/catalog/us/search`,
-            { term: artistName, types: 'artists', limit: 1 }
+            { term: artistName, types: 'artists', limit: 5 }
           );
           lastCallTime = Date.now();
-          catalogArtistId = searchRes?.data?.results?.artists?.data?.[0]?.id || null;
-        } catch { /* skip this artist */ }
+          const searchResults = searchRes?.data?.results?.artists?.data || [];
+          // Prefer exact name match
+          const exact = searchResults.find((a: any) => a.attributes?.name?.toLowerCase() === artistName.toLowerCase());
+          catalogArtistId = exact?.id || searchResults[0]?.id || null;
+          if (!catalogArtistId) console.log(`[AM SCAN] Search found 0 results for "${artistName}"`);
+        } catch (searchErr) {
+          console.log(`[AM SCAN] Search failed for "${artistName}": ${(searchErr as Error).message}`);
+        }
       }
 
       if (!catalogArtistId) {
-        // Can't find catalog entry — skip
+        console.warn(`[AM SCAN] Skipping "${artistName}" — no catalog ID found`);
         continue;
       }
 
@@ -204,6 +219,7 @@ export async function scanAppleMusicLibrary(options: AppleMusicScanOptions): Pro
         const releaseDate = parseReleaseDate(attrs.releaseDate || '', attrs.releaseDatePrecision);
         if (!releaseDate || releaseDate < cutoffDate) continue;
 
+        const isFuture = releaseDate > today;
         seenAlbumIds.add(albumId);
         const artwork = attrs.artwork;
         const coverUrl = artwork
@@ -213,7 +229,7 @@ export async function scanAppleMusicLibrary(options: AppleMusicScanOptions): Pro
           ? artwork.url.replace('{w}', '300').replace('{h}', '300')
           : '';
 
-        allTracks.push({
+        const trackEntry: TrackItem = {
           track_name: attrs.name || albumId,
           track_number: 1,
           track_uri: '',
@@ -236,8 +252,13 @@ export async function scanAppleMusicLibrary(options: AppleMusicScanOptions): Pro
           cover_art_300: cover300,
           cover_art_64: cover300,
           apple_music_url: attrs.url || '',
-        });
+        };
 
+        if (isFuture) {
+          comingSoonTracks.push(trackEntry);
+        } else {
+          allTracks.push(trackEntry);
+        }
         if (onReleasesFound) onReleasesFound([...allTracks]);
       }
     } catch (e) {
@@ -250,7 +271,8 @@ export async function scanAppleMusicLibrary(options: AppleMusicScanOptions): Pro
     }
   }
 
-  console.log(`[AM SCAN COMPLETE] ${artists.length} artists, ${allTracks.length} tracks`);
+  console.log(`[AM SCAN COMPLETE] ${artists.length} artists, ${allTracks.length} tracks, ${comingSoonTracks.length} coming soon`);
+  if (onComingSoon && comingSoonTracks.length > 0) onComingSoon(comingSoonTracks);
   return allTracks;
 }
 
