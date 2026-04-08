@@ -33,6 +33,7 @@ import ProductNav from '../components/ProductNav';
 import SourceSelector from '../components/SourceSelector';
 import ManualImport from '../components/ManualImport';
 import NashvilleReleases from '../components/NashvilleReleases';
+import MobileResultsView from '../components/MobileResultsView';
 import CaptionGenerator from '../components/CaptionGenerator';
 import type { MusicSource } from '../lib/sources/types';
 import ToastContainer from '../components/Toast';
@@ -165,6 +166,7 @@ export default function NewMusicFriday() {
   const [headerHeight, setHeaderHeight] = useState(56);
   const [toolbarHeight, setToolbarHeight] = useState(0);
   const [mobileCollapsed, setMobileCollapsed] = useState(false);
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768);
 
   // Measure header + toolbar on every render so spacer stays correct
   useEffect(() => {
@@ -180,7 +182,9 @@ export default function NewMusicFriday() {
   // Mobile: collapse header on scroll down to reclaim viewport space
   useEffect(() => {
     const handleScroll = () => {
-      if (window.innerWidth >= 768) { setMobileCollapsed(false); return; }
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (!mobile) { setMobileCollapsed(false); return; }
       setMobileCollapsed(window.scrollY > 60);
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -985,8 +989,34 @@ export default function NewMusicFriday() {
         </div>
       )}
 
-      {/* Results Phase -- single scrollable page with 5 steps */}
-      {phase === 'results' && (
+      {/* Results Phase */}
+      {phase === 'results' && isMobile && (
+        <MobileResultsView
+          allTracks={allTracks}
+          releases={filteredReleases}
+          selections={selections}
+          onSelectionChange={setSelections}
+          selectionsByAlbum={selectionsByAlbum}
+          onSelectRelease={handleSelectRelease}
+          onDeselect={handleDeselect}
+          onSetCoverFeature={handleSetCoverFeature}
+          featureCounts={featureCounts}
+          generating={generating}
+          onGenerate={() => carouselRef.current?.generate()}
+          allPreviews={allPreviews}
+          onDownloadAll={() => carouselRef.current?.downloadAll()}
+          onDownloadSlide={async (i) => {
+            const res = await fetch(allPreviews[i]);
+            const blob = await res.blob();
+            const { downloadBlob } = await import('../lib/canvas-grid');
+            downloadBlob(blob, `nmf-slide-${i + 1}.png`);
+          }}
+          onGenerateStory={() => (carouselRef.current as any)?.generateStory?.()}
+          tracksPerSlide={tracksPerSlide}
+          pushSelectionHistory={pushSelectionHistory}
+        />
+      )}
+      {phase === 'results' && !isMobile && (
         <>
           {/* ============================================================ */}
           {/*  STICKY TOOLBAR: counter + filters (consolidated 4→2 rows)    */}
