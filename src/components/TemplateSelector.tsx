@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { type CarouselTemplate, getVisibleTemplates, registerCustomTemplates } from '../lib/carousel-templates';
-import { generateTemplatePreview } from '../lib/canvas-grid';
+import { generateTemplatePreview, generateGridSlide } from '../lib/canvas-grid';
+import { buildSlots } from '../lib/selection';
 import { saveCustomTemplate, deleteCustomTemplate, getCustomTemplates } from '../lib/supabase';
 import UnifiedTemplateBuilder from './UnifiedTemplateBuilder';
 import TemplateImporter from './TemplateImporter';
@@ -68,14 +69,37 @@ export default function TemplateSelector({ selected, onSelect, selectedTracks, w
     [visibleTemplates, customTemplates],
   );
 
-  // Generate previews — pass template objects directly to avoid global array mutation
+  // Generate previews — use real album art when tracks are available, otherwise placeholders
   useEffect(() => {
+    // Always start with fast placeholder previews
     const map = new Map<string, string>();
     for (const t of allTemplates) {
       map.set(t.id, generateTemplatePreview(t, 200));
     }
     setPreviews(map);
-  }, [allTemplates]);
+
+    // If tracks available, render real previews async
+    if (selectedTracks && selectedTracks.length > 0 && weekDate) {
+      let cancelled = false;
+      const slots = buildSlots(selectedTracks.slice(0, 8).map((t, i) => ({
+        track: t, albumId: t.album_spotify_id,
+        selectionNumber: i + 1, slideGroup: 1,
+        positionInSlide: i + 1, isCoverFeature: false,
+      })));
+      (async () => {
+        for (const t of allTemplates) {
+          if (cancelled) break;
+          try {
+            const blob = await generateGridSlide(slots, weekDate, t.id, logoUrl, gridLayoutId);
+            if (cancelled) break;
+            const url = URL.createObjectURL(blob);
+            setPreviews(prev => { const next = new Map(prev); next.set(t.id, url); return next; });
+          } catch { /* template render failed, keep placeholder */ }
+        }
+      })();
+      return () => { cancelled = true; };
+    }
+  }, [allTemplates, selectedTracks, weekDate, logoUrl, gridLayoutId]);
 
   const handleSaveCustom = (template: CarouselTemplate) => {
     const updated = customTemplates.filter(t => t.id !== template.id);

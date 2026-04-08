@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback, useRef } from 'react';
 import type { TrackItem, ReleaseCluster } from '../lib/spotify';
 import type { SelectionSlot } from '../lib/selection';
 import { buildSlots } from '../lib/selection';
+import type { CarouselAspect } from '../lib/canvas-grid';
 
 interface Props {
   allTracks: TrackItem[];
@@ -20,6 +21,9 @@ interface Props {
   onDownloadSlide: (index: number) => void;
   onGenerateStory?: () => void;
   tracksPerSlide: number;
+  onTracksPerSlideChange?: (n: number) => void;
+  carouselAspect?: CarouselAspect;
+  onAspectChange?: (a: CarouselAspect) => void;
   pushSelectionHistory: (s: SelectionSlot[]) => void;
 }
 
@@ -32,7 +36,8 @@ export default function MobileResultsView({
   selectionsByAlbum: _selectionsByAlbum, onSelectRelease, onDeselect: _onDeselect, onSetCoverFeature,
   featureCounts: _featureCounts, generating, onGenerate, allPreviews,
   onDownloadAll, onDownloadSlide, onGenerateStory,
-  tracksPerSlide, pushSelectionHistory,
+  tracksPerSlide, onTracksPerSlideChange, carouselAspect = '1:1', onAspectChange,
+  pushSelectionHistory,
 }: Props) {
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [filter, setFilter] = useState<FilterMode>('all');
@@ -42,6 +47,7 @@ export default function MobileResultsView({
   const [showSlides, setShowSlides] = useState(false);
   const [activeSlide, setActiveSlide] = useState(0);
   const [expandedAlbum, setExpandedAlbum] = useState<string | null>(null);
+  const [showConfig, setShowConfig] = useState(false);
   const slideContainerRef = useRef<HTMLDivElement>(null);
 
   // Filter + sort releases
@@ -356,21 +362,99 @@ export default function MobileResultsView({
         })()}
       </div>
 
+      {/* Configure bottom sheet */}
+      {showConfig && (
+        <>
+          <div onClick={() => setShowConfig(false)}
+            style={{ position: 'fixed', inset: 0, zIndex: 40, background: 'rgba(0,0,0,0.5)' }} />
+          <div style={{
+            position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 41,
+            background: 'var(--midnight-raised)', borderTop: '2px solid var(--gold-dark)',
+            borderRadius: '16px 16px 0 0', padding: '16px',
+            paddingBottom: 'max(16px, env(safe-area-inset-bottom))',
+            maxHeight: '70vh', overflowY: 'auto',
+            animation: 'sheetSlideUp 200ms ease',
+          }}>
+            <div style={{ width: 40, height: 4, borderRadius: 2, background: 'var(--midnight-border)', margin: '0 auto 16px' }} />
+            <p style={{ fontSize: 'var(--fs-lg)', fontWeight: 600, marginBottom: 16 }}>Carousel Settings</p>
+
+            {/* Carousel Shape */}
+            <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginBottom: 8 }}>Shape</p>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+              {([
+                { value: '1:1' as CarouselAspect, label: 'Square', sub: '1080×1080' },
+                { value: '3:4' as CarouselAspect, label: 'Portrait', sub: '1080×1440' },
+                { value: '9:16' as CarouselAspect, label: 'Story', sub: '1080×1920' },
+              ]).map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => onAspectChange?.(opt.value)}
+                  style={{
+                    flex: 1, padding: '10px 8px', borderRadius: 10, cursor: 'pointer',
+                    background: carouselAspect === opt.value ? 'var(--midnight-hover)' : 'var(--midnight)',
+                    border: carouselAspect === opt.value ? '2px solid var(--gold)' : '2px solid var(--midnight-border)',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+                  }}
+                >
+                  <span style={{ fontSize: 'var(--fs-sm)', fontWeight: 600, color: carouselAspect === opt.value ? 'var(--gold)' : 'var(--text-secondary)' }}>
+                    {opt.label}
+                  </span>
+                  <span style={{ fontSize: 'var(--fs-3xs)', color: 'var(--text-muted)' }}>{opt.sub}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Tracks per slide */}
+            <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginBottom: 8 }}>Tracks per slide</p>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 16 }}>
+              {[4, 6, 8, 9, 16].map(n => (
+                <button
+                  key={n}
+                  className={`filter-pill ${tracksPerSlide === n ? 'active' : ''}`}
+                  onClick={() => onTracksPerSlideChange?.(n)}
+                  style={{ fontSize: 'var(--fs-sm)' }}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
+
+            <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginBottom: 16 }}>
+              {selections.length} {selections.length === 1 ? 'track' : 'tracks'} → {Math.ceil(selections.length / tracksPerSlide)} {Math.ceil(selections.length / tracksPerSlide) === 1 ? 'slide' : 'slides'}
+            </p>
+
+            <button className="btn btn-gold" onClick={() => { setShowConfig(false); onGenerate(); setShowSlides(true); }}
+              disabled={selections.length === 0 || generating}
+              style={{ width: '100%', justifyContent: 'center', fontSize: 'var(--fs-lg)', padding: '14px 0' }}>
+              {generating ? 'Generating...' : '★ Generate Carousel'}
+            </button>
+          </div>
+        </>
+      )}
+
       {/* Sticky bottom action bar */}
       <div style={{
         position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 30,
         background: 'var(--midnight-raised)', borderTop: '2px solid var(--gold-dark)',
         padding: '12px 16px', paddingBottom: 'max(12px, env(safe-area-inset-bottom))',
       }}>
-        <button className="btn btn-gold"
-          disabled={selections.length === 0 || generating}
-          onClick={() => { onGenerate(); setShowSlides(true); }}
-          style={{ width: '100%', justifyContent: 'center', fontSize: 'var(--fs-lg)', padding: '14px 0' }}>
-          {generating ? 'Generating...' : allPreviews.length > 0 ? `View Slides (${allPreviews.length})` : `★ Generate Carousel`}
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn"
+            onClick={() => setShowConfig(true)}
+            disabled={selections.length === 0}
+            style={{ flex: 1, justifyContent: 'center', fontSize: 'var(--fs-sm)' }}>
+            Settings
+          </button>
+          <button className="btn btn-gold"
+            disabled={selections.length === 0 || generating}
+            onClick={() => { onGenerate(); setShowSlides(true); }}
+            style={{ flex: 2, justifyContent: 'center', fontSize: 'var(--fs-lg)', padding: '14px 0' }}>
+            {generating ? '...' : allPreviews.length > 0 ? `View (${allPreviews.length})` : '★ Generate'}
+          </button>
+        </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6, fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)' }}>
           <span>{selections.length} selected</span>
-          <span>{Math.ceil(selections.length / tracksPerSlide)} slides</span>
+          <span>{Math.ceil(selections.length / tracksPerSlide)} {Math.ceil(selections.length / tracksPerSlide) === 1 ? 'slide' : 'slides'}</span>
           {(() => {
             const cover = selections.find(s => s.isCoverFeature);
             return cover ? <span style={{ color: 'var(--gold)' }}>★ {cover.track.artist_names.split(',')[0]}</span> : null;

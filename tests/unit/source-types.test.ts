@@ -24,7 +24,7 @@ describe('music sources', () => {
   it('getSource returns correct source by id', () => {
     expect(getSource('spotify').name).toBe('Spotify');
     expect(getSource('nashville').name).toBe('Nashville');
-    expect(getSource('manual').name).toBe('Artist List');
+    expect(getSource('manual').name).toBe('Manual');
   });
 
   it('getSource returns first source for unknown id', () => {

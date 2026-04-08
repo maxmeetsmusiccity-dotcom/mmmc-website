@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { startAuth, exchangeCode, getToken, clearToken, refreshToken, isTokenExpired } from '../lib/auth';
 import {
@@ -25,16 +25,19 @@ import { batchResolveAppleMusic } from '../lib/apple-music';
 import ClusterCard from '../components/ClusterCard';
 import FilterBar from '../components/FilterBar';
 import PlaylistCreate from '../components/PlaylistCreate';
-import CarouselPreviewPanel from '../components/CarouselPreviewPanel';
 import TagBlocks from '../components/TagBlocks';
 import WeekHistory from '../components/WeekHistory';
 import EmbedWidget from '../components/EmbedWidget';
 import ProductNav from '../components/ProductNav';
 import SourceSelector from '../components/SourceSelector';
 import ManualImport from '../components/ManualImport';
-import NashvilleReleases from '../components/NashvilleReleases';
-import MobileResultsView from '../components/MobileResultsView';
+
+// Lazy-loaded heavy components
+const CarouselPreviewPanel = lazy(() => import('../components/CarouselPreviewPanel'));
+const NashvilleReleases = lazy(() => import('../components/NashvilleReleases'));
+const MobileResultsView = lazy(() => import('../components/MobileResultsView'));
 import CaptionGenerator from '../components/CaptionGenerator';
+import TrackSuggestions from '../components/TrackSuggestions';
 import type { MusicSource } from '../lib/sources/types';
 import ToastContainer from '../components/Toast';
 import KeyboardHelp from '../components/KeyboardHelp';
@@ -201,6 +204,57 @@ export default function NewMusicFriday() {
 
   const weekDate = getLastFriday();
 
+  // ─── Auto-save draft ─────────────────────────────────────
+  const DRAFT_KEY = 'nmf_draft';
+  const [showDraftBanner, setShowDraftBanner] = useState(false);
+  const draftRef = useRef<{ selections: SelectionSlot[]; allTracks: TrackItem[]; releases: ReleaseCluster[] } | null>(null);
+
+  // Check for saved draft on mount
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) return;
+      const draft = JSON.parse(raw);
+      if (draft.weekDate !== weekDate) { localStorage.removeItem(DRAFT_KEY); return; }
+      if (draft.selections?.length > 0 && draft.allTracks?.length > 0) {
+        draftRef.current = { selections: draft.selections, allTracks: draft.allTracks, releases: draft.releases || [] };
+        setShowDraftBanner(true);
+      }
+    } catch { localStorage.removeItem(DRAFT_KEY); }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const restoreDraft = useCallback(() => {
+    if (!draftRef.current) return;
+    setAllTracks(draftRef.current.allTracks);
+    setReleases(draftRef.current.releases.length > 0 ? draftRef.current.releases : groupIntoReleases(draftRef.current.allTracks));
+    setSelections(buildSlots(draftRef.current.selections));
+    setPhase('results');
+    setShowDraftBanner(false);
+    draftRef.current = null;
+  }, []);
+
+  const discardDraft = useCallback(() => {
+    localStorage.removeItem(DRAFT_KEY);
+    setShowDraftBanner(false);
+    draftRef.current = null;
+  }, []);
+
+  // Save draft every 30s when user has selections, also debounced on selection change
+  useEffect(() => {
+    if (selections.length === 0 || allTracks.length === 0) return;
+    const save = () => {
+      try {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify({
+          weekDate, selections, allTracks, releases,
+          savedAt: new Date().toISOString(),
+        }));
+      } catch { /* quota exceeded */ }
+    };
+    const debounce = setTimeout(save, 2000);
+    const interval = setInterval(save, 30_000);
+    return () => { clearTimeout(debounce); clearInterval(interval); };
+  }, [selections, allTracks, releases, weekDate]);
 
   // Handle OAuth callback
   useEffect(() => {
@@ -817,6 +871,30 @@ export default function NewMusicFriday() {
 
       {/* Auth phase removed — users always see the source selector (phase='ready') */}
 
+      {/* Draft resume banner */}
+      {showDraftBanner && phase === 'ready' && (
+        <div style={{
+          margin: '0 auto 16px', maxWidth: 700, padding: '12px 16px', borderRadius: 10,
+          background: 'rgba(212,168,67,0.08)', border: '1px solid rgba(212,168,67,0.3)',
+          display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
+        }}>
+          <div style={{ flex: 1, minWidth: 200 }}>
+            <p style={{ fontSize: 'var(--fs-md)', fontWeight: 600, color: 'var(--gold)' }}>Resume your curation?</p>
+            <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)', marginTop: 2 }}>
+              {draftRef.current?.selections.length || 0} tracks selected from {draftRef.current?.allTracks.length || 0} releases
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn btn-gold" onClick={restoreDraft} style={{ fontSize: 'var(--fs-sm)', padding: '8px 20px' }}>
+              Resume
+            </button>
+            <button className="btn" onClick={discardDraft} style={{ fontSize: 'var(--fs-sm)', padding: '8px 16px' }}>
+              Discard
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Ready Phase -- token received, waiting for explicit scan */}
       {phase === 'ready' && (
         <div style={{
@@ -923,6 +1001,7 @@ export default function NewMusicFriday() {
             {/* Nashville releases source — zero-login experience */}
             {activeSource === 'nashville' && (
               <div style={{ marginTop: 16, textAlign: 'left' }}>
+                <Suspense fallback={<div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)' }}>Loading Nashville releases...</div>}>
                 <NashvilleReleases onImport={(tracks) => {
                   setAllTracks(tracks);
                   setReleases(groupIntoReleases(tracks));
@@ -930,6 +1009,7 @@ export default function NewMusicFriday() {
                   setLastScanned(new Date().toISOString());
                   setIsDemoMode(false);
                 }} />
+                </Suspense>
               </div>
             )}
 
@@ -991,6 +1071,7 @@ export default function NewMusicFriday() {
 
       {/* Results Phase */}
       {phase === 'results' && isMobile && (
+        <Suspense fallback={<div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)' }}>Loading...</div>}>
         <MobileResultsView
           allTracks={allTracks}
           releases={filteredReleases}
@@ -1013,8 +1094,12 @@ export default function NewMusicFriday() {
           }}
           onGenerateStory={() => (carouselRef.current as any)?.generateStory?.()}
           tracksPerSlide={tracksPerSlide}
+          onTracksPerSlideChange={setTracksPerSlide}
+          carouselAspect={carouselAspect}
+          onAspectChange={setCarouselAspect}
           pushSelectionHistory={pushSelectionHistory}
         />
+        </Suspense>
       )}
       {phase === 'results' && !isMobile && (
         <>
@@ -1813,6 +1898,13 @@ export default function NewMusicFriday() {
             </div>
           </section>
 
+          {/* Track suggestions (shows after 3+ selections) */}
+          {selections.length >= 3 && !isMobile && (
+            <div style={{ padding: '0 24px' }}>
+              <TrackSuggestions releases={filteredReleases} selections={selections} onSelectRelease={handleSelectRelease} />
+            </div>
+          )}
+
           {/* ============================================================ */}
           {/*  STEPS 2-5: CAROUSEL BUILDER (CarouselPreviewPanel)          */}
           {/*  Internally contains:                                        */}
@@ -1841,6 +1933,7 @@ export default function NewMusicFriday() {
                 )}
               </div>
 
+              <Suspense fallback={<div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)' }}>Loading carousel tools...</div>}>
               <CarouselPreviewPanel
                 ref={carouselRef}
                 selectedTracks={selectedTracks}
@@ -1854,15 +1947,29 @@ export default function NewMusicFriday() {
                 allPreviews={allPreviews}
                 onAllPreviewsChange={setAllPreviews}
               />
+              </Suspense>
 
-              {/* Collapsible extras */}
-              <details style={{ marginTop: 24, borderTop: '1px solid var(--midnight-border)', paddingTop: 16 }}>
-                <summary style={{ cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 'var(--fs-lg)', fontWeight: 600 }}>
-                  Instagram Tags
-                </summary>
-                <TagBlocks slideGroups={slideGroups} onHandlesResolved={setResolvedHandles} />
-                <CaptionGenerator selections={selections} handles={resolvedHandles} weekDate={weekDate} />
-              </details>
+              {/* Post-generation: Caption & Share (prominent) */}
+              {allPreviews.length > 0 && (
+                <div style={{ marginTop: 24, borderTop: '1px solid var(--midnight-border)', paddingTop: 16 }}>
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-2xl)', marginBottom: 12 }}>
+                    ③ Share
+                  </h3>
+                  <TagBlocks slideGroups={slideGroups} onHandlesResolved={setResolvedHandles} />
+                  <CaptionGenerator selections={selections} handles={resolvedHandles} weekDate={weekDate} showShare />
+                </div>
+              )}
+
+              {/* Pre-generation: Instagram Tags (collapsed) */}
+              {allPreviews.length === 0 && (
+                <details style={{ marginTop: 24, borderTop: '1px solid var(--midnight-border)', paddingTop: 16 }}>
+                  <summary style={{ cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 'var(--fs-lg)', fontWeight: 600 }}>
+                    Instagram Tags
+                  </summary>
+                  <TagBlocks slideGroups={slideGroups} onHandlesResolved={setResolvedHandles} />
+                  <CaptionGenerator selections={selections} handles={resolvedHandles} weekDate={weekDate} />
+                </details>
+              )}
 
               <details style={{ marginTop: 16, borderTop: '1px solid var(--midnight-border)', paddingTop: 16 }}>
                 <summary style={{ cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 'var(--fs-lg)', fontWeight: 600 }}>
