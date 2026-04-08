@@ -519,30 +519,81 @@ export default function NashvilleReleases({ onImport }: Props) {
               const isSingle = g.tracks.length === 1;
               const titleTrack = g.tracks[0];
               const isSelected = g.tracks.some(t => selected.has(t.spotify_track_id));
+              const isExpanded = expanded.has(g.key);
               return (
-                <div key={g.key}
-                  onClick={() => {
-                    if (isSingle) toggleSelect(titleTrack.spotify_track_id);
-                    else { setExpanded(prev => { const n = new Set(prev); if (n.has(g.key)) n.delete(g.key); else n.add(g.key); return n; }); }
-                  }}
-                  style={{
-                    borderRadius: 8, overflow: 'hidden', cursor: 'pointer',
-                    border: isSelected ? '2px solid var(--gold)' : '2px solid transparent',
-                    background: isSelected ? 'rgba(212,168,67,0.06)' : 'var(--midnight)',
-                  }}>
-                  <img src={g.cover || ''} alt=""
-                    style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', display: 'block' }}
-                    onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                  <div style={{ padding: '6px 8px' }}>
-                    <div style={{ fontSize: 'var(--fs-sm)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                      color: isSelected ? 'var(--gold)' : 'var(--text-primary)' }}>
-                      {isSingle ? titleTrack.track_name : g.album}
-                    </div>
-                    <div style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {g.artist}
-                      {!isSingle && ` · ${g.tracks.length} tracks`}
+                <div key={g.key} style={{ position: 'relative' }}>
+                  <div
+                    onClick={() => {
+                      if (isSingle) toggleSelect(titleTrack.spotify_track_id);
+                      else setExpanded(prev => { const n = new Set(prev); if (n.has(g.key)) n.delete(g.key); else n.add(g.key); return n; });
+                    }}
+                    style={{
+                      borderRadius: 8, overflow: 'hidden', cursor: 'pointer',
+                      border: isSelected ? '2px solid var(--gold)' : '2px solid transparent',
+                      background: isSelected ? 'rgba(212,168,67,0.06)' : 'var(--midnight)',
+                    }}>
+                    <img src={g.cover || ''} alt=""
+                      style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', display: 'block' }}
+                      onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                    <div style={{ padding: '6px 8px' }}>
+                      <div style={{ fontSize: 'var(--fs-sm)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        color: isSelected ? 'var(--gold)' : 'var(--text-primary)' }}>
+                        {isSingle ? titleTrack.track_name : g.album}
+                      </div>
+                      <div style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {g.artist}
+                        {!isSingle && ` · ${g.tracks.length} tracks`}
+                      </div>
                     </div>
                   </div>
+                  {/* Track picker overlay for albums/EPs */}
+                  {!isSingle && isExpanded && (
+                    <div style={{
+                      position: 'absolute', inset: 0, zIndex: 5,
+                      background: 'rgba(10,12,20,0.92)', borderRadius: 8,
+                      border: '2px solid var(--gold-dark)',
+                      display: 'flex', flexDirection: 'column',
+                      overflow: 'hidden',
+                    }}>
+                      <div style={{ padding: '6px 8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--midnight-border)' }}>
+                        <span style={{ fontSize: 'var(--fs-2xs)', fontWeight: 600, color: 'var(--gold)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {g.album}
+                        </span>
+                        <button onClick={(e) => { e.stopPropagation(); setExpanded(prev => { const n = new Set(prev); n.delete(g.key); return n; }); }}
+                          style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 14, lineHeight: 1, padding: '0 2px', flexShrink: 0 }}>
+                          &times;
+                        </button>
+                      </div>
+                      <div style={{ flex: 1, overflowY: 'auto', padding: '4px 6px' }}>
+                        {[...g.tracks].sort((a, b) => (a.track_number || 0) - (b.track_number || 0)).map(t => (
+                          <div key={t.spotify_track_id}
+                            onClick={(e) => { e.stopPropagation(); toggleSelect(t.spotify_track_id); }}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: 6, padding: '4px 2px',
+                              cursor: 'pointer', fontSize: 'var(--fs-2xs)',
+                              borderBottom: '1px solid rgba(255,255,255,0.05)',
+                            }}>
+                            <div style={{
+                              width: 14, height: 14, borderRadius: 3, flexShrink: 0,
+                              border: selected.has(t.spotify_track_id) ? '2px solid var(--gold)' : '2px solid var(--midnight-border)',
+                              background: selected.has(t.spotify_track_id) ? 'var(--gold)' : 'transparent',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              fontSize: 9, color: 'var(--midnight)',
+                            }}>
+                              {selected.has(t.spotify_track_id) && '\u2713'}
+                            </div>
+                            <span style={{ color: 'var(--text-muted)', width: 14, textAlign: 'right', flexShrink: 0 }}>{t.track_number}</span>
+                            <span style={{
+                              flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                              color: selected.has(t.spotify_track_id) ? 'var(--gold)' : 'var(--text-primary)',
+                            }}>
+                              {t.track_name}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}
