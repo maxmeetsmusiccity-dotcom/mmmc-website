@@ -308,7 +308,7 @@ export default function NewMusicFriday() {
       try {
         const { authorizeAppleMusic } = await import('../lib/sources/apple-music');
         await authorizeAppleMusic();
-        console.log('[AM] Pre-authorized MusicKit for Apple user');
+        if (import.meta.env.DEV) console.log('[AM] Pre-authorized MusicKit for Apple user');
       } catch {
         // User may decline or popup may be blocked — that's OK, scan button will retry
       }
@@ -411,7 +411,7 @@ export default function NewMusicFriday() {
         setPhase('ready');
         return;
       }
-      console.log(`[SCAN] Health check: ${health.message}`);
+      if (import.meta.env.DEV) console.log(`[SCAN] Health check: ${health.message}`);
 
       setScanStatus('Fetching followed artists...');
       const artists = await fetchFollowedArtists(activeToken, (cur, tot) => {

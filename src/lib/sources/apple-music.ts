@@ -109,7 +109,7 @@ export async function scanAppleMusicLibrary(options: AppleMusicScanOptions): Pro
       throw new Error('Apple Music authorization failed. Make sure you have an active Apple Music subscription and approved library access.');
     }
   }
-  console.log(`[AM SCAN START] Authorized. musicUserToken length: ${(music.musicUserToken || '').length}. Fetching library artists...`);
+  if (import.meta.env.DEV) console.log(`[AM SCAN START] Authorized. musicUserToken length: ${(music.musicUserToken || '').length}. Fetching library artists...`);
 
   while (true) {
     await enforceGap();
@@ -121,7 +121,7 @@ export async function scanAppleMusicLibrary(options: AppleMusicScanOptions): Pro
         const res = await music.api.music(`/v1/me/library/artists`, { limit, offset });
         lastCallTime = Date.now();
         items = res?.data?.data || res?.data || [];
-        console.log(`[AM SCAN] API response at offset ${offset}: ${items.length} items, keys: ${Object.keys(res?.data || {}).join(',')}`);
+        if (import.meta.env.DEV) console.log(`[AM SCAN] API response at offset ${offset}: ${items.length} items, keys: ${Object.keys(res?.data || {}).join(',')}`);
       } catch (apiErr: any) {
         // Fallback: try the catalog-style fetch
         console.warn(`[AM SCAN] Primary API failed at offset ${offset}:`, apiErr?.message || apiErr);
@@ -132,7 +132,7 @@ export async function scanAppleMusicLibrary(options: AppleMusicScanOptions): Pro
           if (fallback.ok) {
             const fbData = await fallback.json();
             items = fbData?.data || [];
-            console.log(`[AM SCAN] Fallback fetch worked: ${items.length} items`);
+            if (import.meta.env.DEV) console.log(`[AM SCAN] Fallback fetch worked: ${items.length} items`);
           } else {
             console.warn(`[AM SCAN] Fallback fetch failed: ${fallback.status} ${fallback.statusText}`);
           }
@@ -150,7 +150,7 @@ export async function scanAppleMusicLibrary(options: AppleMusicScanOptions): Pro
     }
   }
 
-  console.log(`[AM SCAN] Found ${artists.length} library artists`);
+  if (import.meta.env.DEV) console.log(`[AM SCAN] Found ${artists.length} library artists`);
 
   // For each library artist, look up their CATALOG ID, then check catalog for new releases
   for (let i = 0; i < artists.length; i++) {
@@ -174,7 +174,7 @@ export async function scanAppleMusicLibrary(options: AppleMusicScanOptions): Pro
           catalogArtistId = relationships[0].id;
         }
       } catch (relErr) {
-        console.log(`[AM SCAN] Relationship lookup failed for "${artistName}": ${(relErr as Error).message}`);
+        if (import.meta.env.DEV) console.log(`[AM SCAN] Relationship lookup failed for "${artistName}": ${(relErr as Error).message}`);
       }
 
       // Method B: search catalog by name (always try if method A didn't work)
@@ -190,9 +190,9 @@ export async function scanAppleMusicLibrary(options: AppleMusicScanOptions): Pro
           // Prefer exact name match
           const exact = searchResults.find((a: any) => a.attributes?.name?.toLowerCase() === artistName.toLowerCase());
           catalogArtistId = exact?.id || searchResults[0]?.id || null;
-          if (!catalogArtistId) console.log(`[AM SCAN] Search found 0 results for "${artistName}"`);
+          if (!catalogArtistId && import.meta.env.DEV) console.log(`[AM SCAN] Search found 0 results for "${artistName}"`);
         } catch (searchErr) {
-          console.log(`[AM SCAN] Search failed for "${artistName}": ${(searchErr as Error).message}`);
+          if (import.meta.env.DEV) console.log(`[AM SCAN] Search failed for "${artistName}": ${(searchErr as Error).message}`);
         }
       }
 
@@ -267,11 +267,11 @@ export async function scanAppleMusicLibrary(options: AppleMusicScanOptions): Pro
 
     onProgress?.(i + 1, artists.length, seenAlbumIds.size);
     if ((i + 1) % 50 === 0) {
-      console.log(`[AM SCAN] Processed ${i + 1}/${artists.length} artists, releases=${seenAlbumIds.size}`);
+      if (import.meta.env.DEV) console.log(`[AM SCAN] Processed ${i + 1}/${artists.length} artists, releases=${seenAlbumIds.size}`);
     }
   }
 
-  console.log(`[AM SCAN COMPLETE] ${artists.length} artists, ${allTracks.length} tracks, ${comingSoonTracks.length} coming soon`);
+  if (import.meta.env.DEV) console.log(`[AM SCAN COMPLETE] ${artists.length} artists, ${allTracks.length} tracks, ${comingSoonTracks.length} coming soon`);
   if (onComingSoon && comingSoonTracks.length > 0) onComingSoon(comingSoonTracks);
   return allTracks;
 }

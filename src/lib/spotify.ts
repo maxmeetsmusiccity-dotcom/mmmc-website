@@ -273,7 +273,7 @@ export async function fetchFollowedArtists(
         const { artists, timestamp } = JSON.parse(cached);
         if (artists?.length > 0 && Date.now() - timestamp < 7 * 24 * 60 * 60 * 1000) {
           onProgress(artists.length, artists.length);
-          console.log(`[SCAN] Loaded ${artists.length} artists from cache`);
+          if (import.meta.env.DEV) console.log(`[SCAN] Loaded ${artists.length} artists from cache`);
           return artists;
         }
       }
@@ -364,7 +364,7 @@ export async function fetchNewReleases(
     return aHit - bHit;
   });
 
-  console.log(`[SCAN START] ${sorted.length} artists, cutoff=${cutoffDate}, maxAlbums=${maxAlbums}, mode=SEQUENTIAL`);
+  if (import.meta.env.DEV) console.log(`[SCAN START] ${sorted.length} artists, cutoff=${cutoffDate}, maxAlbums=${maxAlbums}, mode=SEQUENTIAL`);
 
   // SEQUENTIAL: one artist at a time, just like the Python script
   for (let i = 0; i < sorted.length; i++) {
@@ -399,7 +399,7 @@ export async function fetchNewReleases(
       if (newAlbums.length === 0) {
         onProgress(i + 1, sorted.length, seenAlbumIds.size, 'green');
         if ((i + 1) % 50 === 0) {
-          console.log(`[SCAN] Processed ${i + 1}/${sorted.length} artists, releases=${seenAlbumIds.size}`);
+          if (import.meta.env.DEV) console.log(`[SCAN] Processed ${i + 1}/${sorted.length} artists, releases=${seenAlbumIds.size}`);
         }
         continue;
       }
@@ -491,7 +491,7 @@ export async function fetchNewReleases(
 
       onProgress(i + 1, sorted.length, seenAlbumIds.size, 'green');
       if ((i + 1) % 50 === 0) {
-        console.log(`[SCAN] Processed ${i + 1}/${sorted.length} artists, releases=${seenAlbumIds.size}`);
+        if (import.meta.env.DEV) console.log(`[SCAN] Processed ${i + 1}/${sorted.length} artists, releases=${seenAlbumIds.size}`);
       }
     } catch (e) {
       if (e instanceof RateLimitError) {
@@ -552,7 +552,7 @@ export async function fetchNewReleases(
   } catch { /* storage full */ }
 
   const elapsed = (Date.now() - scanStart) / 1000;
-  console.log(
+  if (import.meta.env.DEV) console.log(
     `[SCAN COMPLETE] ${apiCalls} API calls in ${elapsed.toFixed(1)}s ` +
     `(${(apiCalls / elapsed).toFixed(1)} req/s). ` +
     `Albums: ${seenAlbumIds.size}, Tracks: ${allTracks.length}, ` +

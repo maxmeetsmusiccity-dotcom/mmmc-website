@@ -99,7 +99,7 @@ const CarouselPreviewPanel = forwardRef<CarouselPanelHandle, Props>(function Car
     const saved = localStorage.getItem('nmf_title_template');
     const fallback = getDefaultTitleTemplateId(user?.email || undefined);
     const chosen = saved || fallback;
-    console.log('[title-template] init:', { saved, fallback, chosen, email: user?.email || null });
+    if (import.meta.env.DEV) console.log('[title-template] init:', { saved, fallback, chosen, email: user?.email || null });
     return chosen;
   });
   const hasUserChangedTitle = useRef(!!localStorage.getItem('nmf_title_template'));
@@ -125,12 +125,12 @@ const CarouselPreviewPanel = forwardRef<CarouselPanelHandle, Props>(function Car
   // Fix: update title template when user email resolves (Supabase auth is async)
   // Also trigger on user.id change in case email arrives with the session
   useEffect(() => {
-    console.log('[title-template] useEffect:', { email: user?.email, hasUserChanged: hasUserChangedTitle.current });
+    if (import.meta.env.DEV) console.log('[title-template] useEffect:', { email: user?.email, hasUserChanged: hasUserChangedTitle.current });
     if (!hasUserChangedTitle.current) {
       const email = user?.email;
       if (email) {
         const defaultId = getDefaultTitleTemplateId(email);
-        console.log('[title-template] auth resolved → setting default:', defaultId);
+        if (import.meta.env.DEV) console.log('[title-template] auth resolved → setting default:', defaultId);
         setTitleTemplateId(defaultId);
         localStorage.setItem('nmf_title_template', defaultId);
       }
@@ -169,7 +169,7 @@ const CarouselPreviewPanel = forwardRef<CarouselPanelHandle, Props>(function Car
   // Live preview: render grid slide when template or tracks change
   useEffect(() => {
     if (selectedTracks.length === 0) return;
-    console.log('[PREVIEW] Rendering grid with template:', gridTemplateId, 'layout:', gridLayoutId);
+    if (import.meta.env.DEV) console.log('[PREVIEW] Rendering grid with template:', gridTemplateId, 'layout:', gridLayoutId);
     const firstSlice = selectedTracks.slice(0, tracksPerSlide);
     const slots = buildSlots(firstSlice.map((t, i) => ({
       track: t, albumId: t.album_spotify_id,
