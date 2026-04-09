@@ -1,0 +1,24 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "write:src/**/*.tsx",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd ~/Projects/mmmc-website && npx vitest run --reporter=verbose 2>&1 | tail -20"
+          }
+        ]
+      },
+      {
+        "matcher": "write:src/**/*.ts",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd ~/Projects/mmmc-website && npx vitest run --reporter=verbose 2>&1 | tail -20"
+          }
+        ]
+      }
+    ]
+  }
+}

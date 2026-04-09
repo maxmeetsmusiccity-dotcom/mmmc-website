@@ -17,7 +17,7 @@ const APIFY_TOKEN = process.env.APIFY_TOKEN || '';
  */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
-
+  try {
   // Same-origin or auth
   const origin = req.headers.origin || req.headers.referer || '';
   if (!origin.includes('maxmeetsmusiccity.com') && !origin.includes('localhost')) {
@@ -28,7 +28,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(429).json({ error: 'Rate limit exceeded' });
   }
 
-  const { artist_name, spotify_id } = req.body || {};
+  let body: any;
+  try {
+    body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body || {};
+  } catch {
+    body = {};
+  }
+  const { artist_name, spotify_id } = body;
   if (!artist_name) return res.status(400).json({ error: 'artist_name required' });
 
   // Step 1: Check cache
@@ -130,4 +136,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   return res.json({ handle: candidateHandle, source: 'apify:likely', cached: false });
+  } catch (e) {
+    console.error('[resolve-handle] Unhandled error:', e);
+    return res.status(500).json({ handle: null, source: 'error', cached: false });
+  }
 }
