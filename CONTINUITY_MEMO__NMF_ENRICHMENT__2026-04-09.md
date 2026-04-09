@@ -78,24 +78,26 @@ NMF Studio (Thread C)           Research Agent (Thread B)         Cascade (Threa
 
 ## Remaining Items (4-6 from execution order)
 
-### Item 4: Ground Truth Verification Pass
-- Run 3,792 loaded handles through Apify Instagram Profile Scraper
-- Verify handles still exist, bio matches artist
-- Tag results as confirmed/likely/contested/rejected
-- This is the first calibration dataset for confidence scoring
-- Script: iterate Supabase cache, call Apify per handle, update source label
+### Item 4: Ground Truth Verification Pass — DONE
+- Script: `scripts/verify-ground-truth.ts`
+- Runs handles through Apify Instagram Profile Scraper
+- Validates bio with 40+ music keywords
+- Tags as confirmed/likely/unverified/rejected with evidence
+- 5 concurrent, 2s between batches, skips already-confirmed
+- **NOT YET RUN** — costs ~$11-38. Run with:
+  `VITE_SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... APIFY_TOKEN=... npx tsx scripts/verify-ground-truth.ts`
 
-### Item 5: Friday Scan Queue Integration
-- When NMF Thursday scan detects new artists not in handle cache
-- Write task to R2 key `agent_inbox/research_tasks.json` via ND proxy
-- POST to /api/research/batch with new entity list
-- Research Agent picks up tasks on Friday schedule
+### Item 5: Friday Scan Queue Integration — DONE
+- `src/lib/enrichment.ts` — queueNewArtistsForEnrichment()
+- Called after Nashville import in NewMusicFriday.tsx
+- Checks cache, queues unconfirmed via ND proxy → /api/research/batch
+- Fire-and-forget, non-blocking
 
-### Item 6: Research Results Display
-- Read from /api/research/results via ND proxy
-- Show enrichment status per artist in TagBlocks
-- Poll or refresh to pick up completed results
-- Display intelligence (news, label, tour) alongside handle badges
+### Item 6: Research Results Display — DONE
+- "Pull AI Results" button in TagBlocks
+- Fetches from /api/research/results via ND proxy
+- Matches by pg_id or display_name, updates badges
+- fetchResearchResults() + getResearchStatus() in enrichment.ts
 
 ---
 
