@@ -237,7 +237,7 @@ export default function TagBlocks({ slideGroups, onHandlesResolved }: Props) {
                           style={{
                             background: 'var(--midnight-raised)', border: '1px solid var(--midnight-border)',
                             borderRadius: 4, padding: '2px 6px', color: 'var(--text-primary)',
-                            fontSize: 'var(--fs-2xs)', width: 140, fontFamily: 'var(--font-mono)',
+                            fontSize: 'var(--fs-2xs)', width: 200, fontFamily: 'var(--font-mono)',
                           }}
                         />
                         {/* Simple status indicator */}

@@ -571,33 +571,39 @@ const CarouselPreviewPanel = forwardRef<CarouselPanelHandle, Props>(function Car
       )}
 
       {/* Generate + Download */}
+      {/* Generate / Download bar */}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 20, marginBottom: 16, alignItems: 'center' }}>
-        <button
-          data-testid="generate-button"
-          className="btn btn-gold"
-          onClick={handleGenerate}
-          disabled={generating || selectedTracks.length === 0}
-          title="Generate all slides as downloadable PNG images"
-        >
-          {generating ? 'Generating...' : allPreviews.length > 0 ? 'Regenerate All Slides' : 'Generate Carousel'}
-        </button>
-        {allPreviews.length > 0 && (
+        {allPreviews.length === 0 ? (
+          <button
+            data-testid="generate-button"
+            className="btn btn-gold"
+            onClick={handleGenerate}
+            disabled={generating || selectedTracks.length === 0}
+            style={{ fontSize: 'var(--fs-lg)', padding: '12px 32px' }}
+          >
+            {generating ? 'Generating...' : 'Generate Carousel'}
+          </button>
+        ) : (
           <>
-            <button className="btn btn-gold" onClick={handleDownloadAll} title="Download all slides as a ZIP file" style={{ fontSize: 'var(--fs-md)', padding: '10px 24px' }}>
-              Download ZIP ({allPreviews.length} {allPreviews.length === 1 ? 'slide' : 'slides'})
+            <button className="btn btn-gold" onClick={handleDownloadAll}
+              style={{ fontSize: 'var(--fs-lg)', padding: '12px 32px' }}>
+              {allPreviews.length === 1 ? 'Download Slide' : `Download All (${allPreviews.length} slides)`}
             </button>
             {coverFeature && (
               <button className="btn btn-sm" onClick={handleGenerateStory} disabled={generating}
-                title="Generate a 9:16 Story version of the title slide"
                 style={{ fontSize: 'var(--fs-sm)', padding: '8px 16px' }}>
                 {generating ? '...' : '▮ Story (9:16)'}
               </button>
             )}
+            <button className="btn btn-sm" onClick={handleGenerate} disabled={generating}
+              style={{ fontSize: 'var(--fs-sm)', padding: '8px 16px', marginLeft: 'auto' }}>
+              {generating ? '...' : 'Regenerate'}
+            </button>
           </>
         )}
       </div>
-      {/* Template comparison */}
-      {selectedTracks.length > 0 && slideGroups.length > 0 && (
+      {/* Template comparison — only show BEFORE generation */}
+      {selectedTracks.length > 0 && slideGroups.length > 0 && allPreviews.length === 0 && (
         <details style={{ marginBottom: 12 }}>
           <summary style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)', cursor: 'pointer' }}>
             Compare Templates {comparePreviews.length > 0 ? `(${comparePreviews.length})` : ''}
