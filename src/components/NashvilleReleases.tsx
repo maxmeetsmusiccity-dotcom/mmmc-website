@@ -255,7 +255,7 @@ export default function NashvilleReleases({ onImport }: Props) {
       arr.push(r);
       map.set(key, arr);
     }
-    return [...map.entries()].map(([key, tracks]) => ({
+    const groups = [...map.entries()].map(([key, tracks]) => ({
       key,
       album: tracks[0].album_name,
       artist: tracks[0].artist_name,
@@ -264,6 +264,12 @@ export default function NashvilleReleases({ onImport }: Props) {
       date: tracks[0].release_date,
       tracks,
     }));
+    // Apply sort to album groups (used by grid view)
+    const dir = sortDir === 'asc' ? 1 : -1;
+    if (sortBy === 'artist') groups.sort((a, b) => dir * a.artist.localeCompare(b.artist));
+    else if (sortBy === 'date') groups.sort((a, b) => dir * (a.date || '').localeCompare(b.date || ''));
+    else if (sortBy === 'title') groups.sort((a, b) => dir * a.album.localeCompare(b.album));
+    return groups;
   })();
 
   // Group by artist → releases

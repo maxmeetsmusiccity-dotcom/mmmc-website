@@ -72,7 +72,9 @@ async function getCachedHandle(artistId: string, artistName?: string): Promise<H
       .select('*')
       .eq('spotify_artist_id', artistId)
       .single();
-    if (data?.instagram_handle) {
+    // Verify the cached name matches the requested name to prevent cross-wiring
+    // (collab tracks share one Spotify ID for multiple artists)
+    if (data?.instagram_handle && (!artistName || data.artist_name?.toLowerCase() === artistName.toLowerCase())) {
       return {
         artist_name: data.artist_name,
         handle: data.instagram_handle,
@@ -91,14 +93,14 @@ async function getCachedHandle(artistId: string, artistName?: string): Promise<H
         .from('instagram_handles')
         .select('*')
         .ilike('artist_name', artistName)
-        .limit(1)
-        .single();
-      if (data?.instagram_handle) {
+        .limit(1);
+      const row = data?.[0];
+      if (row?.instagram_handle) {
         return {
-          artist_name: data.artist_name,
-          handle: data.instagram_handle,
-          source: data.source || 'cache',
-          pg_id: data.nd_pg_id || null,
+          artist_name: row.artist_name,
+          handle: row.instagram_handle,
+          source: row.source || 'cache',
+          pg_id: row.nd_pg_id || null,
           loading: false,
           confirmed: true,
         };
