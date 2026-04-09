@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import type { SelectionSlot } from '../lib/selection';
 import { resolveInstagramHandle, type HandleResult } from '../lib/nd';
 import { supabase } from '../lib/supabase';
+import { fetchResearchResults } from '../lib/enrichment';
 
 /** Consistent artist name splitting — used everywhere in this component */
 const ARTIST_SPLIT = /,\s*|\s+feat\.?\s+|\s+ft\.?\s+|\s+x\s+|\s+&\s+/i;
@@ -206,6 +207,39 @@ export default function TagBlocks({ slideGroups, onHandlesResolved }: Props) {
           style={{ fontSize: 'var(--fs-2xs)', padding: '3px 10px' }}
         >
           {resolving ? 'Resolving...' : 'Refresh Handles'}
+        </button>
+        <button
+          className="btn btn-sm"
+          onClick={async () => {
+            const results = await fetchResearchResults();
+            if (results.length === 0) return;
+            setHandles(prev => {
+              const next = new Map(prev);
+              for (const r of results) {
+                if (!r.instagram?.handle) continue;
+                // Match by pg_id or display_name
+                const matchKey = [...next.keys()].find(k => {
+                  const existing = next.get(k);
+                  return existing?.pg_id === r.pg_id || k.toLowerCase() === r.display_name.toLowerCase();
+                });
+                if (matchKey) {
+                  next.set(matchKey, {
+                    artist_name: matchKey,
+                    handle: r.instagram.handle,
+                    source: `ai:${r.instagram.confidence_label || 'unverified'}`,
+                    pg_id: r.pg_id,
+                    loading: false,
+                    confirmed: r.instagram.confidence_label === 'confirmed' || r.instagram.confidence_label === 'likely',
+                  });
+                }
+              }
+              onHandlesResolved?.(next);
+              return next;
+            });
+          }}
+          style={{ fontSize: 'var(--fs-2xs)', padding: '3px 10px' }}
+        >
+          Pull AI Results
         </button>
         <div style={{ display: 'flex', gap: 4 }}>
           {([['handles', 'Handles'], ['with_titles', 'With Titles'], ['newline', 'One Per Line']] as const).map(([key, label]) => (

@@ -38,6 +38,7 @@ const NashvilleReleases = lazy(() => import('../components/NashvilleReleases'));
 const MobileResultsView = lazy(() => import('../components/MobileResultsView'));
 import CaptionGenerator from '../components/CaptionGenerator';
 import TrackSuggestions from '../components/TrackSuggestions';
+import { queueNewArtistsForEnrichment } from '../lib/enrichment';
 import type { MusicSource } from '../lib/sources/types';
 import ToastContainer from '../components/Toast';
 import KeyboardHelp from '../components/KeyboardHelp';
@@ -941,6 +942,11 @@ export default function NewMusicFriday() {
                   setPhase('results');
                   setLastScanned(new Date().toISOString());
                   setIsDemoMode(false);
+                  // Queue new artists for Research Agent enrichment (fire-and-forget)
+                  queueNewArtistsForEnrichment(tracks).then(r => {
+                    if (import.meta.env.DEV && r.queued > 0)
+                      console.log(`[Enrichment] Queued ${r.queued} artists, ${r.alreadyCached} cached, ${r.total} total`);
+                  }).catch(() => {});
                 }} />
                 </Suspense>
               </div>
