@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildSlots, shuffleSlideGroup, reorderInSlideGroup, getSlideGroup, getPositionInSlide } from '../../src/lib/selection';
+import { buildSlots, shuffleSlideGroup, reorderInSlideGroup, getSlideGroup, getPositionInSlide, GRID_POSITIONS } from '../../src/lib/selection';
 
 const makeSlot = (i: number) => ({
   track: { track_id: `t${i}`, track_name: `Track ${i}`, artist_names: `Artist ${i}` } as any,
@@ -84,5 +84,82 @@ describe('getPositionInSlide', () => {
     expect(getPositionInSlide(8)).toBe(8);
     expect(getPositionInSlide(9)).toBe(1);
     expect(getPositionInSlide(16)).toBe(8);
+  });
+
+  it('returns correct positions for second slide', () => {
+    for (let i = 9; i <= 16; i++) {
+      expect(getPositionInSlide(i)).toBe(i - 8);
+    }
+  });
+
+  it('works for selection 32 (last item in 4-slide set)', () => {
+    expect(getPositionInSlide(32)).toBe(8);
+  });
+});
+
+describe('GRID_POSITIONS', () => {
+  it('has 8 entries (3x3 minus center logo)', () => {
+    expect(GRID_POSITIONS).toHaveLength(8);
+  });
+
+  it('includes all expected position labels', () => {
+    expect(GRID_POSITIONS).toContain('Top-Left');
+    expect(GRID_POSITIONS).toContain('Top-Center');
+    expect(GRID_POSITIONS).toContain('Top-Right');
+    expect(GRID_POSITIONS).toContain('Mid-Left');
+    expect(GRID_POSITIONS).toContain('Mid-Right');
+    expect(GRID_POSITIONS).toContain('Bottom-Left');
+    expect(GRID_POSITIONS).toContain('Bottom-Center');
+    expect(GRID_POSITIONS).toContain('Bottom-Right');
+  });
+
+  it('does not include a center position (reserved for logo)', () => {
+    expect(GRID_POSITIONS).not.toContain('Mid-Center');
+    expect(GRID_POSITIONS).not.toContain('Center');
+  });
+
+  it('positions are unique', () => {
+    const unique = new Set(GRID_POSITIONS);
+    expect(unique.size).toBe(GRID_POSITIONS.length);
+  });
+});
+
+describe('buildSlots — extended edge cases', () => {
+  it('returns empty array for empty input', () => {
+    expect(buildSlots([])).toEqual([]);
+  });
+
+  it('assigns selectionNumber 1 to single item', () => {
+    const result = buildSlots([makeSlot(99)]);
+    expect(result).toHaveLength(1);
+    expect(result[0].selectionNumber).toBe(1);
+    expect(result[0].slideGroup).toBe(1);
+    expect(result[0].positionInSlide).toBe(1);
+  });
+
+  it('handles 32 tracks (4 full slides)', () => {
+    const slots = Array.from({ length: 32 }, (_, i) => makeSlot(i + 1));
+    const result = buildSlots(slots);
+    expect(result).toHaveLength(32);
+    expect(result[31].selectionNumber).toBe(32);
+    expect(result[31].slideGroup).toBe(4);
+    expect(result[31].positionInSlide).toBe(8);
+  });
+
+  it('9th track starts slide group 2', () => {
+    const slots = Array.from({ length: 9 }, (_, i) => makeSlot(i + 1));
+    const result = buildSlots(slots);
+    expect(result[8].selectionNumber).toBe(9);
+    expect(result[8].slideGroup).toBe(2);
+    expect(result[8].positionInSlide).toBe(1);
+  });
+
+  it('preserves isCoverFeature from input', () => {
+    const slots = [makeSlot(1), makeSlot(2), makeSlot(3)];
+    slots[1].isCoverFeature = true;
+    const result = buildSlots(slots);
+    expect(result[0].isCoverFeature).toBe(false);
+    expect(result[1].isCoverFeature).toBe(true);
+    expect(result[2].isCoverFeature).toBe(false);
   });
 });
