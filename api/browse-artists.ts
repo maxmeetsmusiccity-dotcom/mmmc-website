@@ -77,7 +77,7 @@ async function fetchBrowseData(): Promise<BrowseData | null> {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (isRateLimited(getClientIp(req), 30, 60_000)) {
+  if (await isRateLimited(getClientIp(req), 30, 60_000)) {
     return res.status(429).json({ error: 'Rate limit exceeded' });
   }
 

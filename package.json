@@ -16,6 +16,8 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.101.1",
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.37.0",
     "jose": "^6.2.2",
     "jszip": "^3.10.1",
     "konva": "^10.2.3",

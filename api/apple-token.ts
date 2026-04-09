@@ -15,7 +15,7 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
     return res.status(403).json({ error: 'Forbidden' });
   }
 
-  if (isRateLimited(getClientIp(_req), 20, 60_000)) {
+  if (await isRateLimited(getClientIp(_req), 20, 60_000)) {
     return res.status(429).json({ error: 'Rate limit exceeded' });
   }
   const privateKeyPem = process.env.APPLE_MUSIC_PRIVATE_KEY;

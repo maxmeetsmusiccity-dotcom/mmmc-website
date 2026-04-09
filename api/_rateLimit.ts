@@ -1,19 +1,28 @@
 import type { VercelRequest } from '@vercel/node';
+import { Ratelimit } from '@upstash/ratelimit';
+import { Redis } from '@upstash/redis';
 
 /**
- * Simple in-memory rate limiter for serverless functions.
- * Not shared across instances, but blocks burst abuse from a single instance.
- * For persistent rate limiting, replace with Upstash Redis.
+ * Persistent rate limiter using Upstash Redis.
+ * Shared across all serverless instances — a request counted on one
+ * instance is visible to all others. Prevents API abuse.
+ *
+ * Falls back to permissive (no blocking) if Upstash is not configured.
  */
-const store = new Map<string, { count: number; reset: number }>();
 
-// Clean up expired entries every 5 minutes
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, val] of store) {
-    if (now > val.reset) store.delete(key);
-  }
-}, 5 * 60 * 1000);
+const redis = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
+  ? new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN,
+    })
+  : null;
+
+// Pre-built limiters for different endpoint tiers
+const limiters = redis ? {
+  strict: new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(5, '60 s'), prefix: 'rl:strict' }),
+  moderate: new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(20, '60 s'), prefix: 'rl:moderate' }),
+  relaxed: new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(30, '60 s'), prefix: 'rl:relaxed' }),
+} : null;
 
 export function getClientIp(req: VercelRequest): string {
   const forwarded = req.headers['x-forwarded-for'];
@@ -23,20 +32,16 @@ export function getClientIp(req: VercelRequest): string {
 
 /**
  * Returns true if the request should be BLOCKED (rate exceeded).
- * @param key - unique identifier (usually IP)
- * @param maxRequests - max requests per window
- * @param windowMs - window size in milliseconds
+ * Uses Upstash Redis sliding window if configured, otherwise allows all.
  */
-export function isRateLimited(key: string, maxRequests: number, windowMs: number): boolean {
-  const now = Date.now();
-  const entry = store.get(key);
+export async function isRateLimited(key: string, maxRequests: number, _windowMs: number): Promise<boolean> {
+  if (!limiters) return false; // No Redis = no rate limiting (dev/fallback)
 
-  if (!entry || now > entry.reset) {
-    store.set(key, { count: 1, reset: now + windowMs });
-    return false;
-  }
+  // Pick the limiter tier based on maxRequests
+  const limiter = maxRequests <= 5 ? limiters.strict
+    : maxRequests <= 20 ? limiters.moderate
+    : limiters.relaxed;
 
-  entry.count++;
-  if (entry.count > maxRequests) return true;
-  return false;
+  const { success } = await limiter.limit(key);
+  return !success; // limit() returns success=true if allowed, we return true if BLOCKED
 }

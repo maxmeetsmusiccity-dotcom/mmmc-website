@@ -82,7 +82,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(401).json({ error: 'Authentication required' });
   }
 
-  if (isRateLimited(getClientIp(req), 5, 60_000)) {
+  if (await isRateLimited(getClientIp(req), 5, 60_000)) {
     return res.status(429).json({ error: 'Rate limit exceeded. Try again in a minute.' });
   }
 

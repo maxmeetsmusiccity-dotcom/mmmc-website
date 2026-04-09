@@ -46,73 +46,20 @@ describe('getClientIp', () => {
   });
 });
 
-describe('isRateLimited', () => {
-  // Use a unique key prefix for each test to avoid cross-test contamination
-  // (the rate limiter uses an in-memory Map that persists across tests)
-  let keyBase: string;
-  beforeEach(() => {
-    keyBase = `test-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+describe('isRateLimited (Upstash-backed, async)', () => {
+  // Without UPSTASH env vars, isRateLimited always returns false (permissive fallback)
+  it('returns a Promise', () => {
+    expect(isRateLimited('test-key', 5, 60000)).toBeInstanceOf(Promise);
   });
 
-  it('returns false for the very first request', () => {
-    expect(isRateLimited(`${keyBase}-first`, 5, 60000)).toBe(false);
+  it('allows all requests when Redis is not configured', async () => {
+    expect(await isRateLimited('test-no-redis-1', 5, 60000)).toBe(false);
+    expect(await isRateLimited('test-no-redis-2', 1, 60000)).toBe(false);
   });
 
-  it('returns false for requests within the limit', () => {
-    const key = `${keyBase}-within`;
-    for (let i = 0; i < 5; i++) {
-      expect(isRateLimited(key, 5, 60000)).toBe(false);
+  it('allows unlimited requests without Redis (no blocking)', async () => {
+    for (let i = 0; i < 100; i++) {
+      expect(await isRateLimited('test-flood', 1, 60000)).toBe(false);
     }
-  });
-
-  it('returns true after max requests exceeded', () => {
-    const key = `${keyBase}-exceed`;
-    // First 3 are allowed (count 1, 2, 3 — limit is 3)
-    expect(isRateLimited(key, 3, 60000)).toBe(false); // count 1
-    expect(isRateLimited(key, 3, 60000)).toBe(false); // count 2
-    expect(isRateLimited(key, 3, 60000)).toBe(false); // count 3
-    // 4th exceeds the max of 3
-    expect(isRateLimited(key, 3, 60000)).toBe(true);
-  });
-
-  it('continues to block after limit is exceeded', () => {
-    const key = `${keyBase}-block`;
-    // Exhaust limit of 1
-    expect(isRateLimited(key, 1, 60000)).toBe(false);
-    expect(isRateLimited(key, 1, 60000)).toBe(true);
-    expect(isRateLimited(key, 1, 60000)).toBe(true);
-    expect(isRateLimited(key, 1, 60000)).toBe(true);
-  });
-
-  it('resets after window expires (simulated by using a very short window)', async () => {
-    const key = `${keyBase}-reset`;
-    // Use a 50ms window
-    expect(isRateLimited(key, 1, 50)).toBe(false);
-    expect(isRateLimited(key, 1, 50)).toBe(true);
-    // Wait for window to expire
-    await new Promise(r => setTimeout(r, 60));
-    // Should be allowed again (window reset)
-    expect(isRateLimited(key, 1, 50)).toBe(false);
-  });
-
-  it('different keys are independent', () => {
-    const keyA = `${keyBase}-A`;
-    const keyB = `${keyBase}-B`;
-    // Exhaust keyA
-    expect(isRateLimited(keyA, 1, 60000)).toBe(false);
-    expect(isRateLimited(keyA, 1, 60000)).toBe(true);
-    // keyB is unaffected
-    expect(isRateLimited(keyB, 1, 60000)).toBe(false);
-  });
-
-  it('max=0 blocks immediately on second request', () => {
-    // Edge case: maxRequests = 0 means first call sets count to 1 which is > 0
-    // Actually looking at the code: first call sets count=1, then returns false.
-    // Second call: count becomes 2 > 0, returns true.
-    // Wait — re-read: if !entry, set count=1, return false. Then count++ makes 2, 2>0 = true.
-    // So with max=0, first is allowed, second is blocked.
-    const key = `${keyBase}-zero`;
-    expect(isRateLimited(key, 0, 60000)).toBe(false);
-    expect(isRateLimited(key, 0, 60000)).toBe(true);
   });
 });
