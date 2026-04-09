@@ -190,7 +190,28 @@ export async function resolveInstagramHandle(
     }
   } catch { /* ND unavailable */ }
 
-  // Step 5: Not found — return pg_id for manual entry link
+  // Step 5: Real-time Apify resolution for missing handles
+  try {
+    const res = await fetch('/api/resolve-handle', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ artist_name: artistName, spotify_id: artistId }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.handle) {
+        return {
+          ...base,
+          handle: data.handle,
+          source: data.source || 'apify:likely',
+          pg_id: pgId,
+          confirmed: data.source?.includes('confirmed') || data.source?.includes('likely') || data.cached,
+        };
+      }
+    }
+  } catch { /* resolve-handle unavailable */ }
+
+  // Step 6: Not found anywhere
   return {
     ...base,
     handle: null,
