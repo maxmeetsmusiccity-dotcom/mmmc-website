@@ -44,7 +44,8 @@ import KeyboardHelp from '../components/KeyboardHelp';
 import Onboarding from '../components/Onboarding';
 import { checkScanHealth } from '../lib/spotify';
 import { useAuth } from '../lib/auth-context';
-// ErrorBoundary wraps at App.tsx level; lazy-loaded components have Suspense fallbacks
+import { useSelectionManager } from '../hooks/useSelectionManager';
+import { useCarouselState } from '../hooks/useCarouselState';
 
 type Phase = 'auth' | 'ready' | 'scanning' | 'results';
 type FilterKey = 'all' | 'single' | 'album';
@@ -108,7 +109,12 @@ export default function NewMusicFriday() {
   const [phase, setPhase] = useState<Phase>('ready');
   const [allTracks, setAllTracks] = useState<TrackItem[]>([]);
   const [releases, setReleases] = useState<ReleaseCluster[]>([]);
-  const [selections, setSelections] = useState<SelectionSlot[]>([]);
+  // Selection management extracted to hook
+  const {
+    selections, setSelections, selectionsByAlbum,
+    handleSelectRelease, handleDeselect, handleSetCoverFeature,
+    pushSelectionHistory, selectionHistory, haptic,
+  } = useSelectionManager();
   const [targetCount, setTargetCount] = useState(32);
   const [scanStatus, setScanStatus] = useState('');
   const [scanProgress, setScanProgress] = useState({ current: 0, total: 0 });
@@ -128,23 +134,19 @@ export default function NewMusicFriday() {
     // Default Apple-signed-in users to Apple Music source
     return user?.app_metadata?.provider === 'apple' ? 'apple-music' : 'nashville';
   });
-  const [tracksPerSlide, setTracksPerSlide] = useState(8);
+  // tracksPerSlide now from useCarouselState
   const [viewMode, setViewMode] = useState<'releases' | 'tracks'>('releases');
   const [loadedFromCache, setLoadedFromCache] = useState(false);
   const [resolvedHandles, setResolvedHandles] = useState<Map<string, any>>(new Map());
 
-  // Lifted carousel state (shared between toolbar and CarouselPreviewPanel)
-  const [carouselAspect, setCarouselAspect] = useState<import('../lib/canvas-grid').CarouselAspect>('1:1');
-  const [allPreviews, setAllPreviews] = useState<string[]>([]);
-  const [generating, setGenerating] = useState(false);
-  const [exportScope, setExportScope] = useState<'all' | 'selects'>('selects');
-  const carouselRef = useRef<{ generate: () => void; downloadAll: () => void }>(null);
-  const [cardSize, setCardSize] = useState(() => {
-    try { return parseInt(localStorage.getItem('nmf_card_size') || '240'); } catch { return 240; }
-  });
+  // Carousel state extracted to hook
+  const {
+    carouselAspect, setCarouselAspect, allPreviews, setAllPreviews,
+    generating, setGenerating, exportScope, setExportScope,
+    tracksPerSlide, setTracksPerSlide, carouselRef, cardSize, setCardSize,
+  } = useCarouselState();
 
-  // Undo stack for selections (last 20 states)
-  const selectionHistory = useRef<SelectionSlot[][]>([]);
+  // selectionHistory now in useSelectionManager hook
 
   // Quick Look: spacebar preview
   const [quickLookAlbum, setQuickLookAlbum] = useState<ReleaseCluster | null>(null);
@@ -157,9 +159,6 @@ export default function NewMusicFriday() {
   const [rubberBand, setRubberBand] = useState<{ startX: number; startY: number; endX: number; endY: number } | null>(null);
   const rubberBandRef = useRef<{ startX: number; startY: number; endX: number; endY: number } | null>(null);
   const gridContainerRef = useRef<HTMLDivElement>(null);
-  const pushSelectionHistory = useCallback((prev: SelectionSlot[]) => {
-    selectionHistory.current = [...selectionHistory.current.slice(-19), prev];
-  }, []);
 
   // Shift-click multi-select tracking
   const lastClickedIdx = useRef<number>(-1);
@@ -517,75 +516,8 @@ export default function NewMusicFriday() {
   }, [selections]);
 
   /** All selected slots grouped by album ID (supports multi-track per album) */
-  const selectionsByAlbum = useMemo(() => {
-    const map = new Map<string, SelectionSlot[]>();
-    for (const s of selections) {
-      const arr = map.get(s.albumId) || [];
-      arr.push(s);
-      map.set(s.albumId, arr);
-    }
-    return map;
-  }, [selections]);
-
-  /** Haptic tap for mobile — light vibration on selection actions */
-  const haptic = useCallback((ms = 10) => {
-    try { navigator?.vibrate?.(ms); } catch { /* not supported */ }
-  }, []);
-
-  const handleSelectRelease = useCallback((cluster: ReleaseCluster, trackId?: string) => {
-    haptic();
-    setSelections(prev => {
-      pushSelectionHistory(prev);
-      const chosenTrackId = trackId || cluster.titleTrackId;
-      const track = cluster.tracks.find(t => t.track_id === chosenTrackId) || cluster.tracks[0];
-
-      // Already selected this specific track? Deselect it
-      const existingTrack = prev.findIndex(s => s.track.track_id === track.track_id);
-      if (existingTrack >= 0) {
-        return buildSlots(prev.filter((_, i) => i !== existingTrack));
-      }
-
-      // For singles (1 track): if album already selected, this is a deselect of the only track
-      if (cluster.isSingle) {
-        const existingAlbum = prev.findIndex(s => s.albumId === cluster.album_spotify_id);
-        if (existingAlbum >= 0) {
-          return buildSlots(prev.filter((_, i) => i !== existingAlbum));
-        }
-      }
-
-      // Add new selection (allows multiple tracks from same album)
-      const newSlot: SelectionSlot = {
-        track,
-        albumId: cluster.album_spotify_id,
-        selectionNumber: prev.length + 1,
-        slideGroup: getSlideGroup(prev.length + 1),
-        positionInSlide: ((prev.length) % 8) + 1,
-        isCoverFeature: false,
-      };
-
-      return buildSlots([...prev, newSlot]);
-    });
-  }, []);
-
-  const handleDeselect = useCallback((albumId: string, trackId?: string) => {
-    haptic(5);
-    setSelections(prev => {
-      if (trackId) {
-        // Deselect specific track
-        return buildSlots(prev.filter(s => s.track.track_id !== trackId));
-      }
-      // Deselect all tracks from this album
-      return buildSlots(prev.filter(s => s.albumId !== albumId));
-    });
-  }, []);
-
-  const handleSetCoverFeature = useCallback((trackId: string) => {
-    haptic(15);
-    setSelections(prev => prev.map(s => ({
-      ...s,
-      isCoverFeature: s.track.track_id === trackId,
-    })));
-  }, []);
+  // selectionsByAlbum, haptic, handleSelectRelease, handleDeselect, handleSetCoverFeature
+  // — all now in useSelectionManager hook
 
   // Keyboard shortcuts
   useEffect(() => {
