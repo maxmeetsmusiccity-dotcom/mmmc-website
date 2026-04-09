@@ -1159,9 +1159,6 @@ export default function NewMusicFriday() {
                       <button className="btn btn-sm" onClick={() => { setShowAddTracks(false); setPhase('ready'); setActiveSource('nashville'); }} style={{ width: '100%', marginTop: 12, justifyContent: 'center' }}>
                         Nashville Releases
                       </button>
-                      <Link to="/artists" className="btn btn-sm" onClick={() => setShowAddTracks(false)} style={{ width: '100%', marginTop: 8, justifyContent: 'center', textDecoration: 'none', display: 'flex' }}>
-                        Browse Artists (A-Z)
-                      </Link>
                       {token && (
                         <button className="btn btn-sm btn-spotify" onClick={() => { setShowAddTracks(false); runScan(token); }} style={{ width: '100%', marginTop: 8, justifyContent: 'center' }}>
                           Re-scan Spotify

@@ -132,6 +132,9 @@ function isAuthorized(req: VercelRequest): boolean {
   // Accept valid Supabase JWT for authenticated frontend users
   const supabaseToken = req.headers['x-supabase-auth'];
   if (typeof supabaseToken === 'string' && supabaseToken.length > 20) return true;
+  // Accept same-origin requests (browser frontend on our domain)
+  const origin = req.headers.origin || req.headers.referer || '';
+  if (origin.includes('maxmeetsmusiccity.com') || origin.includes('localhost')) return true;
   return false;
 }
 

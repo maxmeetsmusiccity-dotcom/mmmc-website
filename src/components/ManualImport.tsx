@@ -79,9 +79,25 @@ export default function ManualImport({ onImport, scanEndpoint = '/api/scan-artis
     setScanStatus(`Scanning ${names.length} artists...`);
 
     try {
+      // Get Supabase auth token for authenticated scan
+      let authToken = '';
+      try {
+        const { createClient } = await import('@supabase/supabase-js');
+        const url = import.meta.env.VITE_SUPABASE_URL;
+        const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
+        if (url && key) {
+          const sb = createClient(url, key);
+          const { data } = await sb.auth.getSession();
+          authToken = data.session?.access_token || '';
+        }
+      } catch { /* no auth available */ }
+
       const res = await fetch(scanEndpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken ? { 'X-Supabase-Auth': authToken } : {}),
+        },
         body: JSON.stringify({ artistNames: names }),
       });
 

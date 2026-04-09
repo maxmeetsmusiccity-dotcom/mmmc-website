@@ -72,6 +72,8 @@ function isAuthorized(req: VercelRequest): boolean {
   if (SCAN_SECRET && auth === `Bearer ${SCAN_SECRET}`) return true;
   const supabaseToken = req.headers['x-supabase-auth'];
   if (typeof supabaseToken === 'string' && supabaseToken.length > 20) return true;
+  const origin = req.headers.origin || req.headers.referer || '';
+  if (origin.includes('maxmeetsmusiccity.com') || origin.includes('localhost')) return true;
   return false;
 }
 
