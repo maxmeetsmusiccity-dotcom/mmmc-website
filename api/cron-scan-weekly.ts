@@ -183,6 +183,49 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   console.log(`[CRON] Chunk done: ${scanned} artists, ${totalTracks} tracks (${startIdx}-${endIdx} of ${artistNames.length})`);
 
+  // Post-scan: resolve handles for new artists (when scan is complete)
+  if (isComplete && totalTracks > 0) {
+    console.log('[CRON] Scan complete — enriching handles for new artists...');
+    try {
+      // Get all unique artists from this week's releases
+      const { data: releases } = await supabase
+        .from('weekly_nashville_releases')
+        .select('artist_name')
+        .eq('scan_week', weekDate);
+      if (releases) {
+        const uniqueNames = [...new Set(releases.map(r => (r.artist_name || '').split(/,/)[0].trim()))].filter(Boolean);
+        // Check which already have handles
+        const { data: cached } = await supabase
+          .from('instagram_handles')
+          .select('artist_name')
+          .in('artist_name', uniqueNames.slice(0, 500));
+        const cachedNames = new Set((cached || []).map(h => h.artist_name?.toLowerCase()));
+        const uncached = uniqueNames.filter(n => !cachedNames.has(n.toLowerCase()));
+        console.log(`[CRON] ${uniqueNames.length} artists, ${cachedNames.size} cached, ${uncached.length} need handles`);
+
+        // Resolve up to 50 handles (budget ~$0.20 per scan run)
+        let resolved = 0;
+        for (const name of uncached.slice(0, 50)) {
+          try {
+            const protocol = scanHost.includes('localhost') ? 'http' : 'https';
+            const r = await fetch(`${protocol}://${scanHost}/api/resolve-handle`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Origin': `${protocol}://${scanHost}` },
+              body: JSON.stringify({ artist_name: name }),
+            });
+            if (r.ok) {
+              const d = await r.json();
+              if (d.handle) resolved++;
+            }
+          } catch { /* individual resolve failed — continue */ }
+        }
+        console.log(`[CRON] Resolved ${resolved}/${Math.min(uncached.length, 50)} handles`);
+      }
+    } catch (e) {
+      console.error('[CRON] Post-scan enrichment error:', e);
+    }
+  }
+
   return res.status(200).json({
     status: isComplete ? 'complete' : 'in_progress',
     week: weekDate,
