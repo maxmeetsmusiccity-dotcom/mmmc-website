@@ -143,14 +143,21 @@ export async function getHandles(artistIds: string[]): Promise<Map<string, IGHan
 }
 
 export async function saveHandle(handle: IGHandle): Promise<boolean> {
-  if (!supabase) return false;
-  const { error } = await supabase
-    .from('instagram_handles')
-    .upsert({ ...handle, updated_at: new Date().toISOString() }, {
-      onConflict: 'spotify_artist_id',
+  // Route through server endpoint (RLS restricts direct writes to service_role)
+  try {
+    const token = supabase ? (await supabase.auth.getSession()).data.session?.access_token : null;
+    const res = await fetch('/api/save-handle', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'X-Supabase-Auth': token } : {}),
+      },
+      body: JSON.stringify(handle),
     });
-  if (error) { console.error('saveHandle error:', error); return false; }
-  return true;
+    return res.ok;
+  } catch {
+    return false;
+  }
 }
 
 // ─── Custom Templates ───────────────────────────────────

@@ -55,12 +55,18 @@ export default function NashvilleReleases({ onImport }: Props) {
   // Load showcase categories on mount
   useEffect(() => {
     fetch('/api/browse-artists')
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) throw new Error(`${r.status}`);
+        return r.json();
+      })
       .then(d => {
         const cats = (d.categories || []).filter((c: ShowcaseCategory) => c.type === 'showcase');
         setShowcases(cats);
+        if (cats.length === 0 && import.meta.env.DEV) console.log('[Nashville] No showcase categories returned:', d);
       })
-      .catch(() => {}); // non-critical
+      .catch(e => {
+        if (import.meta.env.DEV) console.error('[Nashville] Failed to load showcases:', e);
+      });
   }, []);
 
   // When a showcase is selected, fetch its artist list

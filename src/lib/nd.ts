@@ -89,17 +89,24 @@ async function cacheHandle(
   pgId: string | null,
   source: string,
 ): Promise<void> {
-  if (!supabase) return;
+  // Write through server endpoint (RLS restricts direct writes to service_role)
   try {
-    await supabase.from('instagram_handles').upsert({
-      spotify_artist_id: artistId,
-      artist_name: artistName,
-      instagram_handle: handle,
-      nd_pg_id: pgId,
-      source,
-      confidence: 1.0,
-      updated_at: new Date().toISOString(),
-    }, { onConflict: 'spotify_artist_id' });
+    const token = supabase ? (await supabase.auth.getSession()).data.session?.access_token : null;
+    await fetch('/api/save-handle', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'X-Supabase-Auth': token } : {}),
+      },
+      body: JSON.stringify({
+        spotify_artist_id: artistId,
+        artist_name: artistName,
+        instagram_handle: handle,
+        nd_pg_id: pgId,
+        source,
+        confidence: 1.0,
+      }),
+    });
   } catch { /* cache write failure is non-critical */ }
 }
 

@@ -1034,6 +1034,25 @@ export default function NewMusicFriday() {
         />
         </Suspense>
       )}
+      {/* Hidden CarouselPreviewPanel on mobile — needed so carouselRef connects for generate() */}
+      {phase === 'results' && isMobile && selections.length > 0 && (
+        <div style={{ display: 'none' }}>
+          <Suspense fallback={null}>
+            <CarouselPreviewPanel
+              ref={carouselRef}
+              selectedTracks={selectedTracks}
+              coverFeature={selections.find(s => s.isCoverFeature) || null}
+              onTracksPerSlideChange={setTracksPerSlide}
+              carouselAspect={carouselAspect}
+              onAspectChange={setCarouselAspect}
+              generating={generating}
+              onGeneratingChange={setGenerating}
+              allPreviews={allPreviews}
+              onAllPreviewsChange={setAllPreviews}
+            />
+          </Suspense>
+        </div>
+      )}
       {phase === 'results' && !isMobile && (
         <>
           {/* ============================================================ */}

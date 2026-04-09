@@ -298,7 +298,7 @@ export default function MobileResultsView({
                 const isSelected = selections.some(s => s.albumId === cluster.album_spotify_id);
                 const isExpanded = expandedAlbum === cluster.album_spotify_id;
                 return (
-                  <div key={cluster.album_spotify_id} style={{ gridColumn: isExpanded ? '1 / -1' : undefined }}>
+                  <div key={cluster.album_spotify_id} style={{ gridColumn: isExpanded ? '1 / -1' : undefined, alignSelf: 'start' }}>
                     <div onClick={() => handleTap(cluster)} style={{
                       borderRadius: 8, overflow: 'hidden', cursor: 'pointer',
                       border: isSelected ? '2px solid var(--gold)' : '2px solid transparent',
