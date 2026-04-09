@@ -121,12 +121,35 @@ function getLastFriday(): string {
   return friday.toISOString().split('T')[0];
 }
 
+import { getClientIp, isRateLimited } from './_rateLimit';
+
+const SCAN_SECRET = process.env.SCAN_SECRET || '';
+
+function isAuthorized(req: VercelRequest): boolean {
+  // Accept SCAN_SECRET for cron/internal calls
+  const auth = req.headers.authorization;
+  if (SCAN_SECRET && auth === `Bearer ${SCAN_SECRET}`) return true;
+  // Accept valid Supabase JWT for authenticated frontend users
+  const supabaseToken = req.headers['x-supabase-auth'];
+  if (typeof supabaseToken === 'string' && supabaseToken.length > 20) return true;
+  return false;
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'POST only' });
   }
 
-  const { artistNames, daysBack = 6 } = req.body as { artistNames: string[]; daysBack?: number };
+  if (!isAuthorized(req)) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+
+  if (isRateLimited(getClientIp(req), 5, 60_000)) {
+    return res.status(429).json({ error: 'Rate limit exceeded. Try again in a minute.' });
+  }
+
+  const { artistNames, daysBack: rawDaysBack = 6 } = req.body as { artistNames: string[]; daysBack?: number };
+  const daysBack = Math.min(Math.max(1, Number(rawDaysBack) || 6), 30);
   if (!Array.isArray(artistNames) || artistNames.length === 0) {
     return res.status(400).json({ error: 'artistNames array required' });
   }
@@ -231,6 +254,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   } catch (e) {
     console.error('scan-artists error:', e);
-    return res.status(500).json({ error: (e as Error).message });
+    console.error('[scan-artists] Error:', e);
+    return res.status(500).json({ error: 'Scan failed' });
   }
 }

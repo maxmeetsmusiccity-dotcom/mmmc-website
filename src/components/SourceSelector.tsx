@@ -1,7 +1,7 @@
 import { SOURCES, type MusicSource } from '../lib/sources/types';
 import { useAuth } from '../lib/auth-context';
 
-const MAX_EMAILS = new Set(['maxmeetsmusiccity@gmail.com', 'maxblachman@gmail.com']);
+// Admin check uses auth context (backed by user_profiles.user_role)
 
 interface Props {
   selected: MusicSource['id'];
@@ -13,8 +13,7 @@ interface Props {
 export default function SourceSelector({
   selected, onSelect, spotifyConnected, appleMusicConnected,
 }: Props) {
-  const { user } = useAuth();
-  const isAdmin = MAX_EMAILS.has(user?.email || '');
+  const { isAdmin } = useAuth();
 
   return (
     <div data-testid="source-selector" style={{ marginBottom: 16 }}>

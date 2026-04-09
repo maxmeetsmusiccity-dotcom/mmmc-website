@@ -12,8 +12,12 @@ export default function ThisWeek() {
 
   useEffect(() => {
     if (!supabase) { setLoading(false); return; }
-    supabase.from('nmf_features').select('*').eq('week_date', weekDate)
-      .then(({ data }) => { setFeatures(data || []); setLoading(false); });
+    Promise.resolve(
+      supabase.from('nmf_features')
+        .select('track_name, artist_name, track_spotify_id, album_name, slide_number, slide_position, was_cover_feature, week_date, spotify_artist_id')
+        .eq('week_date', weekDate)
+    ).then(({ data }) => { setFeatures(data || []); setLoading(false); })
+     .catch(() => setLoading(false));
   }, [weekDate]);
 
   // Aggregate: count how many curators picked each track

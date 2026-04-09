@@ -12,6 +12,7 @@ import {
   createCustomText, createCustomImage, createCustomShape, type ShapeKind,
 } from '../lib/editor-elements';
 import KonvaEditor from './KonvaEditor';
+import ErrorBoundary from './ErrorBoundary';
 
 /* ------------------------------------------------------------------ */
 /*  Props                                                              */
@@ -1535,6 +1536,7 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
             let stageH = stageW / ratio;
             if (stageH > maxH) { stageH = maxH; stageW = stageH * ratio; }
             return (
+              <ErrorBoundary fallbackMessage="Editor crashed — click Try Again">
               <div style={{ borderRadius: 8, overflow: 'hidden', border: '1px solid var(--midnight-border)' }}>
                 <KonvaEditor
                   elements={editorElements}
@@ -1552,6 +1554,7 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
                   canvasHeight={Math.round(stageH)}
                 />
               </div>
+              </ErrorBoundary>
             );
           })()}
         </div>

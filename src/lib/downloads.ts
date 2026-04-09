@@ -67,9 +67,7 @@ export async function downloadArt(
 
   // Try zip approach first
   try {
-    const JSZip = (await import('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js' as string)).default
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      || (window as any).JSZip;
+    const JSZip = (await import('jszip')).default;
 
     if (JSZip) {
       const zip = new JSZip();

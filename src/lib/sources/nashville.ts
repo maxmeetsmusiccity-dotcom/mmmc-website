@@ -6,7 +6,7 @@
 
 import type { TrackItem } from '../spotify';
 
-const ND_API = 'https://nd-api.nd-api.workers.dev';
+const ND_API = import.meta.env.VITE_ND_API_URL || 'https://nd-api.nd-api.workers.dev';
 
 export interface NashvilleRelease {
   pg_id: string;

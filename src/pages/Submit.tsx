@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../lib/auth-context';
 import ProductNav from '../components/ProductNav';
 import NavBar from '../components/NavBar';
 import Footer from '../components/Footer';
 
 export default function Submit() {
+  const { user } = useAuth();
   const [trackUrl, setTrackUrl] = useState('');
   const [pitch, setPitch] = useState('');
   const [name, setName] = useState('');
@@ -16,6 +18,7 @@ export default function Submit() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) { setError('Please sign in to submit a track.'); return; }
     if (!trackUrl || !name || !email) { setError('Track URL, name, and email are required.'); return; }
     setSubmitting(true);
     setError('');

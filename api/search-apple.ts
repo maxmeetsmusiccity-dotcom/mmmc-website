@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { SignJWT, importPKCS8 } from 'jose';
 
-const TEAM_ID = 'G46PBQ4ZQL';
-const KEY_ID = 'XP4Q9YVKQU';
+const TEAM_ID = process.env.APPLE_MUSIC_TEAM_ID || 'G46PBQ4ZQL';
+const KEY_ID = process.env.APPLE_MUSIC_SEARCH_KEY_ID || 'XP4Q9YVKQU';
 const APPLE_API = 'https://api.music.apple.com/v1/catalog/us';
 
 let cachedToken: { token: string; expiresAt: number } | null = null;
@@ -63,10 +63,31 @@ interface AppleAlbum {
   };
 }
 
+import { getClientIp, isRateLimited } from './_rateLimit';
+
+const SCAN_SECRET = process.env.SCAN_SECRET || '';
+
+function isAuthorized(req: VercelRequest): boolean {
+  const auth = req.headers.authorization;
+  if (SCAN_SECRET && auth === `Bearer ${SCAN_SECRET}`) return true;
+  const supabaseToken = req.headers['x-supabase-auth'];
+  if (typeof supabaseToken === 'string' && supabaseToken.length > 20) return true;
+  return false;
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
-  const { artistNames, daysBack = 7 } = req.body as { artistNames: string[]; daysBack?: number };
+  if (!isAuthorized(req)) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+
+  if (isRateLimited(getClientIp(req), 5, 60_000)) {
+    return res.status(429).json({ error: 'Rate limit exceeded. Try again in a minute.' });
+  }
+
+  const { artistNames, daysBack: rawDaysBack = 7 } = req.body as { artistNames: string[]; daysBack?: number };
+  const daysBack = Math.min(Math.max(1, Number(rawDaysBack) || 7), 30);
   if (!Array.isArray(artistNames) || artistNames.length === 0) {
     return res.status(400).json({ error: 'artistNames array required' });
   }
@@ -161,6 +182,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       source: 'apple_music_catalog',
     });
   } catch (e) {
-    return res.status(500).json({ error: (e as Error).message });
+    console.error('[search-apple] Error:', e);
+    return res.status(500).json({ error: 'Search failed' });
   }
 }

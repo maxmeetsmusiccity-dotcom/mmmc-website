@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { getClientIp, isRateLimited } from './_rateLimit';
 
 // R2 is now private — fetch through Workers R2 binding with HMAC auth
 const ND_API_BASE = process.env.ND_API_BASE_URL || '';
@@ -76,6 +77,10 @@ async function fetchBrowseData(): Promise<BrowseData | null> {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (isRateLimited(getClientIp(req), 30, 60_000)) {
+    return res.status(429).json({ error: 'Rate limit exceeded' });
+  }
+
   const category = req.query.category as string | undefined;
   const searchQuery = (req.query.q as string | undefined)?.toLowerCase();
 

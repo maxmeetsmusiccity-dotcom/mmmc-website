@@ -14,7 +14,7 @@ export default function Embed() {
   const [paused, setPaused] = useState(false);
 
   const weekDate = searchParams.get('week') || getLastFriday();
-  const intervalMs = parseInt(searchParams.get('interval') || '5000', 10);
+  const intervalMs = Math.max(1000, Math.min(30000, parseInt(searchParams.get('interval') || '5000', 10)));
 
   // Load carousel images from Supabase Storage
   useEffect(() => {

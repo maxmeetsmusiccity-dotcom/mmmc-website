@@ -34,7 +34,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       note: 'Pattern-based guess only. Manual verification recommended.',
     });
   } catch (e) {
-    return res.status(500).json({ error: (e as Error).message });
+    console.error('[discover-instagram] Error:', e);
+    return res.status(500).json({ error: 'Discovery failed' });
   }
 }
 

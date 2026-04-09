@@ -14,7 +14,7 @@ export default function Archive() {
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
-    listWeeks().then(w => { setWeeks(w); setLoading(false); });
+    listWeeks().then(w => { setWeeks(w); setLoading(false); }).catch(() => setLoading(false));
   }, []);
 
   const handleSearch = (query: string) => {

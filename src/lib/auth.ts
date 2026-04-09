@@ -1,4 +1,4 @@
-const CLIENT_ID = '43c4155bfae44185bf1de3c9aacae466';
+const CLIENT_ID = import.meta.env.VITE_SPOTIFY_CLIENT_ID || '43c4155bfae44185bf1de3c9aacae466';
 const REDIRECT_URI = window.location.hostname === 'localhost'
   ? `${window.location.origin}/newmusicfriday`
   : 'https://maxmeetsmusiccity.com/newmusicfriday';

@@ -22,10 +22,24 @@ export default function CuratorProfile() {
 
   useEffect(() => {
     if (!supabase || !username) { setLoading(false); return; }
+    // Sanitize: reject PostgREST metacharacters to prevent filter injection
+    if (/[,.(;)"]/.test(username)) { setLoading(false); return; }
+    // Use two safe sequential queries instead of .or() interpolation
     supabase.from('user_profiles')
       .select('id, display_name, username, bio, avatar_url, genre_focus')
-      .or(`username.eq.${username},id.eq.${username}`)
+      .eq('username', username)
       .single()
+      .then(async ({ data }) => {
+        // If not found by username, try by ID
+        if (!data && supabase) {
+          const { data: byId } = await supabase.from('user_profiles')
+            .select('id, display_name, username, bio, avatar_url, genre_focus')
+            .eq('id', username)
+            .single();
+          data = byId;
+        }
+        return { data };
+      })
       .then(({ data }) => {
         setProfile(data);
         if (data?.id && supabase) {

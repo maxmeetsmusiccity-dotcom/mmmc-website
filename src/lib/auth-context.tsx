@@ -2,7 +2,8 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import { supabase } from './supabase';
 import type { User, Session } from '@supabase/supabase-js';
 
-const ADMIN_EMAILS = ['maxmeetsmusiccity@gmail.com', 'maxblachman@gmail.com'];
+// Admin determined from user_profiles.user_role column (loaded via loadProfile)
+// Feature flag emails for template visibility are in carousel-templates.ts / title-templates.ts
 
 export type UserMode = 'guest' | 'registered' | 'admin';
 export type UserRole = 'curator' | 'publicist' | 'admin';
@@ -66,16 +67,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         // PKCE flow: exchange the code for a session
         if (urlCode) {
-          console.log('[AUTH] PKCE code detected, exchanging...');
+          if (import.meta.env.DEV) console.log('[AUTH] PKCE code detected, exchanging...');
           const { error } = await supabase.auth.exchangeCodeForSession(urlCode);
           if (error) console.error('[AUTH] Code exchange failed:', error.message);
-          else console.log('[AUTH] Code exchange succeeded');
+          else if (import.meta.env.DEV) console.log('[AUTH] Code exchange succeeded');
         }
 
         // Get session (works for both PKCE after exchange and implicit via hash)
         const { data: { session } } = await supabase.auth.getSession();
-        console.log('[AUTH] getSession result:', session ? `user=${session.user.email}` : 'no session');
-        console.log('[AUTH] URL state: code=' + !!urlCode + ' hash_token=' + hasHashToken);
+        if (import.meta.env.DEV) console.log('[AUTH] getSession result:', session ? `user=${session.user.email}` : 'no session');
+        if (import.meta.env.DEV) console.log('[AUTH] URL state: code=' + !!urlCode + ' hash_token=' + hasHashToken);
 
         setSession(session);
         setUser(session?.user ?? null);
@@ -108,7 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const mode: UserMode = user
-    ? (ADMIN_EMAILS.includes(user.email || '') ? 'admin' : 'registered')
+    ? (userRole === 'admin' ? 'admin' : 'registered')
     : 'guest';
 
   const signInWithGoogle = async () => {
@@ -143,13 +144,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   /** Clear ALL user-specific data from browser storage */
   const clearAllUserData = () => {
-    // Supabase session
+    // Clear all session storage (Supabase session, Spotify tokens, PKCE verifier)
     sessionStorage.clear();
-    // Spotify tokens
-    sessionStorage.removeItem('spotify_token');
-    sessionStorage.removeItem('spotify_refresh_token');
-    sessionStorage.removeItem('spotify_token_expires');
-    sessionStorage.removeItem('pkce_verifier');
     // MusicKit — deauthorize if loaded
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

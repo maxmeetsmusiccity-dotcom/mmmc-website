@@ -1,12 +1,11 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://kpwklxrcysokuyjhuhun.supabase.co';
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || '';
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL || '';
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 // R2 is private — fetch through Workers R2 binding with HMAC auth
 const ND_API_BASE = process.env.ND_API_BASE_URL || '';
 const ND_AUTH_SECRET = process.env.ND_AUTH_TOKEN_SECRET || '';
-const ND_AUTH_USER = process.env.ND_AUTH_USERNAME || '';
 
 async function generateApiToken(): Promise<string> {
   const ts = Date.now().toString();
@@ -59,6 +58,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
+  if (!SUPABASE_URL || !SUPABASE_KEY) {
+    console.error('[CRON] SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY not configured');
+    return res.status(500).json({ error: 'Server misconfigured' });
+  }
   const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
   const weekDate = getLastFriday();
 
@@ -127,7 +130,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     try {
       const resp = await fetch(`${protocol}://${scanHost}/api/scan-artists`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.SCAN_SECRET || ''}`,
+        },
         body: JSON.stringify({ artistNames: chunk }),
       });
       if (resp.ok) {

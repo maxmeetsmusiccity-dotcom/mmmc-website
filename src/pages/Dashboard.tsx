@@ -49,26 +49,27 @@ export default function Dashboard() {
     if (!supabase) { setLoading(false); return; }
     logUsageEvent('dashboard_view', { tab });
 
-    supabase.from('user_profiles').select('id, display_name, username, genre_focus, avatar_url')
-      .eq('user_role', 'curator').then(({ data }) => {
-        setCurators(data || []);
-      });
+    const queries: Promise<unknown>[] = [
+      Promise.resolve(supabase.from('user_profiles').select('id, display_name, username, genre_focus, avatar_url')
+        .eq('user_role', 'curator')).then(({ data }) => setCurators(data || [])),
+    ];
 
     if (user?.email) {
-      supabase.from('nmf_submissions').select('*')
-        .eq('submitter_email', user.email)
-        .order('created_at', { ascending: false })
-        .then(({ data }) => { setSubmissions(data || []); });
+      queries.push(
+        Promise.resolve(supabase.from('nmf_submissions').select('*')
+          .eq('submitter_email', user.email)
+          .order('created_at', { ascending: false })).then(({ data }) => setSubmissions(data || []))
+      );
     }
 
     if (isAdmin) {
-      supabase.from('usage_events').select('id', { count: 'exact', head: true })
-        .then(({ count }) => {
-          setUsageStats(prev => ({ ...prev, total_events: count || 0 }));
-        });
+      queries.push(
+        Promise.resolve(supabase.from('usage_events').select('id', { count: 'exact', head: true }))
+          .then(({ count }) => setUsageStats(prev => ({ ...prev, total_events: count || 0 })))
+      );
     }
 
-    setLoading(false);
+    Promise.all(queries).finally(() => setLoading(false));
   }, [user, isAdmin, tab]);
 
   // All unique genres across curators

@@ -44,6 +44,7 @@ import KeyboardHelp from '../components/KeyboardHelp';
 import Onboarding from '../components/Onboarding';
 import { checkScanHealth } from '../lib/spotify';
 import { useAuth } from '../lib/auth-context';
+// ErrorBoundary wraps at App.tsx level; lazy-loaded components have Suspense fallbacks
 
 type Phase = 'auth' | 'ready' | 'scanning' | 'results';
 type FilterKey = 'all' | 'single' | 'album';
@@ -99,7 +100,7 @@ const DEMO_TRACKS: TrackItem[] = [
 /* ------------------------------------------------------------------ */
 
 export default function NewMusicFriday() {
-  const { user, isGuest, signOut } = useAuth();
+  const { user, isGuest, isAdmin, signOut } = useAuth();
   const userId = user?.id || null;
   const nmfNavigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -1969,7 +1970,7 @@ export default function NewMusicFriday() {
                 </details>
               )}
 
-              <details style={{ marginTop: 16, borderTop: '1px solid var(--midnight-border)', paddingTop: 16 }}>
+              {isAdmin && <details style={{ marginTop: 16, borderTop: '1px solid var(--midnight-border)', paddingTop: 16 }}>
                 <summary style={{ cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 'var(--fs-lg)', fontWeight: 600 }}>
                   Push to Playlist
                 </summary>
@@ -2033,7 +2034,7 @@ export default function NewMusicFriday() {
                     </div>
                   )}
                 </div>
-              </details>
+              </details>}
 
               <details style={{ marginTop: 16, borderTop: '1px solid var(--midnight-border)', paddingTop: 16 }}>
                 <summary style={{ cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 'var(--fs-lg)', fontWeight: 600 }}>

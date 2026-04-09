@@ -17,8 +17,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'Missing path parameter' });
   }
 
-  // Block path traversal attempts
-  if (path.includes('..') || path.includes('//') || path.includes('\\')) {
+  // Block path traversal attempts — decode first to catch %2e%2e etc.
+  const decoded = decodeURIComponent(path);
+  if (decoded.includes('..') || decoded.includes('//') || decoded.includes('\\')) {
     return res.status(403).json({ error: 'Forbidden' });
   }
 
@@ -62,6 +63,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const data = await upstream.json().catch(() => ({}));
     return res.status(upstream.status).json(data);
   } catch (e) {
-    return res.status(502).json({ error: 'ND API unreachable', detail: (e as Error).message });
+    console.error('[nd-proxy] Error:', e);
+    return res.status(502).json({ error: 'Upstream API unreachable' });
   }
 }
