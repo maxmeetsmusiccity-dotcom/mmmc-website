@@ -138,6 +138,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   return res.json({ handle: candidateHandle, source: 'apify:likely', cached: false });
   } catch (e) {
     console.error('[resolve-handle] Unhandled error:', e);
-    return res.status(500).json({ handle: null, source: 'error', cached: false });
+    return res.status(500).json({ handle: null, source: 'error', cached: false, debug: String(e) });
   }
 }
