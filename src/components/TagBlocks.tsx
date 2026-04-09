@@ -61,11 +61,13 @@ export default function TagBlocks({ slideGroups, onHandlesResolved }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slideGroups]);
 
-  const hasResolved = useRef(false);
+  // Auto-resolve handles whenever the artist set changes
+  const prevArtistKey = useRef('');
   useEffect(() => {
-    if (allArtists.size === 0 || hasResolved.current) return;
-    hasResolved.current = true;
-    resolveAll(false).then(() => { hasResolved.current = false; });
+    const key = [...allArtists].sort().join('|');
+    if (allArtists.size === 0 || key === prevArtistKey.current) return;
+    prevArtistKey.current = key;
+    resolveAll(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slideGroups]);
 
