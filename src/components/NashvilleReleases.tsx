@@ -435,9 +435,9 @@ export default function NashvilleReleases({ onImport }: Props) {
         </div>
       </div>
 
-      {/* Showcase stats header — clickable showcase pills with release counts */}
+      {/* Showcase stats header — desktop only (mobile uses the dropdown below) */}
       {showcases.length > 0 && releases.length > 0 && (
-        <div style={{
+        <div className="desktop-only" style={{
           display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10,
           padding: '8px 0', borderBottom: '1px solid var(--midnight-border)',
         }}>
