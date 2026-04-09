@@ -8,6 +8,7 @@ const ALLOWED_PATH_PREFIXES = [
   '/api/nmf/releases',
   '/api/search',
   '/api/profile/',
+  '/api/research/',
 ];
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {

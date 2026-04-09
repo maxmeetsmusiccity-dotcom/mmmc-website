@@ -96,7 +96,6 @@ export default function TagBlocks({ slideGroups, onHandlesResolved }: Props) {
           artist_name: artistName,
           instagram_handle: `@${cleaned}`,
           source: 'manual:confirmed',
-          confidence: 1.0,
           nd_pg_id: prev?.pg_id || null,
         }),
       }).catch(() => {}); // fire-and-forget
@@ -108,40 +107,41 @@ export default function TagBlocks({ slideGroups, onHandlesResolved }: Props) {
 
   const handleAIEnrich = async (artistName: string) => {
     setEnriching(prev => new Set(prev).add(artistName));
+    const prev = handles.get(artistName);
     try {
-      const token = supabase ? (await supabase.auth.getSession()).data.session?.access_token : null;
-      const res = await fetch('/api/enrich-artist', {
+      // Route through ND proxy to Research Agent's Workers endpoint
+      const res = await fetch(`/api/nd-proxy?path=${encodeURIComponent('/api/research/enrich')}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...(token ? { 'X-Supabase-Auth': token } : {}) },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          artist_name: artistName,
-          pg_id: handles.get(artistName)?.pg_id || null,
+          pg_id: prev?.pg_id || artistIdMap.get(artistName) || artistName,
+          display_name: artistName,
           spotify_id: artistIdMap.get(artistName) || null,
-          known_data: {},
+          existing_handles: prev?.handle ? { instagram: prev.handle } : {},
+          priority: 'high',
+          requested_by: 'nmf_tagblocks',
         }),
       });
       if (res.ok) {
-        const data = await res.json();
-        if (data.instagram?.handle) {
-          const label = data.instagram.confidence_label || 'unverified';
-          setHandles(prev => {
-            const next = new Map(prev);
-            next.set(artistName, {
-              artist_name: artistName,
-              handle: data.instagram.handle,
-              source: `ai:${label}`,
-              pg_id: data.pg_id || prev.get(artistName)?.pg_id || null,
-              loading: false,
-              confirmed: label === 'confirmed' || label === 'likely',
-              verified: data.instagram.verified,
-              followers: data.instagram.followers,
-            });
-            onHandlesResolved?.(next);
-            return next;
-          });
-        }
+        await res.json(); // consume response
+        // Task queued — update UI to show pending status
+        setHandles(p => {
+          const next = new Map(p);
+          const existing = next.get(artistName);
+          next.set(artistName, {
+            ...existing,
+            artist_name: artistName,
+            handle: existing?.handle || null,
+            source: 'ai:queued',
+            pg_id: existing?.pg_id || null,
+            loading: false,
+            confirmed: false,
+          } as HandleResult);
+          onHandlesResolved?.(next);
+          return next;
+        });
       }
-    } catch { /* enrichment failed */ }
+    } catch { /* enrichment request failed */ }
     setEnriching(prev => { const next = new Set(prev); next.delete(artistName); return next; });
   };
 
@@ -280,35 +280,48 @@ export default function TagBlocks({ slideGroups, onHandlesResolved }: Props) {
                             fontSize: 'var(--fs-2xs)', width: 140, fontFamily: 'var(--font-mono)',
                           }}
                         />
-                        {/* Confidence label badge */}
-                        <span style={{
-                          fontSize: 'var(--fs-3xs)', padding: '1px 6px', borderRadius: 8,
-                          background: result.source?.startsWith('ai:confirmed') || result.source?.includes(':confirmed') ? 'rgba(61,168,119,0.15)'
-                            : result.source?.includes(':likely') ? 'rgba(61,168,119,0.1)'
-                            : result.source?.includes(':contested') ? 'rgba(204,53,53,0.1)'
-                            : result.source === 'manual' ? 'rgba(212,168,67,0.1)'
-                            : 'transparent',
-                          color: result.source?.includes(':confirmed') ? '#3DA877'
-                            : result.source?.includes(':likely') ? '#3DA877'
-                            : result.source?.includes(':contested') ? 'var(--mmmc-red)'
-                            : result.source === 'nd' ? '#3DA877'
-                            : result.source === 'cache' ? 'var(--steel)'
-                            : result.source === 'manual' ? 'var(--gold)'
-                            : result.loading ? 'var(--steel)' : 'var(--text-muted)',
-                        }}>
-                          {result.loading ? 'searching...'
-                            : enriching.has(name) ? 'AI researching...'
-                            : result.source?.includes(':confirmed') ? '\u2713 confirmed'
-                            : result.source?.includes(':likely') ? '\u2713 likely'
-                            : result.source?.includes(':unverified') ? '? unverified'
-                            : result.source?.includes(':contested') ? '\u26A0 contested'
-                            : result.source === 'nd' ? `\u2713 ND${result.verified ? ' \u2713' : ''}`
-                            : result.source === 'cache' ? '\u2713 cached'
-                            : result.source === 'manual' ? '\u2713 manual'
-                            : result.pg_id ? 'in ND' : ''}
-                        </span>
-                        {/* AI Verify button — only show for unresolved or unverified */}
-                        {!result.loading && !enriching.has(name) && (!result.handle || result.source?.includes(':unverified') || (!result.source?.includes(':confirmed') && result.source !== 'manual')) && (
+                        {/* Categorical confidence badge */}
+                        {(() => {
+                          const src = result.source || '';
+                          const label = src.includes(':confirmed') ? 'confirmed'
+                            : src.includes(':likely') ? 'likely'
+                            : src.includes(':unverified') ? 'unverified'
+                            : src.includes(':contested') ? 'contested'
+                            : src.includes(':rejected') ? 'rejected'
+                            : src.includes(':queued') ? 'queued'
+                            : src === 'manual' ? 'manual'
+                            : src === 'nd' ? 'nd'
+                            : src === 'cache' ? 'cached'
+                            : result.loading ? 'searching' : 'unknown';
+
+                          const badgeColor = {
+                            confirmed: '#3DA877', likely: '#3DA877',
+                            unverified: 'var(--gold)', contested: 'var(--mmmc-red)',
+                            rejected: 'var(--text-muted)', queued: 'var(--steel)',
+                            manual: 'var(--gold)', nd: '#3DA877', cached: 'var(--steel)',
+                            searching: 'var(--steel)', unknown: 'var(--text-muted)',
+                          }[label] || 'var(--text-muted)';
+
+                          const badgeBgMap: Record<string, string> = {
+                            confirmed: 'rgba(61,168,119,0.15)', likely: 'rgba(61,168,119,0.1)',
+                            contested: 'rgba(204,53,53,0.1)', manual: 'rgba(212,168,67,0.1)',
+                          };
+                          const badgeBg = badgeBgMap[label] || 'transparent';
+
+                          const badgeText = enriching.has(name) ? 'AI researching...' : {
+                            confirmed: '\u2713 confirmed', likely: '\u2713 likely',
+                            unverified: '? unverified', contested: '\u26A0 contested',
+                            rejected: '\u2717 rejected', queued: '\u231B queued for AI',
+                            manual: '\u2713 manual', nd: '\u2713 ND', cached: '\u2713 cached',
+                            searching: 'searching...', unknown: result.pg_id ? 'in ND' : '',
+                          }[label] || '';
+
+                          return <span style={{ fontSize: 'var(--fs-3xs)', padding: '1px 6px', borderRadius: 8, background: badgeBg, color: badgeColor }}>{badgeText}</span>;
+                        })()}
+                        {/* AI Verify button — show for unresolved, unverified, or unknown */}
+                        {!result.loading && !enriching.has(name) && !result.source?.includes(':queued') &&
+                         (!result.handle || result.source?.includes(':unverified') || result.source === 'unknown' ||
+                          (!result.source?.includes(':confirmed') && result.source !== 'manual')) && (
                           <button
                             onClick={() => handleAIEnrich(name)}
                             style={{
