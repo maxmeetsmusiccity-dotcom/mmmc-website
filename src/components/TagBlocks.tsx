@@ -2,7 +2,6 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import type { SelectionSlot } from '../lib/selection';
 import { resolveInstagramHandle, type HandleResult } from '../lib/nd';
 import { supabase } from '../lib/supabase';
-import { fetchResearchResults } from '../lib/enrichment';
 
 /** Consistent artist name splitting — used everywhere in this component */
 const ARTIST_SPLIT = /,\s*|\s+feat\.?\s+|\s+ft\.?\s+|\s+x\s+|\s+&\s+/i;
@@ -103,48 +102,8 @@ export default function TagBlocks({ slideGroups, onHandlesResolved }: Props) {
     }
   };
 
-  // AI enrichment for a single artist
-  const [enriching, setEnriching] = useState<Set<string>>(new Set());
-
-  const handleAIEnrich = async (artistName: string) => {
-    setEnriching(prev => new Set(prev).add(artistName));
-    const prev = handles.get(artistName);
-    try {
-      // Route through ND proxy to Research Agent's Workers endpoint
-      const res = await fetch(`/api/nd-proxy?path=${encodeURIComponent('/api/research/enrich')}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          pg_id: prev?.pg_id || artistIdMap.get(artistName) || artistName,
-          display_name: artistName,
-          spotify_id: artistIdMap.get(artistName) || null,
-          existing_handles: prev?.handle ? { instagram: prev.handle } : {},
-          priority: 'high',
-          requested_by: 'nmf_tagblocks',
-        }),
-      });
-      if (res.ok) {
-        await res.json(); // consume response
-        // Task queued — update UI to show pending status
-        setHandles(p => {
-          const next = new Map(p);
-          const existing = next.get(artistName);
-          next.set(artistName, {
-            ...existing,
-            artist_name: artistName,
-            handle: existing?.handle || null,
-            source: 'ai:queued',
-            pg_id: existing?.pg_id || null,
-            loading: false,
-            confirmed: false,
-          } as HandleResult);
-          onHandlesResolved?.(next);
-          return next;
-        });
-      }
-    } catch { /* enrichment request failed */ }
-    setEnriching(prev => { const next = new Set(prev); next.delete(artistName); return next; });
-  };
+  // AI enrichment runs automatically in the background via the Research Agent.
+  // No user-facing buttons needed — handles resolve from cache or ND API.
 
   const getSlideTagBlock = (slots: SelectionSlot[], confirmedOnly = true): string => {
     const tags: string[] = [];
@@ -206,40 +165,7 @@ export default function TagBlocks({ slideGroups, onHandlesResolved }: Props) {
           disabled={resolving}
           style={{ fontSize: 'var(--fs-2xs)', padding: '3px 10px' }}
         >
-          {resolving ? 'Resolving...' : 'Refresh Handles'}
-        </button>
-        <button
-          className="btn btn-sm"
-          onClick={async () => {
-            const results = await fetchResearchResults();
-            if (results.length === 0) return;
-            setHandles(prev => {
-              const next = new Map(prev);
-              for (const r of results) {
-                if (!r.instagram?.handle) continue;
-                // Match by pg_id or display_name
-                const matchKey = [...next.keys()].find(k => {
-                  const existing = next.get(k);
-                  return existing?.pg_id === r.pg_id || k.toLowerCase() === r.display_name.toLowerCase();
-                });
-                if (matchKey) {
-                  next.set(matchKey, {
-                    artist_name: matchKey,
-                    handle: r.instagram.handle,
-                    source: `ai:${r.instagram.confidence_label || 'unverified'}`,
-                    pg_id: r.pg_id,
-                    loading: false,
-                    confirmed: r.instagram.confidence_label === 'confirmed' || r.instagram.confidence_label === 'likely',
-                  });
-                }
-              }
-              onHandlesResolved?.(next);
-              return next;
-            });
-          }}
-          style={{ fontSize: 'var(--fs-2xs)', padding: '3px 10px' }}
-        >
-          Pull AI Results
+          {resolving ? 'Resolving...' : 'Refresh'}
         </button>
         <div style={{ display: 'flex', gap: 4 }}>
           {([['handles', 'Handles'], ['with_titles', 'With Titles'], ['newline', 'One Per Line']] as const).map(([key, label]) => (
@@ -284,7 +210,7 @@ export default function TagBlocks({ slideGroups, onHandlesResolved }: Props) {
               whiteSpace: 'pre-wrap', wordBreak: 'break-all',
               lineHeight: 1.6,
             }}>
-              {tagBlock || 'No confirmed handles yet — edit below or click Refresh Handles'}
+              {tagBlock || 'No handles found yet — type handles below or click Refresh'}
             </pre>
 
             {/* Editable handle list */}
@@ -314,59 +240,12 @@ export default function TagBlocks({ slideGroups, onHandlesResolved }: Props) {
                             fontSize: 'var(--fs-2xs)', width: 140, fontFamily: 'var(--font-mono)',
                           }}
                         />
-                        {/* Categorical confidence badge */}
-                        {(() => {
-                          const src = result.source || '';
-                          const label = src.includes(':confirmed') ? 'confirmed'
-                            : src.includes(':likely') ? 'likely'
-                            : src.includes(':unverified') ? 'unverified'
-                            : src.includes(':contested') ? 'contested'
-                            : src.includes(':rejected') ? 'rejected'
-                            : src.includes(':queued') ? 'queued'
-                            : src === 'manual' ? 'manual'
-                            : src === 'nd' ? 'nd'
-                            : src === 'cache' ? 'cached'
-                            : result.loading ? 'searching' : 'unknown';
-
-                          const badgeColor = {
-                            confirmed: '#3DA877', likely: '#3DA877',
-                            unverified: 'var(--gold)', contested: 'var(--mmmc-red)',
-                            rejected: 'var(--text-muted)', queued: 'var(--steel)',
-                            manual: 'var(--gold)', nd: '#3DA877', cached: 'var(--steel)',
-                            searching: 'var(--steel)', unknown: 'var(--text-muted)',
-                          }[label] || 'var(--text-muted)';
-
-                          const badgeBgMap: Record<string, string> = {
-                            confirmed: 'rgba(61,168,119,0.15)', likely: 'rgba(61,168,119,0.1)',
-                            contested: 'rgba(204,53,53,0.1)', manual: 'rgba(212,168,67,0.1)',
-                          };
-                          const badgeBg = badgeBgMap[label] || 'transparent';
-
-                          const badgeText = enriching.has(name) ? 'AI researching...' : {
-                            confirmed: '\u2713 confirmed', likely: '\u2713 likely',
-                            unverified: '? unverified', contested: '\u26A0 contested',
-                            rejected: '\u2717 rejected', queued: '\u231B queued for AI',
-                            manual: '\u2713 manual', nd: '\u2713 ND', cached: '\u2713 cached',
-                            searching: 'searching...', unknown: result.pg_id ? 'in ND' : '',
-                          }[label] || '';
-
-                          return <span style={{ fontSize: 'var(--fs-3xs)', padding: '1px 6px', borderRadius: 8, background: badgeBg, color: badgeColor }}>{badgeText}</span>;
-                        })()}
-                        {/* AI Verify button — show for unresolved, unverified, or unknown */}
-                        {!result.loading && !enriching.has(name) && !result.source?.includes(':queued') &&
-                         (!result.handle || result.source?.includes(':unverified') || result.source === 'unknown' ||
-                          (!result.source?.includes(':confirmed') && result.source !== 'manual')) && (
-                          <button
-                            onClick={() => handleAIEnrich(name)}
-                            style={{
-                              background: 'none', border: '1px solid var(--gold-dark)',
-                              borderRadius: 4, padding: '1px 6px', cursor: 'pointer',
-                              fontSize: 'var(--fs-3xs)', color: 'var(--gold)',
-                            }}
-                          >
-                            AI Verify
-                          </button>
-                        )}
+                        {/* Simple status indicator */}
+                        {result.loading ? (
+                          <span style={{ fontSize: 'var(--fs-3xs)', color: 'var(--steel)' }}>...</span>
+                        ) : result.handle ? (
+                          <span style={{ fontSize: 'var(--fs-3xs)', color: '#3DA877' }}>{'\u2713'}</span>
+                        ) : null}
                       </div>
                     );
                   });

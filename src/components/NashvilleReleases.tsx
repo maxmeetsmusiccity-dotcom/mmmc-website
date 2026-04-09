@@ -41,7 +41,7 @@ export default function NashvilleReleases({ onImport }: Props) {
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // View mode: list or grid tiles
-  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
 
   // Coming Soon toggle — shows future-dated releases
   const [showComingSoon, setShowComingSoon] = useState(false);

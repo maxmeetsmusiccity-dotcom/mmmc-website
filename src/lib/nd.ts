@@ -58,9 +58,14 @@ async function fetchNDInstagram(pgId: string): Promise<NDInstagramResult | null>
   }
 }
 
-/** Check Supabase cache for a previously resolved handle */
-async function getCachedHandle(artistId: string): Promise<HandleResult | null> {
+/** Check Supabase cache for a previously resolved handle.
+ * Tries by spotify_artist_id first, then falls back to artist_name match
+ * (ground truth was loaded with ND pg_ids, not Spotify IDs).
+ */
+async function getCachedHandle(artistId: string, artistName?: string): Promise<HandleResult | null> {
   if (!supabase) return null;
+
+  // Try by Spotify artist ID first
   try {
     const { data } = await supabase
       .from('instagram_handles')
@@ -71,13 +76,36 @@ async function getCachedHandle(artistId: string): Promise<HandleResult | null> {
       return {
         artist_name: data.artist_name,
         handle: data.instagram_handle,
-        source: 'cache',
+        source: data.source || 'cache',
         pg_id: data.nd_pg_id || null,
         loading: false,
         confirmed: true,
       };
     }
-  } catch { /* not cached */ }
+  } catch { /* not cached by ID */ }
+
+  // Fallback: search by artist name (case-insensitive)
+  if (artistName) {
+    try {
+      const { data } = await supabase
+        .from('instagram_handles')
+        .select('*')
+        .ilike('artist_name', artistName)
+        .limit(1)
+        .single();
+      if (data?.instagram_handle) {
+        return {
+          artist_name: data.artist_name,
+          handle: data.instagram_handle,
+          source: data.source || 'cache',
+          pg_id: data.nd_pg_id || null,
+          loading: false,
+          confirmed: true,
+        };
+      }
+    } catch { /* not cached by name */ }
+  }
+
   return null;
 }
 
@@ -126,11 +154,9 @@ export async function resolveInstagramHandle(
 ): Promise<HandleResult> {
   const base = { artist_name: artistName, loading: false };
 
-  // Step 1: Check Supabase cache
-  if (artistId) {
-    const cached = await getCachedHandle(artistId);
-    if (cached) return cached;
-  }
+  // Step 1: Check Supabase cache (by Spotify ID, then by artist name)
+  const cached = await getCachedHandle(artistId || '', artistName);
+  if (cached) return cached;
 
   // Step 2: Search ND for the artist
   let pgId: string | null = null;
