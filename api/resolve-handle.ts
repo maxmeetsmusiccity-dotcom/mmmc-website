@@ -126,18 +126,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Step 4: Save to cache
   if (SUPABASE_URL && SUPABASE_KEY) {
     const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-    await supabase.from('instagram_handles').upsert({
-      spotify_artist_id: spotify_id || `resolved:${artist_name}`,
-      artist_name,
-      instagram_handle: candidateHandle,
-      source: 'apify:likely',
-      updated_at: new Date().toISOString(),
-    }, { onConflict: 'spotify_artist_id' }).catch(() => {});
+    try {
+      await supabase.from('instagram_handles').upsert({
+        spotify_artist_id: spotify_id || `resolved:${artist_name}`,
+        artist_name,
+        instagram_handle: candidateHandle,
+        source: 'apify:likely',
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'spotify_artist_id' });
+    } catch { /* cache write failed — non-critical */ }
   }
 
   return res.json({ handle: candidateHandle, source: 'apify:likely', cached: false });
   } catch (e) {
     console.error('[resolve-handle] Unhandled error:', e);
-    return res.status(500).json({ handle: null, source: 'error', cached: false, debug: String(e) });
+    return res.status(500).json({ handle: null, source: 'error', cached: false });
   }
 }
