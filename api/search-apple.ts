@@ -63,7 +63,7 @@ interface AppleAlbum {
   };
 }
 
-import { getClientIp, isRateLimited } from './_rateLimit';
+import { getClientIp, isRateLimited } from './_rateLimit.js';
 
 const SCAN_SECRET = process.env.SCAN_SECRET || '';
 

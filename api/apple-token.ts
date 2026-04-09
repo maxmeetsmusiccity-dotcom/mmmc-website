@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { SignJWT, importPKCS8 } from 'jose';
-import { getClientIp, isRateLimited } from './_rateLimit';
+import { getClientIp, isRateLimited } from './_rateLimit.js';
 
 const TEAM_ID = process.env.APPLE_MUSIC_TEAM_ID || 'G46PBQ4ZQL';
 const KEY_ID = process.env.APPLE_MUSIC_KEY_ID || 'P4CJV5BNMH';

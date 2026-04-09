@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getClientIp, isRateLimited } from './_rateLimit';
+import { getClientIp, isRateLimited } from './_rateLimit.js';
 
 // R2 is now private — fetch through Workers R2 binding with HMAC auth
 const ND_API_BASE = process.env.ND_API_BASE_URL || '';

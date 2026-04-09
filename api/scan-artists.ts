@@ -121,7 +121,7 @@ function getLastFriday(): string {
   return friday.toISOString().split('T')[0];
 }
 
-import { getClientIp, isRateLimited } from './_rateLimit';
+import { getClientIp, isRateLimited } from './_rateLimit.js';
 
 const SCAN_SECRET = process.env.SCAN_SECRET || '';
 
