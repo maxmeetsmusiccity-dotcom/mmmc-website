@@ -435,6 +435,34 @@ export default function NashvilleReleases({ onImport }: Props) {
         </div>
       </div>
 
+      {/* Showcase stats header — clickable showcase pills with release counts */}
+      {showcases.length > 0 && releases.length > 0 && (
+        <div style={{
+          display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10,
+          padding: '8px 0', borderBottom: '1px solid var(--midnight-border)',
+        }}>
+          <button
+            className={`filter-pill ${!activeShowcase ? 'active' : ''}`}
+            onClick={() => setActiveShowcase(null)}
+            style={{ fontSize: 'var(--fs-2xs)', padding: '3px 8px' }}
+          >
+            All ({allStats.releases})
+          </button>
+          {showcases.map(s => {
+            return (
+              <button
+                key={s.id}
+                className={`filter-pill ${activeShowcase === s.id ? 'active' : ''}`}
+                onClick={() => setActiveShowcase(activeShowcase === s.id ? null : s.id)}
+                style={{ fontSize: 'var(--fs-2xs)', padding: '3px 8px' }}
+              >
+                {s.emoji} {s.name}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {/* Selection persistence bar */}
       {selectedItems.length > 0 && (
         <div style={{
