@@ -10,19 +10,29 @@ import { Redis } from '@upstash/redis';
  * Falls back to permissive (no blocking) if Upstash is not configured.
  */
 
-const redis = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
-  ? new Redis({
-      url: process.env.UPSTASH_REDIS_REST_URL,
-      token: process.env.UPSTASH_REDIS_REST_TOKEN,
-    })
-  : null;
+let redis: InstanceType<typeof Redis> | null = null;
+let limiters: {
+  strict: InstanceType<typeof Ratelimit>;
+  moderate: InstanceType<typeof Ratelimit>;
+  relaxed: InstanceType<typeof Ratelimit>;
+} | null = null;
 
-// Pre-built limiters for different endpoint tiers
-const limiters = redis ? {
-  strict: new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(5, '60 s'), prefix: 'rl:strict' }),
-  moderate: new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(20, '60 s'), prefix: 'rl:moderate' }),
-  relaxed: new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(30, '60 s'), prefix: 'rl:relaxed' }),
-} : null;
+try {
+  if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+    redis = new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL.trim(),
+      token: process.env.UPSTASH_REDIS_REST_TOKEN.trim(),
+    });
+    limiters = {
+      strict: new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(5, '60 s'), prefix: 'rl:strict' }),
+      moderate: new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(20, '60 s'), prefix: 'rl:moderate' }),
+      relaxed: new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(30, '60 s'), prefix: 'rl:relaxed' }),
+    };
+  }
+} catch (e) {
+  console.error('[rate-limit] Failed to initialize Upstash Redis:', e);
+  // Fall back to permissive (no rate limiting)
+}
 
 export function getClientIp(req: VercelRequest): string {
   const forwarded = req.headers['x-forwarded-for'];
@@ -37,11 +47,14 @@ export function getClientIp(req: VercelRequest): string {
 export async function isRateLimited(key: string, maxRequests: number, _windowMs: number): Promise<boolean> {
   if (!limiters) return false; // No Redis = no rate limiting (dev/fallback)
 
-  // Pick the limiter tier based on maxRequests
-  const limiter = maxRequests <= 5 ? limiters.strict
-    : maxRequests <= 20 ? limiters.moderate
-    : limiters.relaxed;
+  try {
+    const limiter = maxRequests <= 5 ? limiters.strict
+      : maxRequests <= 20 ? limiters.moderate
+      : limiters.relaxed;
 
-  const { success } = await limiter.limit(key);
-  return !success; // limit() returns success=true if allowed, we return true if BLOCKED
+    const { success } = await limiter.limit(key);
+    return !success;
+  } catch {
+    return false; // If Redis fails, allow the request
+  }
 }

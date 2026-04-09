@@ -42,6 +42,9 @@ export default function NashvilleReleases({ onImport }: Props) {
 
   // View mode: list or grid tiles
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
+  const [tileSize, setTileSize] = useState(() => {
+    try { return parseInt(localStorage.getItem('nr_tile_size') || '160'); } catch { return 160; }
+  });
 
   // Coming Soon toggle — shows future-dated releases
   const [showComingSoon, setShowComingSoon] = useState(false);
@@ -492,6 +495,18 @@ export default function NashvilleReleases({ onImport }: Props) {
             }}
           >⊞</button>
         </div>
+        {viewMode === 'grid' && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+            <button onClick={() => { const v = Math.max(100, tileSize - 30); setTileSize(v); localStorage.setItem('nr_tile_size', String(v)); }}
+              style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 14 }}>&#8722;</button>
+            <input type="range" min="100" max="250" value={tileSize}
+              onChange={e => { const v = Number(e.target.value); setTileSize(v); localStorage.setItem('nr_tile_size', String(v)); }}
+              onDoubleClick={() => { setTileSize(160); localStorage.setItem('nr_tile_size', '160'); }}
+              style={{ width: 50 }} title={`Tile size: ${tileSize}px`} />
+            <button onClick={() => { const v = Math.min(250, tileSize + 30); setTileSize(v); localStorage.setItem('nr_tile_size', String(v)); }}
+              style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 14 }}>+</button>
+          </div>
+        )}
       </div>
 
       {/* View toggle: This Week / Coming Soon */}
@@ -588,7 +603,7 @@ export default function NashvilleReleases({ onImport }: Props) {
       <div style={{ maxHeight: 600, overflowY: 'auto' }}>
         {viewMode === 'grid' ? (
           /* ── Grid tile view ── */
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 10 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fill, minmax(${tileSize}px, 1fr))`, gap: 10 }}>
             {albumGroups.map(g => {
               const isSingle = g.tracks.length === 1;
               const titleTrack = g.tracks[0];
