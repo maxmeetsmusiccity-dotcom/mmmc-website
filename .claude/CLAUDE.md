@@ -2,7 +2,7 @@
 
 ## Testing — Non-Negotiable
 - `npm run build` must pass before every commit
-- `npx vitest run` must pass (264+ tests, zero failures) before every commit
+- `npx vitest run` must pass (327+ tests, zero failures) before every commit
 - Show passing output in chat before committing
 - NEVER reduce test count below current baseline
 - NEVER push code that breaks existing tests
