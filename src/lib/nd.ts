@@ -18,7 +18,7 @@ interface NDInstagramResult {
   profile_pic_url?: string;
 }
 
-export type HandleSource = 'nd' | 'cache' | 'manual' | 'unknown';
+export type HandleSource = 'nd' | 'cache' | 'manual' | 'unknown' | string;
 
 export interface HandleResult {
   artist_name: string;

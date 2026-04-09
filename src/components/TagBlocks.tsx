@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { SelectionSlot } from '../lib/selection';
 import { resolveInstagramHandle, type HandleResult } from '../lib/nd';
+import { supabase } from '../lib/supabase';
 
 /** Consistent artist name splitting — used everywhere in this component */
 const ARTIST_SPLIT = /,\s*|\s+feat\.?\s+|\s+ft\.?\s+|\s+x\s+|\s+&\s+/i;
@@ -70,22 +71,78 @@ export default function TagBlocks({ slideGroups, onHandlesResolved }: Props) {
 
   const HANDLE_REGEX = /^@?[a-zA-Z0-9_.]{1,30}$/;
 
-  const handleEditHandle = (artistName: string, newHandle: string) => {
+  const handleEditHandle = async (artistName: string, newHandle: string) => {
     const cleaned = newHandle.trim().replace(/^@/, '');
     if (cleaned && !HANDLE_REGEX.test(cleaned)) return;
-    setHandles(prev => {
-      const next = new Map(prev);
-      next.set(artistName, {
-        artist_name: artistName,
-        handle: cleaned ? `@${cleaned}` : null,
-        source: 'manual',
-        pg_id: prev.get(artistName)?.pg_id || null,
-        loading: false,
-        confirmed: true,
+    const prev = handles.get(artistName);
+    const updated: HandleResult = {
+      artist_name: artistName,
+      handle: cleaned ? `@${cleaned}` : null,
+      source: 'manual',
+      pg_id: prev?.pg_id || null,
+      loading: false,
+      confirmed: true,
+    };
+    setHandles(p => { const next = new Map(p); next.set(artistName, updated); onHandlesResolved?.(next); return next; });
+
+    // Persist to Supabase via server endpoint
+    if (cleaned) {
+      const token = supabase ? (await supabase.auth.getSession()).data.session?.access_token : null;
+      fetch('/api/save-handle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { 'X-Supabase-Auth': token } : {}) },
+        body: JSON.stringify({
+          spotify_artist_id: artistIdMap.get(artistName) || prev?.pg_id || `manual:${artistName}`,
+          artist_name: artistName,
+          instagram_handle: `@${cleaned}`,
+          source: 'manual:confirmed',
+          confidence: 1.0,
+          nd_pg_id: prev?.pg_id || null,
+        }),
+      }).catch(() => {}); // fire-and-forget
+    }
+  };
+
+  // AI enrichment for a single artist
+  const [enriching, setEnriching] = useState<Set<string>>(new Set());
+
+  const handleAIEnrich = async (artistName: string) => {
+    setEnriching(prev => new Set(prev).add(artistName));
+    try {
+      const token = supabase ? (await supabase.auth.getSession()).data.session?.access_token : null;
+      const res = await fetch('/api/enrich-artist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { 'X-Supabase-Auth': token } : {}) },
+        body: JSON.stringify({
+          artist_name: artistName,
+          pg_id: handles.get(artistName)?.pg_id || null,
+          spotify_id: artistIdMap.get(artistName) || null,
+          known_data: {},
+        }),
       });
-      onHandlesResolved?.(next);
-      return next;
-    });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.instagram?.handle) {
+          const label = data.instagram.confidence_label || 'unverified';
+          setHandles(prev => {
+            const next = new Map(prev);
+            next.set(artistName, {
+              artist_name: artistName,
+              handle: data.instagram.handle,
+              source: `ai:${label}`,
+              pg_id: data.pg_id || prev.get(artistName)?.pg_id || null,
+              loading: false,
+              confirmed: label === 'confirmed' || label === 'likely',
+              verified: data.instagram.verified,
+              followers: data.instagram.followers,
+            });
+            onHandlesResolved?.(next);
+            return next;
+          });
+        }
+      }
+    } catch { /* enrichment failed */ }
+    setEnriching(prev => { const next = new Set(prev); next.delete(artistName); return next; });
   };
 
   const getSlideTagBlock = (slots: SelectionSlot[], confirmedOnly = true): string => {
@@ -223,19 +280,46 @@ export default function TagBlocks({ slideGroups, onHandlesResolved }: Props) {
                             fontSize: 'var(--fs-2xs)', width: 140, fontFamily: 'var(--font-mono)',
                           }}
                         />
+                        {/* Confidence label badge */}
                         <span style={{
-                          fontSize: 'var(--fs-3xs)',
-                          color: result.source === 'nd' ? '#3DA877'
+                          fontSize: 'var(--fs-3xs)', padding: '1px 6px', borderRadius: 8,
+                          background: result.source?.startsWith('ai:confirmed') || result.source?.includes(':confirmed') ? 'rgba(61,168,119,0.15)'
+                            : result.source?.includes(':likely') ? 'rgba(61,168,119,0.1)'
+                            : result.source?.includes(':contested') ? 'rgba(204,53,53,0.1)'
+                            : result.source === 'manual' ? 'rgba(212,168,67,0.1)'
+                            : 'transparent',
+                          color: result.source?.includes(':confirmed') ? '#3DA877'
+                            : result.source?.includes(':likely') ? '#3DA877'
+                            : result.source?.includes(':contested') ? 'var(--mmmc-red)'
+                            : result.source === 'nd' ? '#3DA877'
                             : result.source === 'cache' ? 'var(--steel)'
                             : result.source === 'manual' ? 'var(--gold)'
                             : result.loading ? 'var(--steel)' : 'var(--text-muted)',
                         }}>
                           {result.loading ? 'searching...'
+                            : enriching.has(name) ? 'AI researching...'
+                            : result.source?.includes(':confirmed') ? '\u2713 confirmed'
+                            : result.source?.includes(':likely') ? '\u2713 likely'
+                            : result.source?.includes(':unverified') ? '? unverified'
+                            : result.source?.includes(':contested') ? '\u26A0 contested'
                             : result.source === 'nd' ? `\u2713 ND${result.verified ? ' \u2713' : ''}`
                             : result.source === 'cache' ? '\u2713 cached'
                             : result.source === 'manual' ? '\u2713 manual'
-                            : result.pg_id ? 'in ND \u00B7 add handle' : '+ add handle'}
+                            : result.pg_id ? 'in ND' : ''}
                         </span>
+                        {/* AI Verify button — only show for unresolved or unverified */}
+                        {!result.loading && !enriching.has(name) && (!result.handle || result.source?.includes(':unverified') || (!result.source?.includes(':confirmed') && result.source !== 'manual')) && (
+                          <button
+                            onClick={() => handleAIEnrich(name)}
+                            style={{
+                              background: 'none', border: '1px solid var(--gold-dark)',
+                              borderRadius: 4, padding: '1px 6px', cursor: 'pointer',
+                              fontSize: 'var(--fs-3xs)', color: 'var(--gold)',
+                            }}
+                          >
+                            AI Verify
+                          </button>
+                        )}
                       </div>
                     );
                   });
