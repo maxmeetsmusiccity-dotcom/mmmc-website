@@ -1,14 +1,17 @@
 /**
  * Ground Truth Verification Pass
  *
- * Runs all handles in Supabase through Apify Instagram Profile Scraper
- * to verify they still exist and bio matches a music professional.
+ * Runs all unconfirmed handles in Supabase through Apify Instagram Profile
+ * Scraper to verify they still exist and bio matches a music professional.
  * Updates source label to categorical confidence.
  *
- * Run: VITE_SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... APIFY_TOKEN=... npx tsx scripts/verify-ground-truth.ts
+ * Uses Apify (included in $29/mo Starter plan credits) — no extra cost.
  *
- * Cost estimate: ~$0.003-0.01 per profile × 3,792 = ~$11-38
- * Time estimate: ~2-4 hours (Apify handles rate limiting)
+ * Run:
+ *   VITE_SUPABASE_URL=<url> SUPABASE_SERVICE_ROLE_KEY=<key> APIFY_TOKEN=<token> npx tsx scripts/verify-ground-truth.ts
+ *
+ * Or with .env.local:
+ *   source <(grep -E '^(VITE_SUPABASE_URL|SUPABASE_SERVICE_ROLE_KEY|APIFY_TOKEN)=' .env.local | sed 's/^/export /') && npx tsx scripts/verify-ground-truth.ts
  */
 
 import { createClient } from '@supabase/supabase-js';
@@ -22,7 +25,7 @@ const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const APIFY_TOKEN = process.env.APIFY_TOKEN || '';
 
 if (!SUPABASE_URL || !SUPABASE_KEY) {
-  console.error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
+  console.error('Missing VITE_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
   process.exit(1);
 }
 if (!APIFY_TOKEN) {
@@ -41,6 +44,7 @@ const MUSIC_KEYWORDS = [
   'mgmt', 'management', 'booking', 'label', 'publishing', 'bmi', 'ascap',
   'sesac', 'opry', 'cma', 'acm', 'grammy', 'dove', 'ryman',
   'whiskey jam', 'bluebird', 'listening room', '🎵', '🎶', '🎸', '🎤', '🎹',
+  'singer-songwriter', 'new music', 'out now', 'debut', 'single',
 ];
 
 function bioMatchesMusic(bio: string): boolean {
@@ -54,7 +58,6 @@ type ConfidenceLabel = 'confirmed' | 'likely' | 'unverified' | 'contested' | 're
 function determineLabel(
   handle: string,
   profile: any | null,
-  existingSource: string,
 ): { label: ConfidenceLabel; evidence: string } {
   if (!profile) {
     return { label: 'rejected', evidence: `Handle ${handle} not found on Instagram (404 or private)` };
@@ -64,56 +67,50 @@ function determineLabel(
   const bioMatch = bioMatchesMusic(bio);
   const hasFollowers = (profile.followersCount || 0) > 100;
   const isVerified = profile.isVerified || false;
-  const isBusiness = profile.isBusinessAccount || false;
 
-  // Verified badge = very strong signal
   if (isVerified && bioMatch) {
-    return { label: 'confirmed', evidence: `Verified badge + bio mentions music: "${bio.slice(0, 80)}"` };
+    return { label: 'confirmed', evidence: `Verified + bio: "${bio.slice(0, 80)}"` };
   }
-
-  // Bio matches music + decent following
   if (bioMatch && hasFollowers) {
-    return { label: 'confirmed', evidence: `Bio mentions music + ${profile.followersCount} followers: "${bio.slice(0, 80)}"` };
+    return { label: 'confirmed', evidence: `Bio match + ${profile.followersCount} followers: "${bio.slice(0, 80)}"` };
   }
-
-  // Bio matches but low following (could be emerging artist)
   if (bioMatch) {
-    return { label: 'likely', evidence: `Bio mentions music but only ${profile.followersCount || 0} followers: "${bio.slice(0, 80)}"` };
+    return { label: 'likely', evidence: `Bio match, ${profile.followersCount || 0} followers: "${bio.slice(0, 80)}"` };
   }
-
-  // Business account in music category
-  if (isBusiness && (profile.businessCategoryName || '').toLowerCase().includes('music')) {
-    return { label: 'likely', evidence: `Business category: ${profile.businessCategoryName}, but bio doesn't mention music keywords` };
-  }
-
-  // Has followers but bio doesn't match music
   if (hasFollowers) {
-    return { label: 'unverified', evidence: `Profile exists with ${profile.followersCount} followers but bio doesn't mention music: "${bio.slice(0, 80)}"` };
+    return { label: 'unverified', evidence: `${profile.followersCount} followers but no music keywords: "${bio.slice(0, 80)}"` };
   }
-
-  // Profile exists but nothing confirms it's the right person
-  return { label: 'unverified', evidence: `Profile exists but no music indicators in bio: "${bio.slice(0, 80)}"` };
+  return { label: 'unverified', evidence: `Profile exists, no music indicators: "${bio.slice(0, 80)}"` };
 }
 
-async function verifyHandle(handle: string): Promise<any | null> {
-  const cleanHandle = handle.replace(/^@/, '');
-  if (!cleanHandle) return null;
+async function verifyBatch(handles: string[]): Promise<Map<string, any>> {
+  const cleaned = handles.map(h => h.replace(/^@/, '')).filter(Boolean);
+  if (cleaned.length === 0) return new Map();
 
   try {
     const res = await fetch(
-      `https://api.apify.com/v2/acts/apify~instagram-profile-scraper/run-sync-get-dataset-items?token=${APIFY_TOKEN}&timeout=30`,
+      `https://api.apify.com/v2/acts/apify~instagram-profile-scraper/run-sync-get-dataset-items?token=${APIFY_TOKEN}&timeout=120`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ usernames: [cleanHandle] }),
+        body: JSON.stringify({ usernames: cleaned }),
       },
     );
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.error(`Apify error: ${res.status}`);
+      return new Map();
+    }
     const data = await res.json();
-    if (!Array.isArray(data) || !data[0]) return null;
-    return data[0];
-  } catch {
-    return null;
+    if (!Array.isArray(data)) return new Map();
+
+    const map = new Map<string, any>();
+    for (const profile of data) {
+      if (profile.username) map.set(profile.username.toLowerCase(), profile);
+    }
+    return map;
+  } catch (e) {
+    console.error('Apify request failed:', e);
+    return new Map();
   }
 }
 
@@ -130,60 +127,52 @@ async function main() {
     process.exit(1);
   }
 
-  // Filter: only verify handles not already confirmed
+  // Only verify handles not already confirmed
   const toVerify = handles.filter(h =>
-    h.instagram_handle &&
-    !h.source?.includes(':confirmed') // Skip already confirmed
+    h.instagram_handle && !h.source?.includes(':confirmed')
   );
 
+  const alreadyConfirmed = handles.length - toVerify.length;
   console.log(`Total handles: ${handles.length}`);
-  console.log(`Already confirmed: ${handles.length - toVerify.length}`);
+  console.log(`Already confirmed: ${alreadyConfirmed}`);
   console.log(`To verify: ${toVerify.length}`);
-  console.log(`Estimated cost: $${(toVerify.length * 0.005).toFixed(2)}-${(toVerify.length * 0.01).toFixed(2)}`);
   console.log('');
 
-  // Process with concurrency limit
-  const BATCH_SIZE = 5; // 5 concurrent Apify calls
-  const DELAY_MS = 2000; // 2s between batches
+  // Process in batches of 10 (Apify can handle multiple usernames per call)
+  const BATCH_SIZE = 10;
+  const DELAY_MS = 3000;
   let confirmed = 0, likely = 0, unverified = 0, rejected = 0, errors = 0;
 
   for (let i = 0; i < toVerify.length; i += BATCH_SIZE) {
     const batch = toVerify.slice(i, i + BATCH_SIZE);
+    const handleList = batch.map(h => h.instagram_handle!);
 
-    const results = await Promise.allSettled(
-      batch.map(async (h) => {
-        const profile = await verifyHandle(h.instagram_handle);
-        const { label, evidence } = determineLabel(h.instagram_handle, profile, h.source || '');
+    const profiles = await verifyBatch(handleList);
 
-        // Update Supabase with categorical label
-        await supabase.from('instagram_handles').update({
-          source: `ground_truth:${label}`,
-          updated_at: new Date().toISOString(),
-        }).eq('spotify_artist_id', h.spotify_artist_id);
+    for (const h of batch) {
+      const cleanHandle = h.instagram_handle!.replace(/^@/, '').toLowerCase();
+      const profile = profiles.get(cleanHandle);
+      const { label, evidence } = determineLabel(h.instagram_handle!, profile);
 
-        return { name: h.artist_name, handle: h.instagram_handle, label, evidence };
-      })
-    );
+      // Update Supabase
+      const { error: updateErr } = await supabase.from('instagram_handles').update({
+        source: `ground_truth:${label}`,
+        updated_at: new Date().toISOString(),
+      }).eq('spotify_artist_id', h.spotify_artist_id);
 
-    for (const r of results) {
-      if (r.status === 'fulfilled') {
-        const { label } = r.value;
+      if (updateErr) {
+        errors++;
+      } else {
         if (label === 'confirmed') confirmed++;
         else if (label === 'likely') likely++;
         else if (label === 'unverified') unverified++;
         else if (label === 'rejected') rejected++;
-      } else {
-        errors++;
       }
     }
 
-    // Progress
     const done = Math.min(i + BATCH_SIZE, toVerify.length);
-    if (done % 50 === 0 || done === toVerify.length) {
-      console.log(`[${done}/${toVerify.length}] confirmed=${confirmed} likely=${likely} unverified=${unverified} rejected=${rejected} errors=${errors}`);
-    }
+    console.log(`[${done}/${toVerify.length}] confirmed=${confirmed} likely=${likely} unverified=${unverified} rejected=${rejected} errors=${errors}`);
 
-    // Rate limit
     if (i + BATCH_SIZE < toVerify.length) {
       await new Promise(r => setTimeout(r, DELAY_MS));
     }
@@ -195,7 +184,8 @@ async function main() {
   console.log(`Unverified: ${unverified}`);
   console.log(`Rejected: ${rejected}`);
   console.log(`Errors: ${errors}`);
-  console.log(`Total processed: ${confirmed + likely + unverified + rejected + errors}`);
+  console.log(`Previously confirmed: ${alreadyConfirmed}`);
+  console.log(`Total: ${confirmed + likely + unverified + rejected + errors + alreadyConfirmed}`);
 }
 
 main().catch(e => { console.error(e); process.exit(1); });
