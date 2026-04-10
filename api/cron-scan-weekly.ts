@@ -113,8 +113,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // Support resuming: ?start=500 skips first 500 artists
   const startIdx = parseInt(req.query.start as string || '0', 10);
-  // Cap at 200 artists per invocation to stay within 300s timeout
-  const maxPerRun = 200;
+  // Process 500 artists per invocation (fits within 300s Vercel Pro timeout)
+  const maxPerRun = 500;
   const endIdx = Math.min(startIdx + maxPerRun, artistNames.length);
   const batch = artistNames.slice(startIdx, endIdx);
 
@@ -276,6 +276,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   }
 
+  // Self-chain: if not complete, fire the next batch automatically
+  if (!isComplete) {
+    const nextUrl = `${protocol}://${scanHost}/api/cron-scan-weekly?start=${endIdx}`;
+    console.log(`[CRON] Chaining next batch: ${endIdx}-${Math.min(endIdx + maxPerRun, artistNames.length)}`);
+    // Fire-and-forget — don't await, let this invocation return
+    fetch(nextUrl, {
+      method: 'GET',
+      headers: { 'Authorization': `Bearer ${CRON_SECRET}` },
+    }).catch(e => console.error('[CRON] Chain failed:', e));
+  }
+
   return res.status(200).json({
     status: isComplete ? 'complete' : 'in_progress',
     week: weekDate,
@@ -283,5 +294,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     tracks_found: totalTracks,
     range: `${startIdx}-${endIdx} of ${artistNames.length}`,
     next: isComplete ? null : `/api/cron-scan-weekly?start=${endIdx}`,
+    chained: !isComplete,
   });
 }
