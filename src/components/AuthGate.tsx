@@ -67,16 +67,16 @@ export default function AuthGate({ children }: Props) {
       background: 'var(--midnight)', padding: 24, textAlign: 'center',
     }}>
       <div className="animate-float-up" style={{ maxWidth: 560, width: '100%' }}>
-        {/* Logo + Heading — scales down on mobile via clamp */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(12px, 3vw, 20px)', justifyContent: 'center', marginBottom: 'clamp(6px, 1.5vw, 12px)' }}>
+        {/* Logo + Heading — fills full container width */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(12px, 3vw, 20px)', marginBottom: 'clamp(6px, 1.5vw, 12px)', width: '100%' }}>
           <img
             src="/mmmc-logo-hires.png"
             alt="Max Meets Music City"
-            style={{ width: 'clamp(64px, 14vw, 100px)', height: 'clamp(64px, 14vw, 100px)', borderRadius: 14, objectFit: 'cover', flexShrink: 0 }}
+            style={{ width: 'clamp(72px, 16vw, 120px)', height: 'clamp(72px, 16vw, 120px)', borderRadius: 14, objectFit: 'cover', flexShrink: 0 }}
           />
           <h1 style={{
-            fontFamily: 'var(--font-display)', fontSize: 'clamp(1.6rem, 5.5vw, 3.25rem)',
-            fontWeight: 700, lineHeight: 1.15, textAlign: 'left',
+            fontFamily: 'var(--font-display)', fontSize: 'clamp(1.6rem, 6.5vw, 3.75rem)',
+            fontWeight: 700, lineHeight: 1.15, textAlign: 'left', flex: 1,
           }}>
             New Music Friday <span style={{ color: 'var(--gold)' }}>Curator</span>
           </h1>
