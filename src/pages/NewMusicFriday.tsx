@@ -36,6 +36,8 @@ import ManualImport from '../components/ManualImport';
 const CarouselPreviewPanel = lazy(() => import('../components/CarouselPreviewPanel'));
 const NashvilleReleases = lazy(() => import('../components/NashvilleReleases'));
 const MobileResultsView = lazy(() => import('../components/MobileResultsView'));
+// Eager import for hidden mobile panel — prevents null ref on first generate tap
+import CarouselPreviewPanelEager from '../components/CarouselPreviewPanel';
 import CaptionGenerator from '../components/CaptionGenerator';
 import TrackSuggestions from '../components/TrackSuggestions';
 import { queueNewArtistsForEnrichment } from '../lib/enrichment';
@@ -1040,23 +1042,21 @@ export default function NewMusicFriday() {
         />
         </Suspense>
       )}
-      {/* Hidden CarouselPreviewPanel on mobile — needed so carouselRef connects for generate() */}
+      {/* Hidden CarouselPreviewPanel on mobile — eager loaded so ref is ready immediately */}
       {phase === 'results' && isMobile && selections.length > 0 && (
         <div style={{ display: 'none' }}>
-          <Suspense fallback={null}>
-            <CarouselPreviewPanel
-              ref={carouselRef}
-              selectedTracks={selectedTracks}
-              coverFeature={selections.find(s => s.isCoverFeature) || null}
-              onTracksPerSlideChange={setTracksPerSlide}
-              carouselAspect={carouselAspect}
-              onAspectChange={setCarouselAspect}
-              generating={generating}
-              onGeneratingChange={setGenerating}
-              allPreviews={allPreviews}
-              onAllPreviewsChange={setAllPreviews}
-            />
-          </Suspense>
+          <CarouselPreviewPanelEager
+            ref={carouselRef}
+            selectedTracks={selectedTracks}
+            coverFeature={selections.find(s => s.isCoverFeature) || null}
+            onTracksPerSlideChange={setTracksPerSlide}
+            carouselAspect={carouselAspect}
+            onAspectChange={setCarouselAspect}
+            generating={generating}
+            onGeneratingChange={setGenerating}
+            allPreviews={allPreviews}
+            onAllPreviewsChange={setAllPreviews}
+          />
         </div>
       )}
       {phase === 'results' && !isMobile && (

@@ -75,6 +75,17 @@ export default function MobileResultsView({
     else { setSortBy(field); setSortDir('asc'); }
   }, [sortBy]);
 
+  // Show loading state while generating
+  if (showSlides && allPreviews.length === 0) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
+        <div style={{ width: 48, height: 48, border: '3px solid var(--midnight-border)', borderTopColor: 'var(--gold)', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+        <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--fs-lg)' }}>Generating slides...</p>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+
   // Show slides view after generation
   if (showSlides && allPreviews.length > 0) {
     return (

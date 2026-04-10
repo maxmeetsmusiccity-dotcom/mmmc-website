@@ -112,7 +112,6 @@ const CarouselPreviewPanel = forwardRef<CarouselPanelHandle, Props>(function Car
   const setAllPreviews = onAllPreviewsChange;
   const setGenerating = onGeneratingChange;
   const [error, setError] = useState('');
-  const [activePreview, setActivePreview] = useState(0);
   const [logoUrl, setLogoUrl] = useState(localStorage.getItem('nmf_logo_url') || '/mmmc-logo.png');
   const logoFileRef = useRef<HTMLInputElement>(null);
   const setCarouselAspect = onAspectChange;
@@ -241,7 +240,6 @@ const CarouselPreviewPanel = forwardRef<CarouselPanelHandle, Props>(function Car
 
       allPreviews.forEach(URL.revokeObjectURL);
       setAllPreviews(urls);
-      setActivePreview(0);
       onCarouselGenerated?.();
     } catch (e) {
       setError(`Generation failed: ${(e as Error).message}`);
@@ -680,12 +678,14 @@ const CarouselPreviewPanel = forwardRef<CarouselPanelHandle, Props>(function Car
         </details>
       )}
 
-      {/* Multi-slide preview strip + main viewer */}
+      {/* Carousel preview — horizontal scrollable strip showing ALL slides */}
       {allPreviews.length > 0 && (
         <div>
-          {/* Thumbnail strip — drag to reorder */}
+          <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)', marginBottom: 8 }}>
+            {allPreviews.length} {allPreviews.length === 1 ? 'slide' : 'slides'} — drag to reorder, scroll to browse
+          </p>
           <div style={{
-            display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8, marginBottom: 16,
+            display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 12,
             WebkitOverflowScrolling: 'touch', scrollSnapType: 'x mandatory',
           }}>
             {allPreviews.map((url, i) => (
@@ -703,74 +703,26 @@ const CarouselPreviewPanel = forwardRef<CarouselPanelHandle, Props>(function Car
                   const [moved] = reordered.splice(from, 1);
                   reordered.splice(to, 0, moved);
                   setAllPreviews(reordered);
-                  setActivePreview(to);
                 }}
-                onClick={() => setActivePreview(i)}
                 style={{
                   flexShrink: 0, scrollSnapAlign: 'start', cursor: 'grab',
-                  width: 80, position: 'relative',
-                  border: activePreview === i ? '2px solid var(--gold)' : '2px solid transparent',
-                  borderRadius: 6, overflow: 'hidden',
-                  opacity: activePreview === i ? 1 : 0.7,
+                  width: 240, position: 'relative',
+                  borderRadius: 8, overflow: 'hidden',
+                  border: '1px solid var(--midnight-border)',
                   transition: 'all 0.15s',
                 }}
               >
                 <img src={url} alt={`Slide ${i + 1}`}
-                  style={{ width: '100%', display: 'block', borderRadius: 4 }} />
+                  style={{ width: '100%', display: 'block' }} />
                 <span style={{
-                  position: 'absolute', bottom: 2, right: 4,
-                  fontSize: 9, color: '#fff', fontFamily: 'var(--font-mono)',
-                  textShadow: '0 1px 3px rgba(0,0,0,0.8)',
+                  position: 'absolute', top: 6, left: 6,
+                  background: 'rgba(0,0,0,0.7)', padding: '2px 8px',
+                  borderRadius: 4, fontSize: 'var(--fs-2xs)', color: '#fff', fontFamily: 'var(--font-mono)',
                 }}>
                   {i + 1}
                 </span>
               </div>
             ))}
-          </div>
-
-          {/* Main preview — selected slide */}
-          <div style={{ position: 'relative', textAlign: 'center' }}>
-            <img
-              src={allPreviews[activePreview]}
-              alt={`Slide ${activePreview + 1}`}
-              style={{ width: '100%', maxWidth: 540, borderRadius: 8, border: '1px solid var(--midnight-border)' }}
-            />
-            <span style={{
-              position: 'absolute', bottom: 8, right: 8,
-              background: 'rgba(0,0,0,0.7)', padding: '2px 8px',
-              borderRadius: 4, fontSize: 'var(--fs-2xs)', color: '#fff', fontFamily: 'var(--font-mono)',
-            }}>
-              {activePreview + 1}/{allPreviews.length}
-            </span>
-            <div style={{ position: 'absolute', top: 8, right: 8, display: 'flex', gap: 4 }}>
-              <button
-                className="btn btn-sm"
-                onClick={async () => {
-                  const res = await fetch(allPreviews[activePreview]);
-                  const blob = await res.blob();
-                  downloadBlob(blob, `nmf-${platformId}-slide-${activePreview + 1}.png`);
-                }}
-                style={{ fontSize: 'var(--fs-2xs)', padding: '3px 8px' }}
-              >
-                Download
-              </button>
-            </div>
-            {/* Arrow navigation */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
-              <button
-                onClick={() => setActivePreview(Math.max(0, activePreview - 1))}
-                disabled={activePreview === 0}
-                style={{ fontSize: 'var(--fs-xl)', color: activePreview === 0 ? 'var(--midnight-border)' : 'var(--gold)', cursor: 'pointer', background: 'none', border: 'none' }}
-              >&larr; Prev</button>
-              <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)' }}>
-                Drag thumbnails above to reorder slides
-              </span>
-              <button
-                onClick={() => setActivePreview(Math.min(allPreviews.length - 1, activePreview + 1))}
-                disabled={activePreview === allPreviews.length - 1}
-                style={{ fontSize: 'var(--fs-xl)', color: activePreview === allPreviews.length - 1 ? 'var(--midnight-border)' : 'var(--gold)', cursor: 'pointer', background: 'none', border: 'none' }}
-              >Next &rarr;</button>
-            </div>
           </div>
         </div>
       )}

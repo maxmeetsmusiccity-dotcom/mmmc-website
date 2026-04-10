@@ -631,7 +631,7 @@ export default function NashvilleReleases({ onImport }: Props) {
               const isSingleTrack = allArtistTracks.length === 1;
               const isExpanded = expanded.has(`artist:${artist.name}`);
               return (
-                <div key={artist.name} style={{ position: 'relative' }}>
+                <div key={artist.name} style={{ position: 'relative', alignSelf: 'start' }}>
                   <div
                     onClick={() => {
                       if (isSingleTrack) toggleSelect(allArtistTracks[0].spotify_track_id);
