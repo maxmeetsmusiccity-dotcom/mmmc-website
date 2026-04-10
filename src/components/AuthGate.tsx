@@ -83,7 +83,7 @@ export default function AuthGate({ children }: Props) {
         </div>
 
         <p style={{ color: 'var(--text-secondary)', fontSize: 'clamp(var(--fs-md), 2.5vw, var(--fs-xl))', lineHeight: 1.6, marginBottom: 'clamp(10px, 2vw, 20px)' }}>
-          For everyone who listens to everything and finds the gems worth sharing. Every New Music Friday.
+          For everyone who listens to everything and finds the best gems worth sharing. Every New Music Friday.
         </p>
 
         {/* What this does — bright feature cards */}
