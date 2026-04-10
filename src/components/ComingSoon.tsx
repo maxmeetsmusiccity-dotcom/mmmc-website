@@ -1,0 +1,268 @@
+import { useState, useEffect, useMemo } from 'react';
+
+interface FutureRelease {
+  artist_name: string;
+  album_name: string;
+  track_name: string;
+  release_date: string;
+  cover_art_url?: string;
+  cover_art_300?: string;
+  composer_name?: string | null;
+  release_type?: string;
+  spotify_track_id?: string;
+  spotify_album_id?: string;
+}
+
+interface SongwriterInfo {
+  display_name: string;
+  charting_songs: number;
+  no1_songs: number;
+  total_credits: number;
+  publisher: string | null;
+  tier: string;
+}
+
+interface Props {
+  releases: FutureRelease[];
+  showcaseArtists?: Map<string, Set<string>>; // showcaseId → Set of artist names
+  showcases?: { id: string; name: string; emoji: string }[];
+}
+
+/** Parse Apple Music composerName string into individual names */
+function parseComposerName(str: string | null | undefined): string[] {
+  if (!str?.trim()) return [];
+  const skip = new Set(['traditional', 'public domain', 'unknown', 'various', 'n/a']);
+  return str.replace(/ & /g, ', ').replace(/\band\b/gi, ',')
+    .split(',').map(s => s.trim()).filter(s => s.length >= 2 && !skip.has(s.toLowerCase()));
+}
+
+/** Get the Friday for a given date (for grouping) */
+function getFridayForDate(dateStr: string): string {
+  const d = new Date(dateStr + 'T12:00:00');
+  const day = d.getDay();
+  const diff = day >= 5 ? day - 5 : 5 - day;
+  const friday = new Date(d);
+  friday.setDate(d.getDate() + (day >= 5 ? 0 : diff));
+  return friday.toISOString().split('T')[0];
+}
+
+/** Format a Friday date as "This Friday (Apr 11)" or "Apr 18" */
+function formatWeekLabel(fridayStr: string): string {
+  const d = new Date(fridayStr + 'T12:00:00');
+  const today = new Date();
+  const diffDays = Math.round((d.getTime() - today.getTime()) / 86400000);
+  const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  if (diffDays <= 7 && diffDays >= 0) return `This Friday (${label})`;
+  if (diffDays <= 14 && diffDays > 7) return `Next Friday (${label})`;
+  return label;
+}
+
+export default function ComingSoon({ releases, showcaseArtists, showcases }: Props) {
+  const [songwriterCache, setSongwriterCache] = useState<Map<string, SongwriterInfo | null>>(new Map());
+  const [expandedAlbum, setExpandedAlbum] = useState<string | null>(null);
+
+  // Load songwriter cache (static JSON — built by Thread B)
+  useEffect(() => {
+    fetch('/data/songwriter_cache.json')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!data?.writers) return;
+        const cache = new Map<string, SongwriterInfo | null>();
+        for (const [key, val] of Object.entries(data.writers)) {
+          cache.set(key, val as SongwriterInfo);
+        }
+        // Also index by alias
+        if (data.aliases) {
+          for (const [alias, canonical] of Object.entries(data.aliases)) {
+            const writer = cache.get(canonical as string);
+            if (writer) cache.set(alias, writer);
+          }
+        }
+        setSongwriterCache(cache);
+      })
+      .catch(() => {});
+  }, []);
+
+  // Group releases by album, then by Friday week
+  const grouped = useMemo(() => {
+    // First group by album
+    const albumMap = new Map<string, { album: string; artist: string; date: string; artwork: string | null; isSingle: boolean; tracks: FutureRelease[] }>();
+    for (const r of releases) {
+      const key = r.spotify_album_id || `${r.artist_name}_${r.album_name}`;
+      if (!albumMap.has(key)) {
+        albumMap.set(key, {
+          album: r.album_name,
+          artist: r.artist_name,
+          date: r.release_date,
+          artwork: r.cover_art_300 || r.cover_art_url || null,
+          isSingle: r.release_type === 'single',
+          tracks: [],
+        });
+      }
+      albumMap.get(key)!.tracks.push(r);
+    }
+
+    // Group albums by Friday week
+    const weekMap = new Map<string, typeof albumMap extends Map<string, infer V> ? V[] : never>();
+    for (const album of albumMap.values()) {
+      const friday = getFridayForDate(album.date);
+      if (!weekMap.has(friday)) weekMap.set(friday, []);
+      weekMap.get(friday)!.push(album);
+    }
+
+    // Sort weeks chronologically, albums within each week by artist name
+    return [...weekMap.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([friday, albums]) => ({
+        friday,
+        label: formatWeekLabel(friday),
+        albums: albums.sort((a, b) => a.artist.localeCompare(b.artist)),
+      }));
+  }, [releases]);
+
+  // Look up songwriter info from cache
+  function lookupSongwriter(name: string): SongwriterInfo | null {
+    const key = name.toLowerCase().trim();
+    return songwriterCache.get(key) || null;
+  }
+
+  // Find showcase connections for an artist
+  function getShowcaseBadges(artistName: string): { id: string; name: string; emoji: string }[] {
+    if (!showcaseArtists || !showcases) return [];
+    const lower = artistName.toLowerCase().split(/,|feat\.|ft\./i)[0].trim().toLowerCase();
+    return showcases.filter(s => showcaseArtists.get(s.id)?.has(lower));
+  }
+
+  if (releases.length === 0) return null;
+
+  return (
+    <div style={{ marginBottom: 20, padding: '16px 0' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+        <span style={{ fontSize: 'var(--fs-xl)' }}>🔮</span>
+        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-xl)', fontWeight: 700, color: 'var(--text-primary)' }}>
+          Coming Soon
+        </h3>
+        <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+          {releases.length} tracks
+        </span>
+      </div>
+
+      {grouped.map(week => (
+        <div key={week.friday} style={{ marginBottom: 16 }}>
+          <p style={{
+            fontSize: 'var(--fs-sm)', fontWeight: 700, color: 'var(--gold)',
+            marginBottom: 8, paddingBottom: 4, borderBottom: '1px solid var(--midnight-border)',
+          }}>
+            {week.label}
+          </p>
+
+          {week.albums.map(album => {
+            const albumKey = `${album.artist}_${album.album}`;
+            const isExpanded = expandedAlbum === albumKey;
+            const badges = getShowcaseBadges(album.artist);
+
+            // Collect unique composers across all tracks in this album
+            const allComposers = new Map<string, SongwriterInfo | null>();
+            for (const track of album.tracks) {
+              for (const name of parseComposerName(track.composer_name)) {
+                if (!allComposers.has(name.toLowerCase())) {
+                  allComposers.set(name.toLowerCase(), lookupSongwriter(name));
+                }
+              }
+            }
+
+            return (
+              <div
+                key={albumKey}
+                onClick={() => setExpandedAlbum(isExpanded ? null : albumKey)}
+                style={{
+                  display: 'flex', gap: 12, padding: '10px 12px', marginBottom: 6,
+                  borderRadius: 10, cursor: 'pointer',
+                  background: isExpanded ? 'var(--midnight-raised)' : 'transparent',
+                  border: '1px solid ' + (isExpanded ? 'var(--gold-dark)' : 'var(--midnight-border)'),
+                  transition: 'all 0.15s',
+                  flexDirection: 'column',
+                }}
+              >
+                <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                  {/* Artwork */}
+                  {album.artwork ? (
+                    <img src={album.artwork} alt="" style={{ width: 56, height: 56, borderRadius: 6, objectFit: 'cover', flexShrink: 0 }} />
+                  ) : (
+                    <div style={{ width: 56, height: 56, borderRadius: 6, background: 'var(--midnight-border)', flexShrink: 0,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)' }}>
+                      TBD
+                    </div>
+                  )}
+
+                  {/* Info */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 'var(--fs-md)', fontWeight: 700, color: 'var(--text-primary)',
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {album.artist}
+                    </div>
+                    <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)',
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {album.album}
+                    </div>
+                    <div style={{ display: 'flex', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: 'var(--fs-3xs)', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+                        {album.date} · {album.isSingle ? 'Single' : `${album.tracks.length} tracks`}
+                      </span>
+                      {badges.map(b => (
+                        <span key={b.id} style={{
+                          fontSize: 'var(--fs-3xs)', padding: '0 5px', borderRadius: 4,
+                          background: 'rgba(212,168,67,0.15)', color: 'var(--gold)', fontWeight: 600,
+                        }}>
+                          {b.emoji} {b.name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Expanded: songwriter credits */}
+                {isExpanded && allComposers.size > 0 && (
+                  <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--midnight-border)' }}>
+                    <p style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)', marginBottom: 6 }}>✍️ Songwriters</p>
+                    {[...allComposers.entries()].map(([key, info]) => (
+                      <div key={key} style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)', marginBottom: 2, paddingLeft: 8 }}>
+                        <span style={{ fontWeight: info?.charting_songs ? 600 : 400 }}>
+                          {info?.display_name || key}
+                        </span>
+                        {info && info.charting_songs > 0 && (
+                          <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-2xs)', marginLeft: 8 }}>
+                            {info.charting_songs} charting{info.no1_songs > 0 ? ` · ${info.no1_songs} #1s` : ''}
+                            {info.publisher ? ` · ${info.publisher}` : ''}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Expanded: track list if album has multiple tracks */}
+                {isExpanded && !album.isSingle && album.tracks.length > 1 && (
+                  <div style={{ marginTop: 6, paddingTop: 6, borderTop: '1px solid var(--midnight-border)' }}>
+                    <p style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)', marginBottom: 4 }}>Tracks</p>
+                    {album.tracks.map((t, i) => (
+                      <div key={i} style={{ fontSize: 'var(--fs-xs)', color: t.composer_name ? 'var(--text-secondary)' : 'var(--text-muted)',
+                        padding: '2px 0 2px 8px' }}>
+                        {i + 1}. {t.track_name}
+                        {t.composer_name && (
+                          <span style={{ fontSize: 'var(--fs-3xs)', color: 'var(--text-muted)', marginLeft: 6 }}>
+                            ({t.composer_name})
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      ))}
+    </div>
+  );
+}

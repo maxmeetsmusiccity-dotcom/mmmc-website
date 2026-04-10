@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
+import ComingSoon from './ComingSoon';
 import type { TrackItem } from '../lib/spotify';
 import { NASHVILLE_SEED_ARTISTS, releasesToTrackItems, type NashvilleRelease } from '../lib/sources/nashville';
 import { supabase } from '../lib/supabase';
@@ -571,6 +572,25 @@ export default function NashvilleReleases({ showcases, onImport }: Props) {
           </div>
         )}
       </div>
+
+      {/* Coming Soon section — future releases with songwriter intelligence */}
+      {comingSoonReleases.length > 0 && !showComingSoon && (
+        <ComingSoon
+          releases={comingSoonReleases.map(r => ({
+            artist_name: r.artist_name,
+            album_name: r.album_name,
+            track_name: r.track_name,
+            release_date: r.release_date,
+            cover_art_url: r.cover_art_url,
+            cover_art_300: r.cover_art_300,
+            release_type: r.release_type,
+            spotify_track_id: r.spotify_track_id,
+            spotify_album_id: r.spotify_album_id,
+          }))}
+          showcaseArtists={allShowcaseArtists}
+          showcases={showcases.filter(s => s.type === 'showcase')}
+        />
+      )}
 
       {/* View toggle: This Week / Coming Soon */}
       {comingSoonReleases.length > 0 && (
