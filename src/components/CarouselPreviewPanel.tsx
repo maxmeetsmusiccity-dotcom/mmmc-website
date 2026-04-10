@@ -84,6 +84,12 @@ interface Props {
 export interface CarouselPanelHandle {
   generate: () => void;
   downloadAll: () => void;
+  getGridTemplateId: () => string;
+  setGridTemplateId: (id: string) => void;
+  getTitleTemplateId: () => string;
+  setTitleTemplateId: (id: string) => void;
+  getLogoUrl: () => string;
+  setLogoUrl: (url: string) => void;
 }
 
 const CarouselPreviewPanel = forwardRef<CarouselPanelHandle, Props>(function CarouselPreviewPanel({
@@ -293,11 +299,17 @@ const CarouselPreviewPanel = forwardRef<CarouselPanelHandle, Props>(function Car
     downloadBlob(zipBlob, `nmf-carousel-${weekDate}.zip`);
   };
 
-  // Expose generate and downloadAll to parent via ref
+  // Expose generate, downloadAll, and template state to parent via ref
   useImperativeHandle(ref, () => ({
     generate: handleGenerate,
     generateStory: handleGenerateStory,
     downloadAll: handleDownloadAll,
+    getGridTemplateId: () => gridTemplateId,
+    setGridTemplateId: (id: string) => { setGridTemplateId(id); localStorage.setItem('nmf_template', id); setAllPreviews([]); },
+    getTitleTemplateId: () => titleTemplateId,
+    setTitleTemplateId: (id: string) => { hasUserChangedTitle.current = true; setTitleTemplateId(id); localStorage.setItem('nmf_title_template', id); setAllPreviews([]); },
+    getLogoUrl: () => logoUrl,
+    setLogoUrl: (url: string) => { setLogoUrl(url); localStorage.setItem('nmf_logo_url', url); setAllPreviews([]); },
   }));
 
   if (selectedTracks.length === 0) return null;

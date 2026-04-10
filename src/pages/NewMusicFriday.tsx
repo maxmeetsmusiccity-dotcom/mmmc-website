@@ -1114,6 +1114,12 @@ export default function NewMusicFriday() {
           carouselAspect={carouselAspect}
           onAspectChange={setCarouselAspect}
           pushSelectionHistory={pushSelectionHistory}
+          gridTemplateId={carouselRef.current?.getGridTemplateId?.()}
+          onGridTemplateChange={(id: string) => carouselRef.current?.setGridTemplateId?.(id)}
+          titleTemplateId={carouselRef.current?.getTitleTemplateId?.()}
+          onTitleTemplateChange={(id: string) => carouselRef.current?.setTitleTemplateId?.(id)}
+          logoUrl={carouselRef.current?.getLogoUrl?.()}
+          onLogoChange={(url: string) => carouselRef.current?.setLogoUrl?.(url)}
         />
         </Suspense>
       )}

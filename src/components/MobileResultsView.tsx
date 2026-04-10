@@ -3,6 +3,9 @@ import type { TrackItem, ReleaseCluster } from '../lib/spotify';
 import type { SelectionSlot } from '../lib/selection';
 import { buildSlots } from '../lib/selection';
 import type { CarouselAspect } from '../lib/canvas-grid';
+import { getVisibleTemplates } from '../lib/carousel-templates';
+import { getVisibleTitleTemplates, getDefaultTitleTemplateId } from '../lib/title-templates';
+import { useAuth } from '../lib/auth-context';
 
 interface Props {
   allTracks: TrackItem[];
@@ -24,6 +27,12 @@ interface Props {
   carouselAspect?: CarouselAspect;
   onAspectChange?: (a: CarouselAspect) => void;
   pushSelectionHistory: (s: SelectionSlot[]) => void;
+  gridTemplateId?: string;
+  onGridTemplateChange?: (id: string) => void;
+  titleTemplateId?: string;
+  onTitleTemplateChange?: (id: string) => void;
+  logoUrl?: string;
+  onLogoChange?: (url: string) => void;
 }
 
 type ViewMode = 'grid' | 'list';
@@ -34,10 +43,14 @@ export default function MobileResultsView({
   allTracks, releases, selections, onSelectionChange,
   selectionsByAlbum: _selectionsByAlbum, onSelectRelease, onDeselect: _onDeselect, onSetCoverFeature,
   featureCounts: _featureCounts, generating, onGenerate, allPreviews,
-  onDownloadAll, onDownloadSlide,
+  onDownloadAll: _onDownloadAll, onDownloadSlide,
   tracksPerSlide, onTracksPerSlideChange, carouselAspect = '1:1', onAspectChange,
   pushSelectionHistory,
+  gridTemplateId: gridTplProp, onGridTemplateChange,
+  titleTemplateId: titleTplProp, onTitleTemplateChange,
+  logoUrl: logoProp, onLogoChange,
 }: Props) {
+  const { user } = useAuth();
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [filter, setFilter] = useState<FilterMode>('all');
   const [sortBy, setSortBy] = useState<SortMode>('artist');
@@ -135,9 +148,32 @@ export default function MobileResultsView({
 
         {/* Actions */}
         <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <button className="btn btn-gold" onClick={onDownloadAll}
+          {/* Save to Photos (mobile-optimized) or Download All */}
+          <button className="btn btn-gold" onClick={async () => {
+            // Try native share (iOS/Android) — saves directly to Photos
+            if (navigator.share && navigator.canShare) {
+              try {
+                const files = await Promise.all(
+                  allPreviews.map(async (url, i) => {
+                    const res = await fetch(url);
+                    const blob = await res.blob();
+                    return new File([blob], `nmf-slide-${i + 1}.png`, { type: 'image/png' });
+                  })
+                );
+                if (navigator.canShare({ files })) {
+                  await navigator.share({ files, title: 'NMF Carousel' });
+                  return;
+                }
+              } catch { /* share cancelled or failed, fall through to download */ }
+            }
+            // Fallback: download each slide individually
+            for (let i = 0; i < allPreviews.length; i++) {
+              onDownloadSlide(i);
+              await new Promise(r => setTimeout(r, 300)); // stagger downloads
+            }
+          }}
             style={{ width: '100%', justifyContent: 'center', fontSize: 'var(--fs-lg)', padding: '14px 0' }}>
-            Download All ({allPreviews.length} {allPreviews.length === 1 ? 'slide' : 'slides'})
+            {typeof navigator !== 'undefined' && 'share' in navigator ? 'Save to Photos' : 'Download All'} ({allPreviews.length} slides)
           </button>
           <button className="btn" onClick={() => onDownloadSlide(activeSlide)}
             style={{ width: '100%', justifyContent: 'center' }}>
@@ -366,8 +402,16 @@ export default function MobileResultsView({
         })()}
       </div>
 
-      {/* Configure bottom sheet */}
-      {showConfig && (
+      {/* Configure bottom sheet — full carousel settings */}
+      {showConfig && (() => {
+        const userEmail = user?.email || undefined;
+        const gridTemplates = getVisibleTemplates(userEmail);
+        const titleTemplates = getVisibleTitleTemplates(userEmail);
+        const activeGrid = gridTplProp || localStorage.getItem('nmf_template') || 'mmmc_classic';
+        const activeTitle = titleTplProp || localStorage.getItem('nmf_title_template') || getDefaultTitleTemplateId(userEmail);
+        const activeLogo = logoProp || localStorage.getItem('nmf_logo_url') || '/mmmc-logo.png';
+
+        return (
         <>
           <div onClick={() => setShowConfig(false)}
             style={{ position: 'fixed', inset: 0, zIndex: 40, background: 'rgba(0,0,0,0.5)' }} />
@@ -376,14 +420,14 @@ export default function MobileResultsView({
             background: 'var(--midnight-raised)', borderTop: '2px solid var(--gold-dark)',
             borderRadius: '16px 16px 0 0', padding: '16px',
             paddingBottom: 'max(16px, env(safe-area-inset-bottom))',
-            maxHeight: '70vh', overflowY: 'auto',
+            maxHeight: '85vh', overflowY: 'auto',
             animation: 'sheetSlideUp 200ms ease',
           }}>
-            <div style={{ width: 40, height: 4, borderRadius: 2, background: 'var(--midnight-border)', margin: '0 auto 16px' }} />
-            <p style={{ fontSize: 'var(--fs-lg)', fontWeight: 600, marginBottom: 16 }}>Carousel Settings</p>
+            <div style={{ width: 40, height: 4, borderRadius: 2, background: 'var(--midnight-border)', margin: '0 auto 12px' }} />
+            <p style={{ fontSize: 'var(--fs-xl)', fontWeight: 700, marginBottom: 16, color: 'var(--gold)' }}>Carousel Settings</p>
 
             {/* Carousel Shape */}
-            <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginBottom: 8 }}>Shape</p>
+            <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)', fontWeight: 600, marginBottom: 8 }}>Shape</p>
             <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
               {([
                 { value: '1:1' as CarouselAspect, label: 'Square', sub: '1080×1080' },
@@ -408,8 +452,8 @@ export default function MobileResultsView({
             </div>
 
             {/* Tracks per slide */}
-            <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginBottom: 8 }}>Tracks per slide</p>
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 16 }}>
+            <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)', fontWeight: 600, marginBottom: 8 }}>Tracks per slide</p>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
               {[4, 6, 8, 9, 16].map(n => (
                 <button
                   key={n}
@@ -421,10 +465,101 @@ export default function MobileResultsView({
                 </button>
               ))}
             </div>
-
-            <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginBottom: 16 }}>
-              {selections.length} {selections.length === 1 ? 'track' : 'tracks'} → {Math.ceil(selections.length / tracksPerSlide)} {Math.ceil(selections.length / tracksPerSlide) === 1 ? 'slide' : 'slides'}
+            <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)', marginBottom: 16 }}>
+              {selections.length} tracks → {Math.ceil(selections.length / tracksPerSlide) + 1} slides (including title)
             </p>
+
+            {/* Grid Slide Template */}
+            <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)', fontWeight: 600, marginBottom: 8 }}>Grid Slide Template</p>
+            <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8, marginBottom: 16, WebkitOverflowScrolling: 'touch' }}>
+              {gridTemplates.map(t => (
+                <button
+                  key={t.id}
+                  onClick={() => onGridTemplateChange?.(t.id)}
+                  style={{
+                    flexShrink: 0, width: 80, padding: 6, borderRadius: 10, cursor: 'pointer',
+                    background: activeGrid === t.id ? 'var(--midnight-hover)' : 'var(--midnight)',
+                    border: activeGrid === t.id ? `2px solid ${t.accent}` : '2px solid var(--midnight-border)',
+                    textAlign: 'center',
+                  }}
+                >
+                  <div style={{ width: '100%', aspectRatio: '1', borderRadius: 6, background: t.background, marginBottom: 4,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <span style={{ color: t.accent, fontSize: 'var(--fs-3xs)', fontWeight: 700 }}>NMF</span>
+                  </div>
+                  <span style={{ fontSize: 'var(--fs-3xs)', fontWeight: 600,
+                    color: activeGrid === t.id ? t.accent : 'var(--text-muted)',
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block',
+                  }}>{t.name}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Title Slide Template */}
+            <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)', fontWeight: 600, marginBottom: 8 }}>Title Slide Template</p>
+            <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8, marginBottom: 16, WebkitOverflowScrolling: 'touch' }}>
+              <button
+                onClick={() => onTitleTemplateChange?.('none')}
+                style={{
+                  flexShrink: 0, width: 80, padding: 6, borderRadius: 10, cursor: 'pointer',
+                  background: activeTitle === 'none' ? 'var(--midnight-hover)' : 'var(--midnight)',
+                  border: activeTitle === 'none' ? '2px solid var(--gold)' : '2px solid var(--midnight-border)',
+                  textAlign: 'center',
+                }}
+              >
+                <div style={{ width: '100%', aspectRatio: '1', borderRadius: 6, background: 'var(--midnight-border)', marginBottom: 4,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--fs-lg)', color: 'var(--text-muted)' }}>
+                  ✕
+                </div>
+                <span style={{ fontSize: 'var(--fs-3xs)', fontWeight: 600, color: activeTitle === 'none' ? 'var(--gold)' : 'var(--text-muted)' }}>No Title</span>
+              </button>
+              {titleTemplates.map(t => (
+                <button
+                  key={t.id}
+                  onClick={() => onTitleTemplateChange?.(t.id)}
+                  style={{
+                    flexShrink: 0, width: 80, padding: 6, borderRadius: 10, cursor: 'pointer',
+                    background: activeTitle === t.id ? 'var(--midnight-hover)' : 'var(--midnight)',
+                    border: activeTitle === t.id ? `2px solid ${t.accent}` : '2px solid var(--midnight-border)',
+                    textAlign: 'center',
+                  }}
+                >
+                  <div style={{ width: '100%', aspectRatio: '1', borderRadius: 6, background: t.background, marginBottom: 4,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <span style={{ color: t.accent, fontSize: 'var(--fs-3xs)', fontWeight: 700 }}>NMF</span>
+                  </div>
+                  <span style={{ fontSize: 'var(--fs-3xs)', fontWeight: 600,
+                    color: activeTitle === t.id ? t.accent : 'var(--text-muted)',
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block',
+                  }}>{t.name}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Logo Upload */}
+            <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)', fontWeight: 600, marginBottom: 8 }}>Center Logo</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+              <img src={activeLogo} alt="Logo" style={{ width: 40, height: 40, borderRadius: 8, objectFit: 'cover' }} />
+              <label className="btn btn-sm" style={{ cursor: 'pointer', fontSize: 'var(--fs-sm)' }}>
+                Upload Logo
+                <input type="file" accept="image/*" style={{ display: 'none' }}
+                  onChange={e => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                      const url = reader.result as string;
+                      onLogoChange?.(url);
+                      localStorage.setItem('nmf_logo_url', url);
+                    };
+                    reader.readAsDataURL(file);
+                  }} />
+              </label>
+              {activeLogo !== '/mmmc-logo.png' && (
+                <button className="btn btn-sm" onClick={() => { onLogoChange?.('/mmmc-logo.png'); localStorage.setItem('nmf_logo_url', '/mmmc-logo.png'); }}
+                  style={{ fontSize: 'var(--fs-sm)' }}>Reset</button>
+              )}
+            </div>
 
             <button className="btn btn-gold" onClick={() => { setShowConfig(false); onGenerate(); setShowSlides(true); }}
               disabled={selections.length === 0 || generating}
@@ -433,7 +568,8 @@ export default function MobileResultsView({
             </button>
           </div>
         </>
-      )}
+        );
+      })()}
 
       {/* Sticky bottom action bar */}
       <div style={{
@@ -442,11 +578,17 @@ export default function MobileResultsView({
         padding: '12px 16px', paddingBottom: 'max(12px, env(safe-area-inset-bottom))',
       }}>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button className="btn"
+          <button
             onClick={() => setShowConfig(true)}
             disabled={selections.length === 0}
-            style={{ flex: 1, justifyContent: 'center', fontSize: 'var(--fs-sm)' }}>
-            Settings
+            style={{
+              flex: 1, justifyContent: 'center', fontSize: 'var(--fs-sm)', fontWeight: 700,
+              padding: '14px 0', borderRadius: 10, cursor: 'pointer',
+              background: 'var(--midnight)', color: 'var(--gold)',
+              border: '2px solid var(--gold)',
+              display: 'flex', alignItems: 'center', gap: 6,
+            }}>
+            ⚙ Settings
           </button>
           <button className="btn btn-gold"
             disabled={selections.length === 0 || generating}
@@ -457,7 +599,7 @@ export default function MobileResultsView({
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6, fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)' }}>
           <span>{selections.length} selected</span>
-          <span>{Math.ceil(selections.length / tracksPerSlide)} {Math.ceil(selections.length / tracksPerSlide) === 1 ? 'slide' : 'slides'}</span>
+          <span>{allPreviews.length > 0 ? allPreviews.length : Math.ceil(selections.length / tracksPerSlide) + 1} slides</span>
           {(() => {
             const cover = selections.find(s => s.isCoverFeature);
             return cover ? <span style={{ color: 'var(--gold)' }}>★ {cover.track.artist_names.split(',')[0]}</span> : null;
