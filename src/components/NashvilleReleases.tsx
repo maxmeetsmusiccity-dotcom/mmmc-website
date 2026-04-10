@@ -582,8 +582,8 @@ export default function NashvilleReleases({ showcases, onImport }: Props) {
           </button>
           <button className={`filter-pill ${showComingSoon ? 'active' : ''}`}
             onClick={() => setShowComingSoon(true)}
-            style={{ fontSize: 'var(--fs-xs)', padding: '4px 12px', opacity: 0.7 }}>
-            Coming Soon ({comingSoonReleases.length})
+            style={{ fontSize: 'var(--fs-xs)', padding: '4px 12px' }}>
+            🔮 Coming Soon ({comingSoonReleases.length})
           </button>
         </div>
       )}

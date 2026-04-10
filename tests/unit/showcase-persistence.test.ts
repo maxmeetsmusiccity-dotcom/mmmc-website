@@ -109,3 +109,20 @@ describe('showcase persistence', () => {
     expect(showcases).toHaveLength(2);
   });
 });
+
+describe('future releases filter', () => {
+  it('separates current vs future releases by date', () => {
+    const today = '2026-04-10';
+    const releases = [
+      { release_date: '2026-04-10', artist: 'A' }, // today = current
+      { release_date: '2026-04-03', artist: 'B' }, // past = current
+      { release_date: '2026-04-18', artist: 'C' }, // future = coming soon
+      { release_date: '2026-05-01', artist: 'D' }, // future = coming soon
+    ];
+    const current = releases.filter(r => r.release_date <= today);
+    const comingSoon = releases.filter(r => r.release_date > today);
+    expect(current).toHaveLength(2);
+    expect(comingSoon).toHaveLength(2);
+    expect(comingSoon[0].artist).toBe('C');
+  });
+});

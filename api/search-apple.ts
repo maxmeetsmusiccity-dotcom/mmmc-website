@@ -138,7 +138,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       for (const album of (albumData.data || []) as AppleAlbum[]) {
         const releaseDate = album.attributes.releaseDate;
-        if (!releaseDate || releaseDate < cutoffStr || releaseDate > friday) continue;
+        // Include future releases up to 4 weeks out for "Coming Soon" feature
+        const futureLimit = new Date(friday + 'T12:00:00');
+        futureLimit.setDate(futureLimit.getDate() + 28);
+        const futureLimitStr = futureLimit.toISOString().split('T')[0];
+        if (!releaseDate || releaseDate < cutoffStr || releaseDate > futureLimitStr) continue;
 
         const artUrl = album.attributes.artwork?.url
           ?.replace('{w}', '640').replace('{h}', '640') || '';
