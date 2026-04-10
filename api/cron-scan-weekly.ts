@@ -136,7 +136,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${process.env.SCAN_SECRET || ''}`,
         },
-        body: JSON.stringify({ artistNames: chunk, daysBack: 8 }),
+        body: JSON.stringify({ artistNames: chunk, daysBack: 8, targetFriday: weekDate }),
       });
       if (resp.ok) {
         const data = await resp.json();
@@ -184,7 +184,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${process.env.SCAN_SECRET || ''}`,
         },
-        body: JSON.stringify({ artistNames: chunk, daysBack: 7 }),
+        body: JSON.stringify({ artistNames: chunk, daysBack: 7, targetFriday: weekDate }),
       });
       if (resp.ok) {
         const data = await resp.json();
