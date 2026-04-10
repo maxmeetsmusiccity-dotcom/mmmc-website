@@ -798,11 +798,11 @@ export default function NewMusicFriday() {
           </div>
         ) : (
           <>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(6px, 2vw, 12px)', flexWrap: 'wrap' }}>
               <Link to="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flexShrink: 0 }}>
-                <img src="/mmmc-logo-hires.png" alt="MMMC" style={{ width: 67, height: 67, borderRadius: 8, objectFit: 'cover' }} />
+                <img src="/mmmc-logo-hires.png" alt="MMMC" style={{ width: 'clamp(40px, 10vw, 67px)', height: 'clamp(40px, 10vw, 67px)', borderRadius: 8, objectFit: 'cover' }} />
               </Link>
-              <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-2xl)', fontWeight: 600, whiteSpace: 'nowrap' }}>
+              <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(var(--fs-lg), 3.5vw, var(--fs-2xl))', fontWeight: 600 }}>
                 New Music Friday
               </h1>
               <ProductNav />
