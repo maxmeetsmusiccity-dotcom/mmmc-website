@@ -67,29 +67,29 @@ export default function AuthGate({ children }: Props) {
       background: 'var(--midnight)', padding: 24, textAlign: 'center',
     }}>
       <div className="animate-float-up" style={{ maxWidth: 560, width: '100%' }}>
-        {/* Logo + Heading */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 20, justifyContent: 'center', marginBottom: 12 }}>
+        {/* Logo + Heading — scales down on mobile via clamp */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(12px, 3vw, 20px)', justifyContent: 'center', marginBottom: 'clamp(6px, 1.5vw, 12px)' }}>
           <img
             src="/mmmc-logo-hires.png"
             alt="Max Meets Music City"
-            style={{ width: 100, height: 100, borderRadius: 14, objectFit: 'cover', flexShrink: 0 }}
+            style={{ width: 'clamp(64px, 14vw, 100px)', height: 'clamp(64px, 14vw, 100px)', borderRadius: 14, objectFit: 'cover', flexShrink: 0 }}
           />
           <h1 style={{
-            fontFamily: 'var(--font-display)', fontSize: 'clamp(2.25rem, 6vw, 3.25rem)',
+            fontFamily: 'var(--font-display)', fontSize: 'clamp(1.6rem, 5.5vw, 3.25rem)',
             fontWeight: 700, lineHeight: 1.15, textAlign: 'left',
           }}>
             New Music <span style={{ color: 'var(--gold)' }}>Friday</span> Curator
           </h1>
         </div>
 
-        <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--fs-xl)', lineHeight: 1.6, marginBottom: 20 }}>
+        <p style={{ color: 'var(--text-secondary)', fontSize: 'clamp(var(--fs-md), 2.5vw, var(--fs-xl))', lineHeight: 1.6, marginBottom: 'clamp(10px, 2vw, 20px)' }}>
           For everyone who listens to everything and finds the gems worth sharing. Every week.
         </p>
 
         {/* What this does — bright feature cards */}
         <div style={{
           display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)',
-          gap: 14, marginBottom: 20, textAlign: 'left',
+          gap: 'clamp(8px, 1.5vw, 14px)', marginBottom: 'clamp(12px, 2vw, 20px)', textAlign: 'left',
         }}>
           {[
             { title: 'Discover', desc: 'Scan new releases from 8,000+ Nashville artists and songwriters, updated every Friday.' },
@@ -97,17 +97,17 @@ export default function AuthGate({ children }: Props) {
             { title: 'Export', desc: 'Generate your carousel and download a ZIP with every slide ready to post.' },
             { title: 'Connect', desc: 'Instagram handles found automatically. Build captions and come back every Friday.' },
           ].map(f => (
-            <div key={f.title} className="card" style={{ padding: 16, border: '1px solid var(--gold)', background: 'rgba(212,168,67,0.06)' }}>
-              <div style={{ fontWeight: 700, fontSize: 'var(--fs-lg)', marginBottom: 4, color: 'var(--gold)' }}>{f.title}</div>
-              <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{f.desc}</div>
+            <div key={f.title} className="card" style={{ padding: 'clamp(10px, 1.5vw, 16px)', border: '1px solid var(--gold)', background: 'rgba(212,168,67,0.06)' }}>
+              <div style={{ fontWeight: 700, fontSize: 'clamp(var(--fs-md), 2vw, var(--fs-lg))', marginBottom: 4, color: 'var(--gold)' }}>{f.title}</div>
+              <div style={{ fontSize: 'clamp(var(--fs-2xs), 1.5vw, var(--fs-sm))', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{f.desc}</div>
             </div>
           ))}
         </div>
 
-        <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-lg)', lineHeight: 1.5, marginBottom: 10 }}>
+        <p style={{ color: 'var(--text-muted)', fontSize: 'clamp(var(--fs-md), 2vw, var(--fs-lg))', lineHeight: 1.5, marginBottom: 'clamp(6px, 1vw, 10px)' }}>
           This tool exists because your work matters. You listen to everything, you find the gems, and you share them with the world. I built this tool to accelerate that work.
         </p>
-        <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-lg)', lineHeight: 1.5, marginBottom: 28 }}>
+        <p style={{ color: 'var(--text-muted)', fontSize: 'clamp(var(--fs-md), 2vw, var(--fs-lg))', lineHeight: 1.5, marginBottom: 'clamp(16px, 3vw, 28px)' }}>
           The MMMC NMF Curator exists to save your valuable time, so you can focus on what you do best: telling the stories about the songs that define Music City.
         </p>
 
@@ -115,7 +115,7 @@ export default function AuthGate({ children }: Props) {
         <button
           className="btn btn-gold"
           onClick={() => { continueAsGuest(); sessionStorage.setItem('nmf_entered', '1'); }}
-          style={{ width: '100%', justifyContent: 'center', fontSize: 'var(--fs-xl)', padding: '16px 0', marginBottom: 14 }}
+          style={{ width: '100%', justifyContent: 'center', fontSize: 'clamp(var(--fs-lg), 2.5vw, var(--fs-xl))', padding: 'clamp(12px, 2vw, 16px) 0', marginBottom: 'clamp(10px, 1.5vw, 14px)' }}
         >
           Get Started as a Guest
         </button>
@@ -124,14 +124,14 @@ export default function AuthGate({ children }: Props) {
         <button
           className="btn"
           onClick={() => { sessionStorage.setItem('nmf_entered', '1'); signInWithGoogle(); }}
-          style={{ width: '100%', justifyContent: 'center', fontSize: 'var(--fs-lg)', padding: '14px 0', marginBottom: 10 }}
+          style={{ width: '100%', justifyContent: 'center', fontSize: 'clamp(var(--fs-md), 2vw, var(--fs-lg))', padding: 'clamp(10px, 1.5vw, 14px) 0', marginBottom: 'clamp(6px, 1vw, 10px)' }}
         >
           Sign in with Google
         </button>
         <button
           className="btn"
           onClick={() => { sessionStorage.setItem('nmf_entered', '1'); signInWithApple(); }}
-          style={{ width: '100%', justifyContent: 'center', fontSize: 'var(--fs-lg)', padding: '14px 0', marginBottom: 14 }}
+          style={{ width: '100%', justifyContent: 'center', fontSize: 'clamp(var(--fs-md), 2vw, var(--fs-lg))', padding: 'clamp(10px, 1.5vw, 14px) 0', marginBottom: 'clamp(10px, 1.5vw, 14px)' }}
         >
           Sign in with Apple
         </button>
