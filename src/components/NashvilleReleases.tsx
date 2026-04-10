@@ -213,9 +213,24 @@ export default function NashvilleReleases({ onImport }: Props) {
     })();
   }, [selectedWeek]);
 
-  // Split current vs future releases
+  // Split current vs future releases — only show THIS week's music
   const today = new Date().toISOString().split('T')[0];
-  const currentReleases = releases.filter(r => (r.release_date || '') <= today);
+  // Calculate this week's Friday (the scan_week start date)
+  const thisWeekStart = (() => {
+    const d = new Date();
+    const day = d.getDay();
+    const diff = day >= 5 ? day - 5 : day + 2;
+    d.setDate(d.getDate() - diff);
+    return d.toISOString().split('T')[0];
+  })();
+  // Only show releases from this Friday's window onward (exclude last week's stale tracks)
+  const weekCutoff = new Date(thisWeekStart);
+  weekCutoff.setDate(weekCutoff.getDate() - 1); // Include Thursday night drops
+  const cutoffStr = weekCutoff.toISOString().split('T')[0];
+  const currentReleases = releases.filter(r => {
+    const rd = r.release_date || '';
+    return rd >= cutoffStr && rd <= today;
+  });
   const comingSoonReleases = releases.filter(r => (r.release_date || '') > today);
 
   // Apply showcase + search filters to the active set
