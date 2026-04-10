@@ -86,7 +86,7 @@ export default function AuthGate({ children }: Props) {
         </p>
 
         <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-md)', lineHeight: 1.5, marginBottom: 8 }}>
-          This tool exists because your work matters. You listen to everything, you find the gems, and you share them with the world.
+          This tool exists because your work matters. You listen to everything, you find the gems, and you share them with the world. I built this tool to accelerate that work.
         </p>
         <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-md)', lineHeight: 1.5, marginBottom: 24 }}>
           The MMMC NMF Curator exists to save your valuable time, so you can focus on what you do best: telling the stories about the songs that define Music City.
