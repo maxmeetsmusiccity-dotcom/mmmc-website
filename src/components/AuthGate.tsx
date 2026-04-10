@@ -78,7 +78,7 @@ export default function AuthGate({ children }: Props) {
             fontFamily: 'var(--font-display)', fontSize: 'clamp(1.6rem, 5.5vw, 3.25rem)',
             fontWeight: 700, lineHeight: 1.15, textAlign: 'left',
           }}>
-            New Music <span style={{ color: 'var(--gold)' }}>Friday</span> Curator
+            New Music Friday <span style={{ color: 'var(--gold)' }}>Curator</span>
           </h1>
         </div>
 
@@ -104,10 +104,10 @@ export default function AuthGate({ children }: Props) {
           ))}
         </div>
 
-        <p style={{ color: 'var(--text-muted)', fontSize: 'clamp(var(--fs-md), 2vw, var(--fs-lg))', lineHeight: 1.5, marginBottom: 'clamp(6px, 1vw, 10px)' }}>
+        <p style={{ color: 'var(--text-muted)', fontSize: 'clamp(var(--fs-md), 2vw, var(--fs-lg))', lineHeight: 1.5, marginBottom: 'clamp(6px, 1vw, 10px)', textAlign: 'justify' }}>
           This tool exists because your work matters. You listen to everything, you find the gems, and you share them with the world. I built this tool to accelerate that work.
         </p>
-        <p style={{ color: 'var(--text-muted)', fontSize: 'clamp(var(--fs-md), 2vw, var(--fs-lg))', lineHeight: 1.5, marginBottom: 'clamp(16px, 3vw, 28px)' }}>
+        <p style={{ color: 'var(--text-muted)', fontSize: 'clamp(var(--fs-md), 2vw, var(--fs-lg))', lineHeight: 1.5, marginBottom: 'clamp(16px, 3vw, 28px)', textAlign: 'justify' }}>
           The MMMC NMF Curator exists to save your valuable time, so you can focus on what you do best: telling the stories about the songs that define Music City.
         </p>
 
@@ -170,7 +170,7 @@ export default function AuthGate({ children }: Props) {
         </details>
 
         {/* Account benefits callout */}
-        <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-sm)', fontStyle: 'italic', lineHeight: 1.5, marginTop: 24 }}>
+        <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-sm)', fontStyle: 'italic', lineHeight: 1.5, marginTop: 24, textAlign: 'justify' }}>
           Sign in to make it yours. Your carousels, your templates, your preferences — all saved and waiting for you next Friday.
         </p>
 
