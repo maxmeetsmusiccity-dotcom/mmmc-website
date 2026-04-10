@@ -55,8 +55,18 @@ export default function NashvilleReleases({ onImport }: Props) {
   const [showcaseArtists, setShowcaseArtists] = useState<Set<string>>(new Set());
   const [loadingShowcase, setLoadingShowcase] = useState(false);
 
-  // Load showcase categories on mount
+  // Load showcase categories — from localStorage cache first, then refresh from API
   useEffect(() => {
+    // Load cached showcases immediately (prevents flash of missing dropdown)
+    try {
+      const cached = localStorage.getItem('nr_showcases');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) setShowcases(parsed);
+      }
+    } catch { /* no cache */ }
+
+    // Refresh from API
     fetch('/api/browse-artists')
       .then(r => {
         if (!r.ok) throw new Error(`${r.status}`);
@@ -65,7 +75,9 @@ export default function NashvilleReleases({ onImport }: Props) {
       .then(d => {
         const cats = (d.categories || []).filter((c: ShowcaseCategory) => c.type === 'showcase');
         setShowcases(cats);
-        if (cats.length === 0 && import.meta.env.DEV) console.log('[Nashville] No showcase categories returned:', d);
+        if (cats.length > 0) {
+          try { localStorage.setItem('nr_showcases', JSON.stringify(cats)); } catch { /* quota */ }
+        }
       })
       .catch(e => {
         if (import.meta.env.DEV) console.error('[Nashville] Failed to load showcases:', e);
