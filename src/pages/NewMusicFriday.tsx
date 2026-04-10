@@ -241,19 +241,27 @@ export default function NewMusicFriday() {
 
   const weekDate = getLastFriday();
 
-  // ─── Auto-save draft ─────────────────────────────────────
-  const DRAFT_KEY = 'nmf_draft';
+  // ─── Auto-save draft (scoped by user to prevent cross-account leakage) ───
+  const DRAFT_KEY = userId ? `nmf_draft_${userId}` : 'nmf_draft_guest';
   const [showDraftBanner, setShowDraftBanner] = useState(false);
   const draftRef = useRef<{ selections: SelectionSlot[]; allTracks: TrackItem[]; releases: ReleaseCluster[] } | null>(null);
 
-  // Check for saved draft on mount
+  // Check for saved draft on mount — validate shape before offering restore
   useEffect(() => {
     try {
       const raw = localStorage.getItem(DRAFT_KEY);
       if (!raw) return;
       const draft = JSON.parse(raw);
       if (draft.weekDate !== weekDate) { localStorage.removeItem(DRAFT_KEY); return; }
-      if (draft.selections?.length > 0 && draft.allTracks?.length > 0) {
+      // Validate draft has the expected shape
+      if (!Array.isArray(draft.selections) || !Array.isArray(draft.allTracks)) {
+        localStorage.removeItem(DRAFT_KEY); return;
+      }
+      // Validate first track has required fields
+      if (draft.allTracks.length > 0 && !draft.allTracks[0].track_id && !draft.allTracks[0].track_name) {
+        localStorage.removeItem(DRAFT_KEY); return;
+      }
+      if (draft.selections.length > 0 && draft.allTracks.length > 0) {
         draftRef.current = { selections: draft.selections, allTracks: draft.allTracks, releases: draft.releases || [] };
         setShowDraftBanner(true);
       }
@@ -263,19 +271,26 @@ export default function NewMusicFriday() {
 
   const restoreDraft = useCallback(() => {
     if (!draftRef.current) return;
-    setAllTracks(draftRef.current.allTracks);
-    setReleases(draftRef.current.releases.length > 0 ? draftRef.current.releases : groupIntoReleases(draftRef.current.allTracks));
-    setSelections(buildSlots(draftRef.current.selections));
-    setPhase('results');
+    try {
+      const { allTracks: t, releases: r, selections: s } = draftRef.current;
+      if (!Array.isArray(t) || !Array.isArray(s) || t.length === 0) throw new Error('Invalid draft');
+      setAllTracks(t);
+      setReleases(Array.isArray(r) && r.length > 0 ? r : groupIntoReleases(t));
+      setSelections(buildSlots(s));
+      setPhase('results');
+    } catch (e) {
+      console.error('[Draft] Failed to restore, discarding:', e);
+      localStorage.removeItem(DRAFT_KEY);
+    }
     setShowDraftBanner(false);
     draftRef.current = null;
-  }, []);
+  }, [DRAFT_KEY]);
 
   const discardDraft = useCallback(() => {
     localStorage.removeItem(DRAFT_KEY);
     setShowDraftBanner(false);
     draftRef.current = null;
-  }, []);
+  }, [DRAFT_KEY]);
 
   // Refs for auto-save — intervals read from refs so they don't re-trigger on state changes
   const autoSaveRefs = useRef({ selections, allTracks, releases, weekDate, userId });

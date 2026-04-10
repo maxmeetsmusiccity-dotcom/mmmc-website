@@ -16,9 +16,22 @@ export default class ErrorBoundary extends React.Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
-    // Log full error details server-side (visible in Vercel logs, not to end users)
     console.error('[ErrorBoundary] Uncaught error:', error, info.componentStack);
   }
+
+  handleClearAndReload = () => {
+    // Clear all NMF-related localStorage that could contain stale/corrupt data
+    try {
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.startsWith('nmf_') || key.startsWith('nr_'))) keysToRemove.push(key);
+      }
+      keysToRemove.forEach(k => localStorage.removeItem(k));
+      sessionStorage.clear();
+    } catch { /* ignore */ }
+    window.location.reload();
+  };
 
   render() {
     if (this.state.error) {
@@ -32,14 +45,14 @@ export default class ErrorBoundary extends React.Component<Props, State> {
             {this.props.fallbackMessage || 'Something went wrong'}
           </h2>
           <p style={{ fontSize: 'var(--fs-md)', color: 'var(--text-secondary)', marginBottom: 24, maxWidth: 500, textAlign: 'center' }}>
-            An unexpected error occurred. Try refreshing the page.
+            An unexpected error occurred. This is usually caused by stale cached data.
           </p>
           <div style={{ display: 'flex', gap: 8 }}>
             <button className="btn btn-sm" onClick={() => this.setState({ error: null })}>
               Try Again
             </button>
-            <button className="btn btn-sm" onClick={() => window.location.reload()}>
-              Reload Page
+            <button className="btn btn-sm btn-gold" onClick={this.handleClearAndReload}>
+              Clear Cache &amp; Reload
             </button>
           </div>
         </div>

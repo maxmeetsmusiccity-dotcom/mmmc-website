@@ -78,7 +78,7 @@ export default function AuthGate({ children }: Props) {
             fontFamily: 'var(--font-display)', fontSize: 'clamp(2rem, 7vw, 3.5rem)',
             fontWeight: 700, lineHeight: 1.15, textAlign: 'left', flex: 1,
           }}>
-            New Music<br />Friday <span style={{ color: 'var(--gold)' }}>Curator</span>
+            New Music Friday<br /><span style={{ color: 'var(--gold)' }}>Curator Studio</span>
           </h1>
         </div>
 
@@ -108,7 +108,7 @@ export default function AuthGate({ children }: Props) {
           This tool exists because your work matters. You listen to everything, you find the gems, and you share them with the world. I built this tool to accelerate that work.
         </p>
         <p style={{ color: 'var(--text-secondary)', fontSize: 'clamp(var(--fs-md), 2vw, var(--fs-lg))', lineHeight: 1.5, marginBottom: 'clamp(16px, 3vw, 28px)', textAlign: 'justify' }}>
-          The MMMC NMF Curator exists to save your valuable time, so you can focus on what you do best: telling the stories about the songs that define Music City.
+          The MMMC NMF Curator Studio exists to save your valuable time, so you can focus on what you do best: telling the stories about the songs that define Music City.
         </p>
 
         {/* Continue as Guest */}
