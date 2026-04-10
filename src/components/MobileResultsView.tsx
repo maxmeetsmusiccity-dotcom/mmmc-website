@@ -583,9 +583,11 @@ export default function MobileResultsView({
             disabled={selections.length === 0}
             style={{
               flex: 1, justifyContent: 'center', fontSize: 'var(--fs-sm)', fontWeight: 700,
-              padding: '14px 0', borderRadius: 10, cursor: 'pointer',
-              background: 'var(--midnight)', color: 'var(--gold)',
-              border: '2px solid var(--gold)',
+              padding: '14px 0', borderRadius: 10, cursor: selections.length === 0 ? 'default' : 'pointer',
+              background: 'var(--midnight)',
+              color: selections.length === 0 ? 'var(--text-muted)' : 'var(--gold)',
+              border: selections.length === 0 ? '2px solid var(--midnight-border)' : '2px solid var(--gold)',
+              opacity: selections.length === 0 ? 0.5 : 1,
               display: 'flex', alignItems: 'center', gap: 6,
             }}>
             ⚙ Settings
