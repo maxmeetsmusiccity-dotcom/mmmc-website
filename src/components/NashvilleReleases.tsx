@@ -573,8 +573,24 @@ export default function NashvilleReleases({ showcases, onImport }: Props) {
         )}
       </div>
 
-      {/* Coming Soon section — future releases with songwriter intelligence */}
-      {comingSoonReleases.length > 0 && !showComingSoon && (
+      {/* View toggle: This Week / Coming Soon */}
+      {comingSoonReleases.length > 0 && (
+        <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
+          <button className={`filter-pill ${!showComingSoon ? 'active' : ''}`}
+            onClick={() => setShowComingSoon(false)}
+            style={{ fontSize: 'var(--fs-xs)', padding: '4px 12px' }}>
+            This Week ({currentReleases.length} {currentReleases.length === 1 ? 'track' : 'tracks'})
+          </button>
+          <button className={`filter-pill ${showComingSoon ? 'active' : ''}`}
+            onClick={() => setShowComingSoon(true)}
+            style={{ fontSize: 'var(--fs-xs)', padding: '4px 12px' }}>
+            🔮 Coming Soon ({comingSoonReleases.length})
+          </button>
+        </div>
+      )}
+
+      {/* Coming Soon section — only when Coming Soon tab is active */}
+      {showComingSoon && comingSoonReleases.length > 0 && (
         <ComingSoon
           releases={comingSoonReleases.map(r => ({
             artist_name: r.artist_name,
@@ -592,22 +608,8 @@ export default function NashvilleReleases({ showcases, onImport }: Props) {
         />
       )}
 
-      {/* View toggle: This Week / Coming Soon */}
-      {comingSoonReleases.length > 0 && (
-        <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
-          <button className={`filter-pill ${!showComingSoon ? 'active' : ''}`}
-            onClick={() => setShowComingSoon(false)}
-            style={{ fontSize: 'var(--fs-xs)', padding: '4px 12px' }}>
-            This Week ({currentReleases.length} {currentReleases.length === 1 ? 'track' : 'tracks'})
-          </button>
-          <button className={`filter-pill ${showComingSoon ? 'active' : ''}`}
-            onClick={() => setShowComingSoon(true)}
-            style={{ fontSize: 'var(--fs-xs)', padding: '4px 12px' }}>
-            🔮 Coming Soon ({comingSoonReleases.length})
-          </button>
-        </div>
-      )}
-
+      {/* This Week grid view — hidden when Coming Soon is active */}
+      {!showComingSoon && (<>
       {/* Sort controls */}
       <div style={{ display: 'flex', gap: 6, marginBottom: 8, alignItems: 'center', flexWrap: 'wrap' }}>
         <span style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)' }}>Sort:</span>
@@ -920,6 +922,7 @@ export default function NashvilleReleases({ showcases, onImport }: Props) {
           Data generated: {new Date(generatedAt).toLocaleDateString()}
         </div>
       )}
+      </>)}
     </div>
   );
 }
