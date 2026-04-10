@@ -75,16 +75,12 @@ export default function AuthGate({ children }: Props) {
             style={{ width: 'clamp(72px, 16vw, 120px)', height: 'clamp(72px, 16vw, 120px)', borderRadius: 14, objectFit: 'cover', flexShrink: 0 }}
           />
           <h1 style={{
-            fontFamily: 'var(--font-display)', fontSize: 'clamp(1.6rem, 5.5vw, 2.85rem)',
-            fontWeight: 700, lineHeight: 1.2, textAlign: 'left', flex: 1,
+            fontFamily: 'var(--font-display)', fontSize: 'clamp(2rem, 7vw, 3.5rem)',
+            fontWeight: 700, lineHeight: 1.15, textAlign: 'left', flex: 1,
           }}>
-            New Music Friday<br /><span style={{ color: 'var(--gold)' }}>Curator</span>
+            New Music<br />Friday <span style={{ color: 'var(--gold)' }}>Curator</span>
           </h1>
         </div>
-
-        <p style={{ color: 'var(--text-secondary)', fontSize: 'clamp(var(--fs-md), 2.5vw, var(--fs-xl))', lineHeight: 1.6, marginBottom: 'clamp(10px, 2vw, 20px)' }}>
-          For everyone who listens to everything and finds the best gems worth sharing. Every New Music Friday.
-        </p>
 
         {/* What this does — bright feature cards */}
         <div style={{
