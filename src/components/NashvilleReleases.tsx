@@ -47,6 +47,9 @@ export default function NashvilleReleases({ showcases, onImport }: Props) {
     try { return parseInt(localStorage.getItem('nr_tile_size') || '160'); } catch { return 160; }
   });
 
+  // On narrow viewports, cap tile size so the grid produces equal-width columns
+  const effectiveTileSize = typeof window !== 'undefined' && window.innerWidth < 500 ? Math.min(tileSize, 140) : tileSize;
+
   // Coming Soon toggle — shows future-dated releases
   const [showComingSoon, setShowComingSoon] = useState(false);
 
@@ -657,7 +660,7 @@ export default function NashvilleReleases({ showcases, onImport }: Props) {
       <div style={{ maxHeight: 600, overflowY: 'auto' }}>
         {viewMode === 'grid' ? (
           /* ── Grid tile view ── */
-          <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fill, minmax(${tileSize}px, 1fr))`, gap: 10 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fill, minmax(${effectiveTileSize}px, 1fr))`, gap: 10 }}>
             {artistGroups.map(artist => {
               const allArtistTracks = artist.releases.flatMap(r => r.tracks);
               const hasSelection = allArtistTracks.some(t => selected.has(t.spotify_track_id));
