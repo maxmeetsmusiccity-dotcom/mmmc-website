@@ -35,6 +35,7 @@ export default function TemplateSelector({ selected, onSelect, selectedTracks, w
   const { user } = useAuth();
   const [showImporter, setShowImporter] = useState(false);
   const [previews, setPreviews] = useState<Map<string, string>>(new Map());
+  const [hoveredTemplate, setHoveredTemplate] = useState<string | null>(null);
   const [customTemplates, setCustomTemplates] = useState<CarouselTemplate[]>([]);
   const [showBuilder, setShowBuilder] = useState(false);
   const [editTemplate, setEditTemplate] = useState<CarouselTemplate | null>(null);
@@ -165,9 +166,12 @@ export default function TemplateSelector({ selected, onSelect, selectedTracks, w
         {allTemplates.map(t => {
           const preview = previews.get(t.id);
           const isCustom = customTemplates.some(ct => ct.id === t.id);
+          const isHovered = hoveredTemplate === t.id;
           return (
             <div
               key={t.id}
+              onMouseEnter={() => setHoveredTemplate(t.id)}
+              onMouseLeave={() => setHoveredTemplate(null)}
               style={{
                 flexShrink: 0, scrollSnapAlign: 'start',
                 width: 100, borderRadius: 10, cursor: 'pointer',
@@ -176,6 +180,20 @@ export default function TemplateSelector({ selected, onSelect, selectedTracks, w
                 transition: 'all 0.2s', position: 'relative', padding: 6,
               }}
             >
+              {/* Hover enlarged preview */}
+              {isHovered && preview && (
+                <div style={{
+                  position: 'absolute', bottom: '110%', left: '50%', transform: 'translateX(-50%)',
+                  zIndex: 30, width: 300, borderRadius: 10, overflow: 'hidden',
+                  border: `2px solid ${t.accent}`, boxShadow: '0 12px 40px rgba(0,0,0,0.7)',
+                  pointerEvents: 'none',
+                }}>
+                  <img src={preview} alt={t.name} style={{ width: '100%', display: 'block' }} />
+                  <div style={{ padding: '6px 10px', background: 'var(--midnight-raised)', fontSize: 'var(--fs-xs)', fontWeight: 600, color: t.accent, textAlign: 'center' }}>
+                    {t.name}
+                  </div>
+                </div>
+              )}
               {/* Edit pencil icon */}
               <button
                 onClick={(e) => { e.stopPropagation(); setEditTemplate(t); setShowBuilder(true); }}

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { getVisibleTitleTemplates, type TitleSlideTemplate } from '../lib/title-templates';
+import { generateTitleSlide } from '../lib/canvas-grid';
 import { useAuth } from '../lib/auth-context';
 import UnifiedTemplateBuilder from './UnifiedTemplateBuilder';
 
@@ -112,16 +113,35 @@ export default function TitleTemplatePicker({ selected, onSelect, onHover, cover
   const [showBuilder, setShowBuilder] = useState(false);
   const [editTemplate, setEditTemplate] = useState<TitleSlideTemplate | undefined>(undefined);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
 
-  // Generate preview images for all templates
+  // Generate preview images — placeholder first, then real cover art if available
   const [previews, setPreviews] = useState<Map<string, string>>(new Map());
   useEffect(() => {
+    // Fast placeholders
     const map = new Map<string, string>();
     for (const t of visibleTemplates) {
       map.set(t.id, generateTitlePreview(t, 200));
     }
     setPreviews(map);
-  }, [visibleTemplates]);
+
+    // Async: render with real cover art if coverFeature is available
+    if (coverFeature && weekDate) {
+      let cancelled = false;
+      (async () => {
+        for (const t of visibleTemplates) {
+          if (cancelled) break;
+          try {
+            const blob = await generateTitleSlide(coverFeature, weekDate, t);
+            if (cancelled) break;
+            const url = URL.createObjectURL(blob);
+            setPreviews(prev => { const next = new Map(prev); next.set(t.id, url); return next; });
+          } catch { /* keep placeholder */ }
+        }
+      })();
+      return () => { cancelled = true; };
+    }
+  }, [visibleTemplates, coverFeature, weekDate]);
 
   return (
     <div data-testid="title-template-picker" style={{ marginBottom: 16 }}>
@@ -188,10 +208,13 @@ export default function TitleTemplatePicker({ selected, onSelect, onHover, cover
         {visibleTemplates.map(t => {
           const isActive = selected === t.id;
           const preview = previews.get(t.id);
+          const isHovered = hoveredId === t.id;
           return (
             <div
               key={t.id}
               data-testid={`title-template-${t.id}`}
+              onMouseEnter={() => setHoveredId(t.id)}
+              onMouseLeave={() => setHoveredId(null)}
               style={{
                 flexShrink: 0, width: 100, borderRadius: 10, cursor: 'pointer',
                 background: isActive ? 'var(--midnight-hover)' : 'var(--midnight)',
@@ -199,6 +222,20 @@ export default function TitleTemplatePicker({ selected, onSelect, onHover, cover
                 transition: 'all 0.2s', position: 'relative', padding: 6,
               }}
             >
+              {/* Hover enlarged preview */}
+              {isHovered && preview && (
+                <div style={{
+                  position: 'absolute', bottom: '110%', left: '50%', transform: 'translateX(-50%)',
+                  zIndex: 30, width: 300, borderRadius: 10, overflow: 'hidden',
+                  border: `2px solid ${t.accent}`, boxShadow: '0 12px 40px rgba(0,0,0,0.7)',
+                  pointerEvents: 'none',
+                }}>
+                  <img src={preview} alt={t.name} style={{ width: '100%', display: 'block' }} />
+                  <div style={{ padding: '6px 10px', background: 'var(--midnight-raised)', fontSize: 'var(--fs-xs)', fontWeight: 600, color: t.accent, textAlign: 'center' }}>
+                    {t.name}
+                  </div>
+                </div>
+              )}
               {/* Edit pencil */}
               <button
                 onClick={(e) => { e.stopPropagation(); setEditTemplate(t); setShowBuilder(true); }}
