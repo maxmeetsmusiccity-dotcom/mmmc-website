@@ -1373,10 +1373,10 @@ export default function NewMusicFriday() {
                 </button>
               )}
 
-              {/* Slide count — prominent */}
+              {/* Slide count — grid slides + title slide */}
               {selections.length > 0 && (
                 <span className="mono" style={{ color: 'var(--gold)', fontSize: 'var(--fs-md)', fontWeight: 700 }}>
-                  {Math.ceil(selections.length / tracksPerSlide)} {Math.ceil(selections.length / tracksPerSlide) === 1 ? 'slide' : 'slides'}
+                  {Math.ceil(selections.length / tracksPerSlide) + 1} slides
                 </span>
               )}
 
@@ -1584,7 +1584,7 @@ export default function NewMusicFriday() {
                       onClick={() => setCarouselAspect('3:4')} style={{ fontSize: 'var(--fs-2xs)', padding: '3px 8px' }}>3:4</button>
                     {selections.length > 0 && (
                       <span className="mono" style={{ color: 'var(--gold)', fontSize: 'var(--fs-md)', fontWeight: 700 }}>
-                        {Math.ceil(selections.length / tracksPerSlide)} {Math.ceil(selections.length / tracksPerSlide) === 1 ? 'slide' : 'slides'}
+                        {Math.ceil(selections.length / tracksPerSlide) + 1} slides
                       </span>
                     )}
                   </div>
@@ -2141,7 +2141,7 @@ export default function NewMusicFriday() {
           fontSize: 'var(--fs-3xs)', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)',
         }}>
           <span>{releases.length} {releases.length === 1 ? 'release' : 'releases'} &bull; {allTracks.length} {allTracks.length === 1 ? 'track' : 'tracks'}</span>
-          <span>{selections.length} selected &bull; {Math.ceil(selections.length / tracksPerSlide)} {Math.ceil(selections.length / tracksPerSlide) === 1 ? 'slide' : 'slides'}</span>
+          <span>{selections.length} selected &bull; {Math.ceil(selections.length / tracksPerSlide) + 1} slides</span>
           <span>NMF Curator Studio v1.0</span>
         </div>
       )}

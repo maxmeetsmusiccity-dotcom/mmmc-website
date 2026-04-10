@@ -112,6 +112,7 @@ const CarouselPreviewPanel = forwardRef<CarouselPanelHandle, Props>(function Car
   const setAllPreviews = onAllPreviewsChange;
   const setGenerating = onGeneratingChange;
   const [error, setError] = useState('');
+  const previewStripRef = useRef<HTMLDivElement>(null);
   const [logoUrl, setLogoUrl] = useState(localStorage.getItem('nmf_logo_url') || '/mmmc-logo.png');
   const logoFileRef = useRef<HTMLInputElement>(null);
   const setCarouselAspect = onAspectChange;
@@ -241,6 +242,11 @@ const CarouselPreviewPanel = forwardRef<CarouselPanelHandle, Props>(function Car
       allPreviews.forEach(URL.revokeObjectURL);
       setAllPreviews(urls);
       onCarouselGenerated?.();
+
+      // Scroll to the preview strip so user sees their slides
+      requestAnimationFrame(() => {
+        previewStripRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
 
       // Upload slides to Supabase Storage for permanent archive
       if (user?.id) {
@@ -690,7 +696,7 @@ const CarouselPreviewPanel = forwardRef<CarouselPanelHandle, Props>(function Car
 
       {/* Carousel preview — horizontal scrollable strip showing ALL slides */}
       {allPreviews.length > 0 && (
-        <div>
+        <div ref={previewStripRef}>
           <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)', marginBottom: 8 }}>
             {allPreviews.length} {allPreviews.length === 1 ? 'slide' : 'slides'} — drag to reorder, scroll to browse
           </p>
