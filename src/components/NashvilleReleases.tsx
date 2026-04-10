@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import type { TrackItem } from '../lib/spotify';
 import { NASHVILLE_SEED_ARTISTS, releasesToTrackItems, type NashvilleRelease } from '../lib/sources/nashville';
 import { supabase } from '../lib/supabase';
@@ -55,9 +55,33 @@ export default function NashvilleReleases({ showcases, onImport }: Props) {
   const [showcaseArtists, setShowcaseArtists] = useState<Set<string>>(new Set());
   const [loadingShowcase, setLoadingShowcase] = useState(false);
 
-  // When a showcase is selected, fetch its artist list
+  // Fetch ALL showcase artist lists for per-showcase stats + filtering
+  const [allShowcaseArtists, setAllShowcaseArtists] = useState<Map<string, Set<string>>>(new Map());
+  useEffect(() => {
+    if (showcases.length === 0) return;
+    let cancelled = false;
+    const fetched = new Map<string, Set<string>>();
+    Promise.all(
+      showcases.filter(s => s.type === 'showcase').map(s =>
+        fetch(`/api/browse-artists?category=${s.id}`)
+          .then(r => r.json())
+          .then(d => {
+            const names = new Set<string>((d.artists || []).map((a: { name: string }) => a.name.toLowerCase()));
+            fetched.set(s.id, names);
+          })
+          .catch(() => {})
+      )
+    ).then(() => {
+      if (!cancelled) setAllShowcaseArtists(fetched);
+    });
+    return () => { cancelled = true; };
+  }, [showcases]);
+
+  // When a showcase is selected, use pre-fetched artist list (or fetch on demand)
   useEffect(() => {
     if (!activeShowcase) { setShowcaseArtists(new Set()); return; }
+    const cached = allShowcaseArtists.get(activeShowcase);
+    if (cached) { setShowcaseArtists(cached); return; }
     setLoadingShowcase(true);
     fetch(`/api/browse-artists?category=${activeShowcase}`)
       .then(r => r.json())
@@ -67,7 +91,7 @@ export default function NashvilleReleases({ showcases, onImport }: Props) {
       })
       .catch(() => setShowcaseArtists(new Set()))
       .finally(() => setLoadingShowcase(false));
-  }, [activeShowcase]);
+  }, [activeShowcase, allShowcaseArtists]);
 
   // Debounced search across the full Nashville universe
   useEffect(() => {
@@ -243,6 +267,31 @@ export default function NashvilleReleases({ showcases, onImport }: Props) {
   };
   const filteredStats = countStats(filtered);
 
+  // Per-showcase stats: count releases/tracks for each showcase against current releases
+  const baseReleases = showComingSoon ? comingSoonReleases : currentReleases;
+  const showcaseStats = useMemo(() => {
+    if (allShowcaseArtists.size === 0 || baseReleases.length === 0) return new Map<string, { releases: number; tracks: number }>();
+    const stats = new Map<string, { releases: number; tracks: number }>();
+    for (const [scId, artistSet] of allShowcaseArtists) {
+      const matched = baseReleases.filter(r => {
+        const primary = (r.artist_name || '').split(/,|feat\.|ft\./i)[0].trim().toLowerCase();
+        return artistSet.has(primary);
+      });
+      const albumIds = new Set(matched.map(r => r.spotify_album_id || `${r.artist_name}_${r.album_name}`));
+      stats.set(scId, { releases: albumIds.size, tracks: matched.length });
+    }
+    return stats;
+  }, [allShowcaseArtists, baseReleases]);
+
+  // Sort showcases by this week's representation (most releases first)
+  const sortedShowcases = useMemo(() => {
+    return [...showcases].sort((a, b) => {
+      const aStats = showcaseStats.get(a.id);
+      const bStats = showcaseStats.get(b.id);
+      return (bStats?.releases || 0) - (aStats?.releases || 0);
+    });
+  }, [showcases, showcaseStats]);
+
   // Group by album
   const albumGroups = (() => {
     const map = new Map<string, NashvilleRelease[]>();
@@ -336,9 +385,13 @@ export default function NashvilleReleases({ showcases, onImport }: Props) {
       }}
     >
       <option value="">All Nashville ({filteredStats.releases} releases, {filteredStats.tracks} tracks)</option>
-      {showcases.map(s => (
-        <option key={s.id} value={s.id}>{s.emoji} {s.name}</option>
-      ))}
+      {sortedShowcases.map(s => {
+        const stats = showcaseStats.get(s.id);
+        const label = stats && stats.releases > 0
+          ? `${s.emoji} ${s.name} (${stats.releases} releases, ${stats.tracks} tracks)`
+          : `${s.emoji} ${s.name}`;
+        return <option key={s.id} value={s.id}>{label}</option>;
+      })}
     </select>
   ) : null;
 
