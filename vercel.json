@@ -36,7 +36,7 @@
   "crons": [
     {
       "path": "/api/cron-scan-weekly",
-      "schedule": "5 5 * * 5"
+      "schedule": "5 4 * * 5"
     }
   ]
 }

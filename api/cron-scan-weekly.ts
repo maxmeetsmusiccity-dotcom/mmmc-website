@@ -63,7 +63,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(500).json({ error: 'Server misconfigured' });
   }
   const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-  const weekDate = getLastFriday();
+  // Allow overriding the week for dry-run testing (auth-gated via CRON_SECRET)
+  const weekOverride = req.query.week as string | undefined;
+  const weekDate = weekOverride && /^\d{4}-\d{2}-\d{2}$/.test(weekOverride) ? weekOverride : getLastFriday();
 
   // Update scan metadata
   await supabase.from('scan_metadata').upsert({
