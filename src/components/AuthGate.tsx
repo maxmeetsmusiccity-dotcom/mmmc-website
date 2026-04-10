@@ -93,8 +93,26 @@ export default function AuthGate({ children }: Props) {
           The MMMC NMF Curator exists to save your valuable time, so you can focus on what you do best: telling the stories about the songs that define Music City.
         </p>
 
+        {/* What this does — bright feature cards */}
+        <div style={{
+          display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)',
+          gap: 12, marginBottom: 24, textAlign: 'left',
+        }}>
+          {[
+            { title: 'Discover', desc: 'Scan new releases from 8,000+ Nashville artists and songwriters, updated every Friday.' },
+            { title: 'Curate', desc: 'Select and order your featured artists. Add your logo and choose your templates.' },
+            { title: 'Export', desc: 'Generate your carousel and download a ZIP with every slide ready to post.' },
+            { title: 'Connect', desc: 'Instagram handles found automatically. Build captions and come back every Friday.' },
+          ].map(f => (
+            <div key={f.title} className="card" style={{ padding: 12, border: '1px solid var(--gold)', background: 'rgba(212,168,67,0.06)' }}>
+              <div style={{ fontWeight: 700, fontSize: 'var(--fs-md)', marginBottom: 2, color: 'var(--gold)' }}>{f.title}</div>
+              <div style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-secondary)', lineHeight: 1.4 }}>{f.desc}</div>
+            </div>
+          ))}
+        </div>
+
         {/* Account benefits callout */}
-        <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-sm)', fontStyle: 'italic', lineHeight: 1.5, marginBottom: 24 }}>
+        <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-sm)', fontStyle: 'italic', lineHeight: 1.5, marginBottom: 20 }}>
           Sign in to make it yours. Your carousels, your templates, your preferences — all saved and waiting for you next Friday.
         </p>
 
@@ -155,24 +173,6 @@ export default function AuthGate({ children }: Props) {
             </button>
           </div>
         </details>
-
-        {/* What this does */}
-        <div style={{
-          display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)',
-          gap: 12, marginTop: 40, textAlign: 'left',
-        }}>
-          {[
-            { title: 'Discover', desc: 'Scan new releases from 8,000+ Nashville artists and songwriters, updated every Friday.' },
-            { title: 'Curate', desc: 'Select and order your featured artists. Add your logo and choose your templates.' },
-            { title: 'Export', desc: 'Generate your carousel and download a ZIP with every slide ready to post.' },
-            { title: 'Connect', desc: 'Instagram handles found automatically. Build captions and come back every Friday.' },
-          ].map(f => (
-            <div key={f.title} className="card" style={{ padding: 12, opacity: 0.7 }}>
-              <div style={{ fontWeight: 600, fontSize: 'var(--fs-md)', marginBottom: 2, color: 'var(--gold)' }}>{f.title}</div>
-              <div style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)', lineHeight: 1.4 }}>{f.desc}</div>
-            </div>
-          ))}
-        </div>
 
         <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-2xs)', marginTop: 32, lineHeight: 1.5 }}>
           Free forever for curators. Made in Nashville by <a href="https://instagram.com/maxmeetsmusiccity" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--gold)' }}>Max Meets Music City</a>.
