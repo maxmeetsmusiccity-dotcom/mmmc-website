@@ -625,87 +625,105 @@ export default function NashvilleReleases({ onImport }: Props) {
         {viewMode === 'grid' ? (
           /* ── Grid tile view ── */
           <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fill, minmax(${tileSize}px, 1fr))`, gap: 10 }}>
-            {albumGroups.map(g => {
-              const isSingle = g.tracks.length === 1;
-              const titleTrack = g.tracks[0];
-              const isSelected = g.tracks.some(t => selected.has(t.spotify_track_id));
-              const isExpanded = expanded.has(g.key);
+            {artistGroups.map(artist => {
+              const allArtistTracks = artist.releases.flatMap(r => r.tracks);
+              const hasSelection = allArtistTracks.some(t => selected.has(t.spotify_track_id));
+              const isSingleTrack = allArtistTracks.length === 1;
+              const isExpanded = expanded.has(`artist:${artist.name}`);
               return (
-                <div key={g.key} style={{ position: 'relative' }}>
+                <div key={artist.name} style={{ position: 'relative' }}>
                   <div
                     onClick={() => {
-                      if (isSingle) toggleSelect(titleTrack.spotify_track_id);
-                      else setExpanded(prev => { const n = new Set(prev); if (n.has(g.key)) n.delete(g.key); else n.add(g.key); return n; });
+                      if (isSingleTrack) toggleSelect(allArtistTracks[0].spotify_track_id);
+                      else setExpanded(prev => { const key = `artist:${artist.name}`; const n = new Set(prev); if (n.has(key)) n.delete(key); else n.add(key); return n; });
                     }}
                     style={{
                       borderRadius: 8, overflow: 'hidden', cursor: 'pointer',
-                      border: isSelected ? '2px solid var(--gold)' : '2px solid transparent',
-                      background: isSelected ? 'rgba(212,168,67,0.06)' : 'var(--midnight)',
+                      border: hasSelection ? '2px solid var(--gold)' : '2px solid transparent',
+                      background: hasSelection ? 'rgba(212,168,67,0.06)' : 'var(--midnight)',
                     }}>
-                    <img src={g.cover || ''} alt=""
-                      style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', display: 'block' }}
-                      onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                    <div style={{ position: 'relative' }}>
+                      <img src={artist.cover || ''} alt=""
+                        style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', display: 'block' }}
+                        onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                      {artist.releases.length > 1 && (
+                        <span style={{
+                          position: 'absolute', top: 6, right: 6, background: 'var(--gold)', color: 'var(--midnight)',
+                          fontSize: 'var(--fs-3xs)', fontWeight: 700, padding: '1px 6px', borderRadius: 10,
+                        }}>
+                          {artist.releases.length} releases
+                        </span>
+                      )}
+                    </div>
                     <div style={{ padding: '6px 8px' }}>
                       <div style={{ fontSize: 'var(--fs-sm)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                        color: isSelected ? 'var(--gold)' : 'var(--text-primary)' }}>
-                        {isSingle ? titleTrack.track_name : g.album}
+                        color: hasSelection ? 'var(--gold)' : 'var(--text-primary)' }}>
+                        {artist.name}
                       </div>
                       <div style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {g.artist}
-                        {!isSingle && ` · ${g.tracks.length} tracks`}
+                        {artist.trackCount} {artist.trackCount === 1 ? 'track' : 'tracks'}
+                        {artist.releases.length > 1 && ` · ${artist.releases.length} releases`}
                       </div>
                     </div>
                   </div>
-                  {/* Track picker — fixed overlay, full width, centered */}
-                  {!isSingle && isExpanded && (<>
-                    <div onClick={(e) => { e.stopPropagation(); setExpanded(prev => { const n = new Set(prev); n.delete(g.key); return n; }); }}
+                  {/* Artist track picker — shows all releases grouped by album */}
+                  {!isSingleTrack && isExpanded && (<>
+                    <div onClick={(e) => { e.stopPropagation(); setExpanded(prev => { const n = new Set(prev); n.delete(`artist:${artist.name}`); return n; }); }}
                       style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(0,0,0,0.5)' }} />
                     <div style={{
                       position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%, -50%)',
-                      zIndex: 51, width: 'min(400px, 90vw)', maxHeight: '70vh',
+                      zIndex: 51, width: 'min(440px, 90vw)', maxHeight: '75vh',
                       background: 'var(--midnight-raised)', borderRadius: 12,
                       border: '2px solid var(--gold-dark)',
                       display: 'flex', flexDirection: 'column',
                       boxShadow: '0 16px 48px rgba(0,0,0,0.6)',
                     }}>
-                      {/* Header with album art + title */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', borderBottom: '1px solid var(--midnight-border)' }}>
-                        {g.cover && <img src={g.cover} alt="" style={{ width: 40, height: 40, borderRadius: 4, flexShrink: 0 }} />}
+                        {artist.cover && <img src={artist.cover} alt="" style={{ width: 40, height: 40, borderRadius: '50%', flexShrink: 0 }} />}
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 'var(--fs-sm)', fontWeight: 600, color: 'var(--gold)' }}>{g.album}</div>
-                          <div style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)' }}>{g.artist} · {g.tracks.length} tracks</div>
+                          <div style={{ fontSize: 'var(--fs-md)', fontWeight: 700, color: 'var(--gold)' }}>{artist.name}</div>
+                          <div style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)' }}>{artist.releases.length} {artist.releases.length === 1 ? 'release' : 'releases'} · {artist.trackCount} tracks</div>
                         </div>
-                        <button onClick={(e) => { e.stopPropagation(); setExpanded(prev => { const n = new Set(prev); n.delete(g.key); return n; }); }}
+                        <button onClick={(e) => { e.stopPropagation(); setExpanded(prev => { const n = new Set(prev); n.delete(`artist:${artist.name}`); return n; }); }}
                           style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 20, lineHeight: 1, padding: '0 4px', flexShrink: 0 }}>
                           &times;
                         </button>
                       </div>
-                      {/* Track list */}
                       <div style={{ flex: 1, overflowY: 'auto', padding: '8px 16px' }}>
-                        {[...g.tracks].sort((a, b) => (a.track_number || 0) - (b.track_number || 0)).map(t => (
-                          <div key={t.spotify_track_id}
-                            onClick={(e) => { e.stopPropagation(); toggleSelect(t.spotify_track_id); }}
-                            style={{
-                              display: 'flex', alignItems: 'center', gap: 10, padding: '8px 4px',
-                              cursor: 'pointer', fontSize: 'var(--fs-sm)',
-                              borderBottom: '1px solid var(--midnight-border)',
-                            }}>
-                            <div style={{
-                              width: 18, height: 18, borderRadius: 4, flexShrink: 0,
-                              border: selected.has(t.spotify_track_id) ? '2px solid var(--gold)' : '2px solid var(--midnight-border)',
-                              background: selected.has(t.spotify_track_id) ? 'var(--gold)' : 'transparent',
-                              display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              fontSize: 11, color: 'var(--midnight)', fontWeight: 700,
-                            }}>
-                              {selected.has(t.spotify_track_id) && '\u2713'}
+                        {artist.releases.map(rel => (
+                          <div key={rel.key}>
+                            {/* Release header */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0 4px', borderBottom: '1px solid var(--midnight-border)' }}>
+                              {rel.cover && <img src={rel.cover} alt="" style={{ width: 32, height: 32, borderRadius: 4, flexShrink: 0 }} />}
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: 'var(--fs-sm)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{rel.album}</div>
+                                <div style={{ fontSize: 'var(--fs-3xs)', color: 'var(--text-muted)' }}>{rel.type} · {rel.date} · {rel.tracks.length} {rel.tracks.length === 1 ? 'track' : 'tracks'}</div>
+                              </div>
                             </div>
-                            <span style={{ color: 'var(--text-muted)', width: 20, textAlign: 'right', flexShrink: 0, fontSize: 'var(--fs-2xs)' }}>{t.track_number}</span>
-                            <span style={{
-                              flex: 1,
-                              color: selected.has(t.spotify_track_id) ? 'var(--gold)' : 'var(--text-primary)',
-                            }}>
-                              {t.track_name}
-                            </span>
+                            {/* Tracks in this release */}
+                            {rel.tracks.sort((a, b) => (a.track_number || 0) - (b.track_number || 0)).map(t => (
+                              <div key={t.spotify_track_id}
+                                onClick={(e) => { e.stopPropagation(); toggleSelect(t.spotify_track_id); }}
+                                style={{
+                                  display: 'flex', alignItems: 'center', gap: 10, padding: '6px 4px 6px 40px',
+                                  cursor: 'pointer', fontSize: 'var(--fs-sm)',
+                                  borderBottom: '1px solid rgba(255,255,255,0.03)',
+                                }}>
+                                <div style={{
+                                  width: 18, height: 18, borderRadius: 4, flexShrink: 0,
+                                  border: selected.has(t.spotify_track_id) ? '2px solid var(--gold)' : '2px solid var(--midnight-border)',
+                                  background: selected.has(t.spotify_track_id) ? 'var(--gold)' : 'transparent',
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  fontSize: 11, color: 'var(--midnight)', fontWeight: 700,
+                                }}>
+                                  {selected.has(t.spotify_track_id) && '\u2713'}
+                                </div>
+                                <span style={{ color: 'var(--text-muted)', width: 20, textAlign: 'right', flexShrink: 0, fontSize: 'var(--fs-2xs)' }}>{t.track_number}</span>
+                                <span style={{ flex: 1, color: selected.has(t.spotify_track_id) ? 'var(--gold)' : 'var(--text-primary)' }}>
+                                  {t.track_name}
+                                </span>
+                              </div>
+                            ))}
                           </div>
                         ))}
                       </div>
