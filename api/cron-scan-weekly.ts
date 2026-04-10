@@ -136,7 +136,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${process.env.SCAN_SECRET || ''}`,
         },
-        body: JSON.stringify({ artistNames: chunk }),
+        body: JSON.stringify({ artistNames: chunk, daysBack: 8 }),
       });
       if (resp.ok) {
         const data = await resp.json();
