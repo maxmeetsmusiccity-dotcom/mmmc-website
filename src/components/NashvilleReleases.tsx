@@ -435,34 +435,6 @@ export default function NashvilleReleases({ onImport }: Props) {
         </div>
       </div>
 
-      {/* Showcase stats header — desktop only (mobile uses the dropdown below) */}
-      {showcases.length > 0 && releases.length > 0 && (
-        <div className="desktop-only" style={{
-          display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10,
-          padding: '8px 0', borderBottom: '1px solid var(--midnight-border)',
-        }}>
-          <button
-            className={`filter-pill ${!activeShowcase ? 'active' : ''}`}
-            onClick={() => setActiveShowcase(null)}
-            style={{ fontSize: 'var(--fs-2xs)', padding: '3px 8px' }}
-          >
-            All ({allStats.releases})
-          </button>
-          {showcases.map(s => {
-            return (
-              <button
-                key={s.id}
-                className={`filter-pill ${activeShowcase === s.id ? 'active' : ''}`}
-                onClick={() => setActiveShowcase(activeShowcase === s.id ? null : s.id)}
-                style={{ fontSize: 'var(--fs-2xs)', padding: '3px 8px' }}
-              >
-                {s.emoji} {s.name}
-              </button>
-            );
-          })}
-        </div>
-      )}
-
       {/* Selection persistence bar */}
       {selectedItems.length > 0 && (
         <div style={{
@@ -572,7 +544,7 @@ export default function NashvilleReleases({ onImport }: Props) {
         ))}
       </div>
 
-      {/* Showcase filter */}
+      {/* Showcase filter dropdown */}
       {showcasePills}
       {loadingShowcase && (
         <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)', marginBottom: 8 }}>Loading...</p>
