@@ -75,10 +75,11 @@ export default function AuthGate({ children }: Props) {
             style={{ width: 'clamp(72px, 16vw, 120px)', height: 'clamp(72px, 16vw, 120px)', borderRadius: 14, objectFit: 'cover', flexShrink: 0 }}
           />
           <h1 style={{
-            fontFamily: 'var(--font-display)', fontSize: 'clamp(2rem, 7vw, 3.5rem)',
+            fontFamily: 'var(--font-display)',
             fontWeight: 700, lineHeight: 1.15, textAlign: 'left', flex: 1,
           }}>
-            New Music Friday<br /><span style={{ color: 'var(--gold)' }}>Curator Studio</span>
+            <span style={{ fontSize: 'clamp(1.55rem, 5.4vw, 2.7rem)', display: 'block' }}>New Music Friday</span>
+            <span style={{ fontSize: 'clamp(2rem, 7vw, 3.5rem)', color: 'var(--gold)', display: 'block' }}>Curator Studio</span>
           </h1>
         </div>
 
