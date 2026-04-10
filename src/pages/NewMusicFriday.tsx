@@ -256,8 +256,21 @@ export default function NewMusicFriday() {
     };
     const debounce = setTimeout(save, 2000);
     const interval = setInterval(save, 30_000);
-    return () => { clearTimeout(debounce); clearInterval(interval); };
-  }, [selections, allTracks, releases, weekDate]);
+    // Also auto-save to Supabase every 30s (for week history restoration)
+    const supabaseSave = setInterval(() => {
+      if (userId && selections.length > 0) {
+        saveWeek({
+          week_date: weekDate,
+          all_releases: allTracks,
+          selections,
+          cover_feature: selections.find(s => s.isCoverFeature) || null,
+          playlist_master_pushed: false,
+          carousel_generated: false,
+        }, userId).catch(() => {});
+      }
+    }, 30_000);
+    return () => { clearTimeout(debounce); clearInterval(interval); clearInterval(supabaseSave); };
+  }, [selections, allTracks, releases, weekDate, userId]);
 
   // Handle OAuth callback
   useEffect(() => {

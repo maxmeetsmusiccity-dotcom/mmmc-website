@@ -241,6 +241,16 @@ const CarouselPreviewPanel = forwardRef<CarouselPanelHandle, Props>(function Car
       allPreviews.forEach(URL.revokeObjectURL);
       setAllPreviews(urls);
       onCarouselGenerated?.();
+
+      // Upload slides to Supabase Storage for permanent archive
+      if (user?.id) {
+        import('../lib/supabase').then(({ uploadFullCarousel }) => {
+          // Convert blob URLs back to blobs for upload
+          Promise.all(urls.map(u => fetch(u).then(r => r.blob())))
+            .then(blobs => uploadFullCarousel(weekDate, blobs, gridTemplateId))
+            .catch(() => {}); // Non-critical — archive upload failure shouldn't block user
+        });
+      }
     } catch (e) {
       setError(`Generation failed: ${(e as Error).message}`);
     } finally {
