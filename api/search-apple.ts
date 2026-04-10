@@ -2,7 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { SignJWT, importPKCS8 } from 'jose';
 
 const TEAM_ID = process.env.APPLE_MUSIC_TEAM_ID || 'G46PBQ4ZQL';
-const KEY_ID = process.env.APPLE_MUSIC_SEARCH_KEY_ID || 'XP4Q9YVKQU';
+const KEY_ID = process.env.APPLE_MUSIC_KEY_ID || process.env.APPLE_MUSIC_SEARCH_KEY_ID || 'P4CJV5BNMH';
 const APPLE_API = 'https://api.music.apple.com/v1/catalog/us';
 
 let cachedToken: { token: string; expiresAt: number } | null = null;
