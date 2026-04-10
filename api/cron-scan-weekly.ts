@@ -172,6 +172,54 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     scanned += chunk.length;
   }
 
+  // Apple Music scan — same artist batches, merge results
+  let appleTracks = 0;
+  console.log(`[CRON] Starting Apple Music scan for ${batch.length} artists...`);
+  for (let i = 0; i < batch.length; i += batchSize) {
+    const chunk = batch.slice(i, i + batchSize);
+    try {
+      const resp = await fetch(`${protocol}://${scanHost}/api/search-apple`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.SCAN_SECRET || ''}`,
+        },
+        body: JSON.stringify({ artistNames: chunk, daysBack: 7 }),
+      });
+      if (resp.ok) {
+        const data = await resp.json();
+        const tracks = data.tracks || [];
+        appleTracks += tracks.length;
+        if (tracks.length > 0) {
+          const rows = tracks.map((t: any) => ({
+            scan_week: weekDate,
+            spotify_artist_id: t.artist_id || t.apple_music_id || null,
+            artist_name: t.artist_names || t.artist_name,
+            track_id: t.track_id || t.isrc || `apple_${t.track_name}_${t.artist_names}`.replace(/\s/g, '_'),
+            track_name: t.track_name,
+            album_name: t.album_name,
+            album_id: t.album_id || null,
+            album_type: t.album_type || 'single',
+            release_date: t.release_date,
+            cover_art_640: t.cover_art_640 || t.artwork_url || null,
+            cover_art_300: t.cover_art_300 || null,
+            track_number: t.track_number || 1,
+            duration_ms: t.duration_ms || 0,
+            explicit: t.explicit || false,
+            total_tracks: t.total_tracks || 1,
+            spotify_url: null,
+          }));
+          // Upsert — won't duplicate if track_id matches a Spotify entry
+          await supabase.from('weekly_nashville_releases').upsert(rows, { onConflict: 'scan_week,track_id' });
+        }
+      }
+    } catch (e) {
+      console.error(`[CRON] Apple Music batch ${startIdx + i} failed:`, e);
+    }
+  }
+  totalTracks += appleTracks;
+  console.log(`[CRON] Apple Music scan: ${appleTracks} tracks found`);
+
   // Update metadata
   const isComplete = endIdx >= artistNames.length;
   await supabase.from('scan_metadata').upsert({
