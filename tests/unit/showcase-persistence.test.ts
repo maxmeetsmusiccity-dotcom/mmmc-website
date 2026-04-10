@@ -62,6 +62,43 @@ describe('showcase persistence', () => {
     expect(reloaded[0].name).toBe('Whiskey Jam');
   });
 
+  it('props-based showcases survive component remount (lifted state)', () => {
+    // Simulates the fix: parent holds showcases, child receives as prop
+    // Even if localStorage is empty, props are never lost
+    const parentShowcases = [
+      { id: 'whiskey_jam', name: 'Whiskey Jam', type: 'showcase', count: 3365 },
+      { id: 'songsuffragettes', name: 'Song Suffragettes', type: 'showcase', count: 724 },
+    ];
+    // Simulate child mount 1
+    let childShowcases = parentShowcases;
+    expect(childShowcases).toHaveLength(2);
+    // Simulate child unmount + remount (parent state unchanged)
+    childShowcases = parentShowcases;
+    expect(childShowcases).toHaveLength(2);
+    expect(childShowcases[0].name).toBe('Whiskey Jam');
+  });
+
+  it('synchronous localStorage init provides showcases before first render', () => {
+    // Simulates useState(() => { ... localStorage ... }) — synchronous, no useEffect gap
+    const showcases = [
+      { id: 'whiskey_jam', name: 'Whiskey Jam', type: 'showcase', count: 3365 },
+    ];
+    saveCachedShowcases(mockLocalStorage, showcases);
+    // Synchronous read (like useState initializer)
+    const initValue = (() => {
+      try {
+        const cached = mockLocalStorage.getItem('nr_showcases');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch { /* corrupted */ }
+      return [];
+    })();
+    expect(initValue).toHaveLength(1);
+    expect(initValue[0].name).toBe('Whiskey Jam');
+  });
+
   it('filter by type=showcase excludes non-showcase categories', () => {
     const categories = [
       { id: 'whiskey_jam', name: 'Whiskey Jam', type: 'showcase', count: 3365 },

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { getVisibleTitleTemplates, type TitleSlideTemplate } from '../lib/title-templates';
 import { generateTitleSlide } from '../lib/canvas-grid';
 import { useAuth } from '../lib/auth-context';
@@ -109,11 +109,15 @@ function generateTitlePreview(t: TitleSlideTemplate, size = 200): string {
 
 export default function TitleTemplatePicker({ selected, onSelect, onHover, coverFeature, weekDate }: Props) {
   const { user } = useAuth();
-  const visibleTemplates = getVisibleTitleTemplates(user?.email || undefined);
+  const userEmail = user?.email || undefined;
+  const visibleTemplates = useMemo(() => getVisibleTitleTemplates(userEmail), [userEmail]);
   const [showBuilder, setShowBuilder] = useState(false);
   const [editTemplate, setEditTemplate] = useState<TitleSlideTemplate | undefined>(undefined);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+
+  // Stable template IDs string to avoid re-triggering preview generation on reference changes
+  const templateIds = visibleTemplates.map(t => t.id).join(',');
 
   // Generate preview images — placeholder first, then real cover art if available
   const [previews, setPreviews] = useState<Map<string, string>>(new Map());
@@ -141,7 +145,8 @@ export default function TitleTemplatePicker({ selected, onSelect, onHover, cover
       })();
       return () => { cancelled = true; };
     }
-  }, [visibleTemplates, coverFeature, weekDate]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [templateIds, coverFeature, weekDate]);
 
   return (
     <div data-testid="title-template-picker" style={{ marginBottom: 16 }}>

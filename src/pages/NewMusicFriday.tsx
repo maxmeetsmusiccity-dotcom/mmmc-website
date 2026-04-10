@@ -54,6 +54,14 @@ type Phase = 'auth' | 'ready' | 'scanning' | 'results';
 type FilterKey = 'all' | 'single' | 'album';
 type SortKey = 'date' | 'artist' | 'title';
 
+interface ShowcaseCategory {
+  id: string;
+  name: string;
+  emoji: string;
+  type: string;
+  count: number;
+}
+
 const PLAYLIST_ID = '0ve1vYFkWoRaElCmfkw2IB';
 
 function demoTrack(id: number, name: string, artist: string, album: string, albumId: string, type: string, date: string, total: number, trackNum: number, _seed: string, c640: string, c300: string, c64: string, trackId?: string, trackUri?: string): TrackItem {
@@ -142,6 +150,18 @@ export default function NewMusicFriday() {
   const [loadedFromCache, setLoadedFromCache] = useState(false);
   const [resolvedHandles, setResolvedHandles] = useState<Map<string, any>>(new Map());
 
+  // Showcase categories — lifted here so they survive NashvilleReleases remounts
+  const [showcases, setShowcases] = useState<ShowcaseCategory[]>(() => {
+    try {
+      const cached = localStorage.getItem('nr_showcases');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch { /* no cache */ }
+    return [];
+  });
+
   // Carousel state extracted to hook
   const {
     carouselAspect, setCarouselAspect, allPreviews, setAllPreviews,
@@ -198,6 +218,20 @@ export default function NewMusicFriday() {
     return () => { window.removeEventListener('scroll', handleScroll); window.removeEventListener('resize', handleScroll); };
   }, []);
 
+  // Fetch showcase categories from API (runs once, persists to localStorage)
+  useEffect(() => {
+    fetch('/api/browse-artists')
+      .then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); })
+      .then(d => {
+        const cats = (d.categories || []).filter((c: ShowcaseCategory) => c.type === 'showcase');
+        setShowcases(cats);
+        if (cats.length > 0) {
+          try { localStorage.setItem('nr_showcases', JSON.stringify(cats)); } catch { /* quota */ }
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   // Step section refs for scroll-to
   const step1Ref = useRef<HTMLElement>(null);
   const step2Ref = useRef<HTMLElement>(null);
@@ -243,34 +277,48 @@ export default function NewMusicFriday() {
     draftRef.current = null;
   }, []);
 
-  // Save draft every 30s when user has selections, also debounced on selection change
+  // Refs for auto-save — intervals read from refs so they don't re-trigger on state changes
+  const autoSaveRefs = useRef({ selections, allTracks, releases, weekDate, userId });
+  autoSaveRefs.current = { selections, allTracks, releases, weekDate, userId };
+
+  // Debounced save on selection change (write to localStorage)
   useEffect(() => {
     if (selections.length === 0 || allTracks.length === 0) return;
-    const save = () => {
+    const debounce = setTimeout(() => {
       try {
         localStorage.setItem(DRAFT_KEY, JSON.stringify({
           weekDate, selections, allTracks, releases,
           savedAt: new Date().toISOString(),
         }));
       } catch { /* quota exceeded */ }
-    };
-    const debounce = setTimeout(save, 2000);
-    const interval = setInterval(save, 30_000);
-    // Also auto-save to Supabase every 30s (for week history restoration)
-    const supabaseSave = setInterval(() => {
-      if (userId && selections.length > 0) {
+    }, 2000);
+    return () => clearTimeout(debounce);
+  }, [selections, allTracks, releases, weekDate]);
+
+  // Stable 30s intervals for localStorage + Supabase auto-save (reads from refs, never re-creates)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const { selections: s, allTracks: t, releases: r, weekDate: w, userId: u } = autoSaveRefs.current;
+      if (s.length === 0 || t.length === 0) return;
+      try {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify({
+          weekDate: w, selections: s, allTracks: t, releases: r,
+          savedAt: new Date().toISOString(),
+        }));
+      } catch { /* quota exceeded */ }
+      if (u && s.length > 0) {
         saveWeek({
-          week_date: weekDate,
-          all_releases: allTracks,
-          selections,
-          cover_feature: selections.find(s => s.isCoverFeature) || null,
+          week_date: w,
+          all_releases: t,
+          selections: s,
+          cover_feature: s.find((sl: any) => sl.isCoverFeature) || null,
           playlist_master_pushed: false,
           carousel_generated: false,
-        }, userId).catch(() => {});
+        }, u).catch(() => {});
       }
     }, 30_000);
-    return () => { clearTimeout(debounce); clearInterval(interval); clearInterval(supabaseSave); };
-  }, [selections, allTracks, releases, weekDate, userId]);
+    return () => clearInterval(interval);
+  }, []); // stable — never re-creates
 
   // Handle OAuth callback
   useEffect(() => {
@@ -951,7 +999,7 @@ export default function NewMusicFriday() {
             {activeSource === 'nashville' && (
               <div style={{ marginTop: 16, textAlign: 'left' }}>
                 <Suspense fallback={<div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)' }}>Loading Nashville releases...</div>}>
-                <NashvilleReleases onImport={(tracks) => {
+                <NashvilleReleases showcases={showcases} onImport={(tracks) => {
                   setAllTracks(tracks);
                   setReleases(groupIntoReleases(tracks));
                   setPhase('results');

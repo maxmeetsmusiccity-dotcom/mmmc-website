@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { type CarouselTemplate, getVisibleTemplates, registerCustomTemplates } from '../lib/carousel-templates';
 import { generateTemplatePreview, generateGridSlide } from '../lib/canvas-grid';
 import { buildSlots } from '../lib/selection';
@@ -64,13 +64,18 @@ export default function TemplateSelector({ selected, onSelect, selectedTracks, w
     });
   }, [user?.id]);
 
-  const visibleTemplates = getVisibleTemplates(user?.email || undefined);
+  const userEmail = user?.email || undefined;
+  const visibleTemplates = useMemo(() => getVisibleTemplates(userEmail), [userEmail]);
   const allTemplates = useMemo(
     () => [...customTemplates, ...visibleTemplates],
     [visibleTemplates, customTemplates],
   );
 
+  // Stable template IDs string to avoid re-triggering preview generation on reference changes
+  const templateIds = allTemplates.map(t => t.id).join(',');
+
   // Generate previews — use real album art when tracks are available, otherwise placeholders
+  const generatingRef = useRef(false);
   useEffect(() => {
     // Always start with fast placeholder previews
     const map = new Map<string, string>();
@@ -82,6 +87,7 @@ export default function TemplateSelector({ selected, onSelect, selectedTracks, w
     // If tracks available, render real previews async
     if (selectedTracks && selectedTracks.length > 0 && weekDate) {
       let cancelled = false;
+      generatingRef.current = true;
       const slots = buildSlots(selectedTracks.slice(0, 8).map((t, i) => ({
         track: t, albumId: t.album_spotify_id,
         selectionNumber: i + 1, slideGroup: 1,
@@ -97,10 +103,12 @@ export default function TemplateSelector({ selected, onSelect, selectedTracks, w
             setPreviews(prev => { const next = new Map(prev); next.set(t.id, url); return next; });
           } catch { /* template render failed, keep placeholder */ }
         }
+        generatingRef.current = false;
       })();
-      return () => { cancelled = true; };
+      return () => { cancelled = true; generatingRef.current = false; };
     }
-  }, [allTemplates, selectedTracks, weekDate, logoUrl, gridLayoutId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [templateIds, selectedTracks, weekDate, logoUrl, gridLayoutId]);
 
   const handleSaveCustom = (template: CarouselTemplate) => {
     const updated = customTemplates.filter(t => t.id !== template.id);

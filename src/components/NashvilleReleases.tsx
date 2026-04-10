@@ -12,10 +12,11 @@ interface ShowcaseCategory {
 }
 
 interface Props {
+  showcases: ShowcaseCategory[];
   onImport: (tracks: TrackItem[]) => void;
 }
 
-export default function NashvilleReleases({ onImport }: Props) {
+export default function NashvilleReleases({ showcases, onImport }: Props) {
   const [loading, setLoading] = useState(false);
   const [releases, setReleases] = useState<NashvilleRelease[]>([]);
   const [week, setWeek] = useState('');
@@ -49,40 +50,10 @@ export default function NashvilleReleases({ onImport }: Props) {
   // Coming Soon toggle — shows future-dated releases
   const [showComingSoon, setShowComingSoon] = useState(false);
 
-  // Showcase filter state
-  const [showcases, setShowcases] = useState<ShowcaseCategory[]>([]);
+  // Showcase filter state (showcases list comes from parent prop — survives remounts)
   const [activeShowcase, setActiveShowcase] = useState<string | null>(null);
   const [showcaseArtists, setShowcaseArtists] = useState<Set<string>>(new Set());
   const [loadingShowcase, setLoadingShowcase] = useState(false);
-
-  // Load showcase categories — from localStorage cache first, then refresh from API
-  useEffect(() => {
-    // Load cached showcases immediately (prevents flash of missing dropdown)
-    try {
-      const cached = localStorage.getItem('nr_showcases');
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed) && parsed.length > 0) setShowcases(parsed);
-      }
-    } catch { /* no cache */ }
-
-    // Refresh from API
-    fetch('/api/browse-artists')
-      .then(r => {
-        if (!r.ok) throw new Error(`${r.status}`);
-        return r.json();
-      })
-      .then(d => {
-        const cats = (d.categories || []).filter((c: ShowcaseCategory) => c.type === 'showcase');
-        setShowcases(cats);
-        if (cats.length > 0) {
-          try { localStorage.setItem('nr_showcases', JSON.stringify(cats)); } catch { /* quota */ }
-        }
-      })
-      .catch(e => {
-        if (import.meta.env.DEV) console.error('[Nashville] Failed to load showcases:', e);
-      });
-  }, []);
 
   // When a showcase is selected, fetch its artist list
   useEffect(() => {
@@ -270,7 +241,6 @@ export default function NashvilleReleases({ onImport }: Props) {
     const albumIds = new Set(items.map(r => r.spotify_album_id || `${r.artist_name}_${r.album_name}`));
     return { releases: albumIds.size, tracks: items.length };
   };
-  const allStats = countStats(releases);
   const filteredStats = countStats(filtered);
 
   // Group by album
@@ -365,7 +335,7 @@ export default function NashvilleReleases({ onImport }: Props) {
         width: '100%', marginBottom: 12,
       }}
     >
-      <option value="">All Nashville ({allStats.releases} releases, {allStats.tracks} tracks)</option>
+      <option value="">All Nashville ({filteredStats.releases} releases, {filteredStats.tracks} tracks)</option>
       {showcases.map(s => (
         <option key={s.id} value={s.id}>{s.emoji} {s.name}</option>
       ))}
@@ -580,9 +550,7 @@ export default function NashvilleReleases({ onImport }: Props) {
       {/* Release/track count */}
       {releases.length > 0 && (
         <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)', marginBottom: 12 }}>
-          {activeShowcase
-            ? `${filteredStats.releases} releases (${filteredStats.tracks} tracks)`
-            : `${allStats.releases} releases (${allStats.tracks} tracks)`}
+          {`${filteredStats.releases} releases (${filteredStats.tracks} tracks)`}
         </div>
       )}
 
