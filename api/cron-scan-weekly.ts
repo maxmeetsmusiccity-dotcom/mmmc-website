@@ -105,11 +105,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   } catch { console.log('[CRON] R2 not available, using seed list'); }
 
-  // Merge seed list to ensure key Nashville artists are always included
-  const allNames = new Set(artistNames);
-  for (const name of SEED_ARTISTS) allNames.add(name);
-  artistNames = [...allNames];
-  console.log(`[CRON] Total artists to scan: ${artistNames.length}`);
+  // Seed artists FIRST — they're the active Nashville performers most likely to release
+  const seedSet = new Set(SEED_ARTISTS.map(n => n.toLowerCase()));
+  const nonSeed = artistNames.filter(n => !seedSet.has(n.toLowerCase()));
+  artistNames = [...SEED_ARTISTS, ...nonSeed];
+  console.log(`[CRON] Total artists to scan: ${artistNames.length} (${SEED_ARTISTS.length} seed first)`);
 
   // Support resuming: ?start=500 skips first 500 artists
   const startIdx = parseInt(req.query.start as string || '0', 10);
