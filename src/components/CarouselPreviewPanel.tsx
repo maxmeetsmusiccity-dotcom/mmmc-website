@@ -320,7 +320,6 @@ const CarouselPreviewPanel = forwardRef<CarouselPanelHandle, Props>(function Car
               {([
                 { value: '1:1' as CarouselAspect, label: 'Square', sub: '1080×1080', icon: '◻' },
                 { value: '3:4' as CarouselAspect, label: 'Portrait', sub: '1080×1440', icon: '▯' },
-                { value: '9:16' as CarouselAspect, label: 'Story', sub: '1080×1920', icon: '▮' },
               ]).map(opt => (
                 <button
                   key={opt.value}

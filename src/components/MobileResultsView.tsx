@@ -19,7 +19,6 @@ interface Props {
   allPreviews: string[];
   onDownloadAll: () => void;
   onDownloadSlide: (index: number) => void;
-  onGenerateStory?: () => void;
   tracksPerSlide: number;
   onTracksPerSlideChange?: (n: number) => void;
   carouselAspect?: CarouselAspect;
@@ -35,7 +34,7 @@ export default function MobileResultsView({
   allTracks, releases, selections, onSelectionChange,
   selectionsByAlbum: _selectionsByAlbum, onSelectRelease, onDeselect: _onDeselect, onSetCoverFeature,
   featureCounts: _featureCounts, generating, onGenerate, allPreviews,
-  onDownloadAll, onDownloadSlide, onGenerateStory,
+  onDownloadAll, onDownloadSlide,
   tracksPerSlide, onTracksPerSlideChange, carouselAspect = '1:1', onAspectChange,
   pushSelectionHistory,
 }: Props) {
@@ -144,12 +143,6 @@ export default function MobileResultsView({
             style={{ width: '100%', justifyContent: 'center' }}>
             Download This Slide
           </button>
-          {onGenerateStory && (
-            <button className="btn" onClick={onGenerateStory} disabled={generating}
-              style={{ width: '100%', justifyContent: 'center' }}>
-              ▮ Story Version (9:16)
-            </button>
-          )}
         </div>
       </div>
     );
@@ -395,7 +388,6 @@ export default function MobileResultsView({
               {([
                 { value: '1:1' as CarouselAspect, label: 'Square', sub: '1080×1080' },
                 { value: '3:4' as CarouselAspect, label: 'Portrait', sub: '1080×1440' },
-                { value: '9:16' as CarouselAspect, label: 'Story', sub: '1080×1920' },
               ]).map(opt => (
                 <button
                   key={opt.value}

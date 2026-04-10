@@ -88,7 +88,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(429).json({ error: 'Rate limit exceeded. Try again in a minute.' });
   }
 
-  const { artistNames, daysBack: rawDaysBack = 7 } = req.body as { artistNames: string[]; daysBack?: number };
+  const { artistNames, daysBack: rawDaysBack = 7, targetFriday: rawTargetFriday } = req.body as { artistNames: string[]; daysBack?: number; targetFriday?: string };
   const daysBack = Math.min(Math.max(1, Number(rawDaysBack) || 7), 30);
   if (!Array.isArray(artistNames) || artistNames.length === 0) {
     return res.status(400).json({ error: 'artistNames array required' });
@@ -99,7 +99,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const token = await getAppleToken();
-    const friday = getLastFriday();
+    const friday = rawTargetFriday && /^\d{4}-\d{2}-\d{2}$/.test(rawTargetFriday) ? rawTargetFriday : getLastFriday();
     const cutoff = new Date(friday + 'T12:00:00');
     cutoff.setDate(cutoff.getDate() - daysBack);
     const cutoffStr = cutoff.toISOString().split('T')[0];

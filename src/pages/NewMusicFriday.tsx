@@ -1109,7 +1109,6 @@ export default function NewMusicFriday() {
             const { downloadBlob } = await import('../lib/canvas-grid');
             downloadBlob(blob, `nmf-slide-${i + 1}.png`);
           }}
-          onGenerateStory={() => (carouselRef.current as any)?.generateStory?.()}
           tracksPerSlide={tracksPerSlide}
           onTracksPerSlideChange={setTracksPerSlide}
           carouselAspect={carouselAspect}

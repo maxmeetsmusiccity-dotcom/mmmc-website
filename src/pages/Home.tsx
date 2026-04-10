@@ -464,9 +464,6 @@ export default function Home() {
             <Link to="/newmusicfriday/submit" className="btn btn-gold">
               Submit a Track
             </Link>
-            <Link to="/artists" className="btn">
-              Browse 8,000+ Artists
-            </Link>
           </div>
         </div>
       </section>
@@ -493,9 +490,9 @@ export default function Home() {
               marginBottom: 16,
             }}
           >
-            &ldquo;This platform is built with deep respect for the curators,
-            bloggers, and music journalists who do the work of discovery every
-            week. You are the bridge between the music and the people.&rdquo;
+            &ldquo;Nashville&rsquo;s independent music scene is the best in the world because of the
+            people who show up every week &mdash; the curators, the photographers, the bloggers,
+            the playlist makers, and the fans. I built these tools to serve that community.&rdquo;
           </p>
           <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--gold)' }}>
             Max Blachman &mdash;{' '}
