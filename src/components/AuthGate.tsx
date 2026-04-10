@@ -82,6 +82,10 @@ export default function AuthGate({ children }: Props) {
           </h1>
         </div>
 
+        <p style={{ color: 'var(--text-secondary)', fontSize: 'clamp(var(--fs-md), 2.5vw, var(--fs-xl))', lineHeight: 1.6, marginBottom: 'clamp(10px, 2vw, 20px)' }}>
+          Discover. Curate. Export. Share. Every Friday.
+        </p>
+
         {/* What this does — bright feature cards */}
         <div style={{
           display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)',
