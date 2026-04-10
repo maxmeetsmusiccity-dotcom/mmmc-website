@@ -49,9 +49,9 @@ export default function AuthGate({ children }: Props) {
     } catch (e) {
       const msg = (e as Error).message;
       if (msg.includes('security purposes') || msg.includes('rate limit')) {
-        setError('Please wait a moment before trying again. For faster access, use "Jump In" or sign in with Google.');
+        setError('Please wait a moment before trying again. For faster access, use "Get Started as a Guest" or sign in with Google.');
       } else if (msg.includes('Invalid login')) {
-        setError('Invalid email or password. Try again or use "Jump In" to enter as a guest.');
+        setError('Invalid email or password. Try again or use "Get Started as a Guest" to enter without an account.');
       } else {
         setError(msg);
       }
@@ -67,18 +67,34 @@ export default function AuthGate({ children }: Props) {
       background: 'var(--midnight)', padding: 24, textAlign: 'center',
     }}>
       <div className="animate-float-up" style={{ maxWidth: 440, width: '100%' }}>
+        {/* Logo */}
+        <img
+          src="/mmmc-logo-hires.png"
+          alt="Max Meets Music City"
+          style={{ width: 140, height: 140, borderRadius: 16, objectFit: 'cover', marginBottom: 16 }}
+        />
+
         <h1 style={{
           fontFamily: 'var(--font-display)', fontSize: 'clamp(2rem, 5vw, 2.75rem)',
           fontWeight: 700, marginBottom: 8, lineHeight: 1.15,
         }}>
-          New Music <span style={{ color: 'var(--gold)' }}>Friday</span>
+          New Music <span style={{ color: 'var(--gold)' }}>Friday</span> Curator
         </h1>
 
         <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--fs-lg)', lineHeight: 1.6, marginBottom: 8 }}>
-          Built for the curators, bloggers, and tastemakers who put new artists on the map every single week.
+          For everyone who listens to everything and finds the gems worth sharing. Every week.
         </p>
-        <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-md)', lineHeight: 1.5, marginBottom: 32 }}>
-          This tool exists because your work matters. You listen to everything, you find the gems, and you share them with the world. We're here to save you time so you can focus on what you do best.
+
+        <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-md)', lineHeight: 1.5, marginBottom: 8 }}>
+          This tool exists because your work matters. You listen to everything, you find the gems, and you share them with the world.
+        </p>
+        <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-md)', lineHeight: 1.5, marginBottom: 24 }}>
+          The MMMC NMF Curator exists to save your valuable time, so you can focus on what you do best: telling the stories about the songs that define Music City.
+        </p>
+
+        {/* Account benefits callout */}
+        <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-sm)', fontStyle: 'italic', lineHeight: 1.5, marginBottom: 24 }}>
+          Sign in to make it yours. Your carousels, your templates, your preferences — all saved and waiting for you next Friday.
         </p>
 
         {/* Continue as Guest */}
@@ -87,7 +103,7 @@ export default function AuthGate({ children }: Props) {
           onClick={() => { continueAsGuest(); sessionStorage.setItem('nmf_entered', '1'); }}
           style={{ width: '100%', justifyContent: 'center', fontSize: 'var(--fs-lg)', padding: '14px 0', marginBottom: 12 }}
         >
-          Jump In
+          Get Started as a Guest
         </button>
 
         {/* Sign-In Options */}
@@ -103,7 +119,7 @@ export default function AuthGate({ children }: Props) {
           onClick={() => { sessionStorage.setItem('nmf_entered', '1'); signInWithApple(); }}
           style={{ width: '100%', justifyContent: 'center', fontSize: 'var(--fs-lg)', padding: '12px 0', marginBottom: 12 }}
         >
-           Sign in with Apple
+          Sign in with Apple
         </button>
 
         {/* Email */}
@@ -145,10 +161,10 @@ export default function AuthGate({ children }: Props) {
           gap: 12, marginTop: 40, textAlign: 'left',
         }}>
           {[
-            { title: 'Scan 800+ Artists', desc: 'Every release from every artist you follow, since last Friday' },
-            { title: 'Build Your Carousel', desc: 'Beautiful Instagram slides in your style, in seconds' },
-            { title: 'Auto-Tag Everyone', desc: 'Instagram handles resolved automatically via Nashville Decoder' },
-            { title: 'One-Click Playlist', desc: 'Push your curated picks straight to Spotify' },
+            { title: 'Discover', desc: 'Scan new releases from 8,000+ Nashville artists and songwriters, updated every Friday.' },
+            { title: 'Curate', desc: 'Select and order your featured artists. Add your logo and choose your templates.' },
+            { title: 'Export', desc: 'Generate your carousel and download a ZIP with every slide ready to post.' },
+            { title: 'Connect', desc: 'Instagram handles found automatically. Build captions and come back every Friday.' },
           ].map(f => (
             <div key={f.title} className="card" style={{ padding: 12, opacity: 0.7 }}>
               <div style={{ fontWeight: 600, fontSize: 'var(--fs-md)', marginBottom: 2, color: 'var(--gold)' }}>{f.title}</div>
@@ -158,7 +174,7 @@ export default function AuthGate({ children }: Props) {
         </div>
 
         <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-2xs)', marginTop: 32, lineHeight: 1.5 }}>
-          Free forever for curators. Built with love in Nashville by <a href="https://instagram.com/maxmeetsmusiccity" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--gold)' }}>@maxmeetsmusiccity</a>.
+          Free forever for curators. Made in Nashville by <a href="https://instagram.com/maxmeetsmusiccity" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--gold)' }}>Max Meets Music City</a>.
         </p>
       </div>
     </div>
