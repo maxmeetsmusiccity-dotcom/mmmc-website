@@ -223,23 +223,26 @@ export default function NashvilleReleases({ showcases, onImport }: Props) {
     })();
   }, [selectedWeek]);
 
-  // Split current vs future releases — only show THIS week's music
+  // Split current vs future releases — use selected week's dates (not always today)
   const today = new Date().toISOString().split('T')[0];
-  // Calculate this week's Friday (the scan_week start date)
-  const thisWeekStart = (() => {
+  // When viewing a past week, use that week's Friday as the reference point
+  const viewingWeek = selectedWeek || (() => {
     const d = new Date();
     const day = d.getDay();
     const diff = day >= 5 ? day - 5 : day + 2;
     d.setDate(d.getDate() - diff);
     return d.toISOString().split('T')[0];
   })();
-  // Only show releases from this Friday's window onward (exclude last week's stale tracks)
-  const weekCutoff = new Date(thisWeekStart);
+  // Show releases from Thursday before the viewing week through the following Thursday
+  const weekCutoff = new Date(viewingWeek);
   weekCutoff.setDate(weekCutoff.getDate() - 1); // Include Thursday night drops
   const cutoffStr = weekCutoff.toISOString().split('T')[0];
+  const weekEnd = new Date(viewingWeek);
+  weekEnd.setDate(weekEnd.getDate() + 6); // Through the following Thursday
+  const weekEndStr = weekEnd.toISOString().split('T')[0];
   const currentReleases = releases.filter(r => {
     const rd = r.release_date || '';
-    return rd >= cutoffStr && rd <= today;
+    return rd >= cutoffStr && rd <= weekEndStr;
   });
   const comingSoonReleases = releases.filter(r => (r.release_date || '') > today);
 
@@ -705,10 +708,10 @@ export default function NashvilleReleases({ showcases, onImport }: Props) {
                   {/* Artist track picker — shows all releases grouped by album */}
                   {!isSingleTrack && isExpanded && (<>
                     <div onClick={(e) => { e.stopPropagation(); setExpanded(prev => { const n = new Set(prev); n.delete(`artist:${artist.name}`); return n; }); }}
-                      style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(0,0,0,0.5)' }} />
+                      style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(0,0,0,0.5)' }} />
                     <div style={{
                       position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%, -50%)',
-                      zIndex: 51, width: 'min(440px, 90vw)', maxHeight: '75vh',
+                      zIndex: 101, width: 'min(440px, 90vw)', maxHeight: '75vh',
                       background: 'var(--midnight-raised)', borderRadius: 12,
                       border: '2px solid var(--gold-dark)',
                       display: 'flex', flexDirection: 'column',
