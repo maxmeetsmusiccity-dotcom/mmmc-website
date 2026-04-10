@@ -67,19 +67,20 @@ export default function AuthGate({ children }: Props) {
       background: 'var(--midnight)', padding: 24, textAlign: 'center',
     }}>
       <div className="animate-float-up" style={{ maxWidth: 440, width: '100%' }}>
-        {/* Logo */}
-        <img
-          src="/mmmc-logo-hires.png"
-          alt="Max Meets Music City"
-          style={{ width: 140, height: 140, borderRadius: 16, objectFit: 'cover', marginBottom: 16 }}
-        />
-
-        <h1 style={{
-          fontFamily: 'var(--font-display)', fontSize: 'clamp(2rem, 5vw, 2.75rem)',
-          fontWeight: 700, marginBottom: 8, lineHeight: 1.15,
-        }}>
-          New Music <span style={{ color: 'var(--gold)' }}>Friday</span> Curator
-        </h1>
+        {/* Logo + Heading */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, justifyContent: 'center', marginBottom: 8 }}>
+          <img
+            src="/mmmc-logo-hires.png"
+            alt="Max Meets Music City"
+            style={{ width: 80, height: 80, borderRadius: 12, objectFit: 'cover', flexShrink: 0 }}
+          />
+          <h1 style={{
+            fontFamily: 'var(--font-display)', fontSize: 'clamp(1.75rem, 5vw, 2.5rem)',
+            fontWeight: 700, lineHeight: 1.15, textAlign: 'left',
+          }}>
+            New Music <span style={{ color: 'var(--gold)' }}>Friday</span> Curator
+          </h1>
+        </div>
 
         <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--fs-lg)', lineHeight: 1.6, marginBottom: 8 }}>
           For everyone who listens to everything and finds the gems worth sharing. Every week.
