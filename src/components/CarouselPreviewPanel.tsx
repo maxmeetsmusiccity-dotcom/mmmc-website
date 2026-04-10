@@ -603,12 +603,6 @@ const CarouselPreviewPanel = forwardRef<CarouselPanelHandle, Props>(function Car
               style={{ fontSize: 'var(--fs-lg)', padding: '12px 32px' }}>
               {allPreviews.length === 1 ? 'Download Slide' : `Download All (${allPreviews.length} slides)`}
             </button>
-            {coverFeature && (
-              <button className="btn btn-sm" onClick={handleGenerateStory} disabled={generating}
-                style={{ fontSize: 'var(--fs-sm)', padding: '8px 16px' }}>
-                {generating ? '...' : '▮ Story (9:16)'}
-              </button>
-            )}
             <button className="btn btn-sm" onClick={handleGenerate} disabled={generating}
               style={{ fontSize: 'var(--fs-sm)', padding: '8px 16px', marginLeft: 'auto' }}>
               {generating ? '...' : 'Regenerate'}
