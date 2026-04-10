@@ -78,7 +78,7 @@ export default function AuthGate({ children }: Props) {
             fontFamily: 'var(--font-display)', fontSize: 'clamp(1.6rem, 6.5vw, 3.75rem)',
             fontWeight: 700, lineHeight: 1.15, textAlign: 'left', flex: 1,
           }}>
-            New Music Friday <span style={{ color: 'var(--gold)' }}>Curator</span>
+            New Music Friday<br /><span style={{ color: 'var(--gold)' }}>Curator</span>
           </h1>
         </div>
 
