@@ -654,7 +654,7 @@ export default function NashvilleReleases({ showcases, onImport }: Props) {
       )}
 
       {/* Release list / grid — grouped by artist → release → tracks */}
-      <div style={{ maxHeight: 600, overflowY: 'auto' }}>
+      <div style={{ maxHeight: 'min(600px, 70vh)', overflowY: 'auto' }}>
         {viewMode === 'grid' ? (
           /* ── Grid tile view ── */
           <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fill, minmax(${tileSize}px, 1fr))`, gap: 10 }}>

@@ -82,7 +82,7 @@ export default function AuthGate({ children }: Props) {
           </h1>
         </div>
 
-        <p style={{ color: 'var(--text-secondary)', fontSize: 'clamp(var(--fs-lg), 3.3vw, 1.65rem)', lineHeight: 1.6, marginBottom: 'clamp(10px, 2vw, 20px)', whiteSpace: 'nowrap' }}>
+        <p style={{ color: 'var(--text-secondary)', fontSize: 'clamp(0.85rem, 3.3vw, 1.65rem)', lineHeight: 1.6, marginBottom: 'clamp(10px, 2vw, 20px)', whiteSpace: 'nowrap' }}>
           Discover. Curate. Export. Share. Every Friday.
         </p>
 
