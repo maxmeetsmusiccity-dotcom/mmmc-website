@@ -104,10 +104,10 @@ export default function AuthGate({ children }: Props) {
           ))}
         </div>
 
-        <p style={{ color: 'var(--text-muted)', fontSize: 'clamp(var(--fs-md), 2vw, var(--fs-lg))', lineHeight: 1.5, marginBottom: 'clamp(6px, 1vw, 10px)', textAlign: 'justify' }}>
+        <p style={{ color: 'var(--text-secondary)', fontSize: 'clamp(var(--fs-md), 2vw, var(--fs-lg))', lineHeight: 1.5, marginBottom: 'clamp(6px, 1vw, 10px)', textAlign: 'justify' }}>
           This tool exists because your work matters. You listen to everything, you find the gems, and you share them with the world. I built this tool to accelerate that work.
         </p>
-        <p style={{ color: 'var(--text-muted)', fontSize: 'clamp(var(--fs-md), 2vw, var(--fs-lg))', lineHeight: 1.5, marginBottom: 'clamp(16px, 3vw, 28px)', textAlign: 'justify' }}>
+        <p style={{ color: 'var(--text-secondary)', fontSize: 'clamp(var(--fs-md), 2vw, var(--fs-lg))', lineHeight: 1.5, marginBottom: 'clamp(16px, 3vw, 28px)', textAlign: 'justify' }}>
           The MMMC NMF Curator exists to save your valuable time, so you can focus on what you do best: telling the stories about the songs that define Music City.
         </p>
 
@@ -138,7 +138,7 @@ export default function AuthGate({ children }: Props) {
 
         {/* Email */}
         <details style={{ textAlign: 'left', marginTop: 8 }}>
-          <summary style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-md)', cursor: 'pointer', textAlign: 'center' }}>
+          <summary style={{ color: 'var(--text-secondary)', fontSize: 'var(--fs-md)', cursor: 'pointer', textAlign: 'center' }}>
             {isSignUp ? 'Sign up' : 'Sign in'} with email
           </summary>
           <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -163,18 +163,18 @@ export default function AuthGate({ children }: Props) {
             <button className="btn btn-sm btn-gold" onClick={handleEmail} disabled={submitting || (isSignUp && !tosAccepted)} style={{ width: '100%', justifyContent: 'center' }}>
               {submitting ? '...' : isSignUp ? 'Create Account' : 'Sign In'}
             </button>
-            <button onClick={() => { setIsSignUp(!isSignUp); setError(''); }} style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-sm)' }}>
+            <button onClick={() => { setIsSignUp(!isSignUp); setError(''); }} style={{ color: 'var(--text-secondary)', fontSize: 'var(--fs-sm)' }}>
               {isSignUp ? 'Already have an account? Sign in' : 'Need an account? Sign up'}
             </button>
           </div>
         </details>
 
         {/* Account benefits callout */}
-        <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-sm)', fontStyle: 'italic', lineHeight: 1.5, marginTop: 24, textAlign: 'justify' }}>
+        <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--fs-sm)', fontStyle: 'italic', lineHeight: 1.5, marginTop: 24, textAlign: 'justify' }}>
           Sign in to make it yours. Your carousels, your templates, your preferences — all saved and waiting for you next Friday.
         </p>
 
-        <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-2xs)', marginTop: 16, lineHeight: 1.5 }}>
+        <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--fs-2xs)', marginTop: 16, lineHeight: 1.5 }}>
           Free forever for curators. Made in Nashville by <a href="https://instagram.com/maxmeetsmusiccity" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--gold)' }}>Max Meets Music City</a>.
         </p>
       </div>
