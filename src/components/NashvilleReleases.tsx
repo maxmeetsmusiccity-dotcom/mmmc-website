@@ -38,6 +38,9 @@ export default function NashvilleReleases({ showcases, onImport, activeShowcase,
   const [sortBy, setSortBy] = useState<'artist' | 'date' | 'title'>('artist');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
+  // Progressive rendering — start with 50 artists, load more on demand
+  const [renderLimit, setRenderLimit] = useState(50);
+
   // Search — queries full Nashville universe via API when 3+ chars
   const [searchQuery, setSearchQuery] = useState('');
   const [universeResults, setUniverseResults] = useState<{ name: string; hasRelease: boolean }[]>([]);
@@ -711,7 +714,7 @@ export default function NashvilleReleases({ showcases, onImport, activeShowcase,
         {viewMode === 'grid' ? (
           /* ── Grid tile view ── */
           <div style={{ display: 'grid', gridTemplateColumns: isMobileGrid ? 'repeat(2, 1fr)' : `repeat(auto-fill, minmax(${effectiveTileSize}px, 1fr))`, gap: 10 }}>
-            {artistGroups.map(artist => {
+            {artistGroups.slice(0, renderLimit).map(artist => {
               const allArtistTracks = artist.releases.flatMap(r => r.tracks);
               const hasSelection = allArtistTracks.some(t => selected.has(t.spotify_track_id));
               const isSingleTrack = allArtistTracks.length === 1;
@@ -821,7 +824,7 @@ export default function NashvilleReleases({ showcases, onImport, activeShowcase,
           </div>
         ) : (
           /* ── List view (grouped by artist) ── */
-          artistGroups.map(artist => (
+          artistGroups.slice(0, renderLimit).map(artist => (
           <div key={artist.name} style={{ marginBottom: 12 }}>
             {/* Artist header */}
             <div style={{
@@ -938,6 +941,16 @@ export default function NashvilleReleases({ showcases, onImport, activeShowcase,
         })}
           </div>
         ))
+        )}
+        {/* Show more button when there are more artists beyond the render limit */}
+        {artistGroups.length > renderLimit && (
+          <button
+            onClick={() => setRenderLimit(prev => prev + 50)}
+            className="btn btn-sm"
+            style={{ width: '100%', justifyContent: 'center', marginTop: 12, fontSize: 'var(--fs-sm)' }}
+          >
+            Show more ({artistGroups.length - renderLimit} remaining)
+          </button>
         )}
       </div>
 
