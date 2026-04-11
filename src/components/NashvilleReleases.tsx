@@ -60,6 +60,22 @@ export default function NashvilleReleases({ showcases, onImport, activeShowcase,
   // Coming Soon toggle — shows future-dated releases
   const [showComingSoon, setShowComingSoon] = useState(false);
 
+  // Handle confirmation: tracks confirmed handles per session
+  const [confirmedHandles, setConfirmedHandles] = useState<Set<string>>(new Set());
+  const [handleInput, setHandleInput] = useState<{ artist: string; value: string } | null>(null);
+  const confirmHandle = async (artistName: string, handle: string) => {
+    if (!supabase || !handle.trim()) return;
+    try {
+      await supabase.from('artist_handle_confirmations').insert({
+        artist_name: artistName,
+        instagram_handle: handle.trim().replace(/^@/, ''),
+        source: 'nmf_curation',
+        scan_week: selectedWeek || new Date().toISOString().split('T')[0],
+      });
+      setConfirmedHandles(prev => new Set(prev).add(artistName.toLowerCase()));
+    } catch { /* table may not exist yet */ }
+  };
+
   // Showcase filter state — lifted to parent so it survives remounts
   const [showcaseArtists, setShowcaseArtists] = useState<Set<string>>(new Set());
   const [loadingShowcase, setLoadingShowcase] = useState(false);
@@ -753,6 +769,23 @@ export default function NashvilleReleases({ showcases, onImport, activeShowcase,
                         {artist.trackCount} {artist.trackCount === 1 ? 'track' : 'tracks'}
                         {artist.releases.length > 1 && ` · ${artist.releases.length} releases`}
                       </div>
+                      {/* Handle confirmation chip */}
+                      {confirmedHandles.has(artist.name.toLowerCase()) ? (
+                        <span style={{ fontSize: 'var(--fs-3xs)', color: '#3EE6C3', marginTop: 2, display: 'block' }}>✓ confirmed</span>
+                      ) : handleInput?.artist === artist.name ? (
+                        <form onSubmit={e => { e.preventDefault(); e.stopPropagation(); confirmHandle(artist.name, handleInput.value); setHandleInput(null); }}
+                          onClick={e => e.stopPropagation()} style={{ marginTop: 3, display: 'flex', gap: 3 }}>
+                          <input type="text" value={handleInput.value} onChange={e => setHandleInput({ artist: artist.name, value: e.target.value })}
+                            placeholder="@handle" autoFocus
+                            style={{ width: '100%', fontSize: 11, padding: '2px 4px', background: 'var(--midnight-hover)', border: '1px solid var(--midnight-border)', borderRadius: 4, color: 'var(--text-primary)' }} />
+                          <button type="submit" style={{ fontSize: 10, padding: '2px 6px', background: 'var(--gold)', color: 'var(--midnight)', border: 'none', borderRadius: 4, cursor: 'pointer', fontWeight: 700, flexShrink: 0 }}>✓</button>
+                        </form>
+                      ) : (
+                        <button onClick={e => { e.stopPropagation(); setHandleInput({ artist: artist.name, value: '' }); }}
+                          style={{ fontSize: 'var(--fs-3xs)', color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0', marginTop: 2, display: 'block', textAlign: 'left' }}>
+                          📎 Add handle
+                        </button>
+                      )}
                     </div>
                   </div>
                   {/* Artist track picker — shows all releases grouped by album */}
