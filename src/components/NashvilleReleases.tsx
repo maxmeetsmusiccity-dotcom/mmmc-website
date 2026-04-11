@@ -514,7 +514,7 @@ export default function NashvilleReleases({ showcases, onImport, activeShowcase,
               </span>
               <button onClick={() => toggleSelect(item.trackId)} style={{
                 background: 'none', border: 'none', cursor: 'pointer', color: 'var(--midnight)',
-                fontSize: 10, lineHeight: 1, padding: 0,
+                fontSize: 12, lineHeight: 1, padding: '4px', minWidth: 24, minHeight: 24,
               }}>&times;</button>
             </span>
           ))}
@@ -617,7 +617,7 @@ export default function NashvilleReleases({ showcases, onImport, activeShowcase,
           <button key={s}
             className={`filter-pill ${sortBy === s ? 'active' : ''}`}
             onClick={() => { if (sortBy === s) setSortDir(d => d === 'asc' ? 'desc' : 'asc'); else { setSortBy(s); setSortDir('asc'); } }}
-            style={{ fontSize: 'var(--fs-2xs)', padding: '2px 8px' }}>
+            style={{ fontSize: 'var(--fs-2xs)', padding: isMobileGrid ? '8px 14px' : '2px 8px' }}>
             {s.charAt(0).toUpperCase() + s.slice(1)} {sortBy === s ? (sortDir === 'asc' ? '↑' : '↓') : ''}
           </button>
         ))}
@@ -683,7 +683,7 @@ export default function NashvilleReleases({ showcases, onImport, activeShowcase,
       )}
 
       {/* Release list / grid — grouped by artist → release → tracks */}
-      <div style={{ maxHeight: 600, overflowY: 'auto' }}>
+      <div style={isMobileGrid ? {} : { maxHeight: 600, overflowY: 'auto' }}>
         {viewMode === 'grid' ? (
           /* ── Grid tile view ── */
           <div style={{ display: 'grid', gridTemplateColumns: isMobileGrid ? 'repeat(2, 1fr)' : `repeat(auto-fill, minmax(${effectiveTileSize}px, 1fr))`, gap: 10 }}>

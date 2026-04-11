@@ -454,9 +454,9 @@ button {
     min-width: 70px;
   }
 
-  /* Ensure touch targets are at least 44px */
+  /* Apple HIG: 44px minimum touch target */
   .btn, .btn-sm, .filter-pill, button {
-    min-height: 36px;
+    min-height: 44px;
   }
 
   /* Modal: full width on mobile */
