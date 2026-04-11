@@ -67,6 +67,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const weekOverride = req.query.week as string | undefined;
   const weekDate = weekOverride && /^\d{4}-\d{2}-\d{2}$/.test(weekOverride) ? weekOverride : getLastFriday();
 
+  // Self-chaining params — parsed early because metadata update depends on chainNum
+  const maxChains = Math.min(parseInt(req.query.max_chains as string || '5', 10), 10);
+  const chainNum = parseInt(req.query.chain as string || '0', 10);
+
   // Update scan metadata (only reset counters on first chain)
   if (chainNum === 0) {
     await supabase.from('scan_metadata').upsert({
@@ -126,10 +130,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   artistNames = [...SEED_ARTISTS, ...nonSeed];
   console.log(`[CRON] Total artists to scan: ${artistNames.length} (${SEED_ARTISTS.length} seed first)`);
 
-  // Self-chaining: offset (or legacy start), max_chains, chain counter
+  // Self-chaining: offset (or legacy start) — chainNum and maxChains parsed above
   const startIdx = parseInt((req.query.offset ?? req.query.start) as string || '0', 10);
-  const maxChains = Math.min(parseInt(req.query.max_chains as string || '5', 10), 10);
-  const chainNum = parseInt(req.query.chain as string || '0', 10);
   // Process 2,000 artists per chain (fits within 300s Vercel timeout)
   const BATCH_SIZE = 2000;
   const endIdx = Math.min(startIdx + BATCH_SIZE, artistNames.length);
