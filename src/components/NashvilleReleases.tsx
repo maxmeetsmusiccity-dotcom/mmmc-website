@@ -243,10 +243,12 @@ export default function NashvilleReleases({ showcases, onImport, activeShowcase,
   const weekEnd = new Date(viewingWeek);
   weekEnd.setDate(weekEnd.getDate() + 6); // Through the following Thursday
   const weekEndStr = weekEnd.toISOString().split('T')[0];
+  // This Week: released between last Thursday and today (not future-dated)
   const currentReleases = releases.filter(r => {
     const rd = r.release_date || '';
-    return rd >= cutoffStr && rd <= weekEndStr;
+    return rd >= cutoffStr && rd <= today;
   });
+  // Coming Soon: anything with a release date after today
   const comingSoonReleases = releases.filter(r => (r.release_date || '') > today);
 
   // Apply showcase + search filters to the active set
