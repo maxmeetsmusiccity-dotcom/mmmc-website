@@ -150,7 +150,8 @@ export default function NewMusicFriday() {
   const [loadedFromCache, setLoadedFromCache] = useState(false);
   const [resolvedHandles, setResolvedHandles] = useState<Map<string, any>>(new Map());
 
-  // Showcase categories — lifted here so they survive NashvilleReleases remounts
+  // Showcase categories + active filter — lifted here so they survive NashvilleReleases remounts
+  const [activeShowcase, setActiveShowcase] = useState<string | null>(null);
   const [showcases, setShowcases] = useState<ShowcaseCategory[]>(() => {
     try {
       const cached = localStorage.getItem('nr_showcases');
@@ -1014,7 +1015,7 @@ export default function NewMusicFriday() {
             {activeSource === 'nashville' && (
               <div style={{ marginTop: 16, textAlign: 'left' }}>
                 <Suspense fallback={<div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)' }}>Loading Nashville releases...</div>}>
-                <NashvilleReleases showcases={showcases} onImport={(tracks) => {
+                <NashvilleReleases showcases={showcases} activeShowcase={activeShowcase} onActiveShowcaseChange={setActiveShowcase} onImport={(tracks) => {
                   setAllTracks(tracks);
                   setReleases(groupIntoReleases(tracks));
                   setPhase('results');

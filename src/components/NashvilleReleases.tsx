@@ -15,9 +15,11 @@ interface ShowcaseCategory {
 interface Props {
   showcases: ShowcaseCategory[];
   onImport: (tracks: TrackItem[]) => void;
+  activeShowcase: string | null;
+  onActiveShowcaseChange: (id: string | null) => void;
 }
 
-export default function NashvilleReleases({ showcases, onImport }: Props) {
+export default function NashvilleReleases({ showcases, onImport, activeShowcase, onActiveShowcaseChange }: Props) {
   const [loading, setLoading] = useState(false);
   const [releases, setReleases] = useState<NashvilleRelease[]>([]);
   const [week, setWeek] = useState('');
@@ -55,8 +57,7 @@ export default function NashvilleReleases({ showcases, onImport }: Props) {
   // Coming Soon toggle — shows future-dated releases
   const [showComingSoon, setShowComingSoon] = useState(false);
 
-  // Showcase filter state (showcases list comes from parent prop — survives remounts)
-  const [activeShowcase, setActiveShowcase] = useState<string | null>(null);
+  // Showcase filter state — lifted to parent so it survives remounts
   const [showcaseArtists, setShowcaseArtists] = useState<Set<string>>(new Set());
   const [loadingShowcase, setLoadingShowcase] = useState(false);
 
@@ -384,7 +385,7 @@ export default function NashvilleReleases({ showcases, onImport }: Props) {
   const showcaseDropdown = showcases.length > 0 ? (
     <select
       value={activeShowcase || ''}
-      onChange={e => setActiveShowcase(e.target.value || null)}
+      onChange={e => onActiveShowcaseChange(e.target.value || null)}
       style={{
         background: 'var(--midnight)', border: '1px solid var(--midnight-border)',
         borderRadius: 8, color: 'var(--text-secondary)', padding: '8px 12px',
