@@ -236,13 +236,10 @@ export default function NashvilleReleases({ showcases, onImport, activeShowcase,
     d.setDate(d.getDate() - diff);
     return d.toISOString().split('T')[0];
   })();
-  // Show releases from Thursday before the viewing week through the following Thursday
+  // Show releases from Thursday before the viewing week through today
   const weekCutoff = new Date(viewingWeek);
   weekCutoff.setDate(weekCutoff.getDate() - 1); // Include Thursday night drops
   const cutoffStr = weekCutoff.toISOString().split('T')[0];
-  const weekEnd = new Date(viewingWeek);
-  weekEnd.setDate(weekEnd.getDate() + 6); // Through the following Thursday
-  const weekEndStr = weekEnd.toISOString().split('T')[0];
   // This Week: released between last Thursday and today (not future-dated)
   const currentReleases = releases.filter(r => {
     const rd = r.release_date || '';
