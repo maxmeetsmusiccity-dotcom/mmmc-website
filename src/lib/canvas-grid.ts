@@ -887,6 +887,12 @@ function postProcessGrid(ctx: CanvasRenderingContext2D, t: CarouselTemplate) {
   }
 }
 
+/** Songwriter credit for carousel rendering */
+export interface SlideComposerCredit {
+  name: string;
+  charting: number;
+}
+
 export async function generateGridSlide(
   slots: SelectionSlot[],
   weekDate: string,
@@ -895,6 +901,7 @@ export async function generateGridSlide(
   layoutId?: string,
   aspect: CarouselAspect = '1:1',
   customElements?: EditorElement[],
+  composerCredits?: SlideComposerCredit[],
 ): Promise<Blob> {
   const t = getTemplate(templateId);
   await loadAllAssets(t);
@@ -961,11 +968,64 @@ export async function generateGridSlide(
     }
   }
 
-  // Date — in portrait, centered in bottom zone below grid. In square, near canvas bottom.
+  // Songwriter credits — rendered in bottom zone when provided
   const bottomZoneStart = dim.gridY + dim.gridH;
   const bottomZoneH = dim.h - bottomZoneStart;
+  let creditBlockH = 0;
+
+  if (composerCredits && composerCredits.length > 0) {
+    const topCredits = composerCredits
+      .filter(c => c.charting > 0)
+      .sort((a, b) => b.charting - a.charting)
+      .slice(0, 3);
+
+    if (topCredits.length > 0) {
+      const creditY = bottomZoneStart + 14;
+      const lineH = 22;
+
+      // "Written by" label
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#8899AA';
+      ctx.font = `400 14px "DM Sans", sans-serif`;
+      ctx.fillText('Written by', dim.w / 2, creditY);
+
+      // Each songwriter: name + charting count in teal
+      topCredits.forEach((c, i) => {
+        const y = creditY + 20 + i * lineH;
+        const label = `${c.name}`;
+        const stat = ` (${c.charting} charting)`;
+
+        ctx.font = `600 16px "DM Sans", sans-serif`;
+        const labelW = ctx.measureText(label).width;
+        ctx.font = `400 14px "JetBrains Mono", monospace`;
+        const statW = ctx.measureText(stat).width;
+        const totalW = labelW + statW;
+        const startX = (dim.w - totalW) / 2;
+
+        ctx.font = `600 16px "DM Sans", sans-serif`;
+        ctx.fillStyle = t.textPrimary || '#F0EDE8';
+        ctx.fillText(label, startX + labelW / 2, y);
+
+        ctx.font = `400 14px "JetBrains Mono", monospace`;
+        ctx.fillStyle = '#3EE6C3'; // ND teal
+        ctx.textAlign = 'left';
+        ctx.fillText(stat, startX + labelW, y);
+        ctx.textAlign = 'center';
+      });
+
+      creditBlockH = 20 + topCredits.length * lineH + 8;
+
+      // nashvilledecoder.com watermark
+      ctx.fillStyle = '#4A5568';
+      ctx.font = `400 11px "DM Sans", sans-serif`;
+      ctx.fillText('nashvilledecoder.com', dim.w / 2, creditY + creditBlockH);
+      creditBlockH += 16;
+    }
+  }
+
+  // Date — in portrait, centered in bottom zone below grid (and credits if present).
   const dateFinalY = aspect === '3:4'
-    ? bottomZoneStart + Math.round(bottomZoneH * 0.6)  // 60% down in bottom zone
+    ? bottomZoneStart + creditBlockH + Math.round((bottomZoneH - creditBlockH) * 0.6)
     : dim.h - 52;
   neonText(ctx, formatDate(weekDate), dim.w / 2, dateFinalY, `700 40px ${t.scriptFont}`, t);
 
@@ -1036,6 +1096,7 @@ export async function generateFullCarousel(
   layoutId?: string,
   titleTemplateId?: string,
   aspect: CarouselAspect = '1:1',
+  composerCredits?: SlideComposerCredit[],
 ): Promise<CarouselOutput> {
   const total = 1 + slideGroups.length;
   onProgress?.(0, total);
@@ -1048,7 +1109,7 @@ export async function generateFullCarousel(
 
   const gridSlides: Blob[] = [];
   for (let i = 0; i < slideGroups.length; i++) {
-    gridSlides.push(await generateGridSlide(slideGroups[i], weekDate, templateId, logoUrl, layoutId, aspect));
+    gridSlides.push(await generateGridSlide(slideGroups[i], weekDate, templateId, logoUrl, layoutId, aspect, undefined, composerCredits));
     onProgress?.(2 + i, total);
   }
 
