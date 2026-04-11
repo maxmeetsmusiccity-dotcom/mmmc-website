@@ -79,6 +79,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   }
 
+  // Observability: log this chain's start (graceful if table doesn't exist)
+  const chainStartMs = Date.now();
+  let scanRunId: number | null = null;
+  try {
+    const { data } = await supabase.from('scan_runs').insert({
+      target_week: weekDate,
+      chain_number: chainNum,
+      total_chains: maxChains,
+      status: 'running',
+    }).select('id').single();
+    scanRunId = data?.id || null;
+  } catch { /* scan_runs table may not exist yet */ }
+
   // Try to load artist list from R2
   let artistNames: string[] = SEED_ARTISTS;
   try {
@@ -314,6 +327,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   } else if (!isComplete) {
     chainStatus = 'paused_at_chain_limit';
     console.log(`[CRON] Chain limit reached (${maxChains}). Paused at artist ${endIdx}/${artistNames.length}`);
+  }
+
+  // Observability: log this chain's results
+  if (scanRunId) {
+    try {
+      // Count composer credits from Apple Music tracks
+      const composerCredits = appleTracks; // approximate — refined when we track per-track
+      await supabase.from('scan_runs').update({
+        artists_scanned: scanned,
+        tracks_found: totalTracks,
+        future_tracks_found: 0, // TODO: count future-dated tracks separately
+        composer_credits_found: composerCredits,
+        duration_ms: Date.now() - chainStartMs,
+        status: chainStatus,
+      }).eq('id', scanRunId);
+    } catch { /* scan_runs table may not exist yet */ }
   }
 
   return res.status(200).json({
