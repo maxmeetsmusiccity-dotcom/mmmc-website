@@ -14,12 +14,14 @@ interface FutureRelease {
 }
 
 interface SongwriterInfo {
+  pg_id: string;
   display_name: string;
   charting_songs: number;
   no1_songs: number;
   total_credits: number;
   publisher: string | null;
   tier: string;
+  ig_handle?: string | null;
 }
 
 interface Props {
@@ -171,6 +173,12 @@ export default function ComingSoon({ releases, showcaseArtists, showcases }: Pro
               }
             }
 
+            // "Bridge" card: any matched ND profile with charting songs
+            const matchedWriters = [...allComposers.entries()]
+              .filter(([, info]) => info && info.charting_songs > 0)
+              .map(([, info]) => info!);
+            const hasBridge = matchedWriters.length > 0;
+
             return (
               <div
                 key={albumKey}
@@ -178,8 +186,8 @@ export default function ComingSoon({ releases, showcaseArtists, showcases }: Pro
                 style={{
                   display: 'flex', gap: 12, padding: '10px 12px', marginBottom: 6,
                   borderRadius: 10, cursor: 'pointer',
-                  background: isExpanded ? 'var(--midnight-raised)' : 'transparent',
-                  border: '1px solid ' + (isExpanded ? 'var(--gold-dark)' : 'var(--midnight-border)'),
+                  background: hasBridge ? 'rgba(212,168,67,0.06)' : isExpanded ? 'var(--midnight-raised)' : 'transparent',
+                  border: '1px solid ' + (hasBridge ? 'var(--gold-dark)' : isExpanded ? 'var(--gold-dark)' : 'var(--midnight-border)'),
                   transition: 'all 0.15s',
                   flexDirection: 'column',
                 }}
@@ -221,23 +229,71 @@ export default function ComingSoon({ releases, showcaseArtists, showcases }: Pro
                   </div>
                 </div>
 
-                {/* Expanded: songwriter credits */}
-                {isExpanded && allComposers.size > 0 && (
+                {/* Bridge cards: ND-matched songwriter credits — ALWAYS visible when matched */}
+                {hasBridge && (
+                  <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--midnight-border)' }}>
+                    <p style={{ fontSize: 'var(--fs-2xs)', color: 'var(--gold)', marginBottom: 6, fontWeight: 600 }}>✍️ SONGWRITERS</p>
+                    {matchedWriters.map(info => (
+                      <div key={info.pg_id} style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        padding: '6px 10px', marginBottom: 4, borderRadius: 8,
+                        background: 'var(--midnight)', border: '1px solid var(--midnight-border)',
+                      }}>
+                        <div>
+                          <span style={{ fontSize: 'var(--fs-sm)', fontWeight: 700, color: 'var(--text-primary)' }}>
+                            {info.display_name}
+                          </span>
+                          <span className="mono" style={{ fontSize: 'var(--fs-2xs)', color: 'var(--gold)', marginLeft: 8 }}>
+                            {info.charting_songs} charting
+                            {info.no1_songs > 0 && ` · ${info.no1_songs} #1s`}
+                          </span>
+                          {info.publisher && (
+                            <span style={{ fontSize: 'var(--fs-3xs)', color: 'var(--text-muted)', marginLeft: 8 }}>
+                              {info.publisher.split('/')[0].trim()}
+                            </span>
+                          )}
+                        </div>
+                        <a
+                          href={`https://nashvilledecoder.com/profiles.html?id=${info.pg_id}`}
+                          onClick={e => e.stopPropagation()}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            fontSize: 'var(--fs-3xs)', color: 'var(--gold)', textDecoration: 'none',
+                            padding: '3px 8px', borderRadius: 6, border: '1px solid var(--gold-dark)',
+                            fontWeight: 600, flexShrink: 0,
+                          }}
+                        >
+                          ND Profile →
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Expanded: unmatched songwriter credits (no ND profile) */}
+                {isExpanded && allComposers.size > 0 && !hasBridge && (
                   <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--midnight-border)' }}>
                     <p style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)', marginBottom: 6 }}>✍️ Songwriters</p>
                     {[...allComposers.entries()].map(([key, info]) => (
                       <div key={key} style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)', marginBottom: 2, paddingLeft: 8 }}>
-                        <span style={{ fontWeight: info?.charting_songs ? 600 : 400 }}>
-                          {info?.display_name || key}
-                        </span>
-                        {info && info.charting_songs > 0 && (
-                          <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-2xs)', marginLeft: 8 }}>
-                            {info.charting_songs} charting{info.no1_songs > 0 ? ` · ${info.no1_songs} #1s` : ''}
-                            {info.publisher ? ` · ${info.publisher}` : ''}
-                          </span>
-                        )}
+                        <span>{info?.display_name || key}</span>
                       </div>
                     ))}
+                  </div>
+                )}
+
+                {/* Expanded: additional unmatched writers when bridge cards shown */}
+                {isExpanded && hasBridge && [...allComposers.entries()].some(([, info]) => !info || info.charting_songs === 0) && (
+                  <div style={{ marginTop: 4, paddingLeft: 10 }}>
+                    <p style={{ fontSize: 'var(--fs-3xs)', color: 'var(--text-muted)', marginBottom: 2 }}>Also credited:</p>
+                    {[...allComposers.entries()]
+                      .filter(([, info]) => !info || info.charting_songs === 0)
+                      .map(([key, info]) => (
+                        <span key={key} style={{ fontSize: 'var(--fs-3xs)', color: 'var(--text-muted)', marginRight: 8 }}>
+                          {info?.display_name || key}
+                        </span>
+                      ))}
                   </div>
                 )}
 
