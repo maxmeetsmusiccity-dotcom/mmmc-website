@@ -67,15 +67,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const weekOverride = req.query.week as string | undefined;
   const weekDate = weekOverride && /^\d{4}-\d{2}-\d{2}$/.test(weekOverride) ? weekOverride : getLastFriday();
 
-  // Update scan metadata
-  await supabase.from('scan_metadata').upsert({
-    id: 'nashville_weekly',
-    last_scan_week: weekDate,
-    last_scan_at: new Date().toISOString(),
-    status: 'scanning',
-    total_artists_scanned: 0,
-    total_tracks_found: 0,
-  });
+  // Update scan metadata (only reset counters on first chain)
+  if (chainNum === 0) {
+    await supabase.from('scan_metadata').upsert({
+      id: 'nashville_weekly',
+      last_scan_week: weekDate,
+      last_scan_at: new Date().toISOString(),
+      status: 'scanning',
+      total_artists_scanned: 0,
+      total_tracks_found: 0,
+    });
+  }
 
   // Try to load artist list from R2
   let artistNames: string[] = SEED_ARTISTS;
@@ -111,14 +113,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   artistNames = [...SEED_ARTISTS, ...nonSeed];
   console.log(`[CRON] Total artists to scan: ${artistNames.length} (${SEED_ARTISTS.length} seed first)`);
 
-  // Support resuming: ?start=500 skips first 500 artists
-  const startIdx = parseInt(req.query.start as string || '0', 10);
-  // Process 500 artists per invocation (fits within 300s Vercel Pro timeout)
-  const maxPerRun = 500;
-  const endIdx = Math.min(startIdx + maxPerRun, artistNames.length);
+  // Self-chaining: offset (or legacy start), max_chains, chain counter
+  const startIdx = parseInt((req.query.offset ?? req.query.start) as string || '0', 10);
+  const maxChains = Math.min(parseInt(req.query.max_chains as string || '5', 10), 10);
+  const chainNum = parseInt(req.query.chain as string || '0', 10);
+  // Process 2,000 artists per chain (fits within 300s Vercel timeout)
+  const BATCH_SIZE = 2000;
+  const endIdx = Math.min(startIdx + BATCH_SIZE, artistNames.length);
   const batch = artistNames.slice(startIdx, endIdx);
 
-  console.log(`[CRON] Scanning artists ${startIdx}-${endIdx} of ${artistNames.length}`);
+  console.log(`[CRON] Chain ${chainNum}/${maxChains}: scanning artists ${startIdx}-${endIdx} of ${artistNames.length}`);
 
   // Scan in batches, save to Supabase progressively
   const batchSize = 50;
@@ -276,24 +280,45 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   }
 
-  // Self-chain: if not complete, fire the next batch automatically
-  if (!isComplete) {
-    const nextUrl = `${protocol}://${scanHost}/api/cron-scan-weekly?start=${endIdx}`;
-    console.log(`[CRON] Chaining next batch: ${endIdx}-${Math.min(endIdx + maxPerRun, artistNames.length)}`);
-    // Fire-and-forget — don't await, let this invocation return
-    fetch(nextUrl, {
-      method: 'GET',
-      headers: { 'Authorization': `Bearer ${CRON_SECRET}` },
-    }).catch(e => console.error('[CRON] Chain failed:', e));
+  // Self-chain: if not complete AND chains remaining, invoke next batch
+  const chainsRemaining = maxChains - chainNum - 1;
+  let chainStatus: 'complete' | 'paused_at_chain_limit' | 'chaining' | 'chain_failed' = 'complete';
+
+  if (!isComplete && chainsRemaining > 0) {
+    // 1-second delay to prevent rate limiting
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    const nextChain = chainNum + 1;
+    const weekParam = weekOverride ? `&week=${weekOverride}` : '';
+    const nextUrl = `${protocol}://${scanHost}/api/cron-scan-weekly?offset=${endIdx}&max_chains=${maxChains}&chain=${nextChain}${weekParam}`;
+    console.log(`[CRON] Chaining → chain ${nextChain}/${maxChains}: artists ${endIdx}-${Math.min(endIdx + BATCH_SIZE, artistNames.length)}`);
+    try {
+      const chainResp = await fetch(nextUrl, {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${CRON_SECRET}` },
+      });
+      if (!chainResp.ok) {
+        console.error(`[CRON] Chain ${nextChain} returned ${chainResp.status} — stopping`);
+        chainStatus = 'chain_failed';
+      } else {
+        chainStatus = 'chaining';
+      }
+    } catch (e) {
+      console.error(`[CRON] Chain ${nextChain} failed:`, e);
+      chainStatus = 'chain_failed';
+    }
+  } else if (!isComplete) {
+    chainStatus = 'paused_at_chain_limit';
+    console.log(`[CRON] Chain limit reached (${maxChains}). Paused at artist ${endIdx}/${artistNames.length}`);
   }
 
   return res.status(200).json({
-    status: isComplete ? 'complete' : 'in_progress',
+    status: chainStatus,
     week: weekDate,
+    chain: chainNum,
+    max_chains: maxChains,
     artists_scanned: scanned,
     tracks_found: totalTracks,
     range: `${startIdx}-${endIdx} of ${artistNames.length}`,
-    next: isComplete ? null : `/api/cron-scan-weekly?start=${endIdx}`,
-    chained: !isComplete,
+    next: isComplete ? null : `/api/cron-scan-weekly?offset=${endIdx}&max_chains=${maxChains}&chain=${chainNum + 1}`,
   });
 }
