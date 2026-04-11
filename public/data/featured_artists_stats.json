@@ -1,0 +1,1792 @@
+{
+  "artists": [
+    {
+      "artist_name": "Ashley Anne",
+      "weeks_featured": 2,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 2
+    },
+    {
+      "artist_name": "Brandon Lake",
+      "weeks_featured": 2,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 2
+    },
+    {
+      "artist_name": "Callie Prince",
+      "weeks_featured": 2,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 2
+    },
+    {
+      "artist_name": "Cassidy Daniels",
+      "weeks_featured": 2,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 2
+    },
+    {
+      "artist_name": "Danielle Bradbery",
+      "weeks_featured": 2,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 4
+    },
+    {
+      "artist_name": "Ella Boh",
+      "weeks_featured": 2,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 2
+    },
+    {
+      "artist_name": "Jordyn Shellhart",
+      "weeks_featured": 2,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 2
+    },
+    {
+      "artist_name": "Mackenzie Carpenter",
+      "weeks_featured": 2,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 2
+    },
+    {
+      "artist_name": "Madison Parks",
+      "weeks_featured": 2,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 2
+    },
+    {
+      "artist_name": "Mason Ramsey",
+      "weeks_featured": 2,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 2
+    },
+    {
+      "artist_name": "Sam Barber",
+      "weeks_featured": 2,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 26
+    },
+    {
+      "artist_name": "Sam Williams",
+      "weeks_featured": 2,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 2
+    },
+    {
+      "artist_name": "Tiera Kennedy",
+      "weeks_featured": 2,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 2
+    },
+    {
+      "artist_name": "Chloe Collins",
+      "weeks_featured": 2,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 6
+    },
+    {
+      "artist_name": "Charley Crockett",
+      "weeks_featured": 2,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 40
+    },
+    {
+      "artist_name": "Lee Brice",
+      "weeks_featured": 2,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 2
+    },
+    {
+      "artist_name": "Ryan Cooper",
+      "weeks_featured": 2,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 2
+    },
+    {
+      "artist_name": "Jillian Dawn",
+      "weeks_featured": 2,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 15
+    },
+    {
+      "artist_name": "Kayley Bishop",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 14
+    },
+    {
+      "artist_name": "Brittany Rae",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 2
+    },
+    {
+      "artist_name": "Jamie Floyd",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Susan Werner",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Kyndal",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Kelly Boesch",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 30
+    },
+    {
+      "artist_name": "Ella Langley",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 18
+    },
+    {
+      "artist_name": "Rita Wilson",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Willie Tate",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Waylon Payne",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "India Ramey",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 4
+    },
+    {
+      "artist_name": "Brock Burton",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Kyle Cox",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Jessee Lee",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Gary Frost",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "PARTY WAVE",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 2
+    },
+    {
+      "artist_name": "Kyle Austin",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Landon Smith",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Carter Orion",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Chandler Leighton",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "saywhen",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 3
+    },
+    {
+      "artist_name": "Slade Coulter",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Matt McClure",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Dustin Kines",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Evan Mathews",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Kyrsta McKade",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Luke White",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Brooks Huntley",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Alyssa Trahan",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 12
+    },
+    {
+      "artist_name": "Aaron Razel",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "PGF Omerta",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Scott Clay",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Elyse Wilkinson",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 6
+    },
+    {
+      "artist_name": "Jay Allen",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Jake Puliti",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Troy Grove",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 2
+    },
+    {
+      "artist_name": "Lucas Leon",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Lockwood Barr",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "David J",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Kirstie Kraus",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Will Finley",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Max Seidman",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Keegan Sutton",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 8
+    },
+    {
+      "artist_name": "Josh Ross",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 2
+    },
+    {
+      "artist_name": "Walker Montgomery",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Colby Acuff",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 2
+    },
+    {
+      "artist_name": "Karaoke All Keys",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 2
+    },
+    {
+      "artist_name": "Elvie Shane",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Seth Summers",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Porter Wagoner",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 10
+    },
+    {
+      "artist_name": "Dave East",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 10
+    },
+    {
+      "artist_name": "Eli Brown",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Bleeding Fingers",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 9
+    },
+    {
+      "artist_name": "Gareth",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 2
+    },
+    {
+      "artist_name": "Kristen Bell",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Dante Bowe",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Frank Walker",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Hayden Blount",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Meiwa",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Ted Patton",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Antonio Neal",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 10
+    },
+    {
+      "artist_name": "Cole Reeves",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 14
+    },
+    {
+      "artist_name": "Katrina Stone",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 2
+    },
+    {
+      "artist_name": "Brooke Alexx",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 4
+    },
+    {
+      "artist_name": "Indica",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 24
+    },
+    {
+      "artist_name": "kBeats",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Bedford",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 3
+    },
+    {
+      "artist_name": "Ely Rosario",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Tyler Corbin",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Michael DuBois",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 12
+    },
+    {
+      "artist_name": "Michael Jackson",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 26
+    },
+    {
+      "artist_name": "John Summit",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Jon Kennedy",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Johnny McGuire",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "JoJo Scott",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Jonesey",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Jennie Angel",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Aureliaslight",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Jenny Tolman",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Jessica Sevier",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Jillian Cardarelli",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Jim Brickman",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 8
+    },
+    {
+      "artist_name": "Jim Brown",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Joe Jenneman",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 6
+    },
+    {
+      "artist_name": "Joe Jordan",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-03",
+      "last_featured": "2026-04-03",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Marshmello",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Cody Johnson",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 2
+    },
+    {
+      "artist_name": "Alana Springsteen",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Blake Rackler",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 20
+    },
+    {
+      "artist_name": "David Nail",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 2
+    },
+    {
+      "artist_name": "Drew !",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Brady Lee",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 2
+    },
+    {
+      "artist_name": "Bridgette Tatum",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Ashley Walls",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Holdyn Barder",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Jaypitts",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Just Jayne",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 4
+    },
+    {
+      "artist_name": "Tyler Hilton",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Cody Jasper",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 10
+    },
+    {
+      "artist_name": "Emily Ann Roberts",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 3
+    },
+    {
+      "artist_name": "Kenny Sharp",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Allison Russell",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 2
+    },
+    {
+      "artist_name": "Zoe Cummins",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Brad Tursi",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 3
+    },
+    {
+      "artist_name": "Niko Moon",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Paxton Peay",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Ava Claire",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Wyatt Putman",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Allie Colleen",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Crystal Motel",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Winyah",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Tenille Arts",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Brice Long",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 8
+    },
+    {
+      "artist_name": "Jordan Mitchell",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Jordana Bryant",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Sadie Campbell",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 2
+    },
+    {
+      "artist_name": "Brett Young",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Canaan Cox",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Emily Zeck",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Andrew St James",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 11
+    },
+    {
+      "artist_name": "Britnee Kellogg",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Dusty Leigh",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Riley Roth",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Scott Berry",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Charly Reynolds",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "The Night Owl",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 20
+    },
+    {
+      "artist_name": "Brett Westgrove",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Clever",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Joseph Haydn",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 41
+    },
+    {
+      "artist_name": "Johann Sebastian Bach",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 50
+    },
+    {
+      "artist_name": "Justin Lee",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Matt Schuster",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Andrew Lippa",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Daniel Jordan",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 15
+    },
+    {
+      "artist_name": "Kind Hearted Strangers",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Alex Hall",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Franck Roger",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 2
+    },
+    {
+      "artist_name": "Ricky Young",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 2
+    },
+    {
+      "artist_name": "Brittany Kennell",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Lance and Lea",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Luke Borchelt",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Alyssa Micaela",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Annie Bosko",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 2
+    },
+    {
+      "artist_name": "CHASE WRIGHT",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Eddie And The Getaway",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Owen Riegling",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 6
+    },
+    {
+      "artist_name": "Conner Smith",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Pete Martin",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 3
+    },
+    {
+      "artist_name": "Adam Sanders",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Brandon Bing",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Louie Bello",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 6
+    },
+    {
+      "artist_name": "Ann Seeza",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Blake Henderson",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Trippy Ja",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Ash Ruder",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Kylie Morgan",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 8
+    },
+    {
+      "artist_name": "Wesko",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Jeffrey East",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 6
+    },
+    {
+      "artist_name": "Donny Van Slee",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Kenny Whitmire",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 4
+    },
+    {
+      "artist_name": "Reed Pittman",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Carson Beyer",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 2
+    },
+    {
+      "artist_name": "Lindsey Lomis",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Tatum Scott",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Jessy Fury",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Kelsey Lamb",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Because Villains",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 4
+    },
+    {
+      "artist_name": "Jenny Teator",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Outliers",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Rhys Rutherford",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "verygently",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 5
+    },
+    {
+      "artist_name": "James Johnston",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Connor McCutcheon",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Wuki",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "empty castles",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Luca Blue",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Ben Danaher",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 5
+    },
+    {
+      "artist_name": "REECE",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Ingrid Griffin",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Teddy Robb",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Hayden Coffman",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 6
+    },
+    {
+      "artist_name": "Sarah Jane",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Tim Montana",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "King Vaudeville",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Kygo",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Luky",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Drew Green",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Halle Kearns",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 2
+    },
+    {
+      "artist_name": "Sully Burrows",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "James the Seventh",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Multi Ultra",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "July Turner",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "John Haywood",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Bryson Cooper",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Kelly McTigue",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Brooks Herring",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "chasingwhiterabbits",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Gracee Shriver",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Master Peace",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Nightly",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "The Roads Below",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Jade Million",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Josiah and the Bonnevilles",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 3
+    },
+    {
+      "artist_name": "Jessica Willis Fisher",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Mary Sarah",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Trevor Martin",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "JasonMartin",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 13
+    },
+    {
+      "artist_name": "Mitch Rossell",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "80 ACRES",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 5
+    },
+    {
+      "artist_name": "Erin Kinsey",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Kyle Coulahan",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Maggie Rose",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Scout Speer",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Stephanie Quayle",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 2
+    },
+    {
+      "artist_name": "Evanescence",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 10
+    },
+    {
+      "artist_name": "Paul McCartney",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 14
+    },
+    {
+      "artist_name": "Bryan Ruby",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 1
+    },
+    {
+      "artist_name": "Lena Hall",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 6
+    },
+    {
+      "artist_name": "Cate",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 8
+    },
+    {
+      "artist_name": "Matt Crocker",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 19
+    },
+    {
+      "artist_name": "Alexander Pappas",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 5
+    },
+    {
+      "artist_name": "Jackson Dean",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 8
+    },
+    {
+      "artist_name": "David Ambrosio",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 5
+    },
+    {
+      "artist_name": "Melanie C",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 12
+    },
+    {
+      "artist_name": "Dave Harrington",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 7
+    },
+    {
+      "artist_name": "Terry Allen & Blood Sucking Maniacs",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 22
+    },
+    {
+      "artist_name": "Jenn Johnson",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 9
+    },
+    {
+      "artist_name": "Tenroc",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 9
+    },
+    {
+      "artist_name": "Mark Wilkinson",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 5
+    },
+    {
+      "artist_name": "Laibach",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 8
+    },
+    {
+      "artist_name": "Benjamin Tod",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 10
+    },
+    {
+      "artist_name": "Michael Ball",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 10
+    },
+    {
+      "artist_name": "Brian Jackson",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 9
+    },
+    {
+      "artist_name": "Rostam",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 9
+    },
+    {
+      "artist_name": "Matt Evans",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 10
+    },
+    {
+      "artist_name": "Sadie Fine",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 6
+    },
+    {
+      "artist_name": "EZRA",
+      "weeks_featured": 1,
+      "first_featured": "2026-04-10",
+      "last_featured": "2026-04-10",
+      "total_tracks_featured": 2
+    }
+  ],
+  "total_artists": 255,
+  "total_weeks": 2,
+  "exported_at": "2026-04-11T11:05:53.515263-05:00"
+}
