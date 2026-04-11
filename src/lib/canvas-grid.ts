@@ -891,6 +891,7 @@ function postProcessGrid(ctx: CanvasRenderingContext2D, t: CarouselTemplate) {
 export interface SlideComposerCredit {
   name: string;
   charting: number;
+  publisher?: string | null;
 }
 
 export async function generateGridSlide(
@@ -989,27 +990,38 @@ export async function generateGridSlide(
       ctx.font = `400 14px "DM Sans", sans-serif`;
       ctx.fillText('Written by', dim.w / 2, creditY);
 
-      // Each songwriter: name + charting count in teal
+      // Each songwriter: name + publisher + charting count in teal
       topCredits.forEach((c, i) => {
         const y = creditY + 20 + i * lineH;
+        const pubName = c.publisher ? c.publisher.split('/')[0].trim() : '';
+        const truncPub = pubName.length > 25 ? pubName.slice(0, 24) + '\u2026' : pubName;
         const label = `${c.name}`;
+        const pubLabel = truncPub ? ` \u2014 ${truncPub}` : '';
         const stat = ` (${c.charting} charting)`;
 
         ctx.font = `600 16px "DM Sans", sans-serif`;
         const labelW = ctx.measureText(label).width;
+        ctx.font = `400 13px "DM Sans", sans-serif`;
+        const pubW = ctx.measureText(pubLabel).width;
         ctx.font = `400 14px "JetBrains Mono", monospace`;
         const statW = ctx.measureText(stat).width;
-        const totalW = labelW + statW;
+        const totalW = labelW + pubW + statW;
         const startX = (dim.w - totalW) / 2;
 
         ctx.font = `600 16px "DM Sans", sans-serif`;
         ctx.fillStyle = t.textPrimary || '#F0EDE8';
-        ctx.fillText(label, startX + labelW / 2, y);
+        ctx.textAlign = 'left';
+        ctx.fillText(label, startX, y);
+
+        if (pubLabel) {
+          ctx.font = `400 13px "DM Sans", sans-serif`;
+          ctx.fillStyle = '#8899AA';
+          ctx.fillText(pubLabel, startX + labelW, y);
+        }
 
         ctx.font = `400 14px "JetBrains Mono", monospace`;
         ctx.fillStyle = '#3EE6C3'; // ND teal
-        ctx.textAlign = 'left';
-        ctx.fillText(stat, startX + labelW, y);
+        ctx.fillText(stat, startX + labelW + pubW, y);
         ctx.textAlign = 'center';
       });
 
