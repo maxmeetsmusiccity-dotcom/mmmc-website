@@ -136,6 +136,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (!albumRes.ok) continue;
       const albumData = await albumRes.json();
 
+      // Collect album IDs that match date window, then batch-fetch tracks
+      const matchingAlbums: AppleAlbum[] = [];
       for (const album of (albumData.data || []) as AppleAlbum[]) {
         const releaseDate = album.attributes.releaseDate;
         // Include future releases up to 4 weeks out for "Coming Soon" feature
@@ -143,13 +145,43 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         futureLimit.setDate(futureLimit.getDate() + 28);
         const futureLimitStr = futureLimit.toISOString().split('T')[0];
         if (!releaseDate || releaseDate < cutoffStr || releaseDate > futureLimitStr) continue;
+        matchingAlbums.push(album);
+      }
 
+      // Batch-fetch tracks for matching albums (up to 25 per request) to get composerName
+      const albumTrackMap = new Map<string, { composerName: string | null; tracks: any[] }>();
+      if (matchingAlbums.length > 0) {
+        const batchIds = matchingAlbums.map(a => a.id).slice(0, 25);
+        try {
+          const trackRes = await fetch(
+            `${APPLE_API}/albums?ids=${batchIds.join(',')}&include=tracks`,
+            { headers },
+          );
+          if (trackRes.ok) {
+            const trackData = await trackRes.json();
+            for (const albumDetail of (trackData.data || [])) {
+              const tracks = albumDetail.relationships?.tracks?.data || [];
+              const firstTrack = tracks[0];
+              albumTrackMap.set(albumDetail.id, {
+                composerName: firstTrack?.attributes?.composerName || null,
+                tracks,
+              });
+            }
+          }
+        } catch { /* batch fetch failed — continue without composer data */ }
+      }
+
+      for (const album of matchingAlbums) {
+        const releaseDate = album.attributes.releaseDate;
         const artUrl = album.attributes.artwork?.url
           ?.replace('{w}', '640').replace('{h}', '640') || '';
         const art300 = album.attributes.artwork?.url
           ?.replace('{w}', '300').replace('{h}', '300') || '';
 
-        // Each album as a track entry (Apple doesn't return tracks in album list)
+        const trackInfo = albumTrackMap.get(album.id);
+        const composerName = trackInfo?.composerName || null;
+
+        // Each album as a track entry
         const trackId = `apple_${album.id}`;
         if (seenIds.has(trackId)) continue;
         seenIds.add(trackId);
@@ -160,7 +192,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           track_uri: '',
           track_spotify_url: '',
           track_id: trackId,
-          duration_ms: 0,
+          duration_ms: trackInfo?.tracks?.[0]?.attributes?.durationInMillis || 0,
           explicit: false,
           album_name: album.attributes.name,
           artist_names: artistName,
@@ -177,6 +209,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           cover_art_300: art300,
           cover_art_64: art300,
           apple_music_url: album.attributes.url,
+          composer_name: composerName,
         });
       }
     }

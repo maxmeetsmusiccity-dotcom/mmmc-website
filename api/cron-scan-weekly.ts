@@ -195,24 +195,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const tracks = data.tracks || [];
         appleTracks += tracks.length;
         if (tracks.length > 0) {
-          const rows = tracks.map((t: any) => ({
-            scan_week: weekDate,
-            spotify_artist_id: t.artist_id || t.apple_music_id || null,
-            artist_name: t.artist_names || t.artist_name,
-            track_id: t.track_id || t.isrc || `apple_${t.track_name}_${t.artist_names}`.replace(/\s/g, '_'),
-            track_name: t.track_name,
-            album_name: t.album_name,
-            album_id: t.album_id || null,
-            album_type: t.album_type || 'single',
-            release_date: t.release_date,
-            cover_art_640: t.cover_art_640 || t.artwork_url || null,
-            cover_art_300: t.cover_art_300 || null,
-            track_number: t.track_number || 1,
-            duration_ms: t.duration_ms || 0,
-            explicit: t.explicit || false,
-            total_tracks: t.total_tracks || 1,
-            spotify_url: null,
-          }));
+          const rows = tracks.map((t: any) => {
+            const row: Record<string, any> = {
+              scan_week: weekDate,
+              spotify_artist_id: t.artist_id || t.apple_music_id || null,
+              artist_name: t.artist_names || t.artist_name,
+              track_id: t.track_id || t.isrc || `apple_${t.track_name}_${t.artist_names}`.replace(/\s/g, '_'),
+              track_name: t.track_name,
+              album_name: t.album_name,
+              album_id: t.album_id || null,
+              album_type: t.album_type || 'single',
+              release_date: t.release_date,
+              cover_art_640: t.cover_art_640 || t.artwork_url || null,
+              cover_art_300: t.cover_art_300 || null,
+              track_number: t.track_number || 1,
+              duration_ms: t.duration_ms || 0,
+              explicit: t.explicit || false,
+              total_tracks: t.total_tracks || 1,
+              spotify_url: null,
+            };
+            // Save composer data if available (column must exist — graceful if not)
+            if (t.composer_name) row.composer_name = t.composer_name;
+            return row;
+          });
           // Upsert — won't duplicate if track_id matches a Spotify entry
           await supabase.from('weekly_nashville_releases').upsert(rows, { onConflict: 'scan_week,track_id' });
         }
