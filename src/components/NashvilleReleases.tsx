@@ -473,7 +473,7 @@ export default function NashvilleReleases({ showcases, onImport, activeShowcase,
             </select>
           ) : week && <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginLeft: 8 }}>Week of {week}</span>}
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button onClick={selectAll} style={{ fontSize: 'var(--fs-sm)', color: 'var(--steel)', cursor: 'pointer', background: 'none', border: 'none', fontWeight: 600 }}>
             Select All
           </button>
@@ -562,7 +562,7 @@ export default function NashvilleReleases({ showcases, onImport, activeShowcase,
             }}
           >⊞</button>
         </div>
-        {viewMode === 'grid' && (
+        {viewMode === 'grid' && !isMobileGrid && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
             <button onClick={() => { const v = Math.max(100, tileSize - 30); setTileSize(v); localStorage.setItem('nr_tile_size', String(v)); }}
               style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 14 }}>&#8722;</button>
