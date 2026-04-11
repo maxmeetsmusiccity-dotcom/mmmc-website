@@ -43,7 +43,7 @@ export default function MobileResultsView({
   allTracks, releases, selections, onSelectionChange,
   selectionsByAlbum: _selectionsByAlbum, onSelectRelease, onDeselect: _onDeselect, onSetCoverFeature,
   featureCounts: _featureCounts, generating, onGenerate, allPreviews,
-  onDownloadAll: _onDownloadAll, onDownloadSlide,
+  onDownloadAll, onDownloadSlide,
   tracksPerSlide, onTracksPerSlideChange, carouselAspect = '1:1', onAspectChange,
   pushSelectionHistory,
   gridTemplateId: gridTplProp, onGridTemplateChange,
@@ -175,8 +175,12 @@ export default function MobileResultsView({
             style={{ width: '100%', justifyContent: 'center', fontSize: 'var(--fs-lg)', padding: '14px 0' }}>
             {typeof navigator !== 'undefined' && 'share' in navigator ? 'Save to Photos' : 'Download All'} ({allPreviews.length} slides)
           </button>
-          <button className="btn" onClick={() => onDownloadSlide(activeSlide)}
+          <button className="btn" onClick={onDownloadAll}
             style={{ width: '100%', justifyContent: 'center' }}>
+            Download ZIP ({allPreviews.length} slides)
+          </button>
+          <button className="btn" onClick={() => onDownloadSlide(activeSlide)}
+            style={{ width: '100%', justifyContent: 'center', fontSize: 'var(--fs-sm)', color: 'var(--text-muted)' }}>
             Download This Slide
           </button>
         </div>
