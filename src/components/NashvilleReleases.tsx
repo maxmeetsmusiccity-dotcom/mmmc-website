@@ -61,8 +61,24 @@ export default function NashvilleReleases({ showcases, onImport, activeShowcase,
   const [showcaseArtists, setShowcaseArtists] = useState<Set<string>>(new Set());
   const [loadingShowcase, setLoadingShowcase] = useState(false);
 
-  // Fetch ALL showcase artist lists for per-showcase stats + filtering
-  const [allShowcaseArtists, setAllShowcaseArtists] = useState<Map<string, Set<string>>>(new Map());
+  // Fetch ALL showcase artist lists — with localStorage data cache (stale-while-revalidate)
+  const SHOWCASE_CACHE_KEY = 'showcase_artists_data_cache';
+  const SHOWCASE_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+  const [allShowcaseArtists, setAllShowcaseArtists] = useState<Map<string, Set<string>>>(() => {
+    // Hydrate from cache immediately for instant rendering
+    try {
+      const raw = localStorage.getItem(SHOWCASE_CACHE_KEY);
+      if (raw) {
+        const { data, timestamp } = JSON.parse(raw);
+        if (Date.now() - timestamp < SHOWCASE_CACHE_TTL && data) {
+          const map = new Map<string, Set<string>>();
+          for (const [k, v] of Object.entries(data)) map.set(k, new Set(v as string[]));
+          return map;
+        }
+      }
+    } catch { /* no cache */ }
+    return new Map();
+  });
   useEffect(() => {
     if (showcases.length === 0) return;
     let cancelled = false;
@@ -78,7 +94,15 @@ export default function NashvilleReleases({ showcases, onImport, activeShowcase,
           .catch(() => {})
       )
     ).then(() => {
-      if (!cancelled) setAllShowcaseArtists(fetched);
+      if (!cancelled) {
+        setAllShowcaseArtists(fetched);
+        // Persist to localStorage for instant hydration next time
+        try {
+          const serializable: Record<string, string[]> = {};
+          for (const [k, v] of fetched) serializable[k] = [...v];
+          localStorage.setItem(SHOWCASE_CACHE_KEY, JSON.stringify({ data: serializable, timestamp: Date.now() }));
+        } catch { /* quota */ }
+      }
     });
     return () => { cancelled = true; };
   }, [showcases]);
