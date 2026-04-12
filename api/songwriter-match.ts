@@ -39,27 +39,35 @@ async function loadCache(req: VercelRequest): Promise<CacheShape | null> {
   if (cachedData) return cachedData;
   if (cachePromise) return cachePromise;
 
-  // Build the CDN URL for the static asset
-  // Prefer the public production domain; fall back to VERCEL_URL (current deployment)
-  const host = process.env.VERCEL_URL || req.headers.host || 'maxmeetsmusiccity.com';
-  const protocol = host.includes('localhost') ? 'http' : 'https';
-  const baseHost = host.replace(/^https?:\/\//, '');
-  const url = `${protocol}://${baseHost}/data/songwriter_cache.json`;
+  // Try multiple source URLs in order. Production CDN is most reliable.
+  const hostHeader = req.headers.host || '';
+  const vercelUrl = process.env.VERCEL_URL || '';
+  const candidates = [
+    'https://maxmeetsmusiccity.com/data/songwriter_cache.json',
+    vercelUrl ? `https://${vercelUrl}/data/songwriter_cache.json` : '',
+    hostHeader ? `https://${hostHeader.replace(/^https?:\/\//, '')}/data/songwriter_cache.json` : '',
+  ].filter(Boolean);
 
   cachePromise = (async () => {
-    try {
-      const res = await fetch(url, { headers: { 'Accept-Encoding': 'br, gzip' } });
-      if (!res.ok) return null;
-      const data = await res.json() as CacheShape;
-      cachedData = data;
-      return data;
-    } catch (e) {
-      console.error('[songwriter-match] Failed to load cache:', e);
-      return null;
-    } finally {
-      cachePromise = null;
+    for (const url of candidates) {
+      try {
+        const res = await fetch(url);
+        if (!res.ok) {
+          console.warn(`[songwriter-match] ${url} → ${res.status}`);
+          continue;
+        }
+        const data = await res.json() as CacheShape;
+        if (data?.writers && data?.aliases) {
+          cachedData = data;
+          return data;
+        }
+      } catch (e) {
+        console.warn(`[songwriter-match] fetch failed for ${url}:`, e instanceof Error ? e.message : e);
+      }
     }
-  })();
+    console.error('[songwriter-match] All cache URLs exhausted');
+    return null;
+  })().finally(() => { cachePromise = null; });
 
   return cachePromise;
 }
