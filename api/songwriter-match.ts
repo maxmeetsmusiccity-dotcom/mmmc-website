@@ -1,6 +1,4 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import * as fs from 'node:fs';
-import * as path from 'node:path';
 
 /**
  * Server-side songwriter lookup API.
@@ -12,7 +10,8 @@ import * as path from 'node:path';
  * loading when scale demands it.
  *
  * Cache strategy:
- *   - Cache loaded once per function instance (module scope)
+ *   - Cache fetched from CDN (static public asset) on cold start
+ *   - Module-scoped in-memory cache for hot function reuse
  *   - Response cached at edge for 24h via s-maxage
  */
 
@@ -34,24 +33,35 @@ interface CacheShape {
 }
 
 let cachedData: CacheShape | null = null;
+let cachePromise: Promise<CacheShape | null> | null = null;
 
-function loadCache(): CacheShape | null {
+async function loadCache(req: VercelRequest): Promise<CacheShape | null> {
   if (cachedData) return cachedData;
-  // Try reading from the deployment bundle (Vercel includes public/)
-  const candidates = [
-    path.join(process.cwd(), 'public', 'data', 'songwriter_cache.json'),
-    path.join(__dirname, '..', 'public', 'data', 'songwriter_cache.json'),
-  ];
-  for (const p of candidates) {
+  if (cachePromise) return cachePromise;
+
+  // Build the CDN URL for the static asset
+  // Prefer the public production domain; fall back to VERCEL_URL (current deployment)
+  const host = process.env.VERCEL_URL || req.headers.host || 'maxmeetsmusiccity.com';
+  const protocol = host.includes('localhost') ? 'http' : 'https';
+  const baseHost = host.replace(/^https?:\/\//, '');
+  const url = `${protocol}://${baseHost}/data/songwriter_cache.json`;
+
+  cachePromise = (async () => {
     try {
-      if (fs.existsSync(p)) {
-        const raw = fs.readFileSync(p, 'utf8');
-        cachedData = JSON.parse(raw) as CacheShape;
-        return cachedData;
-      }
-    } catch { /* next candidate */ }
-  }
-  return null;
+      const res = await fetch(url, { headers: { 'Accept-Encoding': 'br, gzip' } });
+      if (!res.ok) return null;
+      const data = await res.json() as CacheShape;
+      cachedData = data;
+      return data;
+    } catch (e) {
+      console.error('[songwriter-match] Failed to load cache:', e);
+      return null;
+    } finally {
+      cachePromise = null;
+    }
+  })();
+
+  return cachePromise;
 }
 
 function parseComposerNames(str: string): string[] {
@@ -74,9 +84,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'POST or GET only' });
   }
 
-  const cache = loadCache();
+  const cache = await loadCache(req);
   if (!cache) {
-    return res.status(503).json({ error: 'Songwriter cache not available on this deployment' });
+    return res.status(503).json({ error: 'Songwriter cache not available' });
   }
 
   // Accept names via POST body or GET query
