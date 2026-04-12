@@ -30,6 +30,7 @@ export interface NashvilleRelease {
   peak_position?: number;
   weeks_on_chart?: number;
   label?: string;
+  composer_name?: string | null;
 }
 
 export interface WeeklyReleasesResponse {
@@ -163,5 +164,6 @@ export function releasesToTrackItems(releases: NashvilleRelease[]): TrackItem[] 
     cover_art_640: r.cover_art_url || '',
     cover_art_300: r.cover_art_300 || r.cover_art_url || '',
     cover_art_64: r.cover_art_300 || r.cover_art_url || '',
+    composer_name: r.composer_name || null,
   }));
 }

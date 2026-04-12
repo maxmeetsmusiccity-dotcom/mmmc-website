@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import type { TrackItem } from '../lib/spotify';
 import { getLastFriday } from '../lib/spotify';
-import { generateGridSlide, generateTitleSlide, downloadBlob, type CarouselAspect } from '../lib/canvas-grid';
+import { generateGridSlide, generateTitleSlide, downloadBlob, type CarouselAspect, type SlideComposerCredit } from '../lib/canvas-grid';
 import { getVisibleTemplates } from '../lib/carousel-templates';
 import { getGridsForCount } from '../lib/grid-layouts';
 // getPlatform used indirectly via platformId
@@ -125,6 +125,73 @@ const CarouselPreviewPanel = forwardRef<CarouselPanelHandle, Props>(function Car
   const [comparePreviews, setComparePreviews] = useState<{ id: string; name: string; url: string }[]>([]);
   // Title editing now handled by UnifiedTemplateBuilder via TitleTemplatePicker
 
+  // Songwriter credit slide toggle — Ward's feedback (default ON for user delight)
+  const [showComposerCredits, setShowComposerCredits] = useState(() => {
+    try {
+      const saved = localStorage.getItem('nmf_show_composer_credits');
+      return saved === null ? true : saved === 'true';
+    } catch { return true; }
+  });
+
+  // Songwriter cache for credit lookup at generation time
+  const songwriterCacheRef = useRef<Map<string, { display_name: string; charting_songs: number; no1_songs: number; publisher: string | null }>>(new Map());
+  const songwriterAliasesRef = useRef<Map<string, string>>(new Map());
+  const [cacheLoaded, setCacheLoaded] = useState(false);
+  useEffect(() => {
+    if (!showComposerCredits || cacheLoaded) return;
+    fetch('/data/songwriter_cache.json')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!data?.writers) return;
+        const writers = new Map<string, any>();
+        for (const [k, v] of Object.entries(data.writers)) writers.set(k, v);
+        const aliases = new Map<string, string>();
+        if (data.aliases) {
+          for (const [alias, target] of Object.entries(data.aliases)) aliases.set(alias, target as string);
+        }
+        songwriterCacheRef.current = writers;
+        songwriterAliasesRef.current = aliases;
+        setCacheLoaded(true);
+      })
+      .catch(() => {});
+  }, [showComposerCredits, cacheLoaded]);
+
+  /** Parse Apple Music composerName string, dedupe, lookup in cache, return top 3 with charting > 0 */
+  const buildCreditsForTrack = (composerName: string | null | undefined): SlideComposerCredit[] => {
+    if (!composerName) return [];
+    const skip = new Set(['traditional', 'public domain', 'unknown', 'various', 'n/a']);
+    const names = composerName.replace(/ & /g, ', ').replace(/\band\b/gi, ',')
+      .split(',').map(s => s.trim()).filter(s => s.length >= 2 && !skip.has(s.toLowerCase()));
+    const writers = songwriterCacheRef.current;
+    const aliases = songwriterAliasesRef.current;
+    const credits: SlideComposerCredit[] = [];
+    const seen = new Set<string>();
+    for (const name of names) {
+      const key = name.toLowerCase().trim();
+      const target = aliases.get(key) || key;
+      const info = writers.get(target);
+      if (info && info.charting_songs > 0 && !seen.has(target)) {
+        seen.add(target);
+        credits.push({
+          name: info.display_name,
+          charting: info.charting_songs,
+          publisher: info.publisher,
+        });
+      }
+    }
+    return credits.sort((a, b) => b.charting - a.charting).slice(0, 3);
+  };
+
+  /** Compute the composer credits to use for a slide group — uses first track with composer_name */
+  const creditsForSlideGroup = (tracks: TrackItem[]): SlideComposerCredit[] => {
+    if (!showComposerCredits) return [];
+    for (const t of tracks) {
+      const credits = buildCreditsForTrack(t.composer_name);
+      if (credits.length > 0) return credits;
+    }
+    return [];
+  };
+
   void platformId; // used in cross-platform export
   const weekDate = getLastFriday();
 
@@ -184,13 +251,15 @@ const CarouselPreviewPanel = forwardRef<CarouselPanelHandle, Props>(function Car
     })));
     // Clear previous preview immediately to show loading state
     setGridPreview('');
-    generateGridSlide(slots, weekDate, gridTemplateId, logoUrl, gridLayoutId, carouselAspect)
+    const previewCredits = creditsForSlideGroup(firstSlice);
+    generateGridSlide(slots, weekDate, gridTemplateId, logoUrl, gridLayoutId, carouselAspect, undefined, previewCredits)
       .then(blob => {
         const url = URL.createObjectURL(blob);
         setGridPreview(prev => { if (prev) URL.revokeObjectURL(prev); return url; });
       })
       .catch(e => console.error('[PREVIEW] Grid render error:', e));
-  }, [gridTemplateId, gridLayoutId, selectedTracks, tracksPerSlide, weekDate, carouselAspect, logoUrl]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gridTemplateId, gridLayoutId, selectedTracks, tracksPerSlide, weekDate, carouselAspect, logoUrl, showComposerCredits, cacheLoaded]);
 
   // Live preview: render title slide using TitleSlideTemplate (independent of grid template)
   useEffect(() => {
@@ -234,14 +303,15 @@ const CarouselPreviewPanel = forwardRef<CarouselPanelHandle, Props>(function Car
         urls.push(URL.createObjectURL(titleBlob));
       }
 
-      // Grid slides
+      // Grid slides — each gets composer credits from its first track with a match
       for (const group of slideGroups) {
         const slots = buildSlots(group.tracks.map((t, i) => ({
           track: t, albumId: t.album_spotify_id,
           selectionNumber: i + 1, slideGroup: 1,
           positionInSlide: i + 1, isCoverFeature: false,
         })));
-        const blob = await generateGridSlide(slots, weekDate, gridTemplateId, logoUrl, group.gridId || gridLayoutId, carouselAspect);
+        const credits = creditsForSlideGroup(group.tracks);
+        const blob = await generateGridSlide(slots, weekDate, gridTemplateId, logoUrl, group.gridId || gridLayoutId, carouselAspect, undefined, credits);
         urls.push(URL.createObjectURL(blob));
       }
 
@@ -407,6 +477,29 @@ const CarouselPreviewPanel = forwardRef<CarouselPanelHandle, Props>(function Car
             selected={gridLayoutId}
             onSelect={(id) => { hasUserChangedLayout.current = true; setGridLayoutId(id); setAllPreviews([]); }}
           />
+
+          {/* Songwriter credits toggle — Ward's feedback */}
+          <div style={{ marginBottom: 20, padding: '10px 12px', background: 'var(--midnight)', border: '1px solid var(--midnight-border)', borderRadius: 10 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={showComposerCredits}
+                onChange={e => {
+                  const v = e.target.checked;
+                  setShowComposerCredits(v);
+                  try { localStorage.setItem('nmf_show_composer_credits', String(v)); } catch { /* quota */ }
+                  setAllPreviews([]); // force regen
+                }}
+                style={{ width: 16, height: 16, cursor: 'pointer', accentColor: 'var(--gold)' }}
+              />
+              <span>
+                <span style={{ fontSize: 'var(--fs-md)', color: 'var(--text-primary)', fontWeight: 600 }}>Show songwriter credits</span>
+                <span style={{ display: 'block', fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)', marginTop: 2 }}>
+                  Adds "Written by" section on grid slides when track has matched ND writers
+                </span>
+              </span>
+            </label>
+          </div>
 
           {/* Platform section removed — Carousel Shape toggle handles aspect ratio */}
 

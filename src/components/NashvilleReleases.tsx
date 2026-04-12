@@ -260,6 +260,7 @@ export default function NashvilleReleases({ showcases, onImport, activeShowcase,
             explicit: r.explicit || false,
             total_tracks: r.total_tracks || 1,
             is_charting: false,
+            composer_name: r.composer_name || null,
           }));
           setReleases(mapped);
           setWeek(data[0]?.scan_week || '');

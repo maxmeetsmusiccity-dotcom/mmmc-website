@@ -56,6 +56,7 @@ export interface TrackItem {
   cover_art_300: string;
   cover_art_64: string;
   apple_music_url?: string;
+  composer_name?: string | null;
 }
 
 export interface ReleaseCluster {
