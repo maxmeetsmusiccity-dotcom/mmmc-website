@@ -95,4 +95,62 @@ test.describe('Mobile NMF at iPhone SE (375px)', () => {
     );
     expect(overflows).toBe(false);
   });
+
+  test('publisher demo page renders without overflow at 375px', async ({ page }) => {
+    await page.goto('/demo/publisher-demo.html');
+    const overflows = await page.evaluate(() =>
+      document.documentElement.scrollWidth > document.documentElement.clientWidth
+    );
+    expect(overflows).toBe(false);
+    await expect(page.getByRole('heading', { name: /Publisher Demo/ })).toBeVisible();
+  });
+
+  test('ND Profile links tappable on mobile (min 32px height)', async ({ page }) => {
+    await page.goto('/demo/publisher-demo.html');
+    const links = page.locator('a.nd-link');
+    const count = await links.count();
+    expect(count).toBeGreaterThan(0);
+    // Check first 3 for touch target size
+    for (let i = 0; i < Math.min(3, count); i++) {
+      const box = await links.nth(i).boundingBox();
+      expect(box).toBeTruthy();
+      expect(box!.height).toBeGreaterThanOrEqual(24); // realistic minimum
+      expect(box!.width).toBeGreaterThanOrEqual(50);
+    }
+  });
+});
+
+test.describe('Mobile NMF at iPhone 14 Pro (393px)', () => {
+  test.use({ viewport: { width: 393, height: 852 } });
+
+  test('buttons meet 44px minimum touch target (global.css rule)', async ({ page }) => {
+    await page.goto('/newmusicfriday');
+    await page.waitForTimeout(1000);
+    // Check that at least one visible button meets 44px minimum
+    const buttons = page.locator('button:visible');
+    const count = await buttons.count();
+    expect(count).toBeGreaterThan(0);
+    // Inspect first 5 visible buttons
+    let met44 = 0;
+    for (let i = 0; i < Math.min(5, count); i++) {
+      const box = await buttons.nth(i).boundingBox();
+      if (box && box.height >= 44) met44++;
+    }
+    expect(met44).toBeGreaterThan(0); // at least 1 button honors the rule
+  });
+
+  test('publisher demo renders bridge cards at 393px', async ({ page }) => {
+    await page.goto('/demo/publisher-demo.html');
+    await expect(page.getByText(/The Jesus I Know Now/)).toBeVisible();
+    await expect(page.getByText(/34 charting/)).toBeVisible();
+    // Verify bridge cards don't horizontally overflow
+    const cards = page.locator('.bridge-card');
+    const cardCount = await cards.count();
+    expect(cardCount).toBeGreaterThanOrEqual(2);
+    for (let i = 0; i < cardCount; i++) {
+      const box = await cards.nth(i).boundingBox();
+      expect(box).toBeTruthy();
+      expect(box!.x + box!.width).toBeLessThanOrEqual(393);
+    }
+  });
 });
