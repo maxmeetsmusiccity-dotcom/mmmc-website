@@ -31,7 +31,10 @@ test.describe('Publisher demo page (bridge cards)', () => {
     for (let i = 0; i < count; i++) {
       const link = ndLinks.nth(i);
       const href = await link.getAttribute('href');
-      expect(href).toMatch(/^https:\/\/nashvilledecoder\.com\/profiles\.html\?id=pg_/);
+      // Accept both conventions: pg_<12hex> (current) and PG_AUTO_<16hex> (legacy auto-assigned).
+      // Wave 6 Block 1 replaced lowercase placeholders with real ids pulled from /api/songwriter-match;
+      // one of them (Aaron Eshuis) uses the PG_AUTO_ legacy prefix.
+      expect(href).toMatch(/^https:\/\/nashvilledecoder\.com\/profiles\.html\?id=(pg_[0-9a-f]{12}|PG_AUTO_[0-9a-f]+)$/);
       const target = await link.getAttribute('target');
       expect(target).toBe('_blank');
     }
