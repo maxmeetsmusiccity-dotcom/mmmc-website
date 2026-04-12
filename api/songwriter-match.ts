@@ -126,12 +126,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // Resolve each name through alias chain → writer
   const matches: SongwriterInfo[] = [];
+  // matches_by_input: preserves the original (lowercased, parsed) input key → writer
+  // mapping so clients that lookup by their own parsed composer name don't have to
+  // re-implement alias resolution or match on display_name. Added in Wave 6 Block 5
+  // so ComingSoon.tsx can swap its 12MB static cache fetch for this API endpoint.
+  const matchesByInput: Record<string, SongwriterInfo> = {};
   const seen = new Set<string>();
   const unmatched: string[] = [];
   for (const key of parsedNames) {
     const target = cache.aliases[key] || key;
     const info = cache.writers[target];
     if (info) {
+      matchesByInput[key] = info;
       if (!seen.has(info.pg_id)) {
         seen.add(info.pg_id);
         matches.push(info);
@@ -146,6 +152,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   return res.status(200).json({
     matches,
+    matches_by_input: matchesByInput,
     unmatched,
     total_input: parsedNames.size,
     total_matched: matches.length,

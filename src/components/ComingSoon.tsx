@@ -63,27 +63,47 @@ export default function ComingSoon({ releases, showcaseArtists, showcases }: Pro
   const [songwriterCache, setSongwriterCache] = useState<Map<string, SongwriterInfo | null>>(new Map());
   const [expandedAlbum, setExpandedAlbum] = useState<string | null>(null);
 
-  // Load songwriter cache (static JSON — built by Thread B)
+  // Collect unique composer names across all releases — used to drive the
+  // /api/songwriter-match batch lookup below. Stable memoized key so the
+  // API is hit once per releases change, not once per render.
+  const uniqueComposerNames = useMemo(() => {
+    const names = new Set<string>();
+    for (const r of releases) {
+      for (const name of parseComposerName(r.composer_name)) {
+        names.add(name);
+      }
+    }
+    return [...names];
+  }, [releases]);
+
+  // Wave 6 Block 5: replaced the 12MB /data/songwriter_cache.json fetch with
+  // a per-request batch POST to /api/songwriter-match. The API handles alias
+  // resolution server-side and returns matches_by_input so we can build a
+  // lookup Map keyed by the exact lowercased input strings this component
+  // already uses, with zero client-side alias-resolution logic.
   useEffect(() => {
-    fetch('/data/songwriter_cache.json')
+    if (uniqueComposerNames.length === 0) {
+      setSongwriterCache(new Map());
+      return;
+    }
+    let cancelled = false;
+    fetch('/api/songwriter-match', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ composer_names: uniqueComposerNames }),
+    })
       .then(r => r.ok ? r.json() : null)
       .then(data => {
-        if (!data?.writers) return;
+        if (cancelled || !data?.matches_by_input) return;
         const cache = new Map<string, SongwriterInfo | null>();
-        for (const [key, val] of Object.entries(data.writers)) {
-          cache.set(key, val as SongwriterInfo);
-        }
-        // Also index by alias
-        if (data.aliases) {
-          for (const [alias, canonical] of Object.entries(data.aliases)) {
-            const writer = cache.get(canonical as string);
-            if (writer) cache.set(alias, writer);
-          }
+        for (const [key, info] of Object.entries(data.matches_by_input as Record<string, SongwriterInfo>)) {
+          cache.set(key, info);
         }
         setSongwriterCache(cache);
       })
       .catch(() => {});
-  }, []);
+    return () => { cancelled = true; };
+  }, [uniqueComposerNames]);
 
   // Group releases by album, then by Friday week
   const grouped = useMemo(() => {
