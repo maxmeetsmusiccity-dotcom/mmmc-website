@@ -194,27 +194,38 @@ describe('cron self-chaining logic', () => {
 });
 
 // Cron self-healing: resume offset computation
+// Wave 6 Block 2: the old derived formula (chain_number * BATCH + artists_scanned)
+// silently skipped ranges when a chain was self-healed into a non-BATCH-aligned
+// start. The fixed formula reads start_offset off the persisted scan_runs row.
 describe('cron self-healing resume offset', () => {
-  const BATCH = 2000;
-
-  function computeResumeOffset(lastPaused: { chain_number: number; artists_scanned: number }): number {
-    return (lastPaused.chain_number || 0) * BATCH + (lastPaused.artists_scanned || 0);
+  function computeResumeOffset(lastPaused: { start_offset?: number | null; artists_scanned?: number | null }): number {
+    return (lastPaused.start_offset ?? 0) + (lastPaused.artists_scanned || 0);
   }
 
-  it('chain 0 scanned 2000 → resume at 2000', () => {
-    expect(computeResumeOffset({ chain_number: 0, artists_scanned: 2000 })).toBe(2000);
+  it('chain 0 fresh start, scanned 2000 → resume at 2000', () => {
+    expect(computeResumeOffset({ start_offset: 0, artists_scanned: 2000 })).toBe(2000);
   });
 
-  it('chain 2 scanned 2000 → resume at 6000', () => {
-    expect(computeResumeOffset({ chain_number: 2, artists_scanned: 2000 })).toBe(6000);
+  it('chain 2 (started at offset 4000), scanned 2000 → resume at 6000', () => {
+    expect(computeResumeOffset({ start_offset: 4000, artists_scanned: 2000 })).toBe(6000);
   });
 
-  it('chain 4 partial scan 500 → resume at 8500', () => {
-    expect(computeResumeOffset({ chain_number: 4, artists_scanned: 500 })).toBe(8500);
+  it('chain 4 (started at offset 8000), partial scan 500 → resume at 8500', () => {
+    expect(computeResumeOffset({ start_offset: 8000, artists_scanned: 500 })).toBe(8500);
   });
 
-  it('defensive: missing fields default to 0', () => {
-    expect(computeResumeOffset({ chain_number: 0, artists_scanned: 0 })).toBe(0);
+  it('Bug #2 regression: self-healed chain 0 started at offset 500, scanned 2000 → resume at 2500', () => {
+    // Old broken math: (0 * 2000 + 2000) = 2000, which silently skipped [500, 2500).
+    // Fixed math: 500 + 2000 = 2500.
+    expect(computeResumeOffset({ start_offset: 500, artists_scanned: 2000 })).toBe(2500);
+  });
+
+  it('defensive: missing start_offset defaults to 0', () => {
+    expect(computeResumeOffset({ artists_scanned: 0 })).toBe(0);
+  });
+
+  it('defensive: null start_offset defaults to 0', () => {
+    expect(computeResumeOffset({ start_offset: null, artists_scanned: 1500 })).toBe(1500);
   });
 });
 

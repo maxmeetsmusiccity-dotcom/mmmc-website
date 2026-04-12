@@ -83,18 +83,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   }
 
-  // Observability: log this chain's start (graceful if table doesn't exist)
+  // Observability: measure chain duration from here (includes R2 load + self-heal lookup)
   const chainStartMs = Date.now();
   let scanRunId: number | null = null;
-  try {
-    const { data } = await supabase.from('scan_runs').insert({
-      target_week: weekDate,
-      chain_number: chainNum,
-      total_chains: maxChains,
-      status: 'running',
-    }).select('id').single();
-    scanRunId = data?.id || null;
-  } catch { /* scan_runs table may not exist yet */ }
 
   // Try to load artist list from R2
   let artistNames: string[] = SEED_ARTISTS;
@@ -142,23 +133,38 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       const { data: recent } = await supabase
         .from('scan_runs')
-        .select('target_week, chain_number, artists_scanned, status, run_date')
+        .select('target_week, chain_number, artists_scanned, status, run_date, start_offset')
         .gte('run_date', since)
         .in('status', ['paused_at_chain_limit', 'chain_failed'])
         .order('run_date', { ascending: false })
         .limit(1);
       const lastPaused = recent?.[0];
       if (lastPaused && lastPaused.target_week === weekDate && lastPaused.artists_scanned) {
-        // Resume from where that chain left off
-        // (chain_number * BATCH_SIZE + artists_scanned approximates where it stopped)
-        const resumeOffset = (lastPaused.chain_number || 0) * 2000 + (lastPaused.artists_scanned || 0);
+        // Resume from where that chain actually started + what it managed to scan.
+        // start_offset is written at chain start (below), so this is correct
+        // regardless of whether the previous chain was triggered fresh, via
+        // explicit offset query param, or via self-healing recovery.
+        const resumeOffset = (lastPaused.start_offset ?? 0) + (lastPaused.artists_scanned || 0);
         startIdx = resumeOffset;
-        console.log(`[CRON] Self-healing: resuming from offset ${startIdx} (last ${lastPaused.status})`);
+        console.log(`[CRON] Self-healing: resuming from offset ${startIdx} (last ${lastPaused.status}, prev chain started at ${lastPaused.start_offset ?? 0}, scanned ${lastPaused.artists_scanned})`);
       }
     } catch (e) {
       console.warn('[CRON] Self-healing lookup failed, starting from 0:', e);
     }
   }
+
+  // Observability: log this chain's start NOW that startIdx is finalized.
+  // Graceful if scan_runs table or start_offset column doesn't exist yet.
+  try {
+    const { data } = await supabase.from('scan_runs').insert({
+      target_week: weekDate,
+      chain_number: chainNum,
+      total_chains: maxChains,
+      start_offset: startIdx,
+      status: 'running',
+    }).select('id').single();
+    scanRunId = data?.id || null;
+  } catch { /* scan_runs table or start_offset column may not exist yet */ }
 
   // Process 2,000 artists per chain (fits within 300s Vercel timeout)
   const BATCH_SIZE = 2000;
