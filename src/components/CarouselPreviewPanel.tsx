@@ -182,14 +182,14 @@ const CarouselPreviewPanel = forwardRef<CarouselPanelHandle, Props>(function Car
     return credits.sort((a, b) => b.charting - a.charting).slice(0, 3);
   };
 
-  /** Compute the composer credits to use for a slide group — uses first track with composer_name */
+  /** Compute the composer credits to use for a slide group.
+   *  Wave 6 Block 3: only render credits on single-track slides. Rendering
+   *  one track's writers beneath a multi-track grid misleads viewers into
+   *  thinking those writers worked on every track in the grid. */
   const creditsForSlideGroup = (tracks: TrackItem[]): SlideComposerCredit[] => {
     if (!showComposerCredits) return [];
-    for (const t of tracks) {
-      const credits = buildCreditsForTrack(t.composer_name);
-      if (credits.length > 0) return credits;
-    }
-    return [];
+    if (tracks.length !== 1) return [];
+    return buildCreditsForTrack(tracks[0].composer_name);
   };
 
   void platformId; // used in cross-platform export
@@ -493,9 +493,9 @@ const CarouselPreviewPanel = forwardRef<CarouselPanelHandle, Props>(function Car
                 style={{ width: 16, height: 16, cursor: 'pointer', accentColor: 'var(--gold)' }}
               />
               <span>
-                <span style={{ fontSize: 'var(--fs-md)', color: 'var(--text-primary)', fontWeight: 600 }}>Show songwriter credits</span>
+                <span style={{ fontSize: 'var(--fs-md)', color: 'var(--text-primary)', fontWeight: 600 }}>Show songwriter credits on single-track slides</span>
                 <span style={{ display: 'block', fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)', marginTop: 2 }}>
-                  Adds "Written by" section on grid slides when track has matched ND writers
+                  Adds "Written by" section when a slide features one track with matched ND writers. Multi-track grids skip credits to avoid misattribution.
                 </span>
               </span>
             </label>
