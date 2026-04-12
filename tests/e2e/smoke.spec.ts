@@ -51,10 +51,11 @@ test('this week page loads', async ({ page }) => {
   await expect(page.getByRole('heading', { name: /This Week/ })).toBeVisible();
 });
 
-test('NMF page shows connect options when no token', async ({ page }) => {
+test('NMF page shows zero-login Nashville source by default for guests', async ({ page }) => {
   await guestBypass(page);
   await page.goto('/newmusicfriday');
-  // Without Spotify token, should show the Connect Spotify heading
-  await expect(page.getByRole('heading', { name: /Connect.*Spotify/ })).toBeVisible();
-  await expect(page.getByRole('button', { name: /Try Demo/ })).toBeVisible();
+  // Guests land directly on the zero-login Nashville source (default as of Wave 1+)
+  // Either the Nashville scan CTA OR the SourceSelector should be visible.
+  const nashvilleVisible = await page.getByText(/Nashville|Scan/).first().isVisible().catch(() => false);
+  expect(nashvilleVisible).toBe(true);
 });
