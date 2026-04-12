@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NMF Demo — Songwriter Intelligence for Publishers</title>
+<meta name="robots" content="noindex, nofollow" />
+<style>
+  body {
+    font-family: 'DM Sans', -apple-system, sans-serif;
+    background: #0F1B33;
+    color: #F0EDE8;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 40px 20px;
+    line-height: 1.6;
+  }
+  h1 { color: #D4A843; font-family: Georgia, serif; margin-bottom: 8px; }
+  h2 { color: #3EE6C3; margin-top: 40px; font-size: 20px; }
+  .subtitle { color: #A0B4C8; margin-bottom: 32px; }
+  .bridge-card {
+    background: rgba(212,168,67,0.06);
+    border: 1px solid #B08A2E;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .track-header { display: flex; gap: 16px; align-items: center; margin-bottom: 16px; }
+  .track-art { width: 80px; height: 80px; border-radius: 8px; background: #2A3A5C; flex-shrink: 0; object-fit: cover; }
+  .track-info { flex: 1; }
+  .artist { font-weight: 700; font-size: 18px; }
+  .track-name { color: #A0B4C8; }
+  .release-date { font-family: 'JetBrains Mono', monospace; color: #6B7F95; font-size: 12px; }
+  .writers-label { color: #D4A843; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 8px; text-transform: uppercase; }
+  .writer-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 14px; margin-bottom: 6px;
+    background: #0F1B33; border-radius: 8px;
+    border: 1px solid #2A3A5C;
+  }
+  .writer-name { font-weight: 700; }
+  .writer-stats { color: #3EE6C3; font-family: 'JetBrains Mono', monospace; font-size: 13px; margin-left: 10px; }
+  .writer-pub { color: #6B7F95; font-size: 11px; margin-left: 10px; }
+  .nd-link {
+    padding: 6px 12px; border-radius: 6px;
+    border: 1px solid #B08A2E; color: #D4A843;
+    text-decoration: none; font-size: 12px; font-weight: 600;
+    white-space: nowrap;
+  }
+  .nd-link:hover { background: rgba(212,168,67,0.1); }
+  .footer {
+    margin-top: 60px; padding-top: 20px; border-top: 1px solid #2A3A5C;
+    text-align: center; color: #6B7F95; font-size: 12px;
+  }
+  .pitch {
+    background: #162341;
+    border-left: 3px solid #3EE6C3;
+    padding: 20px;
+    margin: 32px 0;
+    border-radius: 4px;
+  }
+  .pitch strong { color: #F0EDE8; }
+</style>
+</head>
+<body>
+
+<h1>NMF Curator Studio — Publisher Demo</h1>
+<p class="subtitle">Songwriter intelligence on pre-release tracks. The data publishers have never seen before.</p>
+
+<div class="pitch">
+  <p><strong>The pitch:</strong> Every Friday, Max publishes a New Music Friday Instagram carousel for 18K followers. With Nashville Decoder powering it, every track shows the songwriter credits — charting stats, publisher affiliations, and a link to the full Nashville Decoder profile.</p>
+  <p>These tracks haven't dropped yet. Apple Music returns <code>composerName</code> on pre-release metadata. Nashville Decoder's 61,668-writer database matches names against 155,000 deduplicated credit edges from Mediabase, Billboard, NSAI, and ASCAP.</p>
+  <p><strong>The ask:</strong> When your writers show up in this carousel, your publishing house gets seen by 18K engaged industry followers. Nashville Decoder shows you which releases are coming and what to prioritize.</p>
+</div>
+
+<h2>Live Example — Coming Soon on NMF</h2>
+
+<div class="bridge-card">
+  <div class="track-header">
+    <img src="https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/3f/82/90/3f8290ba-b6cd-2028-0fc1-844e25bf0389/196874252284.jpg/300x300bb.jpg"
+         alt="" class="track-art" />
+    <div class="track-info">
+      <div class="artist">Lainey Wilson</div>
+      <div class="track-name">The Jesus I Know Now</div>
+      <div class="release-date">Releasing 2026-04-03 · Single</div>
+    </div>
+  </div>
+  <div class="writers-label">✍ Songwriters</div>
+
+  <div class="writer-row">
+    <div>
+      <span class="writer-name">Luke Laird</span>
+      <span class="writer-stats">34 charting · 24 #1s</span>
+      <span class="writer-pub">Sony Music Publishing</span>
+    </div>
+    <a href="https://nashvilledecoder.com/profiles.html?id=pg_luke_laird" class="nd-link" target="_blank">ND Profile →</a>
+  </div>
+
+  <div class="writer-row">
+    <div>
+      <span class="writer-name">Lainey Wilson</span>
+      <span class="writer-stats">25 charting · 14 #1s</span>
+      <span class="writer-pub">Marquee tier</span>
+    </div>
+    <a href="https://nashvilledecoder.com/profiles.html?id=pg_lainey_wilson" class="nd-link" target="_blank">ND Profile →</a>
+  </div>
+
+  <div class="writer-row">
+    <div>
+      <span class="writer-name">Emily Weisband</span>
+      <span class="writer-stats">10 charting</span>
+      <span class="writer-pub">THiS Music</span>
+    </div>
+    <a href="https://nashvilledecoder.com/profiles.html?id=pg_emily_weisband" class="nd-link" target="_blank">ND Profile →</a>
+  </div>
+</div>
+
+<div class="bridge-card">
+  <div class="track-header">
+    <div class="track-art"></div>
+    <div class="track-info">
+      <div class="artist">Tucker Wetmore</div>
+      <div class="track-name">Sunburn</div>
+      <div class="release-date">Releasing 2026-04-04 · Single</div>
+    </div>
+  </div>
+  <div class="writers-label">✍ Songwriters</div>
+
+  <div class="writer-row">
+    <div>
+      <span class="writer-name">Ryan Hurd</span>
+      <span class="writer-stats">21 charting · 7 #1s</span>
+      <span class="writer-pub">Marquee tier</span>
+    </div>
+    <a href="https://nashvilledecoder.com/profiles.html?id=pg_ryan_hurd" class="nd-link" target="_blank">ND Profile →</a>
+  </div>
+
+  <div class="writer-row">
+    <div>
+      <span class="writer-name">Daniel Ross</span>
+      <span class="writer-stats">4 charting · 1 #1</span>
+      <span class="writer-pub">Rising tier</span>
+    </div>
+    <a href="https://nashvilledecoder.com/profiles.html?id=pg_daniel_ross" class="nd-link" target="_blank">ND Profile →</a>
+  </div>
+
+  <div class="writer-row">
+    <div>
+      <span class="writer-name">Jaxson Free</span>
+      <span class="writer-stats">4 charting · 3 #1s</span>
+      <span class="writer-pub">Marquee tier</span>
+    </div>
+    <a href="https://nashvilledecoder.com/profiles.html?id=pg_jaxson_free" class="nd-link" target="_blank">ND Profile →</a>
+  </div>
+</div>
+
+<div class="footer">
+  <p>Data sources: Apple Music (composer credits) + Nashville Decoder (charting stats, publisher affiliations)</p>
+  <p>Songwriter database: 61,668 writers · 155K+ deduplicated credit edges · 39 cross-verified sources</p>
+  <p style="margin-top:16px; font-size: 14px; color: #D4A843;">
+    <strong>nashvilledecoder.com</strong>
+  </p>
+</div>
+
+</body>
+</html>
