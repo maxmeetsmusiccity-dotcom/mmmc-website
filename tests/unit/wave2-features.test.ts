@@ -193,6 +193,31 @@ describe('cron self-chaining logic', () => {
   });
 });
 
+// Cron self-healing: resume offset computation
+describe('cron self-healing resume offset', () => {
+  const BATCH = 2000;
+
+  function computeResumeOffset(lastPaused: { chain_number: number; artists_scanned: number }): number {
+    return (lastPaused.chain_number || 0) * BATCH + (lastPaused.artists_scanned || 0);
+  }
+
+  it('chain 0 scanned 2000 → resume at 2000', () => {
+    expect(computeResumeOffset({ chain_number: 0, artists_scanned: 2000 })).toBe(2000);
+  });
+
+  it('chain 2 scanned 2000 → resume at 6000', () => {
+    expect(computeResumeOffset({ chain_number: 2, artists_scanned: 2000 })).toBe(6000);
+  });
+
+  it('chain 4 partial scan 500 → resume at 8500', () => {
+    expect(computeResumeOffset({ chain_number: 4, artists_scanned: 500 })).toBe(8500);
+  });
+
+  it('defensive: missing fields default to 0', () => {
+    expect(computeResumeOffset({ chain_number: 0, artists_scanned: 0 })).toBe(0);
+  });
+});
+
 // ============================================================
 // Showcase Data Cache Tests
 // ============================================================

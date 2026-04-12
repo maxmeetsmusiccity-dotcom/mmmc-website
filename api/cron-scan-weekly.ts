@@ -131,7 +131,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   console.log(`[CRON] Total artists to scan: ${artistNames.length} (${SEED_ARTISTS.length} seed first)`);
 
   // Self-chaining: offset (or legacy start) — chainNum and maxChains parsed above
-  const startIdx = parseInt((req.query.offset ?? req.query.start) as string || '0', 10);
+  let startIdx = parseInt((req.query.offset ?? req.query.start) as string || '0', 10);
+
+  // Self-healing: if this is a fresh cron trigger (chain 0, no explicit offset)
+  // and there's a paused/failed run from the last 24h, resume from there instead
+  // of starting over from 0. Prevents wasted daily quota.
+  const explicitOffset = req.query.offset !== undefined || req.query.start !== undefined;
+  if (chainNum === 0 && !explicitOffset) {
+    try {
+      const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const { data: recent } = await supabase
+        .from('scan_runs')
+        .select('target_week, chain_number, artists_scanned, status, run_date')
+        .gte('run_date', since)
+        .in('status', ['paused_at_chain_limit', 'chain_failed'])
+        .order('run_date', { ascending: false })
+        .limit(1);
+      const lastPaused = recent?.[0];
+      if (lastPaused && lastPaused.target_week === weekDate && lastPaused.artists_scanned) {
+        // Resume from where that chain left off
+        // (chain_number * BATCH_SIZE + artists_scanned approximates where it stopped)
+        const resumeOffset = (lastPaused.chain_number || 0) * 2000 + (lastPaused.artists_scanned || 0);
+        startIdx = resumeOffset;
+        console.log(`[CRON] Self-healing: resuming from offset ${startIdx} (last ${lastPaused.status})`);
+      }
+    } catch (e) {
+      console.warn('[CRON] Self-healing lookup failed, starting from 0:', e);
+    }
+  }
+
   // Process 2,000 artists per chain (fits within 300s Vercel timeout)
   const BATCH_SIZE = 2000;
   const endIdx = Math.min(startIdx + BATCH_SIZE, artistNames.length);
