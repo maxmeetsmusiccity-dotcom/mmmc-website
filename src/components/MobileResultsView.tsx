@@ -35,6 +35,12 @@ interface Props {
   onTitleTemplateChange?: (id: string) => void;
   logoUrl?: string;
   onLogoChange?: (url: string) => void;
+  // Wave 7 Block 5D — target track count for the carousel (N/M counter
+  // denominator) + New Scan action. Threaded down from NewMusicFriday
+  // where `targetCount` already lives at line 129.
+  targetCount?: number;
+  onTargetCountChange?: (n: number) => void;
+  onNewScan?: () => void;
 }
 
 type ViewMode = 'grid' | 'list';
@@ -51,6 +57,7 @@ export default function MobileResultsView({
   gridTemplateId: gridTplProp, onGridTemplateChange,
   titleTemplateId: titleTplProp, onTitleTemplateChange,
   logoUrl: logoProp, onLogoChange,
+  targetCount = 16, onTargetCountChange, onNewScan,
 }: Props) {
   const { user } = useAuth();
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
@@ -334,19 +341,63 @@ export default function MobileResultsView({
         background: 'var(--midnight)', borderBottom: '1px solid var(--midnight-border)',
         padding: '8px 12px',
       }}>
-        {/* Row 1: count + search */}
+        {/* Wave 7 Block 5D — Row 1: N/target counter + target dropdown +
+            New Scan. Mirrors the desktop top toolbar at
+            NewMusicFriday.tsx:1163-1194. Color logic matches desktop:
+              - grey when nothing selected
+              - gold when below or at target
+              - red when over target (accompanied by "Over!" hint)
+            The target <select> uses 1-50 to match desktop's range and
+            supports any carousel Max wants to build. */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-          <span className="mono" style={{
-            fontSize: 'var(--fs-xl)', fontWeight: 700, flexShrink: 0,
-            color: selections.length > 0 ? 'var(--gold)' : 'var(--text-muted)',
-          }}>
+          <span
+            data-testid="mobile-target-counter"
+            className="mono"
+            style={{
+              fontSize: 'var(--fs-xl)', fontWeight: 700, flexShrink: 0,
+              color: selections.length > targetCount
+                ? 'var(--mmmc-red)'
+                : selections.length > 0
+                  ? 'var(--gold)'
+                  : 'var(--text-muted)',
+            }}>
             {selections.length}
             <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-sm)', fontWeight: 400 }}>
-              /{allTracks.length}
+              /{targetCount}
             </span>
           </span>
+          <select
+            data-testid="mobile-target-select"
+            value={targetCount}
+            onChange={e => onTargetCountChange?.(Number(e.target.value))}
+            aria-label="Target track count"
+            style={{
+              background: 'var(--midnight)', border: '1px solid var(--midnight-border)',
+              borderRadius: 6, color: 'var(--text-secondary)', padding: '4px 6px',
+              fontSize: 'var(--fs-xs)', fontFamily: 'var(--font-mono)',
+              flexShrink: 0, minHeight: 32,
+            }}
+          >
+            {Array.from({ length: 50 }, (_, i) => i + 1).map(n => (
+              <option key={n} value={n}>{n}</option>
+            ))}
+          </select>
+          {onNewScan && (
+            <button
+              onClick={onNewScan}
+              aria-label="New Scan"
+              title="New Scan"
+              style={{
+                background: 'none', border: '1px solid var(--midnight-border)', borderRadius: 6,
+                color: 'var(--text-muted)', cursor: 'pointer',
+                padding: '4px 8px', fontSize: 'var(--fs-2xs)', flexShrink: 0,
+                whiteSpace: 'nowrap',
+              }}>
+              New
+            </button>
+          )}
           <input
-            type="text" placeholder="Search..."
+            type="text" placeholder="Search…"
             value={search} onChange={e => setSearch(e.target.value)}
             className="search-input"
             style={{ flex: 1, fontSize: 'var(--fs-sm)', padding: '6px 10px', minWidth: 0 }}

@@ -1121,6 +1121,9 @@ export default function NewMusicFriday() {
           onTitleTemplateChange={(id: string) => carouselRef.current?.setTitleTemplateId?.(id)}
           logoUrl={carouselRef.current?.getLogoUrl?.()}
           onLogoChange={(url: string) => carouselRef.current?.setLogoUrl?.(url)}
+          targetCount={targetCount}
+          onTargetCountChange={setTargetCount}
+          onNewScan={() => setPhase('ready')}
         />
         </Suspense>
       )}
