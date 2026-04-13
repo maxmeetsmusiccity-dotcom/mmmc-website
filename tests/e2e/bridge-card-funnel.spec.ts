@@ -130,3 +130,144 @@ test.describe('NMF route exists and serves content', () => {
     expect(hasOverflow).toBe(false);
   });
 });
+
+// ============================================================
+// Live Coming Soon tab funnel — Wave 6 Addendum #7
+// ============================================================
+// The publisher funnel's money click lives on the live Coming Soon tab of
+// /newmusicfriday, not on the static /demo/publisher-demo.html page. Every
+// other test in this file verifies the demo copy; this describe block
+// verifies the real surface. The assertions are conditional on live data
+// (future-dated releases with composer_name populated), which is upstream
+// of Thread C — so the tests degrade gracefully when data is missing rather
+// than flaking.
+
+test.describe('Live Coming Soon tab funnel', () => {
+  // Reaching the Coming Soon pill requires actually clicking through the
+  // AuthGate as a guest — setting localStorage alone leaves you on the
+  // landing screen. The button hands off to continueAsGuest() AND sets
+  // sessionStorage.nmf_entered=1 which is what AuthGate checks.
+  async function openNmfAsGuest(page: import('@playwright/test').Page) {
+    await page.goto('/newmusicfriday');
+    const guestBtn = page.getByRole('button', { name: /Get Started as a Guest/i });
+    await guestBtn.waitFor({ state: 'visible', timeout: 15000 });
+    await guestBtn.click();
+    // After click, NewMusicFriday renders with activeSource='nashville' (default)
+    // which lazy-loads <NashvilleReleases>. Give the Suspense boundary + first
+    // Supabase query a generous window before asserting anything data-dependent.
+    await page.waitForLoadState('networkidle', { timeout: 20000 }).catch(() => {});
+  }
+
+  test('Coming Soon tab opens and renders the ComingSoon component', async ({ page }) => {
+    await openNmfAsGuest(page);
+
+    // The Coming Soon filter pill only renders when at least one future-dated
+    // release exists in Supabase. If Thread A's cron has been quiet, skip
+    // rather than fail — this is upstream data, not a Thread C regression.
+    // Disambiguate from the Apple Music source card labelled "COMING SOON"
+    // (meaning "feature not yet available"). The filter pill always carries
+    // the crystal-ball emoji as its leading glyph.
+    const comingSoonBtn = page.getByRole('button', { name: /🔮 Coming Soon/ });
+    const appeared = await comingSoonBtn
+      .waitFor({ state: 'visible', timeout: 20000 })
+      .then(() => true)
+      .catch(() => false);
+    test.skip(!appeared, 'No future-dated Nashville releases in Supabase right now — cannot exercise Coming Soon funnel');
+
+    // A sibling div in the zero-login flow layout intercepts pointer events,
+    // so neither a normal click nor force:true lands on the filter pill
+    // reliably — force: true also hits the overlay. Call HTMLElement.click()
+    // directly to fire the React synthetic click regardless of pointer
+    // event delivery. Actionability is already satisfied because waitFor()
+    // above confirmed the button is visible.
+    await comingSoonBtn.evaluate((btn) => (btn as HTMLButtonElement).click());
+
+    // ComingSoon component renders an h3 with the "Coming Soon" label.
+    await expect(page.getByRole('heading', { name: /Coming Soon/ })).toBeVisible({ timeout: 10000 });
+  });
+
+  test('Bridge card ND Profile links have real pg_id format (when rendered)', async ({ page }) => {
+    await openNmfAsGuest(page);
+
+    // Disambiguate from the Apple Music source card labelled "COMING SOON"
+    // (meaning "feature not yet available"). The filter pill always carries
+    // the crystal-ball emoji as its leading glyph.
+    const comingSoonBtn = page.getByRole('button', { name: /🔮 Coming Soon/ });
+    const appeared = await comingSoonBtn
+      .waitFor({ state: 'visible', timeout: 20000 })
+      .then(() => true)
+      .catch(() => false);
+    test.skip(!appeared, 'No future-dated releases — nothing to exercise');
+
+    // A sibling div in the zero-login flow layout intercepts pointer events,
+    // so neither a normal click nor force:true lands on the filter pill
+    // reliably — force: true also hits the overlay. Call HTMLElement.click()
+    // directly to fire the React synthetic click regardless of pointer
+    // event delivery. Actionability is already satisfied because waitFor()
+    // above confirmed the button is visible.
+    await comingSoonBtn.evaluate((btn) => (btn as HTMLButtonElement).click());
+    await expect(page.getByRole('heading', { name: /Coming Soon/ })).toBeVisible({ timeout: 10000 });
+
+    // Bridge cards only render for future releases whose composer_name
+    // resolves to a writer with charting_songs > 0. When that's zero the
+    // test is vacuous but still guards against link-format regressions.
+    // Lightweight network wait: if any bridge cards will render, the
+    // /api/songwriter-match call is what populates them.
+    await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
+
+    const ndLinks = page.locator('a[href*="nashvilledecoder.com/profiles.html?id="]');
+    const count = await ndLinks.count();
+    test.skip(count === 0, 'No matched writers on future releases right now — vacuous assertion');
+
+    for (let i = 0; i < count; i++) {
+      const href = await ndLinks.nth(i).getAttribute('href');
+      // Accept both conventions: pg_<12hex> and legacy PG_AUTO_<hex>.
+      expect(href).toMatch(/^https:\/\/nashvilledecoder\.com\/profiles\.html\?id=(pg_[0-9a-f]{12}|PG_AUTO_[0-9a-f]+)$/);
+    }
+  });
+
+  test('Coming Soon mount triggers /api/songwriter-match POST (when composer data exists)', async ({ page }) => {
+    await openNmfAsGuest(page);
+
+    // Begin listening for the songwriter-match POST before clicking the tab.
+    // The ComingSoon component only fires this fetch when the current releases
+    // carry at least one parseable composer_name. When the Supabase feed is
+    // dry the request never happens and the test skips cleanly.
+    const reqPromise = page
+      .waitForRequest(
+        r => r.url().includes('/api/songwriter-match') && r.method() === 'POST',
+        { timeout: 12000 },
+      )
+      .catch(() => null);
+
+    // Disambiguate from the Apple Music source card labelled "COMING SOON"
+    // (meaning "feature not yet available"). The filter pill always carries
+    // the crystal-ball emoji as its leading glyph.
+    const comingSoonBtn = page.getByRole('button', { name: /🔮 Coming Soon/ });
+    const appeared = await comingSoonBtn
+      .waitFor({ state: 'visible', timeout: 20000 })
+      .then(() => true)
+      .catch(() => false);
+    test.skip(!appeared, 'No future-dated releases — nothing to exercise');
+
+    // A sibling div in the zero-login flow layout intercepts pointer events,
+    // so neither a normal click nor force:true lands on the filter pill
+    // reliably — force: true also hits the overlay. Call HTMLElement.click()
+    // directly to fire the React synthetic click regardless of pointer
+    // event delivery. Actionability is already satisfied because waitFor()
+    // above confirmed the button is visible.
+    await comingSoonBtn.evaluate((btn) => (btn as HTMLButtonElement).click());
+    await expect(page.getByRole('heading', { name: /Coming Soon/ })).toBeVisible({ timeout: 10000 });
+
+    const req = await reqPromise;
+    test.skip(req === null, 'Future releases exist but none have composer_name — ComingSoon correctly skips the API call');
+
+    // At this point Block 5 is proven live: the component batched composer
+    // names and called the server-side matcher instead of the 12MB static
+    // cache. The response shape is covered by the unit tests above.
+    const body = req!.postDataJSON();
+    expect(body).toHaveProperty('composer_names');
+    expect(Array.isArray(body.composer_names)).toBe(true);
+    expect(body.composer_names.length).toBeGreaterThan(0);
+  });
+});
