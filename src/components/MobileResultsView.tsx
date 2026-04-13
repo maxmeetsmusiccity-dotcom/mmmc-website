@@ -337,7 +337,14 @@ export default function MobileResultsView({
           };
 
           return viewMode === 'grid' ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
+            // Wave 7 Block 3: `repeat(2, 1fr)` alone does NOT work — CSS grid
+            // tracks default to `minmax(auto, 1fr)`, and `auto` is min-content.
+            // A single cell whose child has `white-space: nowrap` (album title,
+            // artist name) makes the column blow out to the text's natural
+            // width — here that was ~1197px on a 393px viewport, turning every
+            // album cover into a 1197x1197 wall. Forcing `minmax(0, 1fr)` lets
+            // the columns actually shrink.
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10 }}>
               {filtered.map(cluster => {
                 const isSelected = selections.some(s => s.albumId === cluster.album_spotify_id);
                 const isExpanded = expandedAlbum === cluster.album_spotify_id;
@@ -347,10 +354,33 @@ export default function MobileResultsView({
                       borderRadius: 8, overflow: 'hidden', cursor: 'pointer',
                       border: isSelected ? '2px solid var(--gold)' : '2px solid transparent',
                       background: isSelected ? 'rgba(212,168,67,0.06)' : 'var(--midnight)',
+                      // Wave 7 Block 3: when expanded the grid cell spans the full
+                      // viewport (gridColumn: 1/-1). Without switching to a flex
+                      // layout the 1:1 album cover would render at full viewport
+                      // width (393x393 on iPhone 14 Pro), dominating the screen
+                      // and pushing every other control out of view. Horizontal
+                      // flex keeps the expanded state compact: 72px thumbnail +
+                      // title text inline, track picker below at full width.
+                      display: isExpanded ? 'flex' : 'block',
+                      alignItems: isExpanded ? 'center' : undefined,
+                      gap: isExpanded ? 12 : 0,
+                      padding: isExpanded ? 8 : 0,
                     }}>
                       <img src={cluster.tracks[0]?.cover_art_300 || cluster.tracks[0]?.cover_art_640}
-                        alt="" style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', display: 'block' }} />
-                      <div style={{ padding: '6px 8px' }}>
+                        alt="" style={{
+                          width: isExpanded ? 72 : '100%',
+                          height: isExpanded ? 72 : undefined,
+                          aspectRatio: isExpanded ? undefined : '1',
+                          objectFit: 'cover',
+                          display: 'block',
+                          borderRadius: isExpanded ? 6 : 0,
+                          flexShrink: 0,
+                        }} />
+                      <div style={{
+                        padding: isExpanded ? 0 : '6px 8px',
+                        flex: isExpanded ? 1 : undefined,
+                        minWidth: 0,
+                      }}>
                         <div style={{ fontSize: 'var(--fs-sm)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                           color: isSelected ? 'var(--gold)' : 'var(--text-primary)' }}>
                           {cluster.album_name}

@@ -730,7 +730,7 @@ export default function NashvilleReleases({ showcases, onImport, activeShowcase,
       <div style={isMobileGrid ? {} : { maxHeight: 600, overflowY: 'auto' }}>
         {viewMode === 'grid' ? (
           /* ── Grid tile view ── */
-          <div style={{ display: 'grid', gridTemplateColumns: isMobileGrid ? 'repeat(2, 1fr)' : `repeat(auto-fill, minmax(${effectiveTileSize}px, 1fr))`, gap: 10 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobileGrid ? 'repeat(2, minmax(0, 1fr))' : `repeat(auto-fill, minmax(${effectiveTileSize}px, 1fr))`, gap: 10 }}>
             {artistGroups.slice(0, renderLimit).map(artist => {
               const allArtistTracks = artist.releases.flatMap(r => r.tracks);
               const hasSelection = allArtistTracks.some(t => selected.has(t.spotify_track_id));
