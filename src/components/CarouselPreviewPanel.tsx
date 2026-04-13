@@ -133,28 +133,69 @@ const CarouselPreviewPanel = forwardRef<CarouselPanelHandle, Props>(function Car
     } catch { return true; }
   });
 
-  // Songwriter cache for credit lookup at generation time
-  const songwriterCacheRef = useRef<Map<string, { display_name: string; charting_songs: number; no1_songs: number; publisher: string | null }>>(new Map());
-  const songwriterAliasesRef = useRef<Map<string, string>>(new Map());
-  const [cacheLoaded, setCacheLoaded] = useState(false);
+  // Wave 7 Block 2: replaced the 12MB /data/songwriter_cache.json fetch with
+  // a per-request batch POST to /api/songwriter-match, mirroring the Block 5
+  // optimization already applied to ComingSoon.tsx. The API handles alias
+  // resolution server-side and returns matches_by_input keyed by the lowered,
+  // parsed input string so client lookup is a single Map.get() with no
+  // alias-chain logic on the client.
+  //
+  // Parses inline (same splitter as ComingSoon.parseComposerName) to avoid
+  // cross-file type drift. Result is deduped, memoized on selectedTracks +
+  // showComposerCredits so the API is hit once per selection change.
+  const uniqueComposerNames = useMemo(() => {
+    if (!showComposerCredits) return [] as string[];
+    const skip = new Set(['traditional', 'public domain', 'unknown', 'various', 'n/a']);
+    const set = new Set<string>();
+    for (const t of selectedTracks) {
+      if (!t.composer_name) continue;
+      const names = t.composer_name
+        .replace(/ & /g, ', ')
+        .replace(/\band\b/gi, ',')
+        .split(',')
+        .map(s => s.trim())
+        .filter(s => s.length >= 2 && !skip.has(s.toLowerCase()));
+      for (const n of names) set.add(n);
+    }
+    return [...set];
+  }, [selectedTracks, showComposerCredits]);
+
+  type SongwriterInfo = {
+    pg_id: string;
+    display_name: string;
+    charting_songs: number;
+    no1_songs: number;
+    publisher: string | null;
+  };
+  const [songwriterCache, setSongwriterCache] = useState<Map<string, SongwriterInfo>>(new Map());
+
   useEffect(() => {
-    if (!showComposerCredits || cacheLoaded) return;
-    fetch('/data/songwriter_cache.json')
-      .then(r => r.ok ? r.json() : null)
+    if (uniqueComposerNames.length === 0) {
+      setSongwriterCache(new Map());
+      return;
+    }
+    let cancelled = false;
+    fetch('/api/songwriter-match', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ composer_names: uniqueComposerNames }),
+    })
+      .then(r => (r.ok ? r.json() : null))
       .then(data => {
-        if (!data?.writers) return;
-        const writers = new Map<string, any>();
-        for (const [k, v] of Object.entries(data.writers)) writers.set(k, v);
-        const aliases = new Map<string, string>();
-        if (data.aliases) {
-          for (const [alias, target] of Object.entries(data.aliases)) aliases.set(alias, target as string);
+        if (cancelled || !data?.matches_by_input) return;
+        const cache = new Map<string, SongwriterInfo>();
+        for (const [key, info] of Object.entries(
+          data.matches_by_input as Record<string, SongwriterInfo>,
+        )) {
+          cache.set(key, info);
         }
-        songwriterCacheRef.current = writers;
-        songwriterAliasesRef.current = aliases;
-        setCacheLoaded(true);
+        setSongwriterCache(cache);
       })
       .catch(() => {});
-  }, [showComposerCredits, cacheLoaded]);
+    return () => {
+      cancelled = true;
+    };
+  }, [uniqueComposerNames]);
 
   /** Parse Apple Music composerName string, dedupe, lookup in cache, return top 3 with charting > 0 */
   const buildCreditsForTrack = (composerName: string | null | undefined): SlideComposerCredit[] => {
@@ -162,16 +203,13 @@ const CarouselPreviewPanel = forwardRef<CarouselPanelHandle, Props>(function Car
     const skip = new Set(['traditional', 'public domain', 'unknown', 'various', 'n/a']);
     const names = composerName.replace(/ & /g, ', ').replace(/\band\b/gi, ',')
       .split(',').map(s => s.trim()).filter(s => s.length >= 2 && !skip.has(s.toLowerCase()));
-    const writers = songwriterCacheRef.current;
-    const aliases = songwriterAliasesRef.current;
     const credits: SlideComposerCredit[] = [];
     const seen = new Set<string>();
     for (const name of names) {
       const key = name.toLowerCase().trim();
-      const target = aliases.get(key) || key;
-      const info = writers.get(target);
-      if (info && info.charting_songs > 0 && !seen.has(target)) {
-        seen.add(target);
+      const info = songwriterCache.get(key);
+      if (info && info.charting_songs > 0 && !seen.has(info.pg_id)) {
+        seen.add(info.pg_id);
         credits.push({
           name: info.display_name,
           charting: info.charting_songs,
@@ -259,7 +297,7 @@ const CarouselPreviewPanel = forwardRef<CarouselPanelHandle, Props>(function Car
       })
       .catch(e => console.error('[PREVIEW] Grid render error:', e));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gridTemplateId, gridLayoutId, selectedTracks, tracksPerSlide, weekDate, carouselAspect, logoUrl, showComposerCredits, cacheLoaded]);
+  }, [gridTemplateId, gridLayoutId, selectedTracks, tracksPerSlide, weekDate, carouselAspect, logoUrl, showComposerCredits, songwriterCache]);
 
   // Live preview: render title slide using TitleSlideTemplate (independent of grid template)
   useEffect(() => {
