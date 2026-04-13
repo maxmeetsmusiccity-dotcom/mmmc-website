@@ -1,8 +1,10 @@
-import { useState, useMemo, useCallback, useRef } from 'react';
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import type { TrackItem, ReleaseCluster } from '../lib/spotify';
+import { getLastFriday } from '../lib/spotify';
 import type { SelectionSlot } from '../lib/selection';
 import { buildSlots } from '../lib/selection';
 import type { CarouselAspect } from '../lib/canvas-grid';
+import { generateGridSlide, generateTitleSlide } from '../lib/canvas-grid';
 import { getVisibleTemplates } from '../lib/carousel-templates';
 import { getVisibleTitleTemplates, getDefaultTitleTemplateId } from '../lib/title-templates';
 import { useAuth } from '../lib/auth-context';
@@ -64,6 +66,16 @@ export default function MobileResultsView({
   const [showConfig, setShowConfig] = useState(false);
   const slideContainerRef = useRef<HTMLDivElement>(null);
 
+  // Wave 7 Block 5 — live template preview state for the Carousel Builder
+  // sheet. Two canvas-backed blob URLs, one for the title slide preview
+  // and one for the grid slide preview, regenerated whenever the active
+  // template / logo / selections / shape change. Debounced at 120ms so
+  // rapid selection toggles don't thrash canvas work.
+  const [builderTitlePreview, setBuilderTitlePreview] = useState<string>('');
+  const [builderGridPreview, setBuilderGridPreview] = useState<string>('');
+  // Guard to suppress rendering + blob-URL leaks while the sheet is closed.
+  const builderWeekDate = useMemo(() => getLastFriday(), []);
+
   // Filter + sort releases
   const filtered = useMemo(() => {
     let list = [...releases];
@@ -88,6 +100,129 @@ export default function MobileResultsView({
     if (sortBy === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
     else { setSortBy(field); setSortDir('asc'); }
   }, [sortBy]);
+
+  // Wave 7 Block 5 — selected tracks as an array, needed both for the live
+  // grid preview and the selection order used by tile badges in a later
+  // commit.
+  const selectedTracks = useMemo(
+    () => selections.map(s => s.track),
+    [selections],
+  );
+  const coverFeature = useMemo(
+    () => selections.find(s => s.isCoverFeature) || null,
+    [selections],
+  );
+  const activeGridTemplate = useMemo(() => {
+    if (gridTplProp) return gridTplProp;
+    if (typeof window === 'undefined') return 'mmmc_classic';
+    return localStorage.getItem('nmf_template') || 'mmmc_classic';
+  }, [gridTplProp]);
+  const activeTitleTemplate = useMemo(() => {
+    if (titleTplProp) return titleTplProp;
+    if (typeof window === 'undefined') return getDefaultTitleTemplateId(user?.email || undefined);
+    return localStorage.getItem('nmf_title_template') || getDefaultTitleTemplateId(user?.email || undefined);
+  }, [titleTplProp, user?.email]);
+  const activeLogoUrl = useMemo(() => {
+    if (logoProp) return logoProp;
+    if (typeof window === 'undefined') return '/mmmc-logo.png';
+    return localStorage.getItem('nmf_logo_url') || '/mmmc-logo.png';
+  }, [logoProp]);
+
+  // Debounced grid slide preview render. Only runs while the builder
+  // sheet is open so we don't waste canvas work in the background, and
+  // revokes the prior blob URL on every replacement to avoid leaks.
+  useEffect(() => {
+    if (!showConfig) return;
+    if (selectedTracks.length === 0) {
+      setBuilderGridPreview('');
+      return;
+    }
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      const firstSlice = selectedTracks.slice(0, Math.max(1, tracksPerSlide));
+      const slots = buildSlots(firstSlice.map((t, i) => ({
+        track: t,
+        albumId: t.album_spotify_id,
+        selectionNumber: i + 1,
+        slideGroup: 1,
+        positionInSlide: i + 1,
+        isCoverFeature: false,
+      })));
+      generateGridSlide(
+        slots,
+        builderWeekDate,
+        activeGridTemplate,
+        activeLogoUrl,
+        undefined,
+        carouselAspect,
+      )
+        .then(blob => {
+          if (cancelled) return;
+          const url = URL.createObjectURL(blob);
+          setBuilderGridPreview(prev => {
+            if (prev) URL.revokeObjectURL(prev);
+            return url;
+          });
+        })
+        .catch(() => { /* swallow — preview is best-effort */ });
+    }, 120);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [
+    showConfig,
+    selectedTracks,
+    tracksPerSlide,
+    activeGridTemplate,
+    activeLogoUrl,
+    carouselAspect,
+    builderWeekDate,
+  ]);
+
+  // Title slide preview — only renders when a cover feature is set AND
+  // the active title template is not 'none'. Same debounce + blob-URL
+  // cleanup pattern as the grid preview.
+  useEffect(() => {
+    if (!showConfig) return;
+    if (!coverFeature || activeTitleTemplate === 'none') {
+      setBuilderTitlePreview(prev => {
+        if (prev) URL.revokeObjectURL(prev);
+        return '';
+      });
+      return;
+    }
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      generateTitleSlide(coverFeature, builderWeekDate, activeTitleTemplate, carouselAspect)
+        .then(blob => {
+          if (cancelled) return;
+          const url = URL.createObjectURL(blob);
+          setBuilderTitlePreview(prev => {
+            if (prev) URL.revokeObjectURL(prev);
+            return url;
+          });
+        })
+        .catch(() => {});
+    }, 120);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [
+    showConfig,
+    coverFeature,
+    activeTitleTemplate,
+    carouselAspect,
+    builderWeekDate,
+  ]);
+
+  // Revoke any outstanding blob URLs on unmount.
+  useEffect(() => () => {
+    if (builderTitlePreview) URL.revokeObjectURL(builderTitlePreview);
+    if (builderGridPreview) URL.revokeObjectURL(builderGridPreview);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Show loading state while generating
   if (showSlides && allPreviews.length === 0) {
@@ -564,9 +699,154 @@ export default function MobileResultsView({
             animation: 'sheetSlideUp 200ms ease',
           }}>
             <div style={{ width: 40, height: 4, borderRadius: 2, background: 'var(--midnight-border)', margin: '0 auto 12px' }} />
-            <p style={{ fontSize: 'var(--fs-xl)', fontWeight: 700, marginBottom: 16, color: 'var(--gold)' }}>Carousel Settings</p>
+            <p style={{ fontSize: 'var(--fs-xl)', fontWeight: 700, marginBottom: 16, color: 'var(--gold)' }}>Carousel Builder</p>
 
-            {/* Carousel Shape */}
+            {/* Wave 7 Block 5 — Logo Upload (moved to top: it's a one-time
+                setup step that should be out of the way before anyone starts
+                picking templates). */}
+            <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)', fontWeight: 600, marginBottom: 8 }}>Center Logo</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+              <img src={activeLogo} alt="Logo" style={{ width: 44, height: 44, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }} />
+              <label className="btn btn-sm" style={{ cursor: 'pointer', fontSize: 'var(--fs-sm)' }}>
+                Upload Logo
+                <input type="file" accept="image/*" style={{ display: 'none' }}
+                  onChange={e => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                      const url = reader.result as string;
+                      onLogoChange?.(url);
+                      localStorage.setItem('nmf_logo_url', url);
+                    };
+                    reader.readAsDataURL(file);
+                  }} />
+              </label>
+              {activeLogo !== '/mmmc-logo.png' && (
+                <button className="btn btn-sm" onClick={() => { onLogoChange?.('/mmmc-logo.png'); localStorage.setItem('nmf_logo_url', '/mmmc-logo.png'); }}
+                  style={{ fontSize: 'var(--fs-sm)' }}>Reset</button>
+              )}
+            </div>
+
+            {/* Wave 7 Block 5 — Title slide live preview. Canvas-rendered
+                blob URL, debounced 120ms on template / cover feature /
+                shape change. Sits directly above the template chip row so
+                tapping a chip gives you instant visual feedback. */}
+            <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)', fontWeight: 600, marginBottom: 8 }}>Title Slide</p>
+            <div
+              data-testid="builder-title-preview"
+              style={{
+                width: '100%', maxWidth: 220, margin: '0 auto 10px',
+                aspectRatio: carouselAspect === '3:4' ? '3/4' : '1',
+                borderRadius: 10, overflow: 'hidden',
+                border: '1px solid var(--midnight-border)',
+                background: 'var(--midnight)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                position: 'relative',
+              }}
+            >
+              {builderTitlePreview ? (
+                <img src={builderTitlePreview} alt="Title slide preview"
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+              ) : (
+                <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)', textAlign: 'center', padding: 12 }}>
+                  {activeTitle === 'none'
+                    ? 'Title slide off'
+                    : coverFeature
+                      ? 'Rendering…'
+                      : 'Tap ★ on a track to set cover feature'}
+                </span>
+              )}
+            </div>
+            <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8, marginBottom: 20, WebkitOverflowScrolling: 'touch' }}>
+              <button
+                onClick={() => onTitleTemplateChange?.('none')}
+                style={{
+                  flexShrink: 0, width: 72, padding: 6, borderRadius: 10, cursor: 'pointer',
+                  background: activeTitle === 'none' ? 'var(--midnight-hover)' : 'var(--midnight)',
+                  border: activeTitle === 'none' ? '2px solid var(--gold)' : '2px solid var(--midnight-border)',
+                  textAlign: 'center',
+                }}
+              >
+                <div style={{ width: '100%', aspectRatio: '1', borderRadius: 6, background: 'var(--midnight-border)', marginBottom: 4,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--fs-lg)', color: 'var(--text-muted)' }}>
+                  ✕
+                </div>
+                <span style={{ fontSize: 'var(--fs-3xs)', fontWeight: 600, color: activeTitle === 'none' ? 'var(--gold)' : 'var(--text-muted)' }}>No Title</span>
+              </button>
+              {titleTemplates.map(t => (
+                <button
+                  key={t.id}
+                  onClick={() => onTitleTemplateChange?.(t.id)}
+                  style={{
+                    flexShrink: 0, width: 72, padding: 6, borderRadius: 10, cursor: 'pointer',
+                    background: activeTitle === t.id ? 'var(--midnight-hover)' : 'var(--midnight)',
+                    border: activeTitle === t.id ? `2px solid ${t.accent}` : '2px solid var(--midnight-border)',
+                    textAlign: 'center',
+                  }}
+                >
+                  <div style={{ width: '100%', aspectRatio: '1', borderRadius: 6, background: t.background, marginBottom: 4,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <span style={{ color: t.accent, fontSize: 'var(--fs-3xs)', fontWeight: 700 }}>NMF</span>
+                  </div>
+                  <span style={{ fontSize: 'var(--fs-3xs)', fontWeight: 600,
+                    color: activeTitle === t.id ? t.accent : 'var(--text-muted)',
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block',
+                  }}>{t.name}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Wave 7 Block 5 — Grid slide live preview. Uses the first
+                tracksPerSlide tracks of the current selection so the
+                preview reflects real content, not a sample set. */}
+            <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)', fontWeight: 600, marginBottom: 8 }}>Grid Slide</p>
+            <div
+              data-testid="builder-grid-preview"
+              style={{
+                width: '100%', maxWidth: 220, margin: '0 auto 10px',
+                aspectRatio: carouselAspect === '3:4' ? '3/4' : '1',
+                borderRadius: 10, overflow: 'hidden',
+                border: '1px solid var(--midnight-border)',
+                background: 'var(--midnight)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                position: 'relative',
+              }}
+            >
+              {builderGridPreview ? (
+                <img src={builderGridPreview} alt="Grid slide preview"
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+              ) : (
+                <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)', textAlign: 'center', padding: 12 }}>
+                  {selections.length === 0 ? 'Select tracks to see preview' : 'Rendering…'}
+                </span>
+              )}
+            </div>
+            <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8, marginBottom: 20, WebkitOverflowScrolling: 'touch' }}>
+              {gridTemplates.map(t => (
+                <button
+                  key={t.id}
+                  onClick={() => onGridTemplateChange?.(t.id)}
+                  style={{
+                    flexShrink: 0, width: 72, padding: 6, borderRadius: 10, cursor: 'pointer',
+                    background: activeGrid === t.id ? 'var(--midnight-hover)' : 'var(--midnight)',
+                    border: activeGrid === t.id ? `2px solid ${t.accent}` : '2px solid var(--midnight-border)',
+                    textAlign: 'center',
+                  }}
+                >
+                  <div style={{ width: '100%', aspectRatio: '1', borderRadius: 6, background: t.background, marginBottom: 4,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <span style={{ color: t.accent, fontSize: 'var(--fs-3xs)', fontWeight: 700 }}>NMF</span>
+                  </div>
+                  <span style={{ fontSize: 'var(--fs-3xs)', fontWeight: 600,
+                    color: activeGrid === t.id ? t.accent : 'var(--text-muted)',
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block',
+                  }}>{t.name}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Carousel Shape (tuning — moved below previews) */}
             <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)', fontWeight: 600, marginBottom: 8 }}>Shape</p>
             <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
               {([
@@ -609,98 +889,6 @@ export default function MobileResultsView({
               {selections.length} tracks → {Math.ceil(selections.length / tracksPerSlide) + 1} slides (including title)
             </p>
 
-            {/* Grid Slide Template */}
-            <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)', fontWeight: 600, marginBottom: 8 }}>Grid Slide Template</p>
-            <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8, marginBottom: 16, WebkitOverflowScrolling: 'touch' }}>
-              {gridTemplates.map(t => (
-                <button
-                  key={t.id}
-                  onClick={() => onGridTemplateChange?.(t.id)}
-                  style={{
-                    flexShrink: 0, width: 80, padding: 6, borderRadius: 10, cursor: 'pointer',
-                    background: activeGrid === t.id ? 'var(--midnight-hover)' : 'var(--midnight)',
-                    border: activeGrid === t.id ? `2px solid ${t.accent}` : '2px solid var(--midnight-border)',
-                    textAlign: 'center',
-                  }}
-                >
-                  <div style={{ width: '100%', aspectRatio: '1', borderRadius: 6, background: t.background, marginBottom: 4,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <span style={{ color: t.accent, fontSize: 'var(--fs-3xs)', fontWeight: 700 }}>NMF</span>
-                  </div>
-                  <span style={{ fontSize: 'var(--fs-3xs)', fontWeight: 600,
-                    color: activeGrid === t.id ? t.accent : 'var(--text-muted)',
-                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block',
-                  }}>{t.name}</span>
-                </button>
-              ))}
-            </div>
-
-            {/* Title Slide Template */}
-            <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)', fontWeight: 600, marginBottom: 8 }}>Title Slide Template</p>
-            <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8, marginBottom: 16, WebkitOverflowScrolling: 'touch' }}>
-              <button
-                onClick={() => onTitleTemplateChange?.('none')}
-                style={{
-                  flexShrink: 0, width: 80, padding: 6, borderRadius: 10, cursor: 'pointer',
-                  background: activeTitle === 'none' ? 'var(--midnight-hover)' : 'var(--midnight)',
-                  border: activeTitle === 'none' ? '2px solid var(--gold)' : '2px solid var(--midnight-border)',
-                  textAlign: 'center',
-                }}
-              >
-                <div style={{ width: '100%', aspectRatio: '1', borderRadius: 6, background: 'var(--midnight-border)', marginBottom: 4,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--fs-lg)', color: 'var(--text-muted)' }}>
-                  ✕
-                </div>
-                <span style={{ fontSize: 'var(--fs-3xs)', fontWeight: 600, color: activeTitle === 'none' ? 'var(--gold)' : 'var(--text-muted)' }}>No Title</span>
-              </button>
-              {titleTemplates.map(t => (
-                <button
-                  key={t.id}
-                  onClick={() => onTitleTemplateChange?.(t.id)}
-                  style={{
-                    flexShrink: 0, width: 80, padding: 6, borderRadius: 10, cursor: 'pointer',
-                    background: activeTitle === t.id ? 'var(--midnight-hover)' : 'var(--midnight)',
-                    border: activeTitle === t.id ? `2px solid ${t.accent}` : '2px solid var(--midnight-border)',
-                    textAlign: 'center',
-                  }}
-                >
-                  <div style={{ width: '100%', aspectRatio: '1', borderRadius: 6, background: t.background, marginBottom: 4,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <span style={{ color: t.accent, fontSize: 'var(--fs-3xs)', fontWeight: 700 }}>NMF</span>
-                  </div>
-                  <span style={{ fontSize: 'var(--fs-3xs)', fontWeight: 600,
-                    color: activeTitle === t.id ? t.accent : 'var(--text-muted)',
-                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block',
-                  }}>{t.name}</span>
-                </button>
-              ))}
-            </div>
-
-            {/* Logo Upload */}
-            <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)', fontWeight: 600, marginBottom: 8 }}>Center Logo</p>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-              <img src={activeLogo} alt="Logo" style={{ width: 40, height: 40, borderRadius: 8, objectFit: 'cover' }} />
-              <label className="btn btn-sm" style={{ cursor: 'pointer', fontSize: 'var(--fs-sm)' }}>
-                Upload Logo
-                <input type="file" accept="image/*" style={{ display: 'none' }}
-                  onChange={e => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    const reader = new FileReader();
-                    reader.onload = () => {
-                      const url = reader.result as string;
-                      onLogoChange?.(url);
-                      localStorage.setItem('nmf_logo_url', url);
-                    };
-                    reader.readAsDataURL(file);
-                  }} />
-              </label>
-              {activeLogo !== '/mmmc-logo.png' && (
-                <button className="btn btn-sm" onClick={() => { onLogoChange?.('/mmmc-logo.png'); localStorage.setItem('nmf_logo_url', '/mmmc-logo.png'); }}
-                  style={{ fontSize: 'var(--fs-sm)' }}>Reset</button>
-              )}
-            </div>
-
             <button className="btn btn-gold" onClick={() => { setShowConfig(false); onGenerate(); setShowSlides(true); }}
               disabled={selections.length === 0 || generating}
               style={{ width: '100%', justifyContent: 'center', fontSize: 'var(--fs-lg)', padding: '14px 0' }}>
@@ -730,7 +918,7 @@ export default function MobileResultsView({
               opacity: selections.length === 0 ? 0.5 : 1,
               display: 'flex', alignItems: 'center', gap: 6,
             }}>
-            ⚙ Settings
+            🎨 Builder
           </button>
           <button className="btn btn-gold"
             disabled={selections.length === 0 || generating}
