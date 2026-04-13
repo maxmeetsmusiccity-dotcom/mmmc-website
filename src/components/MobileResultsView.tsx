@@ -454,9 +454,29 @@ export default function MobileResultsView({
             return groups;
           })();
 
+          // Wave 7 Block 5B — global selection ordinal lookup. For every
+          // selected track, record its 1-indexed position in the order Max
+          // picked them. Every artist tile with selections can then show
+          // the *most recent* (highest) ordinal among that artist's
+          // selected tracks, giving Max at-a-glance "this artist was #5"
+          // context as he builds toward the target track count.
+          const globalOrdinalByTrackId = new Map<string, number>();
+          selections.forEach((s, idx) => {
+            globalOrdinalByTrackId.set(s.track.track_id, idx + 1);
+          });
+
           const selectedCountOf = (artist: ArtistGroup) => {
             const ids = new Set(artist.tracks.map(t => t.track_id));
             return selections.filter(s => ids.has(s.track.track_id)).length;
+          };
+
+          const mostRecentOrdinalOf = (artist: ArtistGroup): number | null => {
+            let max = 0;
+            for (const t of artist.tracks) {
+              const ord = globalOrdinalByTrackId.get(t.track_id);
+              if (ord && ord > max) max = ord;
+            }
+            return max || null;
           };
 
           const tapArtist = (artist: ArtistGroup) => {
@@ -467,6 +487,12 @@ export default function MobileResultsView({
               const already = selections.some(s => s.track.track_id === t.track_id);
               if (already) onDeselect(cluster.album_spotify_id, t.track_id);
               else onSelectRelease(cluster, t.track_id);
+              // Wave 7 Block 5B — haptic feedback on selection toggle.
+              // navigator.vibrate works on Android and the Chromium-based
+              // iOS browsers; iOS Safari is a no-op today. If Max's iPhone
+              // doesn't feel it we'll iterate to the iOS 17.4+
+              // `<input type="checkbox" switch>` trick in a follow-up.
+              try { navigator.vibrate?.(10); } catch { /* best-effort */ }
               return;
             }
             setExpandedArtist(artist.name);
@@ -479,6 +505,7 @@ export default function MobileResultsView({
               {artistGroups.map(artist => {
                 const selCount = selectedCountOf(artist);
                 const hasSelection = selCount > 0;
+                const ordinal = hasSelection ? mostRecentOrdinalOf(artist) : null;
                 return (
                   <div key={artist.name} style={{ alignSelf: 'start' }}>
                     <div onClick={() => tapArtist(artist)} style={{
@@ -487,16 +514,42 @@ export default function MobileResultsView({
                       background: hasSelection ? 'rgba(212,168,67,0.06)' : 'var(--midnight)',
                       position: 'relative',
                     }}>
+                      {/* Wave 7 Block 5B — split badge:
+                          top-LEFT: K/M (picked from this artist / artist total)
+                          top-RIGHT: #X (this artist's most-recent selection in
+                          the global pick order, i.e. "this was your 5th pick").
+                          Only rendered on selected tiles per Max's decision —
+                          no greyed-out placeholders on unselected tiles. */}
                       {hasSelection && (
-                        <div style={{
-                          position: 'absolute', top: 6, right: 6, zIndex: 2,
-                          background: 'var(--gold)', color: 'var(--midnight)',
-                          fontSize: 10, fontWeight: 700, borderRadius: 999,
-                          padding: '2px 8px', lineHeight: 1.2,
-                          boxShadow: '0 1px 4px rgba(0,0,0,0.5)',
-                        }}>
-                          {selCount}/{artist.tracks.length}
-                        </div>
+                        <>
+                          <div
+                            data-testid="tile-badge-count"
+                            style={{
+                              position: 'absolute', top: 6, left: 6, zIndex: 2,
+                              background: 'var(--gold)', color: 'var(--midnight)',
+                              fontSize: 10, fontWeight: 700, borderRadius: 999,
+                              padding: '2px 8px', lineHeight: 1.2,
+                              boxShadow: '0 1px 4px rgba(0,0,0,0.5)',
+                            }}>
+                            {selCount}/{artist.tracks.length}
+                          </div>
+                          {ordinal !== null && (
+                            <div
+                              data-testid="tile-badge-ordinal"
+                              style={{
+                                position: 'absolute', top: 6, right: 6, zIndex: 2,
+                                background: 'var(--midnight)',
+                                color: 'var(--gold)',
+                                border: '1px solid var(--gold)',
+                                fontSize: 10, fontWeight: 700, borderRadius: 999,
+                                padding: '2px 8px', lineHeight: 1.2,
+                                boxShadow: '0 1px 4px rgba(0,0,0,0.5)',
+                                fontFamily: 'var(--font-mono)',
+                              }}>
+                              #{ordinal}
+                            </div>
+                          )}
+                        </>
                       )}
                       <img src={artist.cover} alt=""
                         style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', display: 'block' }} />
@@ -629,6 +682,10 @@ export default function MobileResultsView({
                               e.stopPropagation();
                               if (isTrackSelected) onDeselect(rel.album_spotify_id, track.track_id);
                               else onSelectRelease(rel, track.track_id);
+                              // Wave 7 Block 5B — haptic feedback. Android +
+                              // Chromium iOS: fires a 10ms pulse. iOS Safari:
+                              // no-op today, iterate later if needed.
+                              try { navigator.vibrate?.(10); } catch { /* best-effort */ }
                             }}
                             style={{
                               display: 'flex', alignItems: 'center', gap: 10, padding: '10px 4px 10px 12px',

@@ -144,6 +144,54 @@ test('M-R5: tiles are one per artist, not one per album release', async ({
   }`).toBeLessThanOrEqual(1);
 });
 
+test('M-R7: split tile badge — count on left, ordinal on right', async ({
+  page,
+}) => {
+  await enterAndImport(page);
+  // Find a single-track tile to select quickly (avoids modal). Click the
+  // first tile; if it's multi-track the modal opens — dismiss and skip.
+  const tiles = page.locator('[style*="grid-template-columns"] > div');
+  const total = Math.min(await tiles.count(), 20);
+  let picked = 0;
+  for (let i = 0; i < total && picked < 1; i++) {
+    await tiles.nth(i).click();
+    await page.waitForTimeout(120);
+    const modalOpen = await page.getByRole('button', { name: /^Done$/ }).isVisible().catch(() => false);
+    if (modalOpen) {
+      await page.locator('[style*="rgba(0, 0, 0, 0.6)"]').first().click({ force: true }).catch(() => {});
+      await page.waitForTimeout(150);
+      continue;
+    }
+    picked++;
+  }
+  expect(picked).toBeGreaterThan(0);
+
+  // After a successful single-track selection, the tile must carry BOTH
+  // a left-side count badge and a right-side ordinal badge.
+  const countBadges = page.locator('[data-testid="tile-badge-count"]');
+  const ordinalBadges = page.locator('[data-testid="tile-badge-ordinal"]');
+  const countCount = await countBadges.count();
+  const ordinalCount = await ordinalBadges.count();
+  expect(countCount, 'expected at least one count badge on a selected tile').toBeGreaterThan(0);
+  expect(ordinalCount, 'expected at least one ordinal badge on a selected tile').toBeGreaterThan(0);
+
+  // The count badge must be positioned on the LEFT side of its tile; the
+  // ordinal badge must be on the RIGHT. Assert the count badge's center-x
+  // is less than the ordinal badge's center-x.
+  const countBox = await countBadges.first().boundingBox();
+  const ordinalBox = await ordinalBadges.first().boundingBox();
+  expect(countBox).toBeTruthy();
+  expect(ordinalBox).toBeTruthy();
+  expect(
+    countBox!.x + countBox!.width / 2,
+    'count badge must sit to the left of the ordinal badge',
+  ).toBeLessThan(ordinalBox!.x + ordinalBox!.width / 2);
+
+  // Ordinal text must start with '#' and contain a number.
+  const ordinalText = (await ordinalBadges.first().textContent())?.trim() || '';
+  expect(ordinalText).toMatch(/^#\d+$/);
+});
+
 test('M-R6: multi-track artist tap opens modal, selections persist on main grid', async ({
   page,
 }) => {
