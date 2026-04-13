@@ -59,11 +59,19 @@ test('builder sheet: rename, order, live previews', async ({ page }) => {
   // Sheet heading is renamed.
   await expect(page.getByText(/^Carousel Builder$/)).toBeVisible();
 
-  // Section order: verify the Center Logo section appears before the
-  // Title Slide section which appears before the Grid Slide section,
-  // which appears before the Shape section.
+  // Explicit close X button must exist and be ≥ 44px tappable.
+  const closeBtn = page.getByRole('button', { name: /Close carousel builder/i });
+  await expect(closeBtn).toBeVisible();
+  const closeBox = await closeBtn.boundingBox();
+  expect(closeBox).toBeTruthy();
+  expect(closeBox!.width).toBeGreaterThanOrEqual(44);
+  expect(closeBox!.height).toBeGreaterThanOrEqual(44);
+
+  // Wave 7 Block 5C section order: Shape → Tracks per slide → Center Logo
+  // → (Title Slide if cover feature set, else skipped) → Grid Slide.
+  // No cover feature in this probe, so Title Slide must NOT appear.
   const sectionOrder = await page.evaluate(() => {
-    const labels = ['Center Logo', 'Title Slide', 'Grid Slide', 'Shape', 'Tracks per slide'];
+    const labels = ['Shape', 'Tracks per slide', 'Center Logo', 'Title Slide', 'Grid Slide'];
     const positions: Record<string, number> = {};
     for (const label of labels) {
       const el = Array.from(document.querySelectorAll('p'))
@@ -72,11 +80,12 @@ test('builder sheet: rename, order, live previews', async ({ page }) => {
     }
     return positions;
   });
-  expect(sectionOrder['Center Logo']).toBeGreaterThan(0);
-  expect(sectionOrder['Title Slide']).toBeGreaterThan(sectionOrder['Center Logo']);
-  expect(sectionOrder['Grid Slide']).toBeGreaterThan(sectionOrder['Title Slide']);
-  expect(sectionOrder['Shape']).toBeGreaterThan(sectionOrder['Grid Slide']);
+  expect(sectionOrder['Shape']).toBeGreaterThan(0);
   expect(sectionOrder['Tracks per slide']).toBeGreaterThan(sectionOrder['Shape']);
+  expect(sectionOrder['Center Logo']).toBeGreaterThan(sectionOrder['Tracks per slide']);
+  expect(sectionOrder['Grid Slide']).toBeGreaterThan(sectionOrder['Center Logo']);
+  // Title Slide section is hidden when no cover feature is set.
+  expect(sectionOrder['Title Slide']).toBe(-1);
 
   // Live previews: wait for the grid preview to have an <img> (the debounced
   // generateGridSlide should resolve in ~300ms cold).

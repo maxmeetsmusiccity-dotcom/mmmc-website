@@ -755,12 +755,101 @@ export default function MobileResultsView({
             maxHeight: '85vh', overflowY: 'auto',
             animation: 'sheetSlideUp 200ms ease',
           }}>
-            <div style={{ width: 40, height: 4, borderRadius: 2, background: 'var(--midnight-border)', margin: '0 auto 12px' }} />
-            <p style={{ fontSize: 'var(--fs-xl)', fontWeight: 700, marginBottom: 16, color: 'var(--gold)' }}>Carousel Builder</p>
+            {/* Wave 7 Block 5C — sticky dismiss header. `position: sticky`
+                keeps the title + close X visible while the sheet's body
+                scrolls. Block 5A's plain header scrolled out of view and
+                left users with no dismiss affordance short of tapping the
+                narrow sliver of backdrop above the 85vh sheet. Extra:
+                tapping the drag handle also closes the sheet. */}
+            <div style={{
+              position: 'sticky', top: -16, zIndex: 5,
+              background: 'var(--midnight-raised)',
+              margin: '-16px -16px 16px',
+              padding: '10px 16px 12px',
+              borderBottom: '1px solid var(--midnight-border)',
+            }}>
+              <div
+                onClick={() => setShowConfig(false)}
+                style={{
+                  width: 48, height: 5, borderRadius: 3, background: 'var(--midnight-border)',
+                  margin: '0 auto 10px', cursor: 'pointer',
+                }}
+                aria-label="Close builder"
+              />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <p style={{ flex: 1, minWidth: 0, fontSize: 'var(--fs-xl)', fontWeight: 700, color: 'var(--gold)', margin: 0 }}>
+                  Carousel Builder
+                </p>
+                <button
+                  onClick={() => setShowConfig(false)}
+                  aria-label="Close carousel builder"
+                  style={{
+                    width: 44, height: 44, flexShrink: 0,
+                    background: 'var(--midnight)', border: '1px solid var(--midnight-border)',
+                    borderRadius: 8, color: 'var(--text-primary)', cursor: 'pointer',
+                    fontSize: 22, lineHeight: 1, display: 'flex',
+                    alignItems: 'center', justifyContent: 'center',
+                  }}>
+                  ✕
+                </button>
+              </div>
+            </div>
 
-            {/* Wave 7 Block 5 — Logo Upload (moved to top: it's a one-time
-                setup step that should be out of the way before anyone starts
-                picking templates). */}
+            {/* Wave 7 Block 5C — section order per Max's feedback:
+                  1. Shape (square vs portrait) — structural choice first
+                  2. Tracks per slide — grid layout second
+                  3. Logo — identity setup
+                  4. Title Slide preview (hidden entirely if no cover feature)
+                  5. Grid Slide preview
+                Shape + tracks per slide both affect preview dimensions, so
+                picking them before the previews render avoids the preview
+                re-rendering every time the user changes their mind about
+                layout. */}
+
+            {/* 1. Carousel Shape */}
+            <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)', fontWeight: 600, marginBottom: 8 }}>Shape</p>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+              {([
+                { value: '1:1' as CarouselAspect, label: 'Square', sub: '1080×1080' },
+                { value: '3:4' as CarouselAspect, label: 'Portrait', sub: '1080×1440' },
+              ]).map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => onAspectChange?.(opt.value)}
+                  style={{
+                    flex: 1, padding: '10px 8px', borderRadius: 10, cursor: 'pointer',
+                    background: carouselAspect === opt.value ? 'var(--midnight-hover)' : 'var(--midnight)',
+                    border: carouselAspect === opt.value ? '2px solid var(--gold)' : '2px solid var(--midnight-border)',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+                  }}
+                >
+                  <span style={{ fontSize: 'var(--fs-sm)', fontWeight: 600, color: carouselAspect === opt.value ? 'var(--gold)' : 'var(--text-secondary)' }}>
+                    {opt.label}
+                  </span>
+                  <span style={{ fontSize: 'var(--fs-3xs)', color: 'var(--text-muted)' }}>{opt.sub}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* 2. Tracks per slide */}
+            <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)', fontWeight: 600, marginBottom: 8 }}>Tracks per slide</p>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+              {[4, 6, 8, 9, 16].map(n => (
+                <button
+                  key={n}
+                  className={`filter-pill ${tracksPerSlide === n ? 'active' : ''}`}
+                  onClick={() => onTracksPerSlideChange?.(n)}
+                  style={{ fontSize: 'var(--fs-sm)' }}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
+            <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)', marginBottom: 20 }}>
+              {selections.length} tracks → {Math.ceil(selections.length / tracksPerSlide) + 1} slides (including title)
+            </p>
+
+            {/* 3. Center Logo */}
             <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)', fontWeight: 600, marginBottom: 8 }}>Center Logo</p>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
               <img src={activeLogo} alt="Logo" style={{ width: 44, height: 44, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }} />
@@ -785,78 +874,75 @@ export default function MobileResultsView({
               )}
             </div>
 
-            {/* Wave 7 Block 5 — Title slide live preview. Canvas-rendered
-                blob URL, debounced 120ms on template / cover feature /
-                shape change. Sits directly above the template chip row so
-                tapping a chip gives you instant visual feedback. */}
-            <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)', fontWeight: 600, marginBottom: 8 }}>Title Slide</p>
-            <div
-              data-testid="builder-title-preview"
-              style={{
-                width: '100%', maxWidth: 220, margin: '0 auto 10px',
-                aspectRatio: carouselAspect === '3:4' ? '3/4' : '1',
-                borderRadius: 10, overflow: 'hidden',
-                border: '1px solid var(--midnight-border)',
-                background: 'var(--midnight)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                position: 'relative',
-              }}
-            >
-              {builderTitlePreview ? (
-                <img src={builderTitlePreview} alt="Title slide preview"
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-              ) : (
-                <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)', textAlign: 'center', padding: 12 }}>
-                  {activeTitle === 'none'
-                    ? 'Title slide off'
-                    : coverFeature
-                      ? 'Rendering…'
-                      : 'Tap ★ on a track to set cover feature'}
-                </span>
-              )}
-            </div>
-            <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8, marginBottom: 20, WebkitOverflowScrolling: 'touch' }}>
-              <button
-                onClick={() => onTitleTemplateChange?.('none')}
-                style={{
-                  flexShrink: 0, width: 72, padding: 6, borderRadius: 10, cursor: 'pointer',
-                  background: activeTitle === 'none' ? 'var(--midnight-hover)' : 'var(--midnight)',
-                  border: activeTitle === 'none' ? '2px solid var(--gold)' : '2px solid var(--midnight-border)',
-                  textAlign: 'center',
-                }}
-              >
-                <div style={{ width: '100%', aspectRatio: '1', borderRadius: 6, background: 'var(--midnight-border)', marginBottom: 4,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--fs-lg)', color: 'var(--text-muted)' }}>
-                  ✕
-                </div>
-                <span style={{ fontSize: 'var(--fs-3xs)', fontWeight: 600, color: activeTitle === 'none' ? 'var(--gold)' : 'var(--text-muted)' }}>No Title</span>
-              </button>
-              {titleTemplates.map(t => (
-                <button
-                  key={t.id}
-                  onClick={() => onTitleTemplateChange?.(t.id)}
+            {/* 4. Title Slide preview + templates — HIDDEN entirely until a
+                cover feature is set. Don't show the section with a
+                placeholder prompt, just don't render it. The user learns
+                about the title slide once they've tapped a star on a
+                track, which is the action that unlocks this section. */}
+            {coverFeature && activeTitle !== 'none' && (
+              <>
+                <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)', fontWeight: 600, marginBottom: 8 }}>Title Slide</p>
+                <div
+                  data-testid="builder-title-preview"
                   style={{
-                    flexShrink: 0, width: 72, padding: 6, borderRadius: 10, cursor: 'pointer',
-                    background: activeTitle === t.id ? 'var(--midnight-hover)' : 'var(--midnight)',
-                    border: activeTitle === t.id ? `2px solid ${t.accent}` : '2px solid var(--midnight-border)',
-                    textAlign: 'center',
+                    width: '100%', maxWidth: 220, margin: '0 auto 10px',
+                    aspectRatio: carouselAspect === '3:4' ? '3/4' : '1',
+                    borderRadius: 10, overflow: 'hidden',
+                    border: '1px solid var(--midnight-border)',
+                    background: 'var(--midnight)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    position: 'relative',
                   }}
                 >
-                  <div style={{ width: '100%', aspectRatio: '1', borderRadius: 6, background: t.background, marginBottom: 4,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <span style={{ color: t.accent, fontSize: 'var(--fs-3xs)', fontWeight: 700 }}>NMF</span>
-                  </div>
-                  <span style={{ fontSize: 'var(--fs-3xs)', fontWeight: 600,
-                    color: activeTitle === t.id ? t.accent : 'var(--text-muted)',
-                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block',
-                  }}>{t.name}</span>
-                </button>
-              ))}
-            </div>
+                  {builderTitlePreview ? (
+                    <img src={builderTitlePreview} alt="Title slide preview"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                  ) : (
+                    <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)' }}>Rendering…</span>
+                  )}
+                </div>
+                <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8, marginBottom: 20, WebkitOverflowScrolling: 'touch' }}>
+                  <button
+                    onClick={() => onTitleTemplateChange?.('none')}
+                    style={{
+                      flexShrink: 0, width: 72, padding: 6, borderRadius: 10, cursor: 'pointer',
+                      background: 'var(--midnight)',
+                      border: '2px solid var(--midnight-border)',
+                      textAlign: 'center',
+                    }}
+                  >
+                    <div style={{ width: '100%', aspectRatio: '1', borderRadius: 6, background: 'var(--midnight-border)', marginBottom: 4,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--fs-lg)', color: 'var(--text-muted)' }}>
+                      ✕
+                    </div>
+                    <span style={{ fontSize: 'var(--fs-3xs)', fontWeight: 600, color: 'var(--text-muted)' }}>No Title</span>
+                  </button>
+                  {titleTemplates.map(t => (
+                    <button
+                      key={t.id}
+                      onClick={() => onTitleTemplateChange?.(t.id)}
+                      style={{
+                        flexShrink: 0, width: 72, padding: 6, borderRadius: 10, cursor: 'pointer',
+                        background: activeTitle === t.id ? 'var(--midnight-hover)' : 'var(--midnight)',
+                        border: activeTitle === t.id ? `2px solid ${t.accent}` : '2px solid var(--midnight-border)',
+                        textAlign: 'center',
+                      }}
+                    >
+                      <div style={{ width: '100%', aspectRatio: '1', borderRadius: 6, background: t.background, marginBottom: 4,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <span style={{ color: t.accent, fontSize: 'var(--fs-3xs)', fontWeight: 700 }}>NMF</span>
+                      </div>
+                      <span style={{ fontSize: 'var(--fs-3xs)', fontWeight: 600,
+                        color: activeTitle === t.id ? t.accent : 'var(--text-muted)',
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block',
+                      }}>{t.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
 
-            {/* Wave 7 Block 5 — Grid slide live preview. Uses the first
-                tracksPerSlide tracks of the current selection so the
-                preview reflects real content, not a sample set. */}
+            {/* 5. Grid Slide preview + templates */}
             <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)', fontWeight: 600, marginBottom: 8 }}>Grid Slide</p>
             <div
               data-testid="builder-grid-preview"
@@ -902,49 +988,6 @@ export default function MobileResultsView({
                 </button>
               ))}
             </div>
-
-            {/* Carousel Shape (tuning — moved below previews) */}
-            <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)', fontWeight: 600, marginBottom: 8 }}>Shape</p>
-            <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-              {([
-                { value: '1:1' as CarouselAspect, label: 'Square', sub: '1080×1080' },
-                { value: '3:4' as CarouselAspect, label: 'Portrait', sub: '1080×1440' },
-              ]).map(opt => (
-                <button
-                  key={opt.value}
-                  onClick={() => onAspectChange?.(opt.value)}
-                  style={{
-                    flex: 1, padding: '10px 8px', borderRadius: 10, cursor: 'pointer',
-                    background: carouselAspect === opt.value ? 'var(--midnight-hover)' : 'var(--midnight)',
-                    border: carouselAspect === opt.value ? '2px solid var(--gold)' : '2px solid var(--midnight-border)',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
-                  }}
-                >
-                  <span style={{ fontSize: 'var(--fs-sm)', fontWeight: 600, color: carouselAspect === opt.value ? 'var(--gold)' : 'var(--text-secondary)' }}>
-                    {opt.label}
-                  </span>
-                  <span style={{ fontSize: 'var(--fs-3xs)', color: 'var(--text-muted)' }}>{opt.sub}</span>
-                </button>
-              ))}
-            </div>
-
-            {/* Tracks per slide */}
-            <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)', fontWeight: 600, marginBottom: 8 }}>Tracks per slide</p>
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
-              {[4, 6, 8, 9, 16].map(n => (
-                <button
-                  key={n}
-                  className={`filter-pill ${tracksPerSlide === n ? 'active' : ''}`}
-                  onClick={() => onTracksPerSlideChange?.(n)}
-                  style={{ fontSize: 'var(--fs-sm)' }}
-                >
-                  {n}
-                </button>
-              ))}
-            </div>
-            <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)', marginBottom: 16 }}>
-              {selections.length} tracks → {Math.ceil(selections.length / tracksPerSlide) + 1} slides (including title)
-            </p>
 
             <button className="btn btn-gold" onClick={() => { setShowConfig(false); onGenerate(); setShowSlides(true); }}
               disabled={selections.length === 0 || generating}
