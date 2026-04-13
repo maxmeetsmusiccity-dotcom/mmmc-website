@@ -1,9 +1,15 @@
 import { test, expect } from '@playwright/test';
 
-// Helper: enable guest mode before navigating to auth-gated pages
+// Helper: click through the AuthGate's "Get Started as a Guest" button to
+// actually enter the app. Prior to Wave 7 this helper only set localStorage,
+// which technically worked through a hard-navigation race but was structurally
+// blind: the smoke tests were asserting against the AuthGate landing page
+// (same "New Music Friday" heading as the app) and passed for 5 waves without
+// ever reaching the real app surface. Click-through + in-app assertion is
+// the only way to retire that class of ghost-green.
 async function guestBypass(page: import('@playwright/test').Page) {
-  await page.goto('/');
-  await page.evaluate(() => localStorage.setItem('nmf_guest_mode', '1'));
+  await page.goto('/newmusicfriday');
+  await page.getByRole('button', { name: /Get Started as a Guest/i }).click();
 }
 
 test('home page loads', async ({ page }) => {
@@ -12,10 +18,13 @@ test('home page loads', async ({ page }) => {
   await expect(page.getByText('Max Meets')).toBeVisible();
 });
 
-test('NMF page loads with guest mode', async ({ page }) => {
+test('guest bypass actually reaches the Nashville source selector', async ({ page }) => {
   await guestBypass(page);
-  await page.goto('/newmusicfriday');
-  await expect(page.getByRole('heading', { name: /New Music Friday/ })).toBeVisible();
+  // Marker that only exists inside the app, NOT on the AuthGate landing:
+  // the Nashville releases scan surface renders a "Ready to Scan" / "Scan"
+  // affordance once guest mode is active.
+  const inAppMarker = page.getByText(/Ready to Scan|Nashville Releases|Scan Now/i).first();
+  await expect(inAppMarker).toBeVisible({ timeout: 10_000 });
 });
 
 test('dashboard loads with guest mode', async ({ page }) => {
@@ -24,6 +33,12 @@ test('dashboard loads with guest mode', async ({ page }) => {
   // Dashboard shows a heading regardless of role — page loaded
   const heading = page.getByRole('heading').first();
   await expect(heading).toBeVisible();
+});
+
+test('NMF page shows Nashville source by default for guests', async ({ page }) => {
+  await guestBypass(page);
+  const nashvilleVisible = page.getByText(/Nashville|Scan/i).first();
+  await expect(nashvilleVisible).toBeVisible();
 });
 
 test('submission page loads', async ({ page }) => {
@@ -51,11 +66,3 @@ test('this week page loads', async ({ page }) => {
   await expect(page.getByRole('heading', { name: /This Week/ })).toBeVisible();
 });
 
-test('NMF page shows zero-login Nashville source by default for guests', async ({ page }) => {
-  await guestBypass(page);
-  await page.goto('/newmusicfriday');
-  // Guests land directly on the zero-login Nashville source (default as of Wave 1+)
-  // Either the Nashville scan CTA OR the SourceSelector should be visible.
-  const nashvilleVisible = await page.getByText(/Nashville|Scan/).first().isVisible().catch(() => false);
-  expect(nashvilleVisible).toBe(true);
-});

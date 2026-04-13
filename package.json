@@ -12,7 +12,9 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:mobile": "playwright test tests/mobile.spec.ts",
-    "test:all": "vitest run && playwright test",
+    "test:prod": "E2E_API_BASE=https://maxmeetsmusiccity.com playwright test --reporter=list",
+    "test:all": "tsc -b && vitest run && playwright test && npm run test:prod",
+    "session:verify": "bash scripts/session-end-verify.sh",
     "validate": "bash scripts/validate.sh"
   },
   "dependencies": {
