@@ -41,7 +41,7 @@ type SortMode = 'artist' | 'date' | 'title';
 
 export default function MobileResultsView({
   allTracks, releases, selections, onSelectionChange,
-  selectionsByAlbum: _selectionsByAlbum, onSelectRelease, onDeselect: _onDeselect, onSetCoverFeature,
+  selectionsByAlbum: _selectionsByAlbum, onSelectRelease, onDeselect, onSetCoverFeature,
   featureCounts: _featureCounts, generating, onGenerate, allPreviews,
   onDownloadAll, onDownloadSlide,
   tracksPerSlide, onTracksPerSlideChange, carouselAspect = '1:1', onAspectChange,
@@ -58,7 +58,9 @@ export default function MobileResultsView({
   const [search, setSearch] = useState('');
   const [showSlides, setShowSlides] = useState(false);
   const [activeSlide, setActiveSlide] = useState(0);
-  const [expandedAlbum, setExpandedAlbum] = useState<string | null>(null);
+  // Wave 7 Block 4: expansion is keyed on primary artist (not album_spotify_id)
+  // because the grid now renders one tile per artist, not per release.
+  const [expandedArtist, setExpandedArtist] = useState<string | null>(null);
   const [showConfig, setShowConfig] = useState(false);
   const slideContainerRef = useRef<HTMLDivElement>(null);
 
@@ -269,165 +271,143 @@ export default function MobileResultsView({
         )}
       </div>
 
-      {/* Track grid / list */}
+      {/* Wave 7 Block 4: track grid regrouped by primary artist. One tile
+          per act. Features (comma / feat. / ft.) stay under the first-listed
+          artist, matching desktop NashvilleReleases grouping at line 374-393.
+          Multi-release or multi-track artists open a fixed modal overlay for
+          track picking — see the modal rendered at the component's end. */}
       <div style={{ padding: '12px' }}>
-        {/* Render function for a single release card (shared by grid and list) */}
         {(() => {
-          const handleTap = (cluster: ReleaseCluster) => {
-            if (cluster.isSingle || cluster.tracks.length === 1) {
-              // Single track — toggle selection directly
-              onSelectRelease(cluster);
-            } else {
-              // Multi-track — expand to show track picker
-              setExpandedAlbum(expandedAlbum === cluster.album_spotify_id ? null : cluster.album_spotify_id);
-            }
+          type ArtistGroup = {
+            name: string;
+            cover: string;
+            releases: ReleaseCluster[];
+            tracks: TrackItem[];
           };
 
-          const renderTrackPicker = (cluster: ReleaseCluster) => {
-            if (expandedAlbum !== cluster.album_spotify_id) return null;
-            return (
-              <div style={{
-                padding: '8px 12px', background: 'var(--midnight-raised)',
-                borderRadius: '0 0 8px 8px', marginTop: -4,
-                border: '1px solid var(--midnight-border)', borderTop: 'none',
-              }}>
-                <p style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)', marginBottom: 6 }}>
-                  Choose a track from {cluster.album_name}:
-                </p>
-                {cluster.tracks.sort((a, b) => (a.track_number || 0) - (b.track_number || 0)).map(track => {
-                  const isTrackSelected = selections.some(s => s.track.track_id === track.track_id);
-                  return (
-                    <div key={track.track_id}
-                      onClick={() => onSelectRelease(cluster, track.track_id)}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: 8, padding: '8px 4px',
-                        borderBottom: '1px solid var(--midnight-border)', cursor: 'pointer',
-                      }}>
-                      <div style={{
-                        width: 20, height: 20, borderRadius: 4, flexShrink: 0,
-                        border: isTrackSelected ? '2px solid var(--gold)' : '2px solid var(--midnight-border)',
-                        background: isTrackSelected ? 'var(--gold)' : 'transparent',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 11, color: 'var(--midnight)', fontWeight: 700,
-                      }}>
-                        {isTrackSelected ? '✓' : ''}
-                      </div>
-                      <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-2xs)', width: 20, textAlign: 'right' }}>
-                        {track.track_number}
-                      </span>
-                      <span style={{
-                        flex: 1, fontSize: 'var(--fs-sm)',
-                        color: isTrackSelected ? 'var(--gold)' : 'var(--text-primary)',
-                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                      }}>
-                        {track.track_name}
-                      </span>
-                      {isTrackSelected && (
-                        <button onClick={e => { e.stopPropagation(); onSetCoverFeature(track.track_id); }}
-                          style={{ background: 'none', border: 'none', fontSize: 16, cursor: 'pointer', flexShrink: 0,
-                            color: selections.find(s => s.track.track_id === track.track_id && s.isCoverFeature) ? 'var(--gold)' : 'var(--text-muted)' }}>
-                          ★
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+          const primaryArtistOf = (s: string) =>
+            (s || '').split(/,|feat\.|ft\./i)[0].trim() || 'Unknown';
+
+          const artistGroups: ArtistGroup[] = (() => {
+            const map = new Map<string, ArtistGroup>();
+            for (const r of filtered) {
+              const key = primaryArtistOf(r.artist_names);
+              const existing = map.get(key);
+              if (existing) {
+                existing.releases.push(r);
+                existing.tracks.push(...r.tracks);
+              } else {
+                map.set(key, {
+                  name: key,
+                  cover: r.tracks[0]?.cover_art_300 || r.tracks[0]?.cover_art_640 || '',
+                  releases: [r],
+                  tracks: [...r.tracks],
+                });
+              }
+            }
+            const groups = [...map.values()];
+            const dir = sortDir === 'asc' ? 1 : -1;
+            if (sortBy === 'artist') groups.sort((a, b) => dir * a.name.localeCompare(b.name));
+            else if (sortBy === 'date') groups.sort((a, b) =>
+              dir * (a.releases[0]?.tracks[0]?.release_date || '').localeCompare(
+                b.releases[0]?.tracks[0]?.release_date || '',
+              ),
             );
+            else if (sortBy === 'title') groups.sort((a, b) =>
+              dir * (a.releases[0]?.album_name || '').localeCompare(b.releases[0]?.album_name || ''),
+            );
+            return groups;
+          })();
+
+          const selectedCountOf = (artist: ArtistGroup) => {
+            const ids = new Set(artist.tracks.map(t => t.track_id));
+            return selections.filter(s => ids.has(s.track.track_id)).length;
+          };
+
+          const tapArtist = (artist: ArtistGroup) => {
+            // Single-track artist (one release, one track): toggle directly.
+            if (artist.tracks.length === 1) {
+              const t = artist.tracks[0];
+              const cluster = artist.releases[0];
+              const already = selections.some(s => s.track.track_id === t.track_id);
+              if (already) onDeselect(cluster.album_spotify_id, t.track_id);
+              else onSelectRelease(cluster, t.track_id);
+              return;
+            }
+            setExpandedArtist(artist.name);
           };
 
           return viewMode === 'grid' ? (
-            // Wave 7 Block 3: `repeat(2, 1fr)` alone does NOT work — CSS grid
-            // tracks default to `minmax(auto, 1fr)`, and `auto` is min-content.
-            // A single cell whose child has `white-space: nowrap` (album title,
-            // artist name) makes the column blow out to the text's natural
-            // width — here that was ~1197px on a 393px viewport, turning every
-            // album cover into a 1197x1197 wall. Forcing `minmax(0, 1fr)` lets
-            // the columns actually shrink.
+            // minmax(0, 1fr) prevents the min-content blow-out fixed in
+            // Wave 7 Block 3. Do not regress this to plain `1fr`.
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10 }}>
-              {filtered.map(cluster => {
-                const isSelected = selections.some(s => s.albumId === cluster.album_spotify_id);
-                const isExpanded = expandedAlbum === cluster.album_spotify_id;
+              {artistGroups.map(artist => {
+                const selCount = selectedCountOf(artist);
+                const hasSelection = selCount > 0;
                 return (
-                  <div key={cluster.album_spotify_id} style={{ gridColumn: isExpanded ? '1 / -1' : undefined, alignSelf: 'start' }}>
-                    <div onClick={() => handleTap(cluster)} style={{
+                  <div key={artist.name} style={{ alignSelf: 'start' }}>
+                    <div onClick={() => tapArtist(artist)} style={{
                       borderRadius: 8, overflow: 'hidden', cursor: 'pointer',
-                      border: isSelected ? '2px solid var(--gold)' : '2px solid transparent',
-                      background: isSelected ? 'rgba(212,168,67,0.06)' : 'var(--midnight)',
-                      // Wave 7 Block 3: when expanded the grid cell spans the full
-                      // viewport (gridColumn: 1/-1). Without switching to a flex
-                      // layout the 1:1 album cover would render at full viewport
-                      // width (393x393 on iPhone 14 Pro), dominating the screen
-                      // and pushing every other control out of view. Horizontal
-                      // flex keeps the expanded state compact: 72px thumbnail +
-                      // title text inline, track picker below at full width.
-                      display: isExpanded ? 'flex' : 'block',
-                      alignItems: isExpanded ? 'center' : undefined,
-                      gap: isExpanded ? 12 : 0,
-                      padding: isExpanded ? 8 : 0,
+                      border: hasSelection ? '2px solid var(--gold)' : '2px solid transparent',
+                      background: hasSelection ? 'rgba(212,168,67,0.06)' : 'var(--midnight)',
+                      position: 'relative',
                     }}>
-                      <img src={cluster.tracks[0]?.cover_art_300 || cluster.tracks[0]?.cover_art_640}
-                        alt="" style={{
-                          width: isExpanded ? 72 : '100%',
-                          height: isExpanded ? 72 : undefined,
-                          aspectRatio: isExpanded ? undefined : '1',
-                          objectFit: 'cover',
-                          display: 'block',
-                          borderRadius: isExpanded ? 6 : 0,
-                          flexShrink: 0,
-                        }} />
-                      <div style={{
-                        padding: isExpanded ? 0 : '6px 8px',
-                        flex: isExpanded ? 1 : undefined,
-                        minWidth: 0,
-                      }}>
+                      {hasSelection && (
+                        <div style={{
+                          position: 'absolute', top: 6, right: 6, zIndex: 2,
+                          background: 'var(--gold)', color: 'var(--midnight)',
+                          fontSize: 10, fontWeight: 700, borderRadius: 999,
+                          padding: '2px 8px', lineHeight: 1.2,
+                          boxShadow: '0 1px 4px rgba(0,0,0,0.5)',
+                        }}>
+                          {selCount}/{artist.tracks.length}
+                        </div>
+                      )}
+                      <img src={artist.cover} alt=""
+                        style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', display: 'block' }} />
+                      <div style={{ padding: '6px 8px' }}>
                         <div style={{ fontSize: 'var(--fs-sm)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                          color: isSelected ? 'var(--gold)' : 'var(--text-primary)' }}>
-                          {cluster.album_name}
+                          color: hasSelection ? 'var(--gold)' : 'var(--text-primary)' }}>
+                          {artist.name}
                         </div>
                         <div style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {cluster.artist_names}
-                          {!cluster.isSingle && ` · ${cluster.tracks.length} ${cluster.tracks.length === 1 ? 'track' : 'tracks'}`}
+                          {hasSelection
+                            ? `${selCount} of ${artist.tracks.length} selected`
+                            : `${artist.releases.length > 1 ? `${artist.releases.length} releases · ` : ''}${artist.tracks.length} ${artist.tracks.length === 1 ? 'track' : 'tracks'}`}
                         </div>
                       </div>
                     </div>
-                    {renderTrackPicker(cluster)}
                   </div>
                 );
               })}
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-              {filtered.map(cluster => {
-                const isSelected = selections.some(s => s.albumId === cluster.album_spotify_id);
+              {artistGroups.map(artist => {
+                const selCount = selectedCountOf(artist);
+                const hasSelection = selCount > 0;
                 return (
-                  <div key={cluster.album_spotify_id}>
-                    <div onClick={() => handleTap(cluster)} style={{
+                  <div key={artist.name}
+                    onClick={() => tapArtist(artist)}
+                    style={{
                       display: 'flex', alignItems: 'center', gap: 10, padding: '10px 4px',
                       borderBottom: '1px solid var(--midnight-border)', cursor: 'pointer',
-                      background: isSelected ? 'rgba(212,168,67,0.06)' : 'transparent',
+                      background: hasSelection ? 'rgba(212,168,67,0.06)' : 'transparent',
                     }}>
-                      <img src={cluster.tracks[0]?.cover_art_300 || cluster.tracks[0]?.cover_art_640}
-                        alt="" style={{ width: 52, height: 52, borderRadius: 6, flexShrink: 0,
-                        border: isSelected ? '2px solid var(--gold)' : '2px solid transparent' }} />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 'var(--fs-sm)', fontWeight: 600, color: isSelected ? 'var(--gold)' : 'var(--text-primary)',
-                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {cluster.album_name}
-                        </div>
-                        <div style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)' }}>
-                          {cluster.artist_names} · {cluster.isSingle ? 'Single' : `${cluster.tracks.length} ${cluster.tracks.length === 1 ? 'track' : 'tracks'} ▸`}
-                        </div>
+                    <img src={artist.cover}
+                      alt="" style={{ width: 52, height: 52, borderRadius: 6, flexShrink: 0, objectFit: 'cover',
+                      border: hasSelection ? '2px solid var(--gold)' : '2px solid transparent' }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 'var(--fs-sm)', fontWeight: 600, color: hasSelection ? 'var(--gold)' : 'var(--text-primary)',
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {artist.name}
                       </div>
-                      {isSelected && (
-                        <button onClick={e => { e.stopPropagation(); onSetCoverFeature(cluster.tracks[0].track_id); }}
-                          style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', flexShrink: 0,
-                            color: selections.find(s => s.albumId === cluster.album_spotify_id && s.isCoverFeature) ? 'var(--gold)' : 'var(--text-muted)' }}>
-                          ★
-                        </button>
-                      )}
+                      <div style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)' }}>
+                        {hasSelection
+                          ? `${selCount} of ${artist.tracks.length} selected`
+                          : `${artist.releases.length} ${artist.releases.length === 1 ? 'release' : 'releases'} · ${artist.tracks.length} ${artist.tracks.length === 1 ? 'track' : 'tracks'} ▸`}
+                      </div>
                     </div>
-                    {renderTrackPicker(cluster)}
                   </div>
                 );
               })}
@@ -435,6 +415,132 @@ export default function MobileResultsView({
           );
         })()}
       </div>
+
+      {/* Wave 7 Block 4 — multi-track artist modal. Fixed full-screen
+          backdrop + centered panel listing every release for this artist
+          and every track inside, matching the NashvilleReleases desktop
+          pattern. Replaces the Block 3 inline flex expansion that pushed
+          every other tile out of view. */}
+      {expandedArtist && (() => {
+        const primaryArtistOf = (s: string) =>
+          (s || '').split(/,|feat\.|ft\./i)[0].trim() || 'Unknown';
+        const artistReleases = releases.filter(r => primaryArtistOf(r.artist_names) === expandedArtist);
+        if (artistReleases.length === 0) return null;
+        const artistCover = artistReleases[0].tracks[0]?.cover_art_300
+          || artistReleases[0].tracks[0]?.cover_art_640
+          || '';
+        const allTracksForArtist = artistReleases.flatMap(r => r.tracks);
+        const selectedForArtist = selections.filter(s =>
+          allTracksForArtist.some(t => t.track_id === s.track.track_id),
+        ).length;
+        const close = () => setExpandedArtist(null);
+        return (
+          <>
+            <div onClick={close}
+              style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(0,0,0,0.6)' }} />
+            <div style={{
+              position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%, -50%)',
+              zIndex: 101, width: 'min(420px, 92vw)', maxHeight: '80vh',
+              background: 'var(--midnight-raised)', borderRadius: 12,
+              border: '2px solid var(--gold-dark)',
+              display: 'flex', flexDirection: 'column',
+              boxShadow: '0 16px 48px rgba(0,0,0,0.6)',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', borderBottom: '1px solid var(--midnight-border)' }}>
+                {artistCover && (
+                  <img src={artistCover} alt=""
+                    style={{ width: 40, height: 40, borderRadius: '50%', flexShrink: 0, objectFit: 'cover' }} />
+                )}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 'var(--fs-md)', fontWeight: 700, color: 'var(--gold)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {expandedArtist}
+                  </div>
+                  <div style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)' }}>
+                    {artistReleases.length} {artistReleases.length === 1 ? 'release' : 'releases'} · {allTracksForArtist.length} tracks
+                    {selectedForArtist > 0 && ` · ${selectedForArtist} selected`}
+                  </div>
+                </div>
+                <button onClick={close}
+                  aria-label="Close"
+                  style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 22, lineHeight: 1, padding: '0 4px', flexShrink: 0 }}>
+                  &times;
+                </button>
+              </div>
+              <div style={{ flex: 1, overflowY: 'auto', padding: '4px 16px 8px' }}>
+                {artistReleases.map(rel => (
+                  <div key={rel.album_spotify_id}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 0 6px', borderBottom: '1px solid var(--midnight-border)' }}>
+                      <img src={rel.tracks[0]?.cover_art_300 || rel.tracks[0]?.cover_art_640}
+                        alt="" style={{ width: 32, height: 32, borderRadius: 4, flexShrink: 0, objectFit: 'cover' }} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 'var(--fs-sm)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {rel.album_name}
+                        </div>
+                        <div style={{ fontSize: 'var(--fs-3xs)', color: 'var(--text-muted)' }}>
+                          {rel.tracks.length} {rel.tracks.length === 1 ? 'track' : 'tracks'}
+                          {!rel.isSingle && ' · album'}
+                        </div>
+                      </div>
+                    </div>
+                    {rel.tracks
+                      .slice()
+                      .sort((a, b) => (a.track_number || 0) - (b.track_number || 0))
+                      .map(track => {
+                        const isTrackSelected = selections.some(s => s.track.track_id === track.track_id);
+                        const isCover = selections.some(s => s.track.track_id === track.track_id && s.isCoverFeature);
+                        return (
+                          <div key={track.track_id}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (isTrackSelected) onDeselect(rel.album_spotify_id, track.track_id);
+                              else onSelectRelease(rel, track.track_id);
+                            }}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: 10, padding: '10px 4px 10px 12px',
+                              cursor: 'pointer', fontSize: 'var(--fs-sm)',
+                              borderBottom: '1px solid rgba(255,255,255,0.03)',
+                              minHeight: 44, // Apple HIG touch target
+                            }}>
+                            <div style={{
+                              width: 18, height: 18, borderRadius: 4, flexShrink: 0,
+                              border: isTrackSelected ? '2px solid var(--gold)' : '2px solid var(--midnight-border)',
+                              background: isTrackSelected ? 'var(--gold)' : 'transparent',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              fontSize: 11, color: 'var(--midnight)', fontWeight: 700,
+                            }}>
+                              {isTrackSelected && '\u2713'}
+                            </div>
+                            <span style={{ color: 'var(--text-muted)', width: 20, textAlign: 'right', flexShrink: 0, fontSize: 'var(--fs-2xs)' }}>
+                              {track.track_number}
+                            </span>
+                            <span style={{ flex: 1, color: isTrackSelected ? 'var(--gold)' : 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {track.track_name}
+                            </span>
+                            {isTrackSelected && (
+                              <button onClick={e => { e.stopPropagation(); onSetCoverFeature(track.track_id); }}
+                                title="Set as cover feature"
+                                style={{ background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', flexShrink: 0,
+                                  color: isCover ? 'var(--gold)' : 'var(--text-muted)', padding: 4 }}>
+                                ★
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                  </div>
+                ))}
+              </div>
+              <div style={{ padding: '12px 16px', borderTop: '1px solid var(--midnight-border)', display: 'flex', justifyContent: 'flex-end' }}>
+                <button onClick={close}
+                  className="btn btn-gold"
+                  style={{ padding: '10px 24px', fontSize: 'var(--fs-sm)' }}>
+                  Done
+                </button>
+              </div>
+            </div>
+          </>
+        );
+      })()}
 
       {/* Configure bottom sheet — full carousel settings */}
       {showConfig && (() => {

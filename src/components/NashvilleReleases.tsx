@@ -770,22 +770,28 @@ export default function NashvilleReleases({ showcases, onImport, activeShowcase,
                         {artist.trackCount} {artist.trackCount === 1 ? 'track' : 'tracks'}
                         {artist.releases.length > 1 && ` · ${artist.releases.length} releases`}
                       </div>
-                      {/* Handle confirmation chip */}
-                      {confirmedHandles.has(artist.name.toLowerCase()) ? (
-                        <span style={{ fontSize: 'var(--fs-3xs)', color: '#3EE6C3', marginTop: 2, display: 'block' }}>✓ confirmed</span>
-                      ) : handleInput?.artist === artist.name ? (
-                        <form onSubmit={e => { e.preventDefault(); e.stopPropagation(); confirmHandle(artist.name, handleInput.value); setHandleInput(null); }}
-                          onClick={e => e.stopPropagation()} style={{ marginTop: 3, display: 'flex', gap: 3 }}>
-                          <input type="text" value={handleInput.value} onChange={e => setHandleInput({ artist: artist.name, value: e.target.value })}
-                            placeholder="@handle" autoFocus
-                            style={{ width: '100%', fontSize: 11, padding: '2px 4px', background: 'var(--midnight-hover)', border: '1px solid var(--midnight-border)', borderRadius: 4, color: 'var(--text-primary)' }} />
-                          <button type="submit" style={{ fontSize: 10, padding: '2px 6px', background: 'var(--gold)', color: 'var(--midnight)', border: 'none', borderRadius: 4, cursor: 'pointer', fontWeight: 700, flexShrink: 0 }}>✓</button>
-                        </form>
-                      ) : (
-                        <button onClick={e => { e.stopPropagation(); setHandleInput({ artist: artist.name, value: '' }); }}
-                          style={{ fontSize: 'var(--fs-3xs)', color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0', marginTop: 2, display: 'block', textAlign: 'left' }}>
-                          📎 Add handle
-                        </button>
+                      {/* Handle confirmation chip — Wave 7 Block 4: hidden on
+                          mobile entirely (it's a Max-only admin affordance,
+                          not a user feature), and shrunk to an icon-only
+                          trigger on desktop so it doesn't clutter the tile. */}
+                      {!isMobileGrid && (
+                        confirmedHandles.has(artist.name.toLowerCase()) ? (
+                          <span style={{ fontSize: 'var(--fs-3xs)', color: '#3EE6C3', marginTop: 2, display: 'block' }}>✓</span>
+                        ) : handleInput?.artist === artist.name ? (
+                          <form onSubmit={e => { e.preventDefault(); e.stopPropagation(); confirmHandle(artist.name, handleInput.value); setHandleInput(null); }}
+                            onClick={e => e.stopPropagation()} style={{ marginTop: 3, display: 'flex', gap: 3 }}>
+                            <input type="text" value={handleInput.value} onChange={e => setHandleInput({ artist: artist.name, value: e.target.value })}
+                              placeholder="@handle" autoFocus
+                              style={{ width: '100%', fontSize: 11, padding: '2px 4px', background: 'var(--midnight-hover)', border: '1px solid var(--midnight-border)', borderRadius: 4, color: 'var(--text-primary)' }} />
+                            <button type="submit" style={{ fontSize: 10, padding: '2px 6px', background: 'var(--gold)', color: 'var(--midnight)', border: 'none', borderRadius: 4, cursor: 'pointer', fontWeight: 700, flexShrink: 0 }}>✓</button>
+                          </form>
+                        ) : (
+                          <button onClick={e => { e.stopPropagation(); setHandleInput({ artist: artist.name, value: '' }); }}
+                            title="Add Instagram handle"
+                            style={{ fontSize: 10, color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0', marginTop: 2, lineHeight: 1, opacity: 0.5 }}>
+                            📎
+                          </button>
+                        )
                       )}
                     </div>
                   </div>
