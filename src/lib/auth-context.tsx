@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { supabase } from './supabase';
 import type { User, Session } from '@supabase/supabase-js';
+import { getRedirectUrl, detectCrossProductRedirect } from './auth-config';
 
 // Admin determined from user_profiles.user_role column (loaded via loadProfile)
 // Feature flag emails for template visibility are in carousel-templates.ts / title-templates.ts
@@ -59,8 +60,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!supabase) { setLoading(false); setGuestMode(true); return; }
 
-    // OAuth callback handling — supports both PKCE (code) and implicit (hash) flows
+    // Cross-product redirect detection: if OAuth routed us to the wrong
+    // MMMC product (e.g. NMF auth landing on CWC), warn immediately.
+    const wrongProduct = detectCrossProductRedirect();
+    if (wrongProduct) {
+      console.error(
+        `[AUTH] Cross-product redirect detected! This is ${wrongProduct.productName} ` +
+        `but NMF auth code is running. The Supabase Redirect URLs allow list ` +
+        `likely doesn't include NMF's origin. Check the dashboard.`
+      );
+    }
+
+    // OAuth callback handling — PKCE flow (code exchange)
     const urlCode = new URLSearchParams(window.location.search).get('code');
+    // Legacy implicit flow support (hash fragment) — kept for sessions
+    // initiated before the switch to PKCE
     const hasHashToken = window.location.hash.includes('access_token');
 
     (async () => {
@@ -76,7 +90,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Get session (works for both PKCE after exchange and implicit via hash)
         const { data: { session } } = await supabase.auth.getSession();
         if (import.meta.env.DEV) console.log('[AUTH] getSession result:', session ? `user=${session.user.email}` : 'no session');
-        if (import.meta.env.DEV) console.log('[AUTH] URL state: code=' + !!urlCode + ' hash_token=' + hasHashToken);
 
         setSession(session);
         setUser(session?.user ?? null);
@@ -114,7 +127,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogle = async () => {
     if (!supabase) return;
-    const redirectTo = window.location.origin + window.location.pathname;
+    const redirectTo = getRedirectUrl();
+    if (import.meta.env.DEV) console.log('[AUTH] Google OAuth redirectTo:', redirectTo);
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo },
@@ -123,7 +137,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithApple = async () => {
     if (!supabase) return;
-    const redirectTo = window.location.origin + window.location.pathname;
+    const redirectTo = getRedirectUrl();
+    if (import.meta.env.DEV) console.log('[AUTH] Apple OAuth redirectTo:', redirectTo);
     await supabase.auth.signInWithOAuth({
       provider: 'apple',
       options: { redirectTo },

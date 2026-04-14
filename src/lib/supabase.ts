@@ -1,11 +1,25 @@
 import { createClient } from '@supabase/supabase-js';
+import { NMF_AUTH_CONFIG } from './auth-config';
 
 // These are public keys — safe in client code
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
 export const supabase = SUPABASE_URL && SUPABASE_ANON_KEY
-  ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: {
+        // PKCE is more secure than implicit flow and required for
+        // proper multi-product redirect handling. Supabase appends
+        // ?code= instead of #access_token, which is validated against
+        // the dashboard's Redirect URLs allow list.
+        flowType: 'pkce',
+        // Product-specific storage key prevents token collision if
+        // two MMMC products ever share a domain (e.g. subpaths).
+        storageKey: NMF_AUTH_CONFIG.storageKey,
+        // Let Supabase detect the session from the URL callback
+        detectSessionInUrl: true,
+      },
+    })
   : null;
 
 export interface NMFWeek {
