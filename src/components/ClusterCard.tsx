@@ -99,24 +99,6 @@ export default memo(function ClusterCard({ cluster, selectionSlot, selectedSlots
             </div>
           </>
         )}
-        {/* Cover feature star — moved to bottom-left of the cover art so
-            it doesn't collide with the top-left count badge. */}
-        {isSelected && primarySlot && (
-          <button
-            onClick={(e) => { e.stopPropagation(); onSetCoverFeature(primarySlot.track.track_id); }}
-            style={{
-              position: 'absolute', bottom: 6, left: 6, zIndex: 10,
-              background: primarySlot.isCoverFeature ? 'var(--gold)' : 'rgba(0,0,0,0.6)',
-              border: `2px solid ${primarySlot.isCoverFeature ? 'var(--gold)' : 'rgba(255,255,255,0.3)'}`,
-              borderRadius: '50%', width: 28, height: 28,
-              color: primarySlot.isCoverFeature ? 'var(--midnight)' : 'white',
-              fontSize: 14, cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}
-            title={primarySlot.isCoverFeature ? 'Cover feature — click to unset' : 'Set as cover feature image for title slide'}
-          >★</button>
-        )}
-
         {/* Cover art */}
         <div
           onClick={handleCardClick}
@@ -132,6 +114,32 @@ export default memo(function ClusterCard({ cluster, selectionSlot, selectedSlots
               e.currentTarget.onerror = null;
             }}
           />
+          {/* Cover feature star — Wave 7 Block 5E moved this from the
+              outer card (top-left, collided with the new count badge)
+              to bottom-left of the card, but the star was a sibling of
+              the cover art div so `bottom: 6` landed at the bottom of
+              the *whole* card (over the action buttons) — Max lost the
+              star entirely. Fix (Block 5E.1): nest the star INSIDE the
+              cover art div so its absolute positioning is relative to
+              the square cover art, pinned at bottom-right of the image.
+              Doesn't collide with top-left count badge or top-right
+              ordinal badge. */}
+          {isSelected && primarySlot && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onSetCoverFeature(primarySlot.track.track_id); }}
+              style={{
+                position: 'absolute', bottom: 6, right: 6, zIndex: 10,
+                background: primarySlot.isCoverFeature ? 'var(--gold)' : 'rgba(0,0,0,0.6)',
+                border: `2px solid ${primarySlot.isCoverFeature ? 'var(--gold)' : 'rgba(255,255,255,0.3)'}`,
+                borderRadius: '50%', width: 32, height: 32,
+                color: primarySlot.isCoverFeature ? 'var(--midnight)' : 'white',
+                fontSize: 16, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.5)',
+              }}
+              title={primarySlot.isCoverFeature ? 'Cover feature — click to unset' : 'Set as cover feature image for title slide'}
+            >★</button>
+          )}
         </div>
 
         {/* Condensed info — 2-3 lines max */}

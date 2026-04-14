@@ -60,21 +60,15 @@ export default function NashvilleReleases({ showcases, onImport, activeShowcase,
   // Coming Soon toggle — shows future-dated releases
   const [showComingSoon, setShowComingSoon] = useState(false);
 
-  // Handle confirmation: tracks confirmed handles per session
-  const [confirmedHandles, setConfirmedHandles] = useState<Set<string>>(new Set());
-  const [handleInput, setHandleInput] = useState<{ artist: string; value: string } | null>(null);
-  const confirmHandle = async (artistName: string, handle: string) => {
-    if (!supabase || !handle.trim()) return;
-    try {
-      await supabase.from('artist_handle_confirmations').insert({
-        artist_name: artistName,
-        instagram_handle: handle.trim().replace(/^@/, ''),
-        source: 'nmf_curation',
-        scan_week: selectedWeek || new Date().toISOString().split('T')[0],
-      });
-      setConfirmedHandles(prev => new Set(prev).add(artistName.toLowerCase()));
-    } catch { /* table may not exist yet */ }
-  };
+  // Wave 7 Block 8 — Instagram handles. Max's hand-labeled handles live
+  // in the `instagram_handles` Supabase table (per memory:
+  // feedback_social_handle_trust — his hand labels are ground truth, MB
+  // / Wikidata / LLM handles are not trusted). The old "📎 Add handle"
+  // admin affordance + handle input form + session-local confirmation
+  // set have all been ripped out in favor of simply *displaying* the
+  // known handle underneath the artist name on each tile. If no handle
+  // is on file, render nothing — no placeholder, no prompt to add one.
+  const [igHandles, setIgHandles] = useState<Map<string, string>>(new Map());
 
   // Showcase filter state — lifted to parent so it survives remounts
   const [showcaseArtists, setShowcaseArtists] = useState<Set<string>>(new Set());
@@ -394,6 +388,34 @@ export default function NashvilleReleases({ showcases, onImport, activeShowcase,
 
   // Flat album list used by selectAll
   void albumGroups; // referenced by artistGroups
+
+  // Wave 7 Block 8 — bulk-fetch Instagram handles for every primary
+  // artist currently in view. Max's ground-truth handles live in the
+  // `instagram_handles` Supabase table. One query per artistGroups
+  // change, keyed on the lowercased artist name (matches how the
+  // display code looks them up).
+  useEffect(() => {
+    if (!supabase || artistGroups.length === 0) return;
+    let cancelled = false;
+    const names = artistGroups.map(a => a.name);
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from('instagram_handles')
+          .select('artist_name, instagram_handle')
+          .in('artist_name', names);
+        if (cancelled || !data) return;
+        const next = new Map<string, string>();
+        for (const row of data) {
+          const key = (row.artist_name || '').toLowerCase();
+          if (key && row.instagram_handle) next.set(key, row.instagram_handle);
+        }
+        setIgHandles(next);
+      } catch { /* table missing or offline — show nothing */ }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [artistGroups.length, JSON.stringify(artistGroups.map(a => a.name))]);
 
   // Selected items with track names for the persistence bar
   const selectedItems = (() => {
@@ -785,29 +807,35 @@ export default function NashvilleReleases({ showcases, onImport, activeShowcase,
                         {artist.trackCount} {artist.trackCount === 1 ? 'track' : 'tracks'}
                         {artist.releases.length > 1 && ` · ${artist.releases.length} releases`}
                       </div>
-                      {/* Handle confirmation chip — Wave 7 Block 4: hidden on
-                          mobile entirely (it's a Max-only admin affordance,
-                          not a user feature), and shrunk to an icon-only
-                          trigger on desktop so it doesn't clutter the tile. */}
-                      {!isMobileGrid && (
-                        confirmedHandles.has(artist.name.toLowerCase()) ? (
-                          <span style={{ fontSize: 'var(--fs-3xs)', color: '#3EE6C3', marginTop: 2, display: 'block' }}>✓</span>
-                        ) : handleInput?.artist === artist.name ? (
-                          <form onSubmit={e => { e.preventDefault(); e.stopPropagation(); confirmHandle(artist.name, handleInput.value); setHandleInput(null); }}
-                            onClick={e => e.stopPropagation()} style={{ marginTop: 3, display: 'flex', gap: 3 }}>
-                            <input type="text" value={handleInput.value} onChange={e => setHandleInput({ artist: artist.name, value: e.target.value })}
-                              placeholder="@handle" autoFocus
-                              style={{ width: '100%', fontSize: 11, padding: '2px 4px', background: 'var(--midnight-hover)', border: '1px solid var(--midnight-border)', borderRadius: 4, color: 'var(--text-primary)' }} />
-                            <button type="submit" style={{ fontSize: 10, padding: '2px 6px', background: 'var(--gold)', color: 'var(--midnight)', border: 'none', borderRadius: 4, cursor: 'pointer', fontWeight: 700, flexShrink: 0 }}>✓</button>
-                          </form>
-                        ) : (
-                          <button onClick={e => { e.stopPropagation(); setHandleInput({ artist: artist.name, value: '' }); }}
-                            title="Add Instagram handle"
-                            style={{ fontSize: 10, color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0', marginTop: 2, lineHeight: 1, opacity: 0.5 }}>
-                            📎
-                          </button>
-                        )
-                      )}
+                      {/* Wave 7 Block 8 — display the known Instagram handle
+                          from the `instagram_handles` Supabase table. Max's
+                          hand labels are ground truth. If no handle is on
+                          file for this artist, render nothing (no placeholder,
+                          no "Add handle" affordance). Tapping the handle
+                          opens the artist's Instagram profile in a new tab. */}
+                      {(() => {
+                        const handle = igHandles.get(artist.name.toLowerCase());
+                        if (!handle) return null;
+                        return (
+                          <a
+                            href={`https://instagram.com/${handle.replace(/^@/, '')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={e => e.stopPropagation()}
+                            style={{
+                              fontSize: 'var(--fs-3xs)',
+                              color: 'var(--steel)',
+                              textDecoration: 'none',
+                              marginTop: 2,
+                              display: 'block',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                            }}>
+                            @{handle.replace(/^@/, '')}
+                          </a>
+                        );
+                      })()}
                     </div>
                   </div>
                   {/* Artist track picker — shows all releases grouped by album */}
