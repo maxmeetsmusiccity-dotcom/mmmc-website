@@ -22,7 +22,8 @@ import {
 import { downloadJSON, downloadCSV, downloadArt } from '../lib/downloads';
 import { saveWeek, saveFeatures, getFeatureCounts, type NMFWeek } from '../lib/supabase';
 import { batchResolveAppleMusic } from '../lib/apple-music';
-import ArtistClusterCard, { type ArtistGroup } from '../components/ArtistClusterCard';
+import ArtistClusterCard from '../components/ArtistClusterCard';
+import { type ArtistGroup, groupByPrimaryArtist } from '../lib/artist-grouping';
 import FilterBar from '../components/FilterBar';
 import PlaylistCreate from '../components/PlaylistCreate';
 import TagBlocks from '../components/TagBlocks';
@@ -670,35 +671,10 @@ export default function NewMusicFriday() {
   // by primary artist (comma / feat. / ft. split, same regex as the
   // mobile MobileResultsView grouping). Features bucket under the
   // first-listed artist. Used by the desktop post-import grid below.
-  const artistGroups = useMemo<ArtistGroup[]>(() => {
-    const primaryArtistOf = (s: string) =>
-      (s || '').split(/,|feat\.|ft\./i)[0].trim() || 'Unknown';
-    const map = new Map<string, ArtistGroup>();
-    for (const r of filteredReleases) {
-      const name = primaryArtistOf(r.artist_names);
-      const key = name.toLowerCase();
-      const existing = map.get(key);
-      if (existing) {
-        existing.releases.push(r);
-        existing.tracks.push(...r.tracks);
-      } else {
-        const primaryTrack = r.tracks.find(t => t.track_id === r.titleTrackId) || r.tracks[0];
-        map.set(key, {
-          name,
-          key,
-          cover: r.cover_art_300 || r.cover_art_640 || '',
-          releases: [r],
-          tracks: [...r.tracks],
-          primary: r,
-          primaryTrack,
-        });
-      }
-    }
-    const groups = [...map.values()];
-    // Preserve the filteredReleases sort order by using the order we
-    // first saw each primary artist — `map` iteration preserves that.
-    return groups;
-  }, [filteredReleases]);
+  const artistGroups = useMemo<ArtistGroup[]>(
+    () => groupByPrimaryArtist(filteredReleases),
+    [filteredReleases],
+  );
 
   // Global selection ordinal map (track_id -> 1-based position in the
   // pick order). Drives the "#X" badge on each artist tile.

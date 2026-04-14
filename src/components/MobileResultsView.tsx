@@ -3,6 +3,7 @@ import type { TrackItem, ReleaseCluster } from '../lib/spotify';
 import { getLastFriday } from '../lib/spotify';
 import type { SelectionSlot } from '../lib/selection';
 import { buildSlots } from '../lib/selection';
+import { type ArtistGroup, groupByPrimaryArtist, primaryArtistOf } from '../lib/artist-grouping';
 import type { CarouselAspect } from '../lib/canvas-grid';
 import { generateGridSlide, generateTitleSlide } from '../lib/canvas-grid';
 import { getVisibleTemplates } from '../lib/carousel-templates';
@@ -464,34 +465,8 @@ export default function MobileResultsView({
           track picking — see the modal rendered at the component's end. */}
       <div style={{ padding: '12px' }}>
         {(() => {
-          type ArtistGroup = {
-            name: string;
-            cover: string;
-            releases: ReleaseCluster[];
-            tracks: TrackItem[];
-          };
-
-          const primaryArtistOf = (s: string) =>
-            (s || '').split(/,|feat\.|ft\./i)[0].trim() || 'Unknown';
-
           const artistGroups: ArtistGroup[] = (() => {
-            const map = new Map<string, ArtistGroup>();
-            for (const r of filtered) {
-              const key = primaryArtistOf(r.artist_names);
-              const existing = map.get(key);
-              if (existing) {
-                existing.releases.push(r);
-                existing.tracks.push(...r.tracks);
-              } else {
-                map.set(key, {
-                  name: key,
-                  cover: r.tracks[0]?.cover_art_300 || r.tracks[0]?.cover_art_640 || '',
-                  releases: [r],
-                  tracks: [...r.tracks],
-                });
-              }
-            }
-            const groups = [...map.values()];
+            const groups = groupByPrimaryArtist(filtered);
             const dir = sortDir === 'asc' ? 1 : -1;
             if (sortBy === 'artist') groups.sort((a, b) => dir * a.name.localeCompare(b.name));
             else if (sortBy === 'date') groups.sort((a, b) =>
@@ -661,8 +636,6 @@ export default function MobileResultsView({
           pattern. Replaces the Block 3 inline flex expansion that pushed
           every other tile out of view. */}
       {expandedArtist && (() => {
-        const primaryArtistOf = (s: string) =>
-          (s || '').split(/,|feat\.|ft\./i)[0].trim() || 'Unknown';
         const artistReleases = releases.filter(r => primaryArtistOf(r.artist_names) === expandedArtist);
         if (artistReleases.length === 0) return null;
         const artistCover = artistReleases[0].tracks[0]?.cover_art_300

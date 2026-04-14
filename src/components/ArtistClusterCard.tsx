@@ -2,29 +2,15 @@ import { useState, memo, useEffect } from 'react';
 import type { ReleaseCluster, TrackItem } from '../lib/spotify';
 import type { SelectionSlot } from '../lib/selection';
 import { formatDuration } from '../lib/utils';
+import type { ArtistGroup } from '../lib/artist-grouping';
 
 // Wave 7 Block 9 — desktop artist-grouped tile. Mirrors ClusterCard's
 // interaction contract (click, modal, cover-feature star, rubber-band
 // attribute) but represents one PRIMARY ARTIST with one or more releases
 // instead of one album/release cluster. Features (comma / feat. / ft.)
-// are bucketed under the first-listed artist upstream in NewMusicFriday,
-// so every instance of this component represents one act and all their
-// current-week releases.
-
-export interface ArtistGroup {
-  name: string;
-  cover: string;
-  releases: ReleaseCluster[];
-  tracks: TrackItem[];
-  /** Unique key for rubber-band + shift-click iteration (lowercased name). */
-  key: string;
-  /** Primary release (first in the group) — used for hover / quick look
-      and for the "title track" default when rubber-banding. */
-  primary: ReleaseCluster;
-  /** Title track of the primary release — the default track added when
-      the user rubber-bands or shift-clicks this tile in bulk. */
-  primaryTrack: TrackItem;
-}
+// are bucketed under the first-listed artist upstream via the shared
+// artist-grouping lib, so every instance of this component represents
+// one act and all their current-week releases.
 
 interface Props {
   artist: ArtistGroup;
