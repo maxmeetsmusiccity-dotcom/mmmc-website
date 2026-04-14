@@ -222,7 +222,7 @@ export default memo(function ArtistClusterCard({
               Spotify
             </a>
             <a
-              href={`https://nashvilledecoder.com/search?q=${encodeURIComponent(artist.name)}`}
+              href="https://nashvilledecoder.com"
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
