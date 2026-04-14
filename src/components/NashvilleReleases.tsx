@@ -628,9 +628,13 @@ export default function NashvilleReleases({ showcases, onImport, activeShowcase,
         )}
       </div>
 
-      {/* View toggle: This Week / Coming Soon */}
+      {/* View toggle: This Week / Coming Soon — Wave 7 Block 7: added
+          flexWrap so long track-count labels can spill to a second row
+          on narrow viewports instead of overflowing horizontally. Touch
+          targets are already handled by the global .filter-pill rule
+          at global.css line 458 (min-height: 44px at max-width: 767px). */}
       {comingSoonReleases.length > 0 && (
-        <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
+        <div style={{ display: 'flex', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
           <button className={`filter-pill ${!showComingSoon ? 'active' : ''}`}
             onClick={() => setShowComingSoon(false)}
             style={{ fontSize: 'var(--fs-xs)', padding: '4px 12px' }}>
