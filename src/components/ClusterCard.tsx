@@ -62,39 +62,50 @@ export default memo(function ClusterCard({ cluster, selectionSlot, selectedSlots
         onMouseEnter={() => onHover?.(cluster)}
         onMouseLeave={() => onHover?.(null)}
       >
-        {/* Selection badges */}
+        {/* Wave 7 Block 5E — split selection badges on desktop ClusterCard,
+            matching the mobile pattern. Top-left: gold-fill "K/M" where
+            K = selected from this album, M = total tracks. Top-right:
+            gold-outline "#X" where X is the max global selection ordinal
+            among this album's selected tracks (i.e. "#5" means your 5th
+            pick was from this album). Replaces the multi-circle ordinal
+            cluster that previously sat at top-right — same information,
+            less visual noise when you've picked >3 tracks from one album. */}
         {isSelected && primarySlot && (
-          <div style={{
-            position: 'absolute', top: 6, right: 6, zIndex: 2,
-            display: 'flex', gap: 2,
-          }}>
-            {allSlots.slice(0, 3).map(s => (
-              <div key={s.track.track_id} style={{
-                width: 22, height: 22, borderRadius: '50%',
-                background: s.isCoverFeature ? 'var(--mmmc-red)' : 'var(--gold)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
+          <>
+            <div
+              data-testid="cluster-card-badge-count"
+              style={{
+                position: 'absolute', top: 6, left: 6, zIndex: 2,
+                background: 'var(--gold)', color: 'var(--midnight)',
+                fontSize: 'var(--fs-3xs)', fontWeight: 700,
+                padding: '2px 8px', borderRadius: 999, lineHeight: 1.2,
                 boxShadow: '0 2px 6px rgba(0,0,0,0.4)',
-                fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-3xs)', fontWeight: 700,
-                color: 'var(--midnight)',
+                fontFamily: 'var(--font-mono)',
               }}>
-                {s.selectionNumber}
-              </div>
-            ))}
-            {allSlots.length > 3 && (
-              <div style={{
-                width: 22, height: 22, borderRadius: '50%', background: 'var(--midnight-border)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 'var(--fs-3xs)', color: 'var(--text-muted)',
-              }}>+{allSlots.length - 3}</div>
-            )}
-          </div>
+              {allSlots.length}/{cluster.total_tracks}
+            </div>
+            <div
+              data-testid="cluster-card-badge-ordinal"
+              style={{
+                position: 'absolute', top: 6, right: 6, zIndex: 2,
+                background: 'var(--midnight)', color: 'var(--gold)',
+                border: '1px solid var(--gold)',
+                fontSize: 'var(--fs-3xs)', fontWeight: 700,
+                padding: '2px 8px', borderRadius: 999, lineHeight: 1.2,
+                boxShadow: '0 2px 6px rgba(0,0,0,0.4)',
+                fontFamily: 'var(--font-mono)',
+              }}>
+              #{Math.max(...allSlots.map(s => s.selectionNumber))}
+            </div>
+          </>
         )}
-        {/* Cover feature star */}
+        {/* Cover feature star — moved to bottom-left of the cover art so
+            it doesn't collide with the top-left count badge. */}
         {isSelected && primarySlot && (
           <button
             onClick={(e) => { e.stopPropagation(); onSetCoverFeature(primarySlot.track.track_id); }}
             style={{
-              position: 'absolute', top: 6, left: 6, zIndex: 10,
+              position: 'absolute', bottom: 6, left: 6, zIndex: 10,
               background: primarySlot.isCoverFeature ? 'var(--gold)' : 'rgba(0,0,0,0.6)',
               border: `2px solid ${primarySlot.isCoverFeature ? 'var(--gold)' : 'rgba(255,255,255,0.3)'}`,
               borderRadius: '50%', width: 28, height: 28,
