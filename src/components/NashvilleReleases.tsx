@@ -424,16 +424,18 @@ export default function NashvilleReleases({ showcases, onImport, activeShowcase,
     onImport(releasesToTrackItems(toImport));
   };
 
-  // Showcase filter dropdown
+  // Showcase filter dropdown — Wave 7 Block 6: bumped min-height to 44px
+  // per Apple HIG (was 41px, off by 3). Added aria-label for accessibility.
   const showcaseDropdown = showcases.length > 0 ? (
     <select
       value={activeShowcase || ''}
       onChange={e => onActiveShowcaseChange(e.target.value || null)}
+      aria-label="Filter by showcase"
       style={{
         background: 'var(--midnight)', border: '1px solid var(--midnight-border)',
-        borderRadius: 8, color: 'var(--text-secondary)', padding: '8px 12px',
+        borderRadius: 8, color: 'var(--text-secondary)', padding: '10px 12px',
         fontSize: 'var(--fs-sm)', fontFamily: 'var(--font-mono)',
-        width: '100%', marginBottom: 12,
+        width: '100%', marginBottom: 12, minHeight: 44,
       }}
     >
       <option value="">All Nashville ({filteredStats.releases} releases, {filteredStats.tracks} tracks)</option>
@@ -508,8 +510,17 @@ export default function NashvilleReleases({ showcases, onImport, activeShowcase,
             Nashville Releases
           </span>
           {availableWeeks.length > 1 ? (
-            <select value={selectedWeek || ''} onChange={e => setSelectedWeek(e.target.value)}
-              style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', background: 'var(--midnight)', border: '1px solid var(--midnight-border)', borderRadius: 4, padding: '2px 6px', marginLeft: 8 }}>
+            <select
+              value={selectedWeek || ''}
+              onChange={e => setSelectedWeek(e.target.value)}
+              aria-label="Select scan week"
+              style={{
+                fontSize: 'var(--fs-sm)', color: 'var(--text-muted)',
+                background: 'var(--midnight)', border: '1px solid var(--midnight-border)',
+                borderRadius: 6, padding: isMobileGrid ? '8px 10px' : '2px 6px',
+                marginLeft: 8,
+                minHeight: isMobileGrid ? 44 : undefined,
+              }}>
               {availableWeeks.map(w => <option key={w} value={w}>Week of {w}</option>)}
             </select>
           ) : week && <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginLeft: 8 }}>Week of {week}</span>}
