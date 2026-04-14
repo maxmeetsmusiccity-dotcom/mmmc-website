@@ -22,7 +22,7 @@ import {
 import { downloadJSON, downloadCSV, downloadArt } from '../lib/downloads';
 import { saveWeek, saveFeatures, getFeatureCounts, type NMFWeek } from '../lib/supabase';
 import { batchResolveAppleMusic } from '../lib/apple-music';
-import ClusterCard from '../components/ClusterCard';
+import ArtistClusterCard, { type ArtistGroup } from '../components/ArtistClusterCard';
 import FilterBar from '../components/FilterBar';
 import PlaylistCreate from '../components/PlaylistCreate';
 import TagBlocks from '../components/TagBlocks';
@@ -586,15 +586,6 @@ export default function NewMusicFriday() {
     }
   }, [weekDate]);
 
-  // Selection helpers — keyed by track ID so multiple tracks per album can be selected
-  const selectionByAlbum = useMemo(() => {
-    const map = new Map<string, SelectionSlot>();
-    for (const s of selections) {
-      if (!map.has(s.albumId)) map.set(s.albumId, s);
-    }
-    return map;
-  }, [selections]);
-
   /** All selected slots grouped by album ID (supports multi-track per album) */
   // selectionsByAlbum, haptic, handleSelectRelease, handleDeselect, handleSetCoverFeature
   // — all now in useSelectionManager hook
@@ -674,6 +665,48 @@ export default function NewMusicFriday() {
     else if (sort === 'title') result.sort((a, b) => a.album_name.localeCompare(b.album_name));
     return result;
   }, [releases, filter, sort, search]);
+
+  // Wave 7 Block 9 — artist-grouped tile list. Groups filteredReleases
+  // by primary artist (comma / feat. / ft. split, same regex as the
+  // mobile MobileResultsView grouping). Features bucket under the
+  // first-listed artist. Used by the desktop post-import grid below.
+  const artistGroups = useMemo<ArtistGroup[]>(() => {
+    const primaryArtistOf = (s: string) =>
+      (s || '').split(/,|feat\.|ft\./i)[0].trim() || 'Unknown';
+    const map = new Map<string, ArtistGroup>();
+    for (const r of filteredReleases) {
+      const name = primaryArtistOf(r.artist_names);
+      const key = name.toLowerCase();
+      const existing = map.get(key);
+      if (existing) {
+        existing.releases.push(r);
+        existing.tracks.push(...r.tracks);
+      } else {
+        const primaryTrack = r.tracks.find(t => t.track_id === r.titleTrackId) || r.tracks[0];
+        map.set(key, {
+          name,
+          key,
+          cover: r.cover_art_300 || r.cover_art_640 || '',
+          releases: [r],
+          tracks: [...r.tracks],
+          primary: r,
+          primaryTrack,
+        });
+      }
+    }
+    const groups = [...map.values()];
+    // Preserve the filteredReleases sort order by using the order we
+    // first saw each primary artist — `map` iteration preserves that.
+    return groups;
+  }, [filteredReleases]);
+
+  // Global selection ordinal map (track_id -> 1-based position in the
+  // pick order). Drives the "#X" badge on each artist tile.
+  const globalOrdinalByTrackId = useMemo(() => {
+    const m = new Map<string, number>();
+    selections.forEach((s, i) => m.set(s.track.track_id, i + 1));
+    return m;
+  }, [selections]);
 
   // (filter counts shown inline in sticky bar via filteredReleases.length)
 
@@ -1695,10 +1728,15 @@ export default function NewMusicFriday() {
                       setRubberBand(updated);
                     };
                     const onUp = () => {
-                      // Select all cards within the rubber band
+                      // Wave 7 Block 9 — rubber-band now iterates artist
+                      // tiles (`[data-artist-key]`) instead of album tiles.
+                      // For each artist whose tile center falls inside the
+                      // rubber-band rect, we add the PRIMARY release's title
+                      // track — one track per artist, same semantics as the
+                      // old album-based flow had one track per album.
                       const rb = rubberBandRef.current;
                       if (gridContainerRef.current && rb) {
-                        const cards = gridContainerRef.current.querySelectorAll('[data-album-id]');
+                        const cards = gridContainerRef.current.querySelectorAll('[data-artist-key]');
                         const containerRect = gridContainerRef.current.getBoundingClientRect();
                         const selRect = {
                           left: Math.min(rb.startX, rb.endX),
@@ -1712,15 +1750,18 @@ export default function NewMusicFriday() {
                           const cx = cardRect.left - containerRect.left + cardRect.width / 2;
                           const cy = cardRect.top - containerRect.top + cardRect.height / 2;
                           if (cx >= selRect.left && cx <= selRect.right && cy >= selRect.top && cy <= selRect.bottom) {
-                            const albumId = card.getAttribute('data-album-id');
-                            if (albumId) {
-                              const cluster = filteredReleases.find(r => r.album_spotify_id === albumId);
-                              if (cluster && !selections.some(s => s.albumId === albumId)) {
-                                const track = cluster.tracks.find(t => t.track_id === cluster.titleTrackId) || cluster.tracks[0];
-                                newSelections.push({
-                                  track, albumId,
-                                  selectionNumber: 0, slideGroup: 0, positionInSlide: 0, isCoverFeature: false,
-                                });
+                            const key = card.getAttribute('data-artist-key');
+                            if (key) {
+                              const group = artistGroups.find(g => g.key === key);
+                              if (group) {
+                                const albumId = group.primary.album_spotify_id;
+                                const track = group.primaryTrack;
+                                if (!selections.some(s => s.track.track_id === track.track_id)) {
+                                  newSelections.push({
+                                    track, albumId,
+                                    selectionNumber: 0, slideGroup: 0, positionInSlide: 0, isCoverFeature: false,
+                                  });
+                                }
                               }
                             }
                           }
@@ -1752,46 +1793,65 @@ export default function NewMusicFriday() {
                       borderRadius: 2,
                     }} />
                   )}
-                  {filteredReleases.map((cluster, idx) => (
-                    <ClusterCard
-                      key={cluster.album_spotify_id}
-                      cluster={cluster}
-                      selectionSlot={selectionByAlbum.get(cluster.album_spotify_id) || null}
-                      selectedSlots={selectionsByAlbum.get(cluster.album_spotify_id)}
-                      hasSelections={selections.length > 0}
-                      onSelectRelease={(c, trackId) => {
-                        if (lastClickedIdx.current >= 0 && window.event && (window.event as KeyboardEvent).shiftKey) {
-                          const start = Math.min(lastClickedIdx.current, idx);
-                          const end = Math.max(lastClickedIdx.current, idx);
-                          setSelections(prev => {
-                            const updated = [...prev];
-                            for (let i = start; i <= end; i++) {
-                              const r = filteredReleases[i];
-                              const alreadyHas = updated.some(s => s.albumId === r.album_spotify_id);
-                              if (!alreadyHas) {
-                                const track = r.tracks.find(t => t.track_id === r.titleTrackId) || r.tracks[0];
-                                updated.push({
-                                  track, albumId: r.album_spotify_id,
-                                  selectionNumber: updated.length + 1,
-                                  slideGroup: getSlideGroup(updated.length + 1),
-                                  positionInSlide: ((updated.length) % 8) + 1,
-                                  isCoverFeature: false,
-                                });
+                  {/* Wave 7 Block 9 — artist-grouped post-import tiles.
+                      One tile per primary artist. Features bucket under
+                      first-listed artist. Multi-track/multi-release
+                      artists open a modal on click; single-track artists
+                      toggle directly. Shift-click + rubber-band both use
+                      artist indices. */}
+                  {artistGroups.map((group, idx) => {
+                    const slots: SelectionSlot[] = [];
+                    let maxOrd = 0;
+                    for (const t of group.tracks) {
+                      const ord = globalOrdinalByTrackId.get(t.track_id);
+                      if (ord) {
+                        const slot = selections[ord - 1];
+                        if (slot) slots.push(slot);
+                        if (ord > maxOrd) maxOrd = ord;
+                      }
+                    }
+                    return (
+                      <ArtistClusterCard
+                        key={group.key}
+                        artist={group}
+                        selectedSlots={slots}
+                        maxOrdinal={maxOrd > 0 ? maxOrd : null}
+                        hasSelections={selections.length > 0}
+                        onSelectRelease={(c, trackId) => {
+                          if (lastClickedIdx.current >= 0 && window.event && (window.event as KeyboardEvent).shiftKey) {
+                            const start = Math.min(lastClickedIdx.current, idx);
+                            const end = Math.max(lastClickedIdx.current, idx);
+                            setSelections(prev => {
+                              const updated = [...prev];
+                              for (let i = start; i <= end; i++) {
+                                const g = artistGroups[i];
+                                if (!g) continue;
+                                const t = g.primaryTrack;
+                                const alreadyHas = updated.some(s => s.track.track_id === t.track_id);
+                                if (!alreadyHas) {
+                                  updated.push({
+                                    track: t, albumId: g.primary.album_spotify_id,
+                                    selectionNumber: updated.length + 1,
+                                    slideGroup: getSlideGroup(updated.length + 1),
+                                    positionInSlide: ((updated.length) % 8) + 1,
+                                    isCoverFeature: false,
+                                  });
+                                }
                               }
-                            }
-                            return buildSlots(updated);
-                          });
-                        } else {
-                          handleSelectRelease(c, trackId);
-                        }
-                        lastClickedIdx.current = idx;
-                      }}
-                      onDeselect={handleDeselect}
-                      onSetCoverFeature={handleSetCoverFeature}
-                      featureCount={featureCounts.get(cluster.tracks[0]?.artist_id) || 0}
-                      onHover={(c) => { hoveredCluster.current = c; }}
-                    />
-                  ))}
+                              return buildSlots(updated);
+                            });
+                          } else {
+                            handleSelectRelease(c, trackId);
+                          }
+                          lastClickedIdx.current = idx;
+                        }}
+                        onDeselect={handleDeselect}
+                        onSetCoverFeature={handleSetCoverFeature}
+                        featureCount={featureCounts.get(group.primary.tracks[0]?.artist_id) || 0}
+                        onHover={(c) => { hoveredCluster.current = c; }}
+                      />
+                    );
+                  })}
                 </div>
               )}
 
