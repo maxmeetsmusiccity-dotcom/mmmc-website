@@ -27,17 +27,30 @@ interface BrowseData {
   artists: BrowseArtist[];
 }
 
-/** Showcase + curated categories — used as fallback when R2 file doesn't exist yet */
+/** Showcase + curated categories — used as fallback when R2 file doesn't exist yet.
+ *  Canonical showcase list from dim_showcases (April 2026). */
 const FALLBACK_CATEGORIES = [
   { id: 'whiskey_jam', name: 'Whiskey Jam', emoji: '\uD83E\uDD43', type: 'showcase' },
   { id: 'song_suffragettes', name: 'Song Suffragettes', emoji: '\uD83C\uDFA4', type: 'showcase' },
-  { id: 'bluebird', name: 'Bluebird Cafe', emoji: '\uD83D\uDC26', type: 'showcase' },
-  { id: 'listening_room', name: 'The Listening Room', emoji: '\uD83C\uDFA7', type: 'showcase' },
-  { id: 'rowdy_round', name: 'Rowdy / Outside the Round', emoji: '\uD83C\uDFAF', type: 'showcase' },
+  { id: 'listening_room', name: 'The Listening Room Cafe', emoji: '\uD83C\uDFA7', type: 'showcase' },
+  { id: 'bluebird', name: 'The Bluebird Cafe', emoji: '\uD83D\uDC26', type: 'showcase' },
+  { id: '3rd_lindsley', name: '3rd & Lindsley', emoji: '\uD83C\uDFB5', type: 'showcase' },
+  { id: 'buscall', name: 'BusCall Nashville', emoji: '\uD83D\uDE8C', type: 'showcase' },
+  { id: 'grindhouse', name: 'Grindhouse Nashville', emoji: '\uD83C\uDFB8', type: 'showcase' },
+  { id: 'pindrop', name: 'Pindrop Songwriter Series', emoji: '\uD83D\uDCCC', type: 'showcase' },
+  { id: 'y_not_wednesdays', name: 'Y-Not Wednesdays', emoji: '\uD83C\uDF1F', type: 'showcase' },
+  { id: 'raised_rowdy', name: 'Raised Rowdy', emoji: '\uD83E\uDD20', type: 'showcase' },
+  { id: 'undiscovered_nashville', name: 'Undiscovered Nashville', emoji: '\uD83D\uDD0D', type: 'showcase' },
+  { id: 'lucky_money', name: 'Lucky Money Live', emoji: '\uD83C\uDFB0', type: 'showcase' },
   { id: 'rebel_rouser', name: 'Rebel Rouser', emoji: '\uD83D\uDD25', type: 'showcase' },
-  { id: 'pindrop', name: 'PinDrop Writers Series', emoji: '\uD83D\uDCCC', type: 'showcase' },
-  { id: 'nashville_tour_stop', name: 'Nashville Tour Stop', emoji: '\uD83D\uDE8C', type: 'showcase' },
-  { id: 'opry', name: 'Grand Ole Opry', emoji: '\uD83C\uDFB6', type: 'showcase' },
+  { id: 'outside_the_round', name: 'Outside the Round', emoji: '\uD83C\uDFAF', type: 'showcase' },
+  { id: 'backstage', name: 'Backstage Nashville', emoji: '\uD83C\uDFAD', type: 'showcase' },
+  { id: 'nashville_tour_stop', name: 'Nashville Tour Stop', emoji: '\uD83D\uDEA9', type: 'showcase' },
+  { id: 'losers', name: 'Losers', emoji: '\uD83C\uDFB6', type: 'showcase' },
+  { id: 'girls_of_nashville', name: 'The Girls of Nashville', emoji: '\uD83D\uDC85', type: 'showcase' },
+  { id: 'rhinestone_cowgirl', name: 'Rhinestone Cowgirl', emoji: '\u2728', type: 'showcase' },
+  { id: 'sams_jams', name: "Sam's Jams", emoji: '\uD83C\uDFB9', type: 'showcase' },
+  { id: 'hope_on_the_row', name: 'Hope on the Row', emoji: '\uD83C\uDF1E', type: 'showcase' },
   { id: 'marquee', name: 'Marquee Songwriters', emoji: '\uD83C\uDFC6', type: 'genre' },
   { id: 'camp_leaders', name: 'Camp Leaders', emoji: '\uD83C\uDFAA', type: 'genre' },
 ];
