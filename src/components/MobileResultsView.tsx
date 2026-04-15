@@ -524,6 +524,12 @@ export default function MobileResultsView({
             setExpandedArtist(artist.name);
           };
 
+          // Cover feature state lookup for single-track artists on mobile.
+          // Used by grid + list tiles to render the ★ button inline (the
+          // modal-based star is unreachable for single-track artists).
+          const isCoverFeatureTrack = (trackId: string) =>
+            selections.some(s => s.track.track_id === trackId && s.isCoverFeature);
+
           return viewMode === 'grid' ? (
             // minmax(0, 1fr) prevents the min-content blow-out fixed in
             // Wave 7 Block 3. Do not regress this to plain `1fr`.
@@ -577,8 +583,34 @@ export default function MobileResultsView({
                           )}
                         </>
                       )}
-                      <img src={artist.cover} alt=""
-                        style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', display: 'block' }} />
+                      <div style={{ position: 'relative' }}>
+                        <img src={artist.cover} alt=""
+                          style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', display: 'block' }} />
+                        {/* Cover feature star for single-track artists — the
+                            modal-based star is unreachable since single-track
+                            artists toggle via direct tap, not modal. */}
+                        {hasSelection && artist.tracks.length === 1 && (() => {
+                          const trackId = artist.tracks[0].track_id;
+                          const isCover = isCoverFeatureTrack(trackId);
+                          return (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); onSetCoverFeature(trackId); }}
+                              style={{
+                                position: 'absolute', bottom: 4, right: 4, zIndex: 3,
+                                background: isCover ? 'var(--gold)' : 'rgba(0,0,0,0.6)',
+                                border: `2px solid ${isCover ? 'var(--gold)' : 'rgba(255,255,255,0.3)'}`,
+                                borderRadius: '50%', width: 32, height: 32,
+                                color: isCover ? 'var(--midnight)' : 'white',
+                                fontSize: 16, cursor: 'pointer',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.5)',
+                                minHeight: 32, minWidth: 32, // touch target
+                              }}
+                              title={isCover ? 'Cover feature — tap to unset' : 'Set as cover feature'}
+                            >★</button>
+                          );
+                        })()}
+                      </div>
                       <div style={{ padding: '6px 8px' }}>
                         <div style={{ fontSize: 'var(--fs-sm)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                           color: hasSelection ? 'var(--gold)' : 'var(--text-primary)' }}>
@@ -622,6 +654,23 @@ export default function MobileResultsView({
                           : `${artist.releases.length} ${artist.releases.length === 1 ? 'release' : 'releases'} · ${artist.tracks.length} ${artist.tracks.length === 1 ? 'track' : 'tracks'} ▸`}
                       </div>
                     </div>
+                    {/* Cover feature star for single-track artists in list view */}
+                    {hasSelection && artist.tracks.length === 1 && (() => {
+                      const trackId = artist.tracks[0].track_id;
+                      const isCover = isCoverFeatureTrack(trackId);
+                      return (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); onSetCoverFeature(trackId); }}
+                          style={{
+                            background: 'none', border: 'none', fontSize: 20, cursor: 'pointer',
+                            flexShrink: 0, padding: 4, minWidth: 44, minHeight: 44,
+                            color: isCover ? 'var(--gold)' : 'var(--text-muted)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          }}
+                          title={isCover ? 'Cover feature — tap to unset' : 'Set as cover feature'}
+                        >★</button>
+                      );
+                    })()}
                   </div>
                 );
               })}
