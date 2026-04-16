@@ -125,6 +125,23 @@ import { getClientIp, isRateLimited } from './_rateLimit.js';
 
 const SCAN_SECRET = process.env.SCAN_SECRET || '';
 
+const ALLOWED_ORIGINS = new Set([
+  'https://maxmeetsmusiccity.com',
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:5199',
+]);
+
+function isAllowedOrigin(req: VercelRequest): boolean {
+  const origin = req.headers.origin || '';
+  if (origin && ALLOWED_ORIGINS.has(origin)) return true;
+  const referer = req.headers.referer || '';
+  if (referer) {
+    try { if (ALLOWED_ORIGINS.has(new URL(referer).origin)) return true; } catch {}
+  }
+  return false;
+}
+
 function isAuthorized(req: VercelRequest): boolean {
   // Accept SCAN_SECRET for cron/internal calls
   const auth = req.headers.authorization;
@@ -132,9 +149,8 @@ function isAuthorized(req: VercelRequest): boolean {
   // Accept valid Supabase JWT for authenticated frontend users
   const supabaseToken = req.headers['x-supabase-auth'];
   if (typeof supabaseToken === 'string' && supabaseToken.length > 20) return true;
-  // Accept same-origin requests (browser frontend on our domain)
-  const origin = req.headers.origin || req.headers.referer || '';
-  if (origin.includes('maxmeetsmusiccity.com') || origin.includes('localhost')) return true;
+  // Accept same-origin requests (exact-match allowlist)
+  if (isAllowedOrigin(req)) return true;
   return false;
 }
 

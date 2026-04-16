@@ -2,7 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import { getClientIp, isRateLimited } from './_rateLimit.js';
 
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL || '';
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const APIFY_TOKEN = process.env.APIFY_TOKEN || '';
 
@@ -18,9 +18,22 @@ const APIFY_TOKEN = process.env.APIFY_TOKEN || '';
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
   try {
-  // Same-origin or auth
-  const origin = req.headers.origin || req.headers.referer || '';
-  if (!origin.includes('maxmeetsmusiccity.com') && !origin.includes('localhost')) {
+  // Same-origin check (exact-match allowlist)
+  const ALLOWED_ORIGINS = new Set([
+    'https://maxmeetsmusiccity.com',
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'http://localhost:5199',
+  ]);
+  const origin = req.headers.origin || '';
+  let originAllowed = origin ? ALLOWED_ORIGINS.has(origin) : false;
+  if (!originAllowed) {
+    const referer = req.headers.referer || '';
+    if (referer) {
+      try { originAllowed = ALLOWED_ORIGINS.has(new URL(referer).origin); } catch {}
+    }
+  }
+  if (!originAllowed) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
