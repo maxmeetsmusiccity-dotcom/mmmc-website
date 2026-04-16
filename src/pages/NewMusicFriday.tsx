@@ -34,16 +34,15 @@ import SourceSelector from '../components/SourceSelector';
 import ManualImport from '../components/ManualImport';
 
 // Lazy-loaded heavy components
-const CarouselPreviewPanel = lazy(() => import('../components/CarouselPreviewPanel'));
 const NashvilleReleases = lazy(() => import('../components/NashvilleReleases'));
 const MobileResultsView = lazy(() => import('../components/MobileResultsView'));
-// Eager import for hidden mobile panel — prevents null ref on first generate tap
-import CarouselPreviewPanelEager from '../components/CarouselPreviewPanel';
+// Eager import — also used as hidden mobile panel for ref availability on first generate tap
+import CarouselPreviewPanel from '../components/CarouselPreviewPanel';
 import CaptionGenerator from '../components/CaptionGenerator';
 import TrackSuggestions from '../components/TrackSuggestions';
 import { queueNewArtistsForEnrichment } from '../lib/enrichment';
 import type { MusicSource } from '../lib/sources/types';
-import ToastContainer from '../components/Toast';
+import ToastContainer, { showToast } from '../components/Toast';
 import KeyboardHelp from '../components/KeyboardHelp';
 import Onboarding from '../components/Onboarding';
 import { checkScanHealth } from '../lib/spotify';
@@ -196,16 +195,24 @@ export default function NewMusicFriday() {
   const [mobileCollapsed, setMobileCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768);
 
-  // Measure header + toolbar on every render so spacer stays correct
+  // Measure header + toolbar on mount + whenever their size changes
   useEffect(() => {
     const measure = () => {
       if (headerRef.current) setHeaderHeight(headerRef.current.offsetHeight);
       if (toolbarRef.current) setToolbarHeight(toolbarRef.current.offsetHeight);
     };
     measure();
+
+    const ro = new ResizeObserver(measure);
+    if (headerRef.current) ro.observe(headerRef.current);
+    if (toolbarRef.current) ro.observe(toolbarRef.current);
+
     window.addEventListener('resize', measure);
-    return () => window.removeEventListener('resize', measure);
-  });
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', measure);
+    };
+  }, []);
 
   // Mobile: collapse header on scroll down to reclaim viewport space
   useEffect(() => {
@@ -1139,7 +1146,7 @@ export default function NewMusicFriday() {
       {/* Hidden CarouselPreviewPanel on mobile — eager loaded so ref is ready immediately */}
       {phase === 'results' && isMobile && selections.length > 0 && (
         <div style={{ display: 'none' }}>
-          <CarouselPreviewPanelEager
+          <CarouselPreviewPanel
             ref={carouselRef}
             selectedTracks={selectedTracks}
             coverFeature={selections.find(s => s.isCoverFeature) || null}
@@ -2126,7 +2133,7 @@ export default function NewMusicFriday() {
                                 },
                               });
                               setError('');
-                              alert(`Created Apple Music playlist: ${name}`);
+                              showToast(`Created Apple Music playlist: ${name}`, 'success');
                             } catch (e) {
                               setError(`Apple Music error: ${(e as Error).message}`);
                             }
