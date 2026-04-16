@@ -1,9 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
-import { startAuth, exchangeCode, getToken, clearToken, refreshToken, isTokenExpired } from '../lib/auth';
+import { startAuth, exchangeCode, getToken, clearToken } from '../lib/auth';
 import {
-  fetchFollowedArtists,
-  fetchNewReleases,
   getLastFriday,
   getScanCutoff,
   groupIntoReleases,
@@ -19,8 +17,7 @@ import {
   getSlideGroup,
 } from '../lib/selection';
 import { downloadArt } from '../lib/downloads';
-import { saveWeek, saveFeatures, getFeatureCounts, type NMFWeek } from '../lib/supabase';
-import { batchResolveAppleMusic } from '../lib/apple-music';
+import { saveWeek, saveFeatures, type NMFWeek } from '../lib/supabase';
 import ArtistClusterCard from '../components/ArtistClusterCard';
 import { type ArtistGroup, groupByPrimaryArtist } from '../lib/artist-grouping';
 import PlaylistSection from '../components/PlaylistSection';
@@ -45,10 +42,10 @@ import type { MusicSource } from '../lib/sources/types';
 import ToastContainer from '../components/Toast';
 import KeyboardHelp from '../components/KeyboardHelp';
 import Onboarding from '../components/Onboarding';
-import { checkScanHealth } from '../lib/spotify';
 import { useAuth } from '../lib/auth-context';
 import { useSelectionManager } from '../hooks/useSelectionManager';
 import { useCarouselState } from '../hooks/useCarouselState';
+import { useNashvilleScan } from '../hooks/useNashvilleScan';
 
 type Phase = 'auth' | 'ready' | 'scanning' | 'results';
 type FilterKey = 'all' | 'single' | 'album';
@@ -127,8 +124,6 @@ export default function NewMusicFriday() {
     pushSelectionHistory, undoSelection, historyLength, haptic,
   } = useSelectionManager();
   const [targetCount, setTargetCount] = useState(32);
-  const [scanStatus, setScanStatus] = useState('');
-  const [scanProgress, setScanProgress] = useState({ current: 0, total: 0 });
   const [filter, setFilter] = useState<FilterKey>('all');
   const [sort, setSort] = useState<SortKey>('date');
   const [searchInput, setSearchInput] = useState('');
@@ -194,9 +189,6 @@ export default function NewMusicFriday() {
 
   // Shift-click multi-select tracking
   const lastClickedIdx = useRef<number>(-1);
-
-  // Scan abort controller
-  const scanAbortRef = useRef<AbortController | null>(null);
 
   // Fixed header/toolbar measurement
   const headerRef = useRef<HTMLElement>(null);
@@ -269,6 +261,19 @@ export default function NewMusicFriday() {
   const step5Ref = useRef<HTMLElement>(null);
 
   const weekDate = getLastFriday();
+
+  // Nashville (Spotify) scan extracted to hook
+  const {
+    scanStatus, setScanStatus,
+    scanProgress, setScanProgress,
+    scanAbortRef,
+    runScan,
+  } = useNashvilleScan({
+    userId, weekDate, allTracks,
+    setPhase, setError, setToken,
+    setAllTracks, setReleases, setArtistCount, setLastScanned,
+    setRateLimited, setLoadedFromCache, setFeatureCounts, setAppleEnriching,
+  });
 
   // ─── Auto-save draft (scoped by user to prevent cross-account leakage) ───
   const DRAFT_KEY = userId ? `nmf_draft_${userId}` : 'nmf_draft_guest';
@@ -489,160 +494,10 @@ export default function NewMusicFriday() {
     setError('');
   };
 
-  const runScan = useCallback(async (tkn: string) => {
-    setPhase('scanning');
-    setError('');
-    setRateLimited(false);
-    setLoadedFromCache(false);
-    const abortController = new AbortController();
-    scanAbortRef.current = abortController;
-    const { signal } = abortController;
-    const scanStart = Date.now();
-    try {
-      // Refresh token if expired
-      let activeToken = tkn;
-      if (isTokenExpired()) {
-        setScanStatus('Refreshing Spotify token...');
-        const refreshed = await refreshToken();
-        if (refreshed) {
-          activeToken = refreshed;
-          setToken(refreshed);
-        } else {
-          setToken(null);
-          setPhase('ready');
-          setError('Session expired. Please reconnect Spotify.');
-          return;
-        }
-      }
-
-      // Pre-scan health check
-      setScanStatus('Checking Spotify status...');
-      const health = await checkScanHealth(activeToken);
-      if (!health.ok) {
-        setRateLimited(true);
-        setError(health.message);
-        setPhase('ready');
-        return;
-      }
-      if (import.meta.env.DEV) console.log(`[SCAN] Health check: ${health.message}`);
-
-      setScanStatus('Fetching followed artists...');
-      const artists = await fetchFollowedArtists(activeToken, (cur, tot) => {
-        setScanProgress({ current: cur, total: tot });
-        setScanStatus(`Loaded ${cur} artists...`);
-      }, false, signal);
-
-      const cutoff = getScanCutoff();
-      setScanStatus(`Scanning releases since ${cutoff}...`);
-      setScanProgress({ current: 0, total: artists.length });
-
-      let liveTrackCount = 0;
-      const result = await fetchNewReleases(artists, activeToken, cutoff, (cur, tot, albumsFound, status) => {
-        setScanProgress({ current: cur, total: tot });
-        const elapsed = (Date.now() - scanStart) / 1000;
-        const statusDot = status === 'green' ? '\uD83D\uDFE2' : status === 'yellow' ? '\uD83D\uDFE1' : '\uD83D\uDD34';
-        const countLabel = `${albumsFound} album${albumsFound !== 1 ? 's' : ''} \u00B7 ${liveTrackCount} track${liveTrackCount !== 1 ? 's' : ''}`;
-        if (status === 'red') {
-          setScanStatus(`${statusDot} Rate limited \u2014 saving ${countLabel} found so far`);
-        } else if (cur >= 30 && cur < tot) {
-          const rate = cur / elapsed;
-          const remaining = (tot - cur) / rate;
-          const eta = remaining < 10 ? 'Almost done...'
-            : remaining < 60 ? `~${Math.round(remaining)}s remaining`
-            : `~${Math.floor(remaining / 60)}m ${Math.round(remaining % 60)}s remaining`;
-          setScanStatus(`${statusDot} ${cur}/${tot} artists \u00B7 ${countLabel} \u00B7 ${eta}`);
-        } else {
-          setScanStatus(`${statusDot} ${cur}/${tot} artists \u00B7 ${countLabel}`);
-        }
-      }, (tracks) => {
-        // Live track count update from onReleasesFound callback
-        liveTrackCount = tracks.length;
-        setAllTracks(tracks);
-        setReleases(groupIntoReleases(tracks));
-      }, signal);
-
-      scanAbortRef.current = null;
-      const { tracks, failCount, totalArtists, rateLimited: wasRateLimited, retryAfterSeconds } = result;
-
-      // Handle user-cancelled scan
-      if (result.aborted) {
-        if (tracks.length > 0) {
-          setAllTracks(tracks);
-          setReleases(groupIntoReleases(tracks));
-          setPhase('results');
-          setError(`Scan cancelled after ${result.completedArtists}/${totalArtists} artists. Showing ${tracks.length} tracks found.`);
-        } else {
-          setPhase('ready');
-        }
-        return;
-      }
-      const now = new Date().toISOString();
-      setAllTracks(tracks);
-      setReleases(groupIntoReleases(tracks));
-      setArtistCount(totalArtists);
-      setLastScanned(now);
-      setRateLimited(wasRateLimited);
-      setPhase('results');
-
-      if (wasRateLimited) {
-        const mins = Math.ceil(retryAfterSeconds / 60);
-        setError(`Rate limited after ${result.completedArtists}/${totalArtists} artists. Found ${tracks.length} releases. Try again in ~${mins} min.`);
-      }
-
-      // Background: query feature counts for "Previously Featured" badges
-      const artistIds = [...new Set(tracks.map(t => t.artist_id).filter(Boolean))];
-      if (artistIds.length > 0) {
-        getFeatureCounts(artistIds).then(setFeatureCounts).catch(() => {});
-      }
-
-      // Background Apple Music enrichment (non-blocking)
-      if (tracks.length > 0) {
-        setAppleEnriching(true);
-        batchResolveAppleMusic(tracks).then(appleMap => {
-          setAllTracks(prev => prev.map(t => {
-            const key = `${t.artist_names}::${t.track_name}`;
-            const url = appleMap.get(key);
-            return url ? { ...t, apple_music_url: url } : t;
-          }));
-          setAppleEnriching(false);
-        }).catch(() => setAppleEnriching(false));
-      }
-
-      // Only cache if results > 0
-      if (tracks.length > 0) {
-        if (userId) {
-          try {
-            sessionStorage.setItem(`nmf_scan_${weekDate}_${userId}`, JSON.stringify({ tracks, timestamp: now }));
-          } catch { /* storage full, ignore */ }
-          saveWeek({ week_date: weekDate, all_releases: tracks, playlist_master_pushed: false, carousel_generated: false }, userId);
-        }
-      } else if (failCount > totalArtists * 0.5) {
-        setError(`Spotify rate limit hit \u2014 ${failCount}/${totalArtists} artists failed. Wait 30-60 minutes and try again.`);
-      } else {
-        setError(`Scan found 0 releases since ${cutoff}. Try re-scanning.`);
-      }
-    } catch (e) {
-      scanAbortRef.current = null;
-      if ((e as DOMException).name === 'AbortError') {
-        // Scan was cancelled by user
-        if (allTracks.length > 0) setPhase('results');
-        else setPhase('ready');
-        return;
-      }
-      if ((e as Error).message === 'AUTH_EXPIRED') {
-        setToken(null);
-        setPhase('ready');
-        setError('Spotify session expired. Use the Nashville source or paste artist names instead.');
-      } else {
-        setError((e as Error).message);
-        setPhase('ready');
-      }
-    }
-  }, [weekDate]);
-
   /** All selected slots grouped by album ID (supports multi-track per album) */
   // selectionsByAlbum, haptic, handleSelectRelease, handleDeselect, handleSetCoverFeature
   // — all now in useSelectionManager hook
+  // Nashville (Spotify) scan: runScan, scanStatus, scanProgress, scanAbortRef extracted to useNashvilleScan hook
 
   // Keyboard shortcuts
   useEffect(() => {
