@@ -125,7 +125,7 @@ export default function NewMusicFriday() {
   const {
     selections, setSelections, selectionsByAlbum,
     handleSelectRelease, handleDeselect, handleSetCoverFeature,
-    pushSelectionHistory, undoSelection, selectionHistory, historyLength, haptic,
+    pushSelectionHistory, undoSelection, historyLength, haptic,
   } = useSelectionManager();
   const [targetCount, setTargetCount] = useState(32);
   const [scanStatus, setScanStatus] = useState('');
@@ -201,7 +201,6 @@ export default function NewMusicFriday() {
 
   // Fixed header/toolbar measurement
   const headerRef = useRef<HTMLElement>(null);
-  const toolbarRef = useRef<HTMLDivElement>(null);
   const [headerHeight, setHeaderHeight] = useState(56);
   const [toolbarHeight, setToolbarHeight] = useState(0);
   const [mobileCollapsed, setMobileCollapsed] = useState(false);

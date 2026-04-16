@@ -46,6 +46,7 @@ export async function scanSpotify(options: SpotifyScanOptions): Promise<SpotifyS
       rateLimited: true,
       retryAfterSeconds: health.retryAfter || 60,
       completedArtists: 0,
+      aborted: false,
       artists: [],
     };
   }
