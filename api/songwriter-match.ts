@@ -80,11 +80,8 @@ function parseComposerNames(str: string): string[] {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // CORS preflight
+  // CORS preflight — headers handled by vercel.json
   if (req.method === 'OPTIONS') {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     return res.status(204).end();
   }
 
@@ -149,7 +146,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // Edge cache for 24h — cache is updated weekly at most
   res.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate=3600');
-  res.setHeader('Access-Control-Allow-Origin', '*');
   return res.status(200).json({
     matches,
     matches_by_input: matchesByInput,
