@@ -124,14 +124,22 @@ export default function NewMusicFriday() {
   const {
     selections, setSelections, selectionsByAlbum,
     handleSelectRelease, handleDeselect, handleSetCoverFeature,
-    pushSelectionHistory, selectionHistory, haptic,
+    pushSelectionHistory, undoSelection, selectionHistory, historyLength, haptic,
   } = useSelectionManager();
   const [targetCount, setTargetCount] = useState(32);
   const [scanStatus, setScanStatus] = useState('');
   const [scanProgress, setScanProgress] = useState({ current: 0, total: 0 });
   const [filter, setFilter] = useState<FilterKey>('all');
   const [sort, setSort] = useState<SortKey>('date');
+  const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  // Debounce: searchInput drives the controlled input, search drives expensive useMemos
+  useEffect(() => {
+    clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(() => setSearch(searchInput), 150);
+    return () => clearTimeout(searchDebounceRef.current);
+  }, [searchInput]);
   const [error, setError] = useState('');
   const [artDownloading, setArtDownloading] = useState(false);
   const [artistCount, setArtistCount] = useState(0);
@@ -252,6 +260,8 @@ export default function NewMusicFriday() {
 
   // ─── Auto-save draft (scoped by user to prevent cross-account leakage) ───
   const DRAFT_KEY = userId ? `nmf_draft_${userId}` : 'nmf_draft_guest';
+  const draftKeyRef = useRef(DRAFT_KEY);
+  draftKeyRef.current = DRAFT_KEY;
   const [showDraftBanner, setShowDraftBanner] = useState(false);
   const draftRef = useRef<{ selections: SelectionSlot[]; allTracks: TrackItem[]; releases: ReleaseCluster[] } | null>(null);
 
@@ -310,7 +320,7 @@ export default function NewMusicFriday() {
     if (selections.length === 0 || allTracks.length === 0) return;
     const debounce = setTimeout(() => {
       try {
-        localStorage.setItem(DRAFT_KEY, JSON.stringify({
+        localStorage.setItem(draftKeyRef.current, JSON.stringify({
           weekDate, selections, allTracks, releases,
           savedAt: new Date().toISOString(),
         }));
@@ -325,7 +335,7 @@ export default function NewMusicFriday() {
       const { selections: s, allTracks: t, releases: r, weekDate: w, userId: u } = autoSaveRefs.current;
       if (s.length === 0 || t.length === 0) return;
       try {
-        localStorage.setItem(DRAFT_KEY, JSON.stringify({
+        localStorage.setItem(draftKeyRef.current, JSON.stringify({
           weekDate: w, selections: s, allTracks: t, releases: r,
           savedAt: new Date().toISOString(),
         }));
@@ -633,8 +643,7 @@ export default function NewMusicFriday() {
       // Cmd+Z — Undo
       if (meta && !e.shiftKey && e.key === 'z') {
         e.preventDefault();
-        const prev = selectionHistory.current.pop();
-        if (prev) setSelections(prev);
+        undoSelection();
       }
       // Space — Quick Look preview of hovered album
       if (e.key === ' ' && !meta && hoveredCluster.current) {
@@ -1301,8 +1310,8 @@ export default function NewMusicFriday() {
                 )}
                 <span style={{ color: 'var(--midnight-border)', margin: '0 2px' }}>|</span>
                 <FilterBar
-                  filter={filter} sort={sort} search={search}
-                  onFilterChange={setFilter} onSortChange={setSort} onSearchChange={setSearch}
+                  filter={filter} sort={sort} search={searchInput}
+                  onFilterChange={setFilter} onSortChange={setSort} onSearchChange={setSearchInput}
                 />
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -1421,11 +1430,11 @@ export default function NewMusicFriday() {
               )}
 
               {/* Undo */}
-              {selectionHistory.current.length > 0 && (
+              {historyLength > 0 && (
                 <button className="btn btn-sm" style={{ fontSize: 'var(--fs-2xs)', padding: '3px 8px' }}
-                  onClick={() => { const prev = selectionHistory.current.pop(); if (prev) setSelections(prev); }}
+                  onClick={undoSelection}
                   title="Undo last selection change">
-                  Undo ({selectionHistory.current.length})
+                  Undo ({historyLength})
                 </button>
               )}
 
@@ -1448,8 +1457,8 @@ export default function NewMusicFriday() {
               </span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <FilterBar
-                  filter={filter} sort={sort} search={search}
-                  onFilterChange={setFilter} onSortChange={setSort} onSearchChange={setSearch}
+                  filter={filter} sort={sort} search={searchInput}
+                  onFilterChange={setFilter} onSortChange={setSort} onSearchChange={setSearchInput}
                 />
               </div>
               {/* Cover artist indicator */}
@@ -1653,10 +1662,10 @@ export default function NewMusicFriday() {
                       ZIP ({allPreviews.length})
                     </button>
                   )}
-                  {selectionHistory.current.length > 0 && (
+                  {historyLength > 0 && (
                     <button className="btn btn-sm" style={{ fontSize: 'var(--fs-2xs)', padding: '3px 8px' }}
-                      onClick={() => { const prev = selectionHistory.current.pop(); if (prev) setSelections(prev); }}>
-                      Undo ({selectionHistory.current.length})
+                      onClick={undoSelection}>
+                      Undo ({historyLength})
                     </button>
                   )}
                   <button className="btn btn-sm" style={{ fontSize: 'var(--fs-2xs)', padding: '3px 8px' }}

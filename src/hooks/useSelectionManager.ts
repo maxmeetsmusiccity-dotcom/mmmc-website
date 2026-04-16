@@ -5,9 +5,11 @@ import { type SelectionSlot, buildSlots, getSlideGroup } from '../lib/selection'
 export function useSelectionManager() {
   const [selections, setSelections] = useState<SelectionSlot[]>([]);
   const selectionHistory = useRef<SelectionSlot[][]>([]);
+  const [historyLength, setHistoryLength] = useState(0);
 
   const pushSelectionHistory = useCallback((prev: SelectionSlot[]) => {
     selectionHistory.current = [...selectionHistory.current.slice(-19), prev];
+    setHistoryLength(selectionHistory.current.length);
   }, []);
 
   const selectionsByAlbum = useMemo(() => {
@@ -74,7 +76,10 @@ export function useSelectionManager() {
 
   const undoSelection = useCallback(() => {
     const prev = selectionHistory.current.pop();
-    if (prev) setSelections(prev);
+    if (prev) {
+      setSelections(prev);
+      setHistoryLength(selectionHistory.current.length);
+    }
   }, []);
 
   return {
@@ -87,6 +92,7 @@ export function useSelectionManager() {
     pushSelectionHistory,
     undoSelection,
     selectionHistory,
+    historyLength,
     haptic,
   };
 }
