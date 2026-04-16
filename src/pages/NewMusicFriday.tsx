@@ -207,26 +207,34 @@ export default function NewMusicFriday() {
   const [mobileCollapsed, setMobileCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768);
 
-  // Measure header + toolbar whenever they appear or resize.
-  // Re-runs when phase changes (toolbar only renders in results phase).
+  // Measure header on mount + resize. Toolbar is measured via callback ref
+  // because it conditionally renders (only in results phase on desktop).
   useEffect(() => {
     const measure = () => {
       if (headerRef.current) setHeaderHeight(headerRef.current.offsetHeight);
-      if (toolbarRef.current) setToolbarHeight(toolbarRef.current.offsetHeight);
-      else setToolbarHeight(0);
     };
     measure();
-
     const ro = new ResizeObserver(measure);
     if (headerRef.current) ro.observe(headerRef.current);
-    if (toolbarRef.current) ro.observe(toolbarRef.current);
-
     window.addEventListener('resize', measure);
-    return () => {
-      ro.disconnect();
-      window.removeEventListener('resize', measure);
-    };
-  }, [phase, isMobile]);
+    return () => { ro.disconnect(); window.removeEventListener('resize', measure); };
+  }, []);
+
+  // Callback ref for the toolbar — measures immediately when it mounts/unmounts,
+  // and observes size changes while mounted. Solves the race condition where
+  // useEffect runs before the toolbar ref is assigned.
+  const toolbarRoRef = useRef<ResizeObserver | null>(null);
+  const toolbarCallbackRef = useCallback((node: HTMLDivElement | null) => {
+    // Clean up previous observer
+    if (toolbarRoRef.current) { toolbarRoRef.current.disconnect(); toolbarRoRef.current = null; }
+    if (node) {
+      setToolbarHeight(node.offsetHeight);
+      toolbarRoRef.current = new ResizeObserver(() => setToolbarHeight(node.offsetHeight));
+      toolbarRoRef.current.observe(node);
+    } else {
+      setToolbarHeight(0);
+    }
+  }, []);
 
   // Mobile: collapse header on scroll down to reclaim viewport space
   useEffect(() => {
@@ -1215,7 +1223,7 @@ export default function NewMusicFriday() {
           {/* ============================================================ */}
           {/*  STICKY TOOLBAR: counter + filters (consolidated 4→2 rows)    */}
           {/* ============================================================ */}
-          <div ref={toolbarRef} style={{
+          <div ref={toolbarCallbackRef} style={{
             position: 'fixed', top: headerHeight, left: 0, right: 0, zIndex: 35,
             background: 'var(--midnight)', borderBottom: '2px solid var(--midnight-border)',
             boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
