@@ -6,13 +6,20 @@ const TEAM_ID = process.env.APPLE_MUSIC_TEAM_ID || '';
 const KEY_ID = process.env.APPLE_MUSIC_KEY_ID || '';
 const TOKEN_TTL = 60 * 60 * 12; // 12 hours
 
-const ALLOWED_ORIGINS = ['https://maxmeetsmusiccity.com', 'http://localhost:5173', 'http://localhost:5199'];
+const ALLOWED_ORIGINS = new Set([
+  'https://maxmeetsmusiccity.com',
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:5199',
+]);
 
 export default async function handler(_req: VercelRequest, res: VercelResponse) {
-  // Origin check — block casual cross-origin abuse
-  const origin = _req.headers.origin || _req.headers.referer || '';
-  if (origin && !ALLOWED_ORIGINS.some(o => origin.startsWith(o))) {
-    return res.status(403).json({ error: 'Forbidden' });
+  // Origin check — exact-match allowlist (matches scan-artists, search-apple, resolve-handle)
+  const origin = _req.headers.origin || '';
+  if (origin && !ALLOWED_ORIGINS.has(origin)) {
+    // Also check referer as fallback
+    const referer = _req.headers.referer || '';
+    try { if (!referer || !ALLOWED_ORIGINS.has(new URL(referer).origin)) return res.status(403).json({ error: 'Forbidden' }); } catch { return res.status(403).json({ error: 'Forbidden' }); }
   }
 
   if (await isRateLimited(getClientIp(_req), 20, 60_000)) {
