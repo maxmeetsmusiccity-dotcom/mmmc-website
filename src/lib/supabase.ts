@@ -38,9 +38,20 @@ export interface NMFWeek {
   updated_at?: string;
 }
 
+/** Strip tracks with synth_* placeholder IDs before persisting */
+function filterSynthTracks<T extends { track_id?: string }>(arr: T[]): T[] {
+  return arr.filter(t => !t.track_id?.startsWith('synth_'));
+}
+
 export async function saveWeek(week: NMFWeek, userId?: string): Promise<NMFWeek | null> {
   if (!supabase) return null;
-  const row = { ...week, updated_at: new Date().toISOString(), ...(userId ? { user_id: userId } : {}) };
+  // Sanitize synth_ placeholder IDs that persist if backfill was rate-limited
+  const sanitized = {
+    ...week,
+    ...(Array.isArray(week.all_releases) ? { all_releases: filterSynthTracks(week.all_releases as any[]) } : {}),
+    ...(Array.isArray(week.selections) ? { selections: (week.selections as any[]).filter((s: any) => !s.track?.track_id?.startsWith('synth_')) } : {}),
+  };
+  const row = { ...sanitized, updated_at: new Date().toISOString(), ...(userId ? { user_id: userId } : {}) };
   const { data, error } = await supabase
     .from('nmf_weeks')
     .upsert(row, { onConflict: 'week_date' })
@@ -86,8 +97,9 @@ export interface NMFFeature {
 }
 
 export async function saveFeatures(features: NMFFeature[]): Promise<boolean> {
-  if (!supabase || features.length === 0) return false;
-  const { error } = await supabase.from('nmf_features').upsert(features, {
+  const clean = features.filter(f => !(f as any).track_spotify_id?.startsWith('synth_'));
+  if (!supabase || clean.length === 0) return false;
+  const { error } = await supabase.from('nmf_features').upsert(clean, {
     onConflict: 'week_date,track_spotify_id',
   });
   if (error) { console.error('saveFeatures error:', error); return false; }
