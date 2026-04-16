@@ -26,6 +26,7 @@ import { type ArtistGroup, groupByPrimaryArtist } from '../lib/artist-grouping';
 import FilterBar from '../components/FilterBar';
 import PlaylistSection from '../components/PlaylistSection';
 import ShareCaptionSection from '../components/ShareCaptionSection';
+import MobileToolsSheet from '../components/MobileToolsSheet';
 import WeekHistory from '../components/WeekHistory';
 import EmbedWidget from '../components/EmbedWidget';
 import ProductNav from '../components/ProductNav';
@@ -1575,152 +1576,50 @@ export default function NewMusicFriday() {
 
           {/* ---- Mobile bottom sheet (overflow tools) ---- */}
           {showToolsSheet && (
-            <>
-              <div
-                onClick={() => setShowToolsSheet(false)}
-                style={{ position: 'fixed', inset: 0, zIndex: 98, background: 'rgba(0,0,0,0.5)' }}
-              />
-              <div style={{
-                position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 99,
-                background: 'var(--midnight-raised)', borderTop: '2px solid var(--gold-dark)',
-                borderRadius: '16px 16px 0 0', padding: '12px 16px 24px',
-                maxHeight: '75vh', overflowY: 'auto',
-                boxShadow: '0 -8px 32px rgba(0,0,0,0.6)',
-                animation: 'sheetSlideUp 200ms ease',
-              }}>
-                {/* Drag handle */}
-                <div style={{ width: 40, height: 4, borderRadius: 2, background: 'var(--midnight-border)', margin: '0 auto 14px' }} />
-
-                {/* Source actions */}
-                <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
-                  <button className="btn btn-sm" onClick={() => { setShowToolsSheet(false); setPhase('ready'); }} style={{ flex: 1, justifyContent: 'center' }}>New Scan</button>
-                  <button className="btn btn-sm" onClick={() => { setShowToolsSheet(false); setShowAddTracks(true); }} style={{ flex: 1, justifyContent: 'center', color: 'var(--gold)', border: '1px solid var(--gold-dark)' }}>+ Add Tracks</button>
-                </div>
-
-                {/* Selection */}
-                <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
-                  <button className="btn btn-sm" style={{ flex: 1, justifyContent: 'center' }} onClick={() => {
-                    haptic();
-                    const newSelections: typeof selections = [];
-                    for (const cluster of filteredReleases) {
-                      const track = cluster.tracks.find(t => t.track_id === cluster.titleTrackId) || cluster.tracks[0];
-                      if (!selections.some(s => s.track.track_id === track.track_id)) {
-                        newSelections.push({ track, albumId: cluster.album_spotify_id, selectionNumber: 0, slideGroup: 0, positionInSlide: 0, isCoverFeature: false });
-                      }
-                    }
-                    setSelections(prev => buildSlots([...prev, ...newSelections]));
-                  }}>Select All</button>
-                  {selections.length > 0 && (
-                    <button className="btn btn-sm" style={{ flex: 1, justifyContent: 'center', color: 'var(--mmmc-red)' }}
-                      onClick={() => { haptic(5); pushSelectionHistory(selections); setSelections([]); }}>
-                      Clear ({selections.length})
-                    </button>
-                  )}
-                </div>
-
-                {/* View mode + stats */}
-                <div style={{ borderTop: '1px solid var(--midnight-border)', paddingTop: 12, marginBottom: 14 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
-                    <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)' }}>
-                      {viewMode === 'releases' ? `${filteredReleases.length} releases (${allTracks.length} tracks)` : `${allTracks.length} tracks`}
-                    </span>
-                    <button className={`filter-pill ${viewMode === 'releases' ? 'active' : ''}`}
-                      onClick={() => setViewMode('releases')} style={{ fontSize: 'var(--fs-2xs)', padding: '2px 8px' }}>Albums</button>
-                    <button className={`filter-pill ${viewMode === 'tracks' ? 'active' : ''}`}
-                      onClick={() => setViewMode('tracks')} style={{ fontSize: 'var(--fs-2xs)', padding: '2px 8px' }}>Tracks</button>
-                    <Link to="/newmusicfriday/archive" className="filter-pill" onClick={() => setShowToolsSheet(false)}
-                      style={{ textDecoration: 'none', fontSize: 'var(--fs-2xs)', padding: '2px 8px', display: 'inline-flex', alignItems: 'center' }}>
-                      Archive
-                    </Link>
-                  </div>
-                  {/* Card size */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)' }}>Card Size</span>
-                    <input type="range" min="120" max="350" value={cardSize}
-                      onChange={e => { const v = Number(e.target.value); setCardSize(v); try { localStorage.setItem('nmf_card_size', String(v)); } catch {} }}
-                      style={{ flex: 1 }} />
-                    <span className="mono" style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)' }}>{cardSize}px</span>
-                  </div>
-                </div>
-
-                {/* Exports */}
-                <div style={{ borderTop: '1px solid var(--midnight-border)', paddingTop: 12, marginBottom: 14 }}>
-                  <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
-                    <button className={`filter-pill ${exportScope === 'all' ? 'active' : ''}`}
-                      onClick={() => setExportScope('all')} style={{ fontSize: 'var(--fs-2xs)', padding: '2px 8px' }}>All Tracks</button>
-                    <button className={`filter-pill ${exportScope === 'selects' ? 'active' : ''}`}
-                      onClick={() => setExportScope('selects')} style={{ fontSize: 'var(--fs-2xs)', padding: '2px 8px' }}>Selects</button>
-                  </div>
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    <button className="btn btn-sm" style={{ fontSize: 'var(--fs-2xs)', padding: '3px 8px' }}
-                      onClick={() => downloadCSV(exportScope === 'selects' ? selectedTracks : allTracks, exportScope === 'selects' ? 'nmf-curated.csv' : 'nmf-all-tracks.csv')}>CSV</button>
-                    <button className="btn btn-sm" style={{ fontSize: 'var(--fs-2xs)', padding: '3px 8px' }}
-                      onClick={() => downloadJSON(exportScope === 'selects' ? selectedTracks : allTracks, exportScope === 'selects' ? 'nmf-curated.json' : 'nmf-all-tracks.json')}>JSON</button>
-                    <button className="btn btn-sm" style={{ fontSize: 'var(--fs-2xs)', padding: '3px 8px' }}
-                      onClick={async () => { setArtDownloading(true); try { await downloadArt(exportScope === 'selects' ? selectedTracks : allTracks); } finally { setArtDownloading(false); } }}
-                      disabled={artDownloading}>{artDownloading ? '...' : 'Art ZIP'}</button>
-                    {exportScope === 'selects' && (
-                      <button className="btn btn-sm" style={{ fontSize: 'var(--fs-2xs)', padding: '3px 8px' }}
-                        onClick={async () => {
-                          await navigator.clipboard.writeText(JSON.stringify(selectedTracks, null, 2));
-                          setCopied(true); setTimeout(() => setCopied(false), 2000);
-                        }}>{copied ? 'Copied!' : 'Manifest'}</button>
-                    )}
-                  </div>
-                </div>
-
-                {/* Carousel settings */}
-                <div style={{ borderTop: '1px solid var(--midnight-border)', paddingTop: 12, marginBottom: 14 }}>
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)' }}>Aspect:</span>
-                    <button className={`filter-pill ${carouselAspect === '1:1' ? 'active' : ''}`}
-                      onClick={() => setCarouselAspect('1:1')} style={{ fontSize: 'var(--fs-2xs)', padding: '3px 8px' }}>1:1</button>
-                    <button className={`filter-pill ${carouselAspect === '3:4' ? 'active' : ''}`}
-                      onClick={() => setCarouselAspect('3:4')} style={{ fontSize: 'var(--fs-2xs)', padding: '3px 8px' }}>3:4</button>
-                    {selections.length > 0 && (
-                      <span className="mono" style={{ color: 'var(--gold)', fontSize: 'var(--fs-md)', fontWeight: 700 }}>
-                        {allPreviews.length > 0 ? allPreviews.length : Math.ceil(selections.length / tracksPerSlide) + 1} slides
-                      </span>
-                    )}
-                  </div>
-                  {/* Cover feature indicator */}
-                  {selections.length > 0 && (
-                    <div style={{ marginTop: 8 }}>
-                      {(() => {
-                        const cover = selections.find(s => s.isCoverFeature);
-                        return cover ? (
-                          <span style={{ color: 'var(--gold)', fontSize: 'var(--fs-xs)', fontWeight: 600 }}>
-                            &#9733; {(cover.track.artist_names || '').split(/,/)[0]}
-                          </span>
-                        ) : (
-                          <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)' }}>Set cover &#9733;</span>
-                        );
-                      })()}
-                    </div>
-                  )}
-                </div>
-
-                {/* Utilities */}
-                <div style={{ display: 'flex', gap: 8, borderTop: '1px solid var(--midnight-border)', paddingTop: 12 }}>
-                  {allPreviews.length > 0 && (
-                    <button className="btn btn-sm" style={{ fontSize: 'var(--fs-2xs)', padding: '3px 10px' }}
-                      onClick={() => { setShowToolsSheet(false); carouselRef.current?.downloadAll(); }}>
-                      ZIP ({allPreviews.length})
-                    </button>
-                  )}
-                  {historyLength > 0 && (
-                    <button className="btn btn-sm" style={{ fontSize: 'var(--fs-2xs)', padding: '3px 8px' }}
-                      onClick={undoSelection}>
-                      Undo ({historyLength})
-                    </button>
-                  )}
-                  <button className="btn btn-sm" style={{ fontSize: 'var(--fs-2xs)', padding: '3px 8px' }}
-                    onClick={() => { setShowToolsSheet(false); setShowShortcuts(true); }}>
-                    Shortcuts
-                  </button>
-                </div>
-              </div>
-            </>
+            <MobileToolsSheet
+              onClose={() => setShowToolsSheet(false)}
+              onNewScan={() => { setShowToolsSheet(false); setPhase('ready'); }}
+              onAddTracks={() => { setShowToolsSheet(false); setShowAddTracks(true); }}
+              onSelectAll={() => {
+                haptic();
+                const newSelections: typeof selections = [];
+                for (const cluster of filteredReleases) {
+                  const track = cluster.tracks.find(t => t.track_id === cluster.titleTrackId) || cluster.tracks[0];
+                  if (!selections.some(s => s.track.track_id === track.track_id)) {
+                    newSelections.push({ track, albumId: cluster.album_spotify_id, selectionNumber: 0, slideGroup: 0, positionInSlide: 0, isCoverFeature: false });
+                  }
+                }
+                setSelections(prev => buildSlots([...prev, ...newSelections]));
+              }}
+              onClearSelections={() => { haptic(5); pushSelectionHistory(selections); setSelections([]); }}
+              selectionsCount={selections.length}
+              viewMode={viewMode}
+              onViewModeChange={setViewMode}
+              releaseCount={filteredReleases.length}
+              trackCount={allTracks.length}
+              cardSize={cardSize}
+              onCardSizeChange={setCardSize}
+              exportScope={exportScope}
+              onExportScopeChange={setExportScope}
+              selectedTracks={selectedTracks}
+              allTracks={allTracks}
+              artDownloading={artDownloading}
+              onArtDownload={async () => { setArtDownloading(true); try { await downloadArt(exportScope === 'selects' ? selectedTracks : allTracks); } finally { setArtDownloading(false); } }}
+              copied={copied}
+              onCopyManifest={async () => {
+                await navigator.clipboard.writeText(JSON.stringify(selectedTracks, null, 2));
+                setCopied(true); setTimeout(() => setCopied(false), 2000);
+              }}
+              carouselAspect={carouselAspect}
+              onAspectChange={setCarouselAspect}
+              selections={selections}
+              allPreviewsCount={allPreviews.length}
+              tracksPerSlide={tracksPerSlide}
+              onDownloadZip={() => carouselRef.current?.downloadAll()}
+              historyLength={historyLength}
+              onUndo={undoSelection}
+              onShowShortcuts={() => setShowShortcuts(true)}
+            />
           )}
 
           {/* ============================================================ */}
