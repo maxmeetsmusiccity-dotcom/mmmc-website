@@ -2,8 +2,9 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import { getClientIp, isRateLimited } from './_rateLimit.js';
 
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL || '';
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY || '';
 
 /**
  * Server-side endpoint to save Instagram handles.
@@ -13,10 +14,18 @@ const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
-  // Require auth — either Supabase JWT or anon key with valid session
+  // Require auth — validate Supabase JWT via GoTrue
   const authToken = req.headers['x-supabase-auth'];
-  if (!authToken || typeof authToken !== 'string' || authToken.length < 20) {
+  if (!authToken || typeof authToken !== 'string') {
     return res.status(401).json({ error: 'Authentication required' });
+  }
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    return res.status(500).json({ error: 'Server auth misconfigured' });
+  }
+  const authClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const { data: { user: authUser }, error: authError } = await authClient.auth.getUser(authToken);
+  if (authError || !authUser) {
+    return res.status(401).json({ error: 'Invalid or expired token' });
   }
 
   if (await isRateLimited(getClientIp(req), 30, 60_000)) {
