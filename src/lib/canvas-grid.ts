@@ -291,31 +291,35 @@ export async function generateCoverSlide(
   coverFeature: SelectionSlot,
   weekDate: string,
   templateId = 'mmmc_classic',
+  aspect: CarouselAspect = '1:1',
 ): Promise<Blob> {
   const t = getTemplate(templateId);
   await loadAllAssets(t);
+  const dim = getDimensions(aspect);
+  const W = dim.w, H = dim.h;
+  const scale = H / 1080; // scale factor relative to 1080 base
   const canvas = document.createElement('canvas');
-  canvas.width = S; canvas.height = S;
+  canvas.width = W; canvas.height = H;
   const ctx = canvas.getContext('2d')!;
 
   // Background
   ctx.fillStyle = t.background;
-  ctx.fillRect(0, 0, S, S);
+  ctx.fillRect(0, 0, W, H);
 
   // Template-specific or default vinyl
   const vinylSrc = t.assets?.vinyl || ASSETS.vinyl;
   const vinyl = await loadImage(vinylSrc);
   if (vinyl && t.cover.vinylOverlay) {
     ctx.globalAlpha = t.cover.vinylOpacity;
-    ctx.drawImage(vinyl, 0, 0, S, S);
+    ctx.drawImage(vinyl, 0, 0, W, H);
     ctx.globalAlpha = 1;
   }
   vinylGrooves(ctx, t);
 
-  // Featured image
+  // Featured image — scale proportionally
   const featImg = await loadImage(coverFeature.track.cover_art_640);
-  const imgSize = 560, border = t.cover.frameBorder;
-  const imgX = (S - imgSize) / 2, imgY = 180;
+  const imgSize = Math.round(560 * scale), border = t.cover.frameBorder;
+  const imgX = (W - imgSize) / 2, imgY = Math.round(180 * scale);
 
   ctx.shadowColor = 'rgba(0,0,0,0.6)';
   ctx.shadowBlur = t.cover.frameShadowBlur;
@@ -328,30 +332,32 @@ export async function generateCoverSlide(
   // Artist name + song title
   if (t.cover.showArtistName) {
     const textY = imgY + imgSize + border + 16;
-    neonText(ctx, coverFeature.track.artist_names, S / 2, textY, `700 38px ${t.scriptFont}`, t);
+    neonText(ctx, coverFeature.track.artist_names, W / 2, textY, `700 ${Math.round(38 * scale)}px ${t.scriptFont}`, t);
     if (t.cover.showTrackName) {
       ctx.fillStyle = t.textSecondary;
-      ctx.font = `500 26px ${t.bodyFont}`;
+      ctx.font = `500 ${Math.round(26 * scale)}px ${t.bodyFont}`;
       ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-      ctx.fillText(coverFeature.track.track_name, S / 2, textY + 48);
+      ctx.fillText(coverFeature.track.track_name, W / 2, textY + Math.round(48 * scale));
     }
   }
 
   // Header
-  neonText(ctx, 'New Music Friday', S / 2, 42, `700 56px ${t.scriptFont}`, t);
-  goldRule(ctx, 108, t);
-  neonText(ctx, t.cover.subtitleText, S / 2, 118, `italic 600 26px ${t.bodyFont}`, t);
+  neonText(ctx, 'New Music Friday', W / 2, Math.round(42 * scale), `700 ${Math.round(56 * scale)}px ${t.scriptFont}`, t);
+  goldRule(ctx, Math.round(108 * scale), t);
+  neonText(ctx, t.cover.subtitleText, W / 2, Math.round(118 * scale), `italic 600 ${Math.round(26 * scale)}px ${t.bodyFont}`, t);
 
   // Swipe pill
   const swipeText = 'Swipe right for all this week\'s picks';
-  ctx.font = `600 22px ${t.scriptFont}`;
+  const swipeFontSize = Math.round(22 * scale);
+  ctx.font = `600 ${swipeFontSize}px ${t.scriptFont}`;
   const swipeW = ctx.measureText(swipeText).width + 40;
+  const swipeY = Math.round(H * 0.83);
   ctx.fillStyle = 'rgba(0,0,0,0.45)';
-  ctx.beginPath(); ctx.roundRect((S - swipeW) / 2, 896, swipeW, 36, 18); ctx.fill();
-  neonText(ctx, swipeText, S / 2, 900, `600 22px ${t.scriptFont}`, t);
+  ctx.beginPath(); ctx.roundRect((W - swipeW) / 2, swipeY, swipeW, Math.round(36 * scale), 18); ctx.fill();
+  neonText(ctx, swipeText, W / 2, swipeY + 4, `600 ${swipeFontSize}px ${t.scriptFont}`, t);
 
   // Date
-  neonText(ctx, formatDate(weekDate), S / 2, 960, `700 48px ${t.scriptFont}`, t);
+  neonText(ctx, formatDate(weekDate), W / 2, Math.round(H * 0.889), `700 ${Math.round(48 * scale)}px ${t.scriptFont}`, t);
 
   // Chevrons
   if (t.cover.showChevrons) {
@@ -360,7 +366,7 @@ export async function generateCoverSlide(
     ctx.shadowBlur = 14;
     ctx.fillStyle = t.accent;
     for (let dx = 0; dx < 2; dx++) {
-      const bx = 940 + dx * 30, by = S / 2;
+      const bx = W - Math.round(140 * (1 / scale)) + dx * 30, by = H / 2;
       ctx.beginPath();
       ctx.moveTo(bx, by - 28); ctx.lineTo(bx + 20, by); ctx.lineTo(bx, by + 28);
       ctx.lineTo(bx + 6, by + 28); ctx.lineTo(bx + 26, by); ctx.lineTo(bx + 6, by - 28);
@@ -1163,7 +1169,7 @@ export async function generateFullCarousel(
   // Use dedicated title slide renderer if a titleTemplateId is provided
   const coverSlide = titleTemplateId
     ? await generateTitleSlide(coverFeature, weekDate, titleTemplateId, aspect)
-    : await generateCoverSlide(coverFeature, weekDate, templateId);
+    : await generateCoverSlide(coverFeature, weekDate, templateId, aspect);
   onProgress?.(1, total);
 
   const gridSlides: Blob[] = [];
