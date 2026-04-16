@@ -54,7 +54,7 @@ export async function saveWeek(week: NMFWeek, userId?: string): Promise<NMFWeek 
   const row = { ...sanitized, updated_at: new Date().toISOString(), ...(userId ? { user_id: userId } : {}) };
   const { data, error } = await supabase
     .from('nmf_weeks')
-    .upsert(row, { onConflict: 'week_date' })
+    .upsert(row, { onConflict: 'week_date,user_id' })
     .select()
     .single();
   if (error) { console.error('saveWeek error:', error); return null; }
