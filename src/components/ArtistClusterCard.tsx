@@ -328,6 +328,14 @@ export default memo(function ArtistClusterCard({
                           <span className="mono" style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)' }}>
                             {formatDuration(track.duration_ms)}
                           </span>
+                          {isThisSelected && (
+                            <button onClick={e => { e.stopPropagation(); onSetCoverFeature(track.track_id); }}
+                              title={trackSlot?.isCoverFeature ? 'Cover feature — click to unset' : 'Set as cover feature'}
+                              style={{ background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', flexShrink: 0,
+                                color: trackSlot?.isCoverFeature ? 'var(--gold)' : 'var(--text-muted)', padding: 4 }}>
+                              ★
+                            </button>
+                          )}
                         </div>
                       );
                     })}
