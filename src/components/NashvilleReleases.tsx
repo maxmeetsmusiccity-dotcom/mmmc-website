@@ -243,6 +243,10 @@ export default function NashvilleReleases({ showcases, onImport, activeShowcase,
 
       if (spotifyData?.tracks) for (const t of spotifyData.tracks) addTrack(t);
       if (appleData?.tracks) for (const t of appleData.tracks) addTrack(t);
+
+      // Stream partial results so the scanning view can show releases as they arrive
+      setReleases([...allReleases]);
+      setProgress({ current: Math.min(i + spotifyBatchSize, totalArtists), total: totalArtists, found: allReleases.length });
     }
 
     setReleases(allReleases);
@@ -533,6 +537,7 @@ export default function NashvilleReleases({ showcases, onImport, activeShowcase,
 
   if (loading) {
     const pct = progress.total > 0 ? Math.round((progress.current / progress.total) * 100) : 0;
+    const recentReleases = releases.slice(-12).reverse();
     return (
       <div style={{ padding: 24, textAlign: 'center' }}>
         <p style={{ color: 'var(--gold)', fontSize: 'var(--fs-lg)', fontWeight: 600, marginBottom: 12 }}>
@@ -542,11 +547,49 @@ export default function NashvilleReleases({ showcases, onImport, activeShowcase,
           <div className="progress-bar-fill" style={{ width: `${pct}%` }} />
         </div>
         <p className="mono" style={{ color: 'var(--text-secondary)', fontSize: 'var(--fs-md)' }}>
-          {progress.current}/{progress.total} {progress.total === 1 ? 'artist' : 'artists'} scanned &middot; {progress.found} {progress.found === 1 ? 'release' : 'releases'} found
+          Scanning {progress.current.toLocaleString()} of {progress.total.toLocaleString()} {progress.total === 1 ? 'artist' : 'artists'} &middot; {progress.found} {progress.found === 1 ? 'release' : 'releases'} found
         </p>
         <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)', marginTop: 8 }}>
           {pct < 30 ? 'Getting started...' : pct < 70 ? 'Making progress...' : 'Almost done...'}
         </p>
+        {recentReleases.length > 0 && (
+          <div style={{
+            marginTop: 24, maxWidth: 480, margin: '24px auto 0',
+            border: '1px solid var(--midnight-border)', borderRadius: 8,
+            background: 'var(--midnight)', overflow: 'hidden',
+          }}>
+            <div style={{
+              padding: '8px 12px', borderBottom: '1px solid var(--midnight-border)',
+              fontSize: 'var(--fs-xs)', color: 'var(--text-muted)',
+              textAlign: 'left', letterSpacing: 0.5, textTransform: 'uppercase',
+            }}>
+              Latest finds
+            </div>
+            <div style={{ maxHeight: 240, overflowY: 'auto', textAlign: 'left' }}>
+              {recentReleases.map(r => (
+                <div key={r.spotify_track_id || `${r.artist_name}|${r.track_name}`} style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  padding: '8px 12px', borderBottom: '1px solid var(--midnight-border)',
+                  fontSize: 'var(--fs-sm)',
+                }}>
+                  {r.cover_art_300 ? (
+                    <img src={r.cover_art_300} alt="" width={32} height={32} style={{ borderRadius: 4, flexShrink: 0 }} />
+                  ) : (
+                    <div style={{ width: 32, height: 32, borderRadius: 4, background: 'var(--midnight-border)', flexShrink: 0 }} />
+                  )}
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ color: 'var(--text-primary)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {r.artist_name}
+                    </div>
+                    <div style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {r.track_name}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     );
   }
