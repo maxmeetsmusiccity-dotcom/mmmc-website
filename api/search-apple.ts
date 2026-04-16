@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { SignJWT, importPKCS8 } from 'jose';
 
-const TEAM_ID = process.env.APPLE_MUSIC_TEAM_ID || 'G46PBQ4ZQL';
-const KEY_ID = process.env.APPLE_MUSIC_KEY_ID || process.env.APPLE_MUSIC_SEARCH_KEY_ID || 'P4CJV5BNMH';
+const TEAM_ID = process.env.APPLE_MUSIC_TEAM_ID || '';
+const KEY_ID = process.env.APPLE_MUSIC_KEY_ID || process.env.APPLE_MUSIC_SEARCH_KEY_ID || '';
 const APPLE_API = 'https://api.music.apple.com/v1/catalog/us';
 
 let cachedToken: { token: string; expiresAt: number } | null = null;
@@ -10,6 +10,7 @@ let cachedToken: { token: string; expiresAt: number } | null = null;
 async function getAppleToken(): Promise<string> {
   if (cachedToken && Date.now() < cachedToken.expiresAt) return cachedToken.token;
 
+  if (!TEAM_ID || !KEY_ID) throw new Error('APPLE_MUSIC_TEAM_ID or APPLE_MUSIC_KEY_ID not configured');
   const privateKeyPem = process.env.APPLE_MUSIC_PRIVATE_KEY;
   if (!privateKeyPem) throw new Error('APPLE_MUSIC_PRIVATE_KEY not configured');
 
@@ -67,13 +68,24 @@ import { getClientIp, isRateLimited } from './_rateLimit.js';
 
 const SCAN_SECRET = process.env.SCAN_SECRET || '';
 
+const ALLOWED_ORIGINS = new Set([
+  'https://maxmeetsmusiccity.com',
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:5199',
+]);
+
 function isAuthorized(req: VercelRequest): boolean {
   const auth = req.headers.authorization;
   if (SCAN_SECRET && auth === `Bearer ${SCAN_SECRET}`) return true;
   const supabaseToken = req.headers['x-supabase-auth'];
   if (typeof supabaseToken === 'string' && supabaseToken.length > 20) return true;
-  const origin = req.headers.origin || req.headers.referer || '';
-  if (origin.includes('maxmeetsmusiccity.com') || origin.includes('localhost')) return true;
+  const origin = req.headers.origin || '';
+  if (origin && ALLOWED_ORIGINS.has(origin)) return true;
+  const referer = req.headers.referer || '';
+  if (referer) {
+    try { if (ALLOWED_ORIGINS.has(new URL(referer).origin)) return true; } catch {}
+  }
   return false;
 }
 

@@ -1,4 +1,5 @@
-const CLIENT_ID = (import.meta.env.VITE_SPOTIFY_CLIENT_ID || '').trim() || '43c4155bfae44185bf1de3c9aacae466';
+const CLIENT_ID = (import.meta.env.VITE_SPOTIFY_CLIENT_ID || '').trim();
+// No fallback — env var must be set in .env.local / Vercel
 const REDIRECT_URI = window.location.hostname === 'localhost'
   ? `${window.location.origin}/newmusicfriday`
   : 'https://maxmeetsmusiccity.com/newmusicfriday';

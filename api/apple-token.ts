@@ -2,8 +2,8 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { SignJWT, importPKCS8 } from 'jose';
 import { getClientIp, isRateLimited } from './_rateLimit.js';
 
-const TEAM_ID = process.env.APPLE_MUSIC_TEAM_ID || 'G46PBQ4ZQL';
-const KEY_ID = process.env.APPLE_MUSIC_KEY_ID || 'P4CJV5BNMH';
+const TEAM_ID = process.env.APPLE_MUSIC_TEAM_ID || '';
+const KEY_ID = process.env.APPLE_MUSIC_KEY_ID || '';
 const TOKEN_TTL = 60 * 60 * 12; // 12 hours
 
 const ALLOWED_ORIGINS = ['https://maxmeetsmusiccity.com', 'http://localhost:5173', 'http://localhost:5199'];
@@ -17,6 +17,10 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
 
   if (await isRateLimited(getClientIp(_req), 20, 60_000)) {
     return res.status(429).json({ error: 'Rate limit exceeded' });
+  }
+  if (!TEAM_ID || !KEY_ID) {
+    console.error('[apple-token] APPLE_MUSIC_TEAM_ID or APPLE_MUSIC_KEY_ID not configured');
+    return res.status(500).json({ error: 'Server misconfigured' });
   }
   const privateKeyPem = process.env.APPLE_MUSIC_PRIVATE_KEY;
   if (!privateKeyPem) {
