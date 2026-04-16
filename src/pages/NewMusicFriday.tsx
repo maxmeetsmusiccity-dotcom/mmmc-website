@@ -32,6 +32,7 @@ import EmbedWidget from '../components/EmbedWidget';
 import ProductNav from '../components/ProductNav';
 import SourceSelector from '../components/SourceSelector';
 import ManualImport from '../components/ManualImport';
+import ErrorBoundary from '../components/ErrorBoundary';
 
 // Lazy-loaded heavy components
 const NashvilleReleases = lazy(() => import('../components/NashvilleReleases'));
@@ -1039,6 +1040,7 @@ export default function NewMusicFriday() {
             {/* Nashville releases source — zero-login experience */}
             {activeSource === 'nashville' && (
               <div style={{ marginTop: 16, textAlign: 'left' }}>
+                <ErrorBoundary fallbackMessage="Nashville Releases failed to load">
                 <Suspense fallback={<div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)' }}>Loading Nashville releases...</div>}>
                 <NashvilleReleases showcases={showcases} activeShowcase={activeShowcase} onActiveShowcaseChange={setActiveShowcase} onImport={(tracks) => {
                   setAllTracks(tracks);
@@ -1053,6 +1055,7 @@ export default function NewMusicFriday() {
                   }).catch(() => {});
                 }} />
                 </Suspense>
+                </ErrorBoundary>
               </div>
             )}
 
@@ -1154,6 +1157,7 @@ export default function NewMusicFriday() {
       )}
       {/* Hidden CarouselPreviewPanel on mobile — eager loaded so ref is ready immediately */}
       {phase === 'results' && isMobile && selections.length > 0 && (
+        <ErrorBoundary fallbackMessage="Carousel preview failed">
         <div style={{ display: 'none' }}>
           <CarouselPreviewPanel
             ref={carouselRef}
@@ -1168,6 +1172,7 @@ export default function NewMusicFriday() {
             onAllPreviewsChange={setAllPreviews}
           />
         </div>
+        </ErrorBoundary>
       )}
       {phase === 'results' && !isMobile && (
         <>
@@ -2023,6 +2028,7 @@ export default function NewMusicFriday() {
                 )}
               </div>
 
+              <ErrorBoundary fallbackMessage="Carousel builder encountered an error">
               <Suspense fallback={<div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)' }}>Loading carousel tools...</div>}>
               <CarouselPreviewPanel
                 ref={carouselRef}
@@ -2038,6 +2044,7 @@ export default function NewMusicFriday() {
                 onAllPreviewsChange={setAllPreviews}
               />
               </Suspense>
+              </ErrorBoundary>
 
               {/* Guest sign-in prompt after carousel generation */}
               {allPreviews.length > 0 && !userId && (
