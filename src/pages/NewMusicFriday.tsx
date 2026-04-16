@@ -1199,7 +1199,10 @@ export default function NewMusicFriday() {
       )}
       {/* Hidden CarouselPreviewPanel on mobile — eager loaded so ref is ready immediately */}
       {phase === 'results' && isMobile && selections.length > 0 && (
-        <ErrorBoundary fallbackMessage="Carousel preview failed">
+        <ErrorBoundary
+          fallbackMessage="Carousel preview failed"
+          onReset={() => { setAllPreviews([]); setGenerating(false); }}
+        >
         <div style={{ display: 'none' }}>
           <CarouselPreviewPanel
             ref={carouselRef}
@@ -1696,7 +1699,10 @@ export default function NewMusicFriday() {
                 )}
               </div>
 
-              <ErrorBoundary fallbackMessage="Carousel builder encountered an error">
+              <ErrorBoundary
+                fallbackMessage="Carousel builder encountered an error"
+                onReset={() => { setAllPreviews([]); setGenerating(false); }}
+              >
               <Suspense fallback={<div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)' }}>Loading carousel tools...</div>}>
               <CarouselPreviewPanel
                 ref={carouselRef}
