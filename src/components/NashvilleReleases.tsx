@@ -168,48 +168,85 @@ export default function NashvilleReleases({ showcases, onImport, activeShowcase,
     setLoading(true);
     setError('');
     setReleases([]);
-    const totalArtists = NASHVILLE_SEED_ARTISTS.length;
-    const batchSize = 25;
+
+    // Build full artist universe: seed artists first, then all showcase artists from R2
+    const seedSet = new Set(NASHVILLE_SEED_ARTISTS.map(n => n.toLowerCase()));
+    const universeNames = [...NASHVILLE_SEED_ARTISTS];
+    for (const artistSet of allShowcaseArtists.values()) {
+      for (const name of artistSet) {
+        if (!seedSet.has(name)) {
+          seedSet.add(name);
+          // Capitalize for display — the set stores lowercase
+          universeNames.push(name.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '));
+        }
+      }
+    }
+
+    const totalArtists = universeNames.length;
     const allReleases: NashvilleRelease[] = [];
+    const seenKeys = new Set<string>(); // dedup across Spotify + Apple
     setProgress({ current: 0, total: totalArtists, found: 0 });
 
-    for (let i = 0; i < totalArtists; i += batchSize) {
-      const batch = NASHVILLE_SEED_ARTISTS.slice(i, i + batchSize);
-      setProgress({ current: Math.min(i + batchSize, totalArtists), total: totalArtists, found: allReleases.length });
-      try {
-        const resp = await fetch('/api/scan-artists', {
+    // Target Friday: use selected week or compute last Friday
+    const targetFriday = selectedWeek || undefined;
+
+    // Scan both Spotify and Apple Music in parallel batches
+    const spotifyBatchSize = 50; // scan-artists accepts up to 200
+    const appleBatchSize = 50;   // search-apple accepts up to 100
+
+    const addTrack = (t: any) => {
+      const key = `${(t.artist_names || '').toLowerCase()}|${(t.album_name || '').toLowerCase()}`;
+      if (seenKeys.has(key)) return;
+      seenKeys.add(key);
+      allReleases.push({
+        pg_id: t.artist_id || '',
+        artist_name: t.artist_names,
+        track_name: t.track_name,
+        album_name: t.album_name,
+        release_type: t.album_type || 'single',
+        release_date: t.release_date,
+        spotify_track_id: t.track_id || '',
+        spotify_track_uri: t.track_uri || '',
+        spotify_album_id: t.album_spotify_id || '',
+        cover_art_url: t.cover_art_640 || '',
+        cover_art_300: t.cover_art_300 || '',
+        track_number: t.track_number || 1,
+        duration_ms: t.duration_ms || 0,
+        explicit: t.explicit || false,
+        total_tracks: t.total_tracks || 1,
+        is_charting: false,
+        composer_name: t.composer_name || null,
+      });
+    };
+
+    for (let i = 0; i < totalArtists; i += spotifyBatchSize) {
+      const batch = universeNames.slice(i, i + spotifyBatchSize);
+      setProgress({ current: Math.min(i + spotifyBatchSize, totalArtists), total: totalArtists, found: allReleases.length });
+
+      // Run Spotify + Apple Music in parallel for each batch
+      const body = { artistNames: batch, ...(targetFriday ? { targetFriday } : {}) };
+      const [spotifyResp, appleResp] = await Promise.allSettled([
+        fetch('/api/scan-artists', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ artistNames: batch }),
-        });
-        if (resp.ok) {
-          const data = await resp.json();
-          for (const t of (data.tracks || [])) {
-            allReleases.push({
-              pg_id: t.artist_id || '',
-              artist_name: t.artist_names,
-              track_name: t.track_name,
-              album_name: t.album_name,
-              release_type: t.album_type || 'single',
-              release_date: t.release_date,
-              spotify_track_id: t.track_id,
-              spotify_track_uri: t.track_uri,
-              spotify_album_id: t.album_spotify_id,
-              cover_art_url: t.cover_art_640,
-              cover_art_300: t.cover_art_300,
-              track_number: t.track_number || 1,
-              duration_ms: t.duration_ms || 0,
-              explicit: t.explicit || false,
-              total_tracks: t.total_tracks || 1,
-              is_charting: false,
-            });
-          }
-        }
-      } catch { /* batch failed, continue */ }
+          body: JSON.stringify(body),
+        }).then(r => r.ok ? r.json() : null).catch(() => null),
+        fetch('/api/search-apple', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...body, artistNames: batch.slice(0, appleBatchSize) }),
+        }).then(r => r.ok ? r.json() : null).catch(() => null),
+      ]);
+
+      const spotifyData = spotifyResp.status === 'fulfilled' ? spotifyResp.value : null;
+      const appleData = appleResp.status === 'fulfilled' ? appleResp.value : null;
+
+      if (spotifyData?.tracks) for (const t of spotifyData.tracks) addTrack(t);
+      if (appleData?.tracks) for (const t of appleData.tracks) addTrack(t);
     }
 
     setReleases(allReleases);
-    setWeek(new Date().toISOString().split('T')[0]);
+    setWeek(targetFriday || new Date().toISOString().split('T')[0]);
     setGeneratedAt(new Date().toISOString());
     setProgress({ current: totalArtists, total: totalArtists, found: allReleases.length });
     if (allReleases.length === 0) setError('No new releases found this week from Nashville artists.');
@@ -478,7 +515,7 @@ export default function NashvilleReleases({ showcases, onImport, activeShowcase,
       <div style={{ padding: 24, textAlign: 'center' }}>
         {showcasePills}
         <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--fs-lg)', marginBottom: 12 }}>
-          Scan {NASHVILLE_SEED_ARTISTS.length} Nashville {NASHVILLE_SEED_ARTISTS.length === 1 ? 'artist' : 'artists'} for this week's new releases.
+          Scan {allShowcaseArtists.size > 0 ? (() => { const s = new Set(NASHVILLE_SEED_ARTISTS.map(n => n.toLowerCase())); for (const set of allShowcaseArtists.values()) for (const n of set) s.add(n); return s.size; })().toLocaleString() : NASHVILLE_SEED_ARTISTS.length} Nashville artists for new releases (Spotify + Apple Music).
         </p>
         <button
           className="btn btn-gold"
@@ -488,7 +525,7 @@ export default function NashvilleReleases({ showcases, onImport, activeShowcase,
           Scan Nashville Releases
         </button>
         <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)', marginTop: 12 }}>
-          Searches the Spotify catalog for releases from the past 7 days. Takes about 30 seconds.
+          Searches Spotify and Apple Music catalogs. Covers all showcase artists from ND. Takes a few minutes for the full universe.
         </p>
       </div>
     );
