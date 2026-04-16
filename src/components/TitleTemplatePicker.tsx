@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { getVisibleTitleTemplates, type TitleSlideTemplate } from '../lib/title-templates';
 import { generateTitleSlide } from '../lib/canvas-grid';
+import { getLastFriday } from '../lib/spotify';
 import { useAuth } from '../lib/auth-context';
 import UnifiedTemplateBuilder from './UnifiedTemplateBuilder';
 
@@ -92,7 +93,10 @@ function generateTitlePreview(t: TitleSlideTemplate, size = 200): string {
     ctx.shadowColor = t.glow.color;
     ctx.shadowBlur = Math.round(t.glow.blur * size / 1080 * 0.5);
   }
-  ctx.fillText('Apr 3, 2026', size / 2, Math.round(size * t.dateY));
+  const fridayDate = new Date(getLastFriday() + 'T12:00:00').toLocaleDateString('en-US', {
+    month: 'short', day: 'numeric', year: 'numeric',
+  });
+  ctx.fillText(fridayDate, size / 2, Math.round(size * t.dateY));
   ctx.shadowColor = 'transparent';
 
   // Vignette

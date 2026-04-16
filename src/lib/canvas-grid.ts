@@ -4,6 +4,7 @@ import { getTemplate } from './carousel-templates';
 import { getTitleTemplate, type TitleSlideTemplate } from './title-templates';
 import { drawCustomElements, type EditorElement } from './editor-elements';
 import { type GridConfig, getGridById, getGridsForCount, computeCellRects } from './grid-layouts';
+import { computeLastFriday } from './scan-utils';
 
 /** Canvas dimensions by aspect ratio */
 export type CarouselAspect = '1:1' | '3:4' | '9:16';
@@ -1299,7 +1300,7 @@ export function generateTemplatePreview(
   ctx.font = `700 ${Math.round(size * 0.055)}px ${t.scriptFont}`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'bottom';
-  ctx.fillText('April 4, 2026', size / 2, size - 2);
+  ctx.fillText(formatDate(computeLastFriday()), size / 2, size - 2);
   ctx.shadowColor = 'transparent';
 
   return canvas.toDataURL('image/png');
