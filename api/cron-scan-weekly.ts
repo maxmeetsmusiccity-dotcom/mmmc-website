@@ -89,12 +89,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // Try to load artist list from R2
   let artistNames: string[] = SEED_ARTISTS;
+  let r2GeneratedAt: string | null = null;
   try {
     const apiToken = ND_API_BASE && ND_AUTH_SECRET ? await generateApiToken() : '';
     const r2Url = apiToken ? `${ND_API_BASE}/api/r2?key=browse_artists.json` : '';
     const r2Resp = r2Url ? await fetch(r2Url, { headers: { 'Content-Type': 'application/json', 'X-ND-Token': apiToken } }) : { ok: false, json: async () => ({}) };
     if (r2Resp.ok) {
       const r2Data = await r2Resp.json();
+      if (typeof r2Data.generated_at === 'string') r2GeneratedAt = r2Data.generated_at;
       // R2 file may have artists at top level OR nested in categories
       const names = new Set<string>();
       if (r2Data.artists && r2Data.artists.length > 0) {
@@ -110,7 +112,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
       if (names.size > 0) {
         artistNames = [...names];
-        console.log(`[CRON] Loaded ${artistNames.length} artists from R2`);
+        console.log(`[CRON] Loaded ${artistNames.length} artists from R2 (generated_at=${r2GeneratedAt || 'unknown'})`);
       }
     }
   } catch { console.log('[CRON] R2 not available, using seed list'); }
@@ -124,11 +126,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Self-chaining: offset (or legacy start) — chainNum and maxChains parsed above
   let startIdx = parseInt((req.query.offset ?? req.query.start) as string || '0', 10);
 
+  // Admin override: ?force_rescan=true skips self-healing and starts from 0
+  const forceRescan = req.query.force_rescan === 'true' || req.query.force_rescan === '1';
+
   // Self-healing: if this is a fresh cron trigger (chain 0, no explicit offset)
   // and there's a paused/failed run from the last 24h, resume from there instead
   // of starting over from 0. Prevents wasted daily quota.
+  // BUT: if R2 generated_at is newer than the paused run, R2 has been updated and
+  // resuming would skip newly-added artists in the 0..resumeOffset range.
   const explicitOffset = req.query.offset !== undefined || req.query.start !== undefined;
-  if (chainNum === 0 && !explicitOffset) {
+  if (chainNum === 0 && !explicitOffset && !forceRescan) {
     try {
       const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       const { data: recent } = await supabase
@@ -140,17 +147,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .limit(1);
       const lastPaused = recent?.[0];
       if (lastPaused && lastPaused.target_week === weekDate && lastPaused.artists_scanned) {
-        // Resume from where that chain actually started + what it managed to scan.
-        // start_offset is written at chain start (below), so this is correct
-        // regardless of whether the previous chain was triggered fresh, via
-        // explicit offset query param, or via self-healing recovery.
-        const resumeOffset = (lastPaused.start_offset ?? 0) + (lastPaused.artists_scanned || 0);
-        startIdx = resumeOffset;
-        console.log(`[CRON] Self-healing: resuming from offset ${startIdx} (last ${lastPaused.status}, prev chain started at ${lastPaused.start_offset ?? 0}, scanned ${lastPaused.artists_scanned})`);
+        // Guard: if R2 data is newer than the paused run, force a full rescan.
+        // Otherwise new artists prepended/inserted by Thread A get skipped.
+        if (r2GeneratedAt && lastPaused.run_date && r2GeneratedAt > lastPaused.run_date) {
+          console.log(`[CRON] Self-healing skipped: R2 generated_at=${r2GeneratedAt} is newer than last paused run ${lastPaused.run_date}. Starting from offset 0 to cover newly-added artists.`);
+        } else {
+          // Resume from where that chain actually started + what it managed to scan.
+          // start_offset is written at chain start (below), so this is correct
+          // regardless of whether the previous chain was triggered fresh, via
+          // explicit offset query param, or via self-healing recovery.
+          const resumeOffset = (lastPaused.start_offset ?? 0) + (lastPaused.artists_scanned || 0);
+          startIdx = resumeOffset;
+          console.log(`[CRON] Self-healing: resuming from offset ${startIdx} (last ${lastPaused.status}, prev chain started at ${lastPaused.start_offset ?? 0}, scanned ${lastPaused.artists_scanned})`);
+        }
       }
     } catch (e) {
       console.warn('[CRON] Self-healing lookup failed, starting from 0:', e);
     }
+  } else if (forceRescan && chainNum === 0) {
+    console.log('[CRON] force_rescan=true — bypassing self-healing, starting from offset 0');
   }
 
   // Observability: log this chain's start NOW that startIdx is finalized.
