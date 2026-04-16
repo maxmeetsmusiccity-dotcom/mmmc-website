@@ -196,6 +196,9 @@ export default function NewMusicFriday() {
   // Shift-click multi-select tracking
   const lastClickedIdx = useRef<number>(-1);
 
+  // Scan abort controller
+  const scanAbortRef = useRef<AbortController | null>(null);
+
   // Fixed header/toolbar measurement
   const headerRef = useRef<HTMLElement>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
@@ -483,6 +486,9 @@ export default function NewMusicFriday() {
     setError('');
     setRateLimited(false);
     setLoadedFromCache(false);
+    const abortController = new AbortController();
+    scanAbortRef.current = abortController;
+    const { signal } = abortController;
     const scanStart = Date.now();
     try {
       // Refresh token if expired
@@ -516,7 +522,7 @@ export default function NewMusicFriday() {
       const artists = await fetchFollowedArtists(activeToken, (cur, tot) => {
         setScanProgress({ current: cur, total: tot });
         setScanStatus(`Loaded ${cur} artists...`);
-      });
+      }, false, signal);
 
       const cutoff = getScanCutoff();
       setScanStatus(`Scanning releases since ${cutoff}...`);
@@ -545,9 +551,23 @@ export default function NewMusicFriday() {
         liveTrackCount = tracks.length;
         setAllTracks(tracks);
         setReleases(groupIntoReleases(tracks));
-      });
+      }, signal);
 
+      scanAbortRef.current = null;
       const { tracks, failCount, totalArtists, rateLimited: wasRateLimited, retryAfterSeconds } = result;
+
+      // Handle user-cancelled scan
+      if (result.aborted) {
+        if (tracks.length > 0) {
+          setAllTracks(tracks);
+          setReleases(groupIntoReleases(tracks));
+          setPhase('results');
+          setError(`Scan cancelled after ${result.completedArtists}/${totalArtists} artists. Showing ${tracks.length} tracks found.`);
+        } else {
+          setPhase('ready');
+        }
+        return;
+      }
       const now = new Date().toISOString();
       setAllTracks(tracks);
       setReleases(groupIntoReleases(tracks));
@@ -594,6 +614,13 @@ export default function NewMusicFriday() {
         setError(`Scan found 0 releases since ${cutoff}. Try re-scanning.`);
       }
     } catch (e) {
+      scanAbortRef.current = null;
+      if ((e as DOMException).name === 'AbortError') {
+        // Scan was cancelled by user
+        if (allTracks.length > 0) setPhase('results');
+        else setPhase('ready');
+        return;
+      }
       if ((e as Error).message === 'AUTH_EXPIRED') {
         setToken(null);
         setPhase('ready');
@@ -1111,6 +1138,13 @@ export default function NewMusicFriday() {
             <p className="mono" style={{ color: 'var(--text-secondary)', fontSize: 'var(--fs-lg)' }}>
               {scanStatus}
             </p>
+            <button
+              className="btn btn-sm"
+              onClick={() => scanAbortRef.current?.abort()}
+              style={{ marginTop: 16, opacity: 0.7 }}
+            >
+              Cancel Scan
+            </button>
           </div>
         </div>
       )}

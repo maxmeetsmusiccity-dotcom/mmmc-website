@@ -158,7 +158,7 @@ async function enforceGap(): Promise<void> {
  * - 401: throw immediately.
  * - Network errors: retry up to 8 times with same backoff (cap 15s).
  */
-async function callSpotify(url: string, token: string): Promise<Response> {
+async function callSpotify(url: string, token: string, signal?: AbortSignal): Promise<Response> {
   const MAX_RETRIES = 8;
   let lastError: Error | null = null;
 
@@ -167,6 +167,7 @@ async function callSpotify(url: string, token: string): Promise<Response> {
     try {
       const res = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
+        signal,
       });
       lastCallTime = Date.now();
 
@@ -199,6 +200,7 @@ async function callSpotify(url: string, token: string): Promise<Response> {
       lastError = e as Error;
       if (lastError.message === 'AUTH_EXPIRED') throw lastError;
       if (lastError instanceof RateLimitError) throw lastError;
+      if ((lastError as DOMException).name === 'AbortError') throw lastError;
 
       // Network error — retry with backoff (cap 15s)
       if (attempt < MAX_RETRIES) {
@@ -265,6 +267,7 @@ export async function fetchFollowedArtists(
   token: string,
   onProgress: (current: number, total: number) => void,
   forceRefresh = false,
+  signal?: AbortSignal,
 ): Promise<SpotifyArtist[]> {
   // Check localStorage cache first
   if (!forceRefresh) {
@@ -288,13 +291,13 @@ export async function fetchFollowedArtists(
     const url = after
       ? `${API}/me/following?type=artist&limit=50&after=${after}`
       : `${API}/me/following?type=artist&limit=50`;
-    const res = await callSpotify(url, token);
+    const res = await callSpotify(url, token, signal);
     const data = await res.json();
     const items = data.artists.items as SpotifyArtist[];
     artists.push(...items);
     after = data.artists.cursors?.after || null;
     onProgress(artists.length, data.artists.total || artists.length);
-  } while (after);
+  } while (after && !signal?.aborted);
 
   // Cache for next time
   try {
@@ -311,6 +314,7 @@ export interface ScanResult {
   rateLimited: boolean;
   retryAfterSeconds: number;
   completedArtists: number;
+  aborted: boolean;
 }
 
 export type ScanStatus = 'green' | 'yellow' | 'red';
@@ -344,6 +348,7 @@ export async function fetchNewReleases(
   cutoffDate: string,
   onProgress: (current: number, total: number, releasesFound: number, status: ScanStatus) => void,
   onReleasesFound?: (tracks: TrackItem[]) => void,
+  signal?: AbortSignal,
 ): Promise<ScanResult> {
   const scanStart = Date.now();
   let apiCalls = 0;
@@ -369,6 +374,7 @@ export async function fetchNewReleases(
 
   // SEQUENTIAL: one artist at a time, just like the Python script
   for (let i = 0; i < sorted.length; i++) {
+    if (signal?.aborted) break;
     const artist = sorted[i];
 
     try {
@@ -376,6 +382,7 @@ export async function fetchNewReleases(
       const res = await callSpotify(
         `${API}/artists/${artist.id}/albums?include_groups=album,single&limit=${Math.min(maxAlbums, 50)}&market=US`,
         token,
+        signal,
       );
       apiCalls++;
       const data = await res.json();
@@ -447,6 +454,7 @@ export async function fetchNewReleases(
             const trackRes = await callSpotify(
               `${API}/albums/${album.id}/tracks?limit=50&market=US`,
               token,
+              signal,
             );
             apiCalls++;
             const trackData = await trackRes.json();
@@ -521,6 +529,7 @@ export async function fetchNewReleases(
         const res = await callSpotify(
           `${API}/albums/${t.album_spotify_id}/tracks?limit=1&market=US`,
           token,
+          signal,
         );
         apiCalls++;
         const data = await res.json();
@@ -565,13 +574,15 @@ export async function fetchNewReleases(
     onReleasesFound(allTracks);
   }
 
+  const aborted = signal?.aborted ?? false;
   return {
     tracks: allTracks,
     failCount,
     totalArtists: artists.length,
     rateLimited,
     retryAfterSeconds,
-    completedArtists: rateLimited
+    aborted,
+    completedArtists: rateLimited || aborted
       ? sorted.findIndex(a => allTracks.some(t => t.artist_id === a.id)) + 1
       : sorted.length,
   };
