@@ -207,11 +207,13 @@ export default function NewMusicFriday() {
   const [mobileCollapsed, setMobileCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768);
 
-  // Measure header + toolbar on mount + whenever their size changes
+  // Measure header + toolbar whenever they appear or resize.
+  // Re-runs when phase changes (toolbar only renders in results phase).
   useEffect(() => {
     const measure = () => {
       if (headerRef.current) setHeaderHeight(headerRef.current.offsetHeight);
       if (toolbarRef.current) setToolbarHeight(toolbarRef.current.offsetHeight);
+      else setToolbarHeight(0);
     };
     measure();
 
@@ -224,7 +226,7 @@ export default function NewMusicFriday() {
       ro.disconnect();
       window.removeEventListener('resize', measure);
     };
-  }, []);
+  }, [phase, isMobile]);
 
   // Mobile: collapse header on scroll down to reclaim viewport space
   useEffect(() => {
