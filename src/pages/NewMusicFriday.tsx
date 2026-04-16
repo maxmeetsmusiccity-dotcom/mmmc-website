@@ -25,7 +25,7 @@ import ArtistClusterCard from '../components/ArtistClusterCard';
 import { type ArtistGroup, groupByPrimaryArtist } from '../lib/artist-grouping';
 import FilterBar from '../components/FilterBar';
 import PlaylistSection from '../components/PlaylistSection';
-import TagBlocks from '../components/TagBlocks';
+import ShareCaptionSection from '../components/ShareCaptionSection';
 import WeekHistory from '../components/WeekHistory';
 import EmbedWidget from '../components/EmbedWidget';
 import ProductNav from '../components/ProductNav';
@@ -38,7 +38,6 @@ const NashvilleReleases = lazy(() => import('../components/NashvilleReleases'));
 const MobileResultsView = lazy(() => import('../components/MobileResultsView'));
 // Eager import — also used as hidden mobile panel for ref availability on first generate tap
 import CarouselPreviewPanel from '../components/CarouselPreviewPanel';
-import CaptionGenerator from '../components/CaptionGenerator';
 import TrackSuggestions from '../components/TrackSuggestions';
 import { queueNewArtistsForEnrichment } from '../lib/enrichment';
 import type { MusicSource } from '../lib/sources/types';
@@ -2117,27 +2116,14 @@ export default function NewMusicFriday() {
                 </div>
               )}
 
-              {/* Post-generation: Caption & Share (prominent) */}
-              {allPreviews.length > 0 && (
-                <div style={{ marginTop: 24, borderTop: '1px solid var(--midnight-border)', paddingTop: 16 }}>
-                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-2xl)', marginBottom: 12 }}>
-                    ③ Share
-                  </h3>
-                  <TagBlocks slideGroups={slideGroups} onHandlesResolved={setResolvedHandles} />
-                  <CaptionGenerator selections={selections} handles={resolvedHandles} weekDate={weekDate} showShare />
-                </div>
-              )}
-
-              {/* Pre-generation: Instagram Tags (collapsed) */}
-              {allPreviews.length === 0 && (
-                <details style={{ marginTop: 24, borderTop: '1px solid var(--midnight-border)', paddingTop: 16 }}>
-                  <summary style={{ cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 'var(--fs-lg)', fontWeight: 600 }}>
-                    Instagram Tags
-                  </summary>
-                  <TagBlocks slideGroups={slideGroups} onHandlesResolved={setResolvedHandles} />
-                  <CaptionGenerator selections={selections} handles={resolvedHandles} weekDate={weekDate} />
-                </details>
-              )}
+              <ShareCaptionSection
+                allPreviewsReady={allPreviews.length > 0}
+                slideGroups={slideGroups}
+                onHandlesResolved={setResolvedHandles}
+                selections={selections}
+                resolvedHandles={resolvedHandles}
+                weekDate={weekDate}
+              />
 
               <PlaylistSection
                 isAdmin={isAdmin}
