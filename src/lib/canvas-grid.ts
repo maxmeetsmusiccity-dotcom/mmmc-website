@@ -44,12 +44,19 @@ const ASSETS = {
   noteBR: '/assets/note-br.png',
 };
 
-const IMAGE_CACHE_MAX = 200;
-const imageCache = new Map<string, HTMLImageElement>();
+const IMAGE_CACHE_MAX = 50;
+const IMAGE_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+
+interface CachedImage { img: HTMLImageElement; ts: number; }
+const imageCache = new Map<string, CachedImage>();
 
 function evictIfNeeded() {
+  // Evict expired entries first
+  const now = Date.now();
+  for (const [key, entry] of imageCache) {
+    if (now - entry.ts > IMAGE_CACHE_TTL) imageCache.delete(key);
+  }
   if (imageCache.size <= IMAGE_CACHE_MAX) return;
-  // Delete oldest entries (Map iterates in insertion order)
   const toDelete = imageCache.size - IMAGE_CACHE_MAX;
   const iter = imageCache.keys();
   for (let i = 0; i < toDelete; i++) {
@@ -59,11 +66,12 @@ function evictIfNeeded() {
 }
 
 async function loadImage(src: string): Promise<HTMLImageElement | null> {
-  if (imageCache.has(src)) return imageCache.get(src)!;
+  const cached = imageCache.get(src);
+  if (cached) { cached.ts = Date.now(); return cached.img; }
   return new Promise((resolve) => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
-    img.onload = () => { imageCache.set(src, img); evictIfNeeded(); resolve(img); };
+    img.onload = () => { imageCache.set(src, { img, ts: Date.now() }); evictIfNeeded(); resolve(img); };
     img.onerror = () => resolve(null);
     img.src = src;
   });
@@ -83,6 +91,12 @@ async function loadAllAssets(t: CarouselTemplate): Promise<void> {
     document.fonts.load(`600 26px ${t.bodyFont}`).catch(() => {}),
   ]);
 }
+
+/** Reusable offscreen canvases for neonText — avoids createElement per call */
+let _neonOff: HTMLCanvasElement | null = null;
+let _neonOffCtx: CanvasRenderingContext2D | null = null;
+let _neonGlow: HTMLCanvasElement | null = null;
+let _neonGlowCtx: CanvasRenderingContext2D | null = null;
 
 /**
  * Neon text — offscreen canvas + screen blend compositing.
@@ -104,10 +118,12 @@ export function neonText(ctx: CanvasRenderingContext2D, text: string, x: number,
   // Guard against 0-dimension canvas (causes drawImage crash)
   if (tw <= 0 || th <= 0 || !text.trim()) return;
 
-  // Draw text to offscreen canvas
-  const off = document.createElement('canvas');
+  // Reuse offscreen canvases to avoid 2x createElement per call
+  if (!_neonOff) { _neonOff = document.createElement('canvas'); _neonOffCtx = _neonOff.getContext('2d')!; }
+  if (!_neonGlow) { _neonGlow = document.createElement('canvas'); _neonGlowCtx = _neonGlow.getContext('2d')!; }
+  const off = _neonOff;
   off.width = tw; off.height = th;
-  const oc = off.getContext('2d')!;
+  const oc = _neonOffCtx!;
   oc.font = font;
   oc.textAlign = 'center';
   oc.textBaseline = 'top';
@@ -120,10 +136,10 @@ export function neonText(ctx: CanvasRenderingContext2D, text: string, x: number,
 
   // Skip glow passes for templates with no glow
   if (t.neon.outerBlur > 0 && t.neon.outerAlpha > 0) {
-    // Glow canvas — tinted for color
-    const glow = document.createElement('canvas');
+    // Reuse glow canvas
+    const glow = _neonGlow!;
     glow.width = tw; glow.height = th;
-    const gc = glow.getContext('2d')!;
+    const gc = _neonGlowCtx!;
     gc.font = font;
     gc.textAlign = 'center';
     gc.textBaseline = 'top';
@@ -160,11 +176,15 @@ export function neonText(ctx: CanvasRenderingContext2D, text: string, x: number,
 
 /**
  * Film grain via overlay compositing — preserves color, adds texture.
- * More realistic than additive pixel noise.
+ * Noise canvas is cached per dimension to avoid regenerating 4.7M pixels per slide.
  */
-function drawNoiseTexture(ctx: CanvasRenderingContext2D, opacity: number) {
-  const cw = ctx.canvas.width, ch = ctx.canvas.height;
-  const grain = document.createElement('canvas');
+const _noiseCache = new Map<string, HTMLCanvasElement>();
+
+function getNoiseTexture(cw: number, ch: number): HTMLCanvasElement {
+  const key = `${cw}x${ch}`;
+  let grain = _noiseCache.get(key);
+  if (grain) return grain;
+  grain = document.createElement('canvas');
   grain.width = cw; grain.height = ch;
   const gc = grain.getContext('2d')!;
   const imageData = gc.createImageData(cw, ch);
@@ -175,6 +195,12 @@ function drawNoiseTexture(ctx: CanvasRenderingContext2D, opacity: number) {
     data[i + 3] = 255;
   }
   gc.putImageData(imageData, 0, 0);
+  _noiseCache.set(key, grain);
+  return grain;
+}
+
+function drawNoiseTexture(ctx: CanvasRenderingContext2D, opacity: number) {
+  const grain = getNoiseTexture(ctx.canvas.width, ctx.canvas.height);
   ctx.save();
   ctx.globalCompositeOperation = 'overlay';
   ctx.globalAlpha = opacity;
@@ -211,16 +237,16 @@ function goldRule(ctx: CanvasRenderingContext2D, y: number, t: CarouselTemplate)
 }
 
 function drawNotes(ctx: CanvasRenderingContext2D, size: number) {
-  const n = imageCache;
+  const gi = (key: string) => imageCache.get(key)?.img ?? null;
   const cw = ctx.canvas.width, ch = ctx.canvas.height;
-  n.get(ASSETS.noteTL) && ctx.drawImage(n.get(ASSETS.noteTL)!, 52, 52, size * 0.7, size);
-  n.get(ASSETS.noteTR) && ctx.drawImage(n.get(ASSETS.noteTR)!, cw - 52 - size * 0.65, 52, size * 0.65, size);
-  n.get(ASSETS.noteBL) && ctx.drawImage(n.get(ASSETS.noteBL)!, 52, ch - 52 - size * 0.85, size * 0.85, size);
-  n.get(ASSETS.noteBR) && ctx.drawImage(n.get(ASSETS.noteBR)!, cw - 52 - size * 0.85, ch - 52 - size * 0.85, size * 0.85, size);
+  const tl = gi(ASSETS.noteTL); tl && ctx.drawImage(tl, 52, 52, size * 0.7, size);
+  const tr = gi(ASSETS.noteTR); tr && ctx.drawImage(tr, cw - 52 - size * 0.65, 52, size * 0.65, size);
+  const bl = gi(ASSETS.noteBL); bl && ctx.drawImage(bl, 52, ch - 52 - size * 0.85, size * 0.85, size);
+  const br = gi(ASSETS.noteBR); br && ctx.drawImage(br, cw - 52 - size * 0.85, ch - 52 - size * 0.85, size * 0.85, size);
 }
 
 function drawSparkles(ctx: CanvasRenderingContext2D, positions: [number, number][], sz: number) {
-  const sparkle = imageCache.get(ASSETS.sparkle);
+  const sparkle = imageCache.get(ASSETS.sparkle)?.img ?? null;
   if (!sparkle) return;
   for (const [x, y] of positions) {
     ctx.drawImage(sparkle, x - sz / 2, y - sz / 2, sz, sz);
