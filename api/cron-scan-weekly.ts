@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL || '';
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 // R2 is private — fetch through Workers R2 binding with HMAC auth
 const ND_API_BASE = process.env.ND_API_BASE_URL || '';
@@ -177,13 +177,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const batchSize = 50;
   let totalTracks = 0;
   let scanned = 0;
-  const scanHost = req.headers.host || 'maxmeetsmusiccity.com';
-  const protocol = scanHost.includes('localhost') ? 'http' : 'https';
+  // Internal API base — never trust req.headers.host (spoofable)
+  const scanBaseUrl = process.env.SCAN_BASE_URL || 'https://maxmeetsmusiccity.com';
 
   for (let i = 0; i < batch.length; i += batchSize) {
     const chunk = batch.slice(i, i + batchSize);
     try {
-      const resp = await fetch(`${protocol}://${scanHost}/api/scan-artists`, {
+      const resp = await fetch(`${scanBaseUrl}/api/scan-artists`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -231,7 +231,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   for (let i = 0; i < batch.length; i += batchSize) {
     const chunk = batch.slice(i, i + batchSize);
     try {
-      const resp = await fetch(`${protocol}://${scanHost}/api/search-apple`, {
+      const resp = await fetch(`${scanBaseUrl}/api/search-apple`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -315,10 +315,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         let resolved = 0;
         for (const name of uncached.slice(0, 50)) {
           try {
-            const protocol = scanHost.includes('localhost') ? 'http' : 'https';
-            const r = await fetch(`${protocol}://${scanHost}/api/resolve-handle`, {
+            const r = await fetch(`${scanBaseUrl}/api/resolve-handle`, {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'Origin': `${protocol}://${scanHost}` },
+              headers: { 'Content-Type': 'application/json', 'Origin': `${scanBaseUrl}` },
               body: JSON.stringify({ artist_name: name }),
             });
             if (r.ok) {
@@ -343,7 +342,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     await new Promise(resolve => setTimeout(resolve, 1000));
     const nextChain = chainNum + 1;
     const weekParam = weekOverride ? `&week=${weekOverride}` : '';
-    const nextUrl = `${protocol}://${scanHost}/api/cron-scan-weekly?offset=${endIdx}&max_chains=${maxChains}&chain=${nextChain}${weekParam}`;
+    const nextUrl = `${scanBaseUrl}/api/cron-scan-weekly?offset=${endIdx}&max_chains=${maxChains}&chain=${nextChain}${weekParam}`;
     console.log(`[CRON] Chaining → chain ${nextChain}/${maxChains}: artists ${endIdx}-${Math.min(endIdx + BATCH_SIZE, artistNames.length)}`);
     try {
       const chainResp = await fetch(nextUrl, {
