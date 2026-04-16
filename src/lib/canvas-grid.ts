@@ -350,7 +350,12 @@ export async function generateCoverSlide(
   drawVignette(ctx, 0.25);
   drawNoiseTexture(ctx, 0.15);
 
-  return new Promise(resolve => canvas.toBlob(b => resolve(b!), 'image/png'));
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(b => {
+      if (b) resolve(b);
+      else reject(new Error('Canvas toBlob returned null — canvas may be tainted or browser ran out of memory'));
+    }, 'image/png');
+  });
 }
 
 // ─── TITLE SLIDE (uses TitleSlideTemplate) ──────────────
@@ -673,7 +678,12 @@ export async function generateTitleSlide(
   // Grain/noise
   if (tt.grain > 0) drawNoiseTexture(ctx, tt.grain);
 
-  return new Promise(resolve => canvas.toBlob(b => resolve(b!), 'image/png'));
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(b => {
+      if (b) resolve(b);
+      else reject(new Error('Canvas toBlob returned null — canvas may be tainted or browser ran out of memory'));
+    }, 'image/png');
+  });
 }
 
 // ─── GRID ────────────────────────────────────────────────
@@ -1061,7 +1071,12 @@ export async function generateGridSlide(
   drawVignette(ctx, t.vignetteIntensity ?? 0.2);
   drawNoiseTexture(ctx, t.grainIntensity ?? 0.12);
 
-  return new Promise(resolve => canvas.toBlob(b => resolve(b!), 'image/png'));
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(b => {
+      if (b) resolve(b);
+      else reject(new Error('Canvas toBlob returned null — canvas may be tainted or browser ran out of memory'));
+    }, 'image/png');
+  });
 }
 
 // ─── STANDALONE GRID ─────────────────────────────────────
@@ -1087,7 +1102,12 @@ export async function generateGridComposite(
     drawGridWithLayout(ctx, slots, images, logo, 0, 0, S, S, t, autoLayout);
   }
 
-  return new Promise(resolve => canvas.toBlob(b => resolve(b!), 'image/png'));
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(b => {
+      if (b) resolve(b);
+      else reject(new Error('Canvas toBlob returned null — canvas may be tainted or browser ran out of memory'));
+    }, 'image/png');
+  });
 }
 
 // ─── FULL CAROUSEL ───────────────────────────────────────
