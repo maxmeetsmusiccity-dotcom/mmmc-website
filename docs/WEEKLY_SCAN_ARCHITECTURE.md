@@ -95,6 +95,45 @@ results first. Before running 1000 chains, run 1.
 `tracks_found: 0` for 2+ consecutive runs is a critical alert. If you see it,
 stop everything and diagnose before running another scan.
 
+### R11. When ND has a canonical identifier, use it. Never search.
+ND's cascade resolves artist identity through pg_id + spotify_artist_id with
+the full FP gate / cannot-link / disambiguation machinery. When that
+resolution is available in the R2 artifact (`nashville_universe.json`), the
+scan MUST use it directly:
+```
+artist.spotify_artist_id  →  /artists/{id}/albums
+```
+No name search. No fuzzy fallback. The April 17, 2026 "Mark Williams" incident
+proved that name-search across two platforms resolves to two DIFFERENT people
+for the same input string — one Nashville country artist, one UK classical
+conductor — and caching the wrong match poisons every subsequent scan.
+Apple IDs (which ND does not natively track) are discovered ONCE per artist
+via strict name match + ISRC cross-verification against the Spotify artist's
+catalog (see R12), then cached. NMF emits discovered Apple IDs back to ND
+via `nmf_scan_intelligence__[date].json` so the cascade can bind them to
+pg_id authoritatively.
+
+### R12. Apple IDs must be ISRC-verified before caching.
+A strict-match search result on Apple is necessary but not sufficient. The
+same human-readable name can resolve to different real people across
+platforms. Before caching an Apple artist ID, fetch one of the artist's
+albums and confirm at least one track's ISRC matches a known Spotify track
+ISRC for the same Nashville identity. Zero ISRC overlap = reject the match,
+flag for human review, continue with Spotify-only data for that artist.
+
+### R13. Every scan emits intelligence back to ND.
+The scan is a SENSOR, not just a consumer. After every run, Thread C emits
+`nmf_scan_intelligence__YYYY-MM-DD.json` to R2 containing:
+- Newly discovered Apple artist IDs (for Thread A to bind to pg_id)
+- Stale / broken Spotify IDs (artists whose cached spotify_id returns 404)
+- Collaboration signals (tracks with 2+ Nashville-universe artists = co-write
+  intelligence — the freshest possible)
+- Release velocity per artist
+- Dormancy signals (artists in universe with N consecutive zero-result scans)
+- Apple name mismatches that failed ISRC verification (pollution candidates)
+Thread A ingests this artifact on next cascade run. Over 4-8 weekly cycles,
+data quality improves automatically — the two-way loop.
+
 ---
 
 ## 2. Architecture
