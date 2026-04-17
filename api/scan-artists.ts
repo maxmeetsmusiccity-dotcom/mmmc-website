@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { bulkLookupCache, saveCacheResult, fetchWith429Retry } from './_platform_cache.js';
+import { bulkLookupCache, saveCacheResult, fetchWith429Retry, RateBudget } from './_platform_cache.js';
 
 const SPOTIFY_API = 'https://api.spotify.com/v1';
 const TOKEN_URL = 'https://accounts.spotify.com/api/token';
@@ -194,6 +194,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const seenTrackIds = new Set<string>();
     let scannedCount = 0;
 
+    // Single shared retry-sleep budget across the entire handler. Vercel's
+    // 300s function timeout means per-call 60s sleeps can cascade into a
+    // timeout on a rate-limit storm. 30s total keeps us responsive.
+    const budget = new RateBudget(30_000);
+
     // Bulk-lookup the platform-ID cache up front so the main loop can skip
     // the Spotify search step whenever we've already resolved an artist's ID.
     const cacheMap = await bulkLookupCache(artistNames);
@@ -225,10 +230,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
       if (!artist) { scannedCount++; continue; }
 
-      // Fetch recent albums (retries transient 429s with Retry-After backoff)
+      // Fetch recent albums. 429s retry with shared budget so we can't timeout.
       const albumRes = await fetchWith429Retry(
         `${SPOTIFY_API}/artists/${artist.id}/albums?include_groups=album,single&market=US&limit=20`,
         { headers: { Authorization: `Bearer ${token}` } },
+        budget,
       );
       if (!albumRes.ok) { scannedCount++; continue; }
       const albumData = await albumRes.json();

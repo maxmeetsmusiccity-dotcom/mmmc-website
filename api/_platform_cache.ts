@@ -130,21 +130,59 @@ export async function saveCacheResult(u: PlatformUpdate): Promise<void> {
 }
 
 /**
- * fetchWith429Retry — standard wrapper that honors Spotify/Apple Retry-After.
- * Retries up to `maxRetries` times; returns the final Response (never throws).
+ * RateBudget — tracks cumulative retry-sleep across all calls in one request
+ * handler. Vercel functions have a 300s timeout; per-call 429 retries with up
+ * to 60s sleep can cascade into thousands of seconds of backoff on a rate-
+ * limit storm. A shared budget caps the damage: once exhausted, `fetchWith429`
+ * stops retrying and returns the 429 immediately so the caller can skip the
+ * artist and move on (partial results + cache writes beat a timeout).
  */
-export async function fetchWith429Retry(url: string, init: RequestInit, maxRetries = 3): Promise<Response> {
+export class RateBudget {
+  spent = 0;
+  readonly maxMs: number;
+  constructor(maxMs = 30_000) { this.maxMs = maxMs; }
+  /** Remaining sleep allowance in ms; 0 means exhausted. */
+  remainingMs(): number { return Math.max(0, this.maxMs - this.spent); }
+  async sleep(ms: number): Promise<void> {
+    const actual = Math.min(ms, this.remainingMs());
+    if (actual <= 0) return;
+    this.spent += actual;
+    await new Promise(r => setTimeout(r, actual));
+  }
+}
+
+/**
+ * fetchWith429Retry — honors Spotify/Apple Retry-After headers, but bounded
+ * by a shared budget so cumulative sleep cannot exhaust the function timeout.
+ *
+ * @param budget shared RateBudget across all fetches in this handler
+ * @param maxRetries per-call retry ceiling; default 2 (so ≤3 total attempts)
+ */
+export async function fetchWith429Retry(
+  url: string,
+  init: RequestInit,
+  budget: RateBudget,
+  maxRetries = 2,
+): Promise<Response> {
   let lastResp: Response | null = null;
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     const resp = await fetch(url, init);
     lastResp = resp;
     if (resp.status !== 429) return resp;
     if (attempt >= maxRetries) return resp;
+    if (budget.remainingMs() <= 0) {
+      // Budget exhausted — caller will treat the 429 as a hard miss and move on
+      console.warn(`[platform_cache] 429 on ${url.slice(0, 80)} — budget exhausted, giving up`);
+      return resp;
+    }
     const retryAfter = parseInt(resp.headers.get('retry-after') || '', 10);
-    // Cap wait at 60s — beyond that, better to give up and let the chain move on.
-    const waitMs = Math.min(Math.max(isFinite(retryAfter) ? retryAfter : 5, 1), 60) * 1000;
-    console.warn(`[platform_cache] 429 on ${url.slice(0, 80)} — sleeping ${waitMs}ms (attempt ${attempt + 1}/${maxRetries})`);
-    await new Promise(r => setTimeout(r, waitMs));
+    // Cap per-retry at 10s and by remaining budget. Retry-After values
+    // higher than our budget simply abort.
+    const proposed = Math.min(Math.max(isFinite(retryAfter) ? retryAfter : 2, 1), 10) * 1000;
+    const waitMs = Math.min(proposed, budget.remainingMs());
+    if (waitMs <= 0) return resp;
+    console.warn(`[platform_cache] 429 on ${url.slice(0, 80)} — sleep ${waitMs}ms (attempt ${attempt + 1}/${maxRetries}, budget ${budget.remainingMs()}ms left)`);
+    await budget.sleep(waitMs);
   }
   return lastResp as Response;
 }

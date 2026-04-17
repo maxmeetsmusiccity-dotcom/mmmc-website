@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { SignJWT, importPKCS8 } from 'jose';
-import { bulkLookupCache, saveCacheResult, fetchWith429Retry } from './_platform_cache.js';
+import { bulkLookupCache, saveCacheResult, fetchWith429Retry, RateBudget } from './_platform_cache.js';
 
 const TEAM_ID = process.env.APPLE_MUSIC_TEAM_ID || '';
 const KEY_ID = process.env.APPLE_MUSIC_KEY_ID || process.env.APPLE_MUSIC_SEARCH_KEY_ID || '';
@@ -151,6 +151,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const headers = { Authorization: `Bearer ${token}` };
 
+    // Shared 30s retry-sleep budget for this invocation. Bounds total 429
+    // backoff so a rate-limit storm can't burn the function timeout.
+    const budget = new RateBudget(30_000);
+
     // Bulk-lookup the platform-ID cache so processArtist() can skip the search
     // step whenever we've already resolved an Apple artist ID in a prior scan.
     const cacheMap = await bulkLookupCache(artistNames);
@@ -174,6 +178,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const searchRes = await fetchWith429Retry(
           `${APPLE_API}/search?term=${encodeURIComponent(trimmed)}&types=artists&limit=3`,
           { headers },
+          budget,
         );
         if (!searchRes.ok) {
           saveCacheResult({ platform: 'apple', artistName: trimmed, id: null, error: `search_${searchRes.status}` }).catch(() => {});
@@ -196,6 +201,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const albumRes = await fetchWith429Retry(
         `${APPLE_API}/artists/${artistId}/albums?limit=10`,
         { headers },
+        budget,
       );
       if (!albumRes.ok) return [];
       const albumData = await albumRes.json();
