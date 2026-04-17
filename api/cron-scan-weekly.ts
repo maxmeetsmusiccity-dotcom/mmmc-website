@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import { IntelligenceAccumulator, emitIntelligence, type CollaborationSignal } from './_scan_intelligence.js';
+import { IntelligenceAccumulator, emitIntelligence, type CollaborationSignal, type AppleRejection } from './_scan_intelligence.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -301,6 +301,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         appleTracks += tracks.length;
         // R13: extract collaboration + velocity signals from every track
         for (const t of tracks) recordCollaborationFromTrack(t, 'apple');
+        // R12: record any ISRC-verify rejections so Thread A can act on them
+        // (wrong-person Apple matches gated before cache write).
+        const rejections = (data.apple_rejections || []) as AppleRejection[];
+        for (const r of rejections) intel.recordAppleRejection(r);
+        if (rejections.length > 0) {
+          console.log(`[CRON] Apple batch ${startIdx + i}: ${rejections.length} ISRC-verify rejections`);
+        }
         if (tracks.length > 0) {
           const rows = tracks.map((t: any) => {
             const row: Record<string, any> = {

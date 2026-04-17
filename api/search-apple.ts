@@ -1,6 +1,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { SignJWT, importPKCS8 } from 'jose';
 import { bulkLookupCache, saveCacheResult, fetchWith429Retry, RateBudget } from './_platform_cache.js';
+import { verifyAppleIdByIsrc } from './_apple_verify.js';
+import { getSpotifyClientToken } from './_spotify_token.js';
+import type { AppleRejection } from './_scan_intelligence.js';
 
 const TEAM_ID = process.env.APPLE_MUSIC_TEAM_ID || '';
 const KEY_ID = process.env.APPLE_MUSIC_KEY_ID || process.env.APPLE_MUSIC_SEARCH_KEY_ID || '';
@@ -159,6 +162,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // step whenever we've already resolved an Apple artist ID in a prior scan.
     const cacheMap = await bulkLookupCache(artistNames);
 
+    // R12: handler-scope accumulators for ISRC cross-verification. Populated
+    // only when a cache-miss Apple strict-match is attempted against an artist
+    // whose Spotify ID is already cached (the anchor identity). Returned in
+    // the response so the cron can feed them into scan_intelligence.
+    const appleRejections: AppleRejection[] = [];
+    let appleVerifiedCount = 0;
+    // Lazily fetched on the first artist that needs ISRC verification —
+    // saves the token call entirely for batches with no verifiable artists.
+    let spotifyTokenCache: string | null = null;
+
     // Worker: look up one artist and return all tracks (albums) in the date window.
     async function processArtist(name: string): Promise<any[]> {
       const trimmed = name.trim();
@@ -203,6 +216,56 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
         artistId = match.id;
         artistName = match.attributes.name;
+
+        // R12: ISRC cross-verification before caching. A strict name match on
+        // Apple is necessary but NOT sufficient — "Mark Williams" resolves to
+        // a Nashville country artist on Spotify AND a UK classical conductor
+        // on Apple, both exact-name matches. Without this gate, we cache the
+        // wrong person and poison every subsequent scan. Only runs when ND has
+        // already given us a Spotify anchor ID for this artist.
+        if (cached?.spotify_artist_id) {
+          let verified = false;
+          let reason: AppleRejection['reason'] = 'spotify_not_resolvable';
+          try {
+            if (!spotifyTokenCache) spotifyTokenCache = await getSpotifyClientToken();
+            const v = await verifyAppleIdByIsrc(
+              cached.spotify_artist_id,
+              artistId,
+              spotifyTokenCache,
+              token,
+              budget,
+            );
+            verified = v.verified;
+            if (!verified) {
+              reason = v.reason === 'apple_no_tracks' ? 'apple_no_albums'
+                : v.reason === 'no_isrc_overlap' ? 'no_isrc_overlap'
+                : 'spotify_not_resolvable';
+            }
+          } catch (e) {
+            console.warn('[search-apple] ISRC verify threw for', trimmed, e);
+            verified = false;
+          }
+          if (!verified) {
+            appleRejections.push({
+              nashville_name: trimmed,
+              spotify_artist_id: cached.spotify_artist_id,
+              apple_artist_id_rejected: artistId,
+              apple_display_name_rejected: artistName,
+              reason,
+            });
+            // Record a cache MISS (not a success) — transient errors auto-heal
+            // next scan. The rejection is the durable signal via intelligence.
+            saveCacheResult({
+              platform: 'apple',
+              artistName: trimmed,
+              id: null,
+              error: `isrc_verify_failed:${reason}`,
+            }).catch(() => {});
+            return [];
+          }
+          appleVerifiedCount += 1;
+        }
+
         // Write-through: cache the resolved ID so the next scan is fast
         saveCacheResult({ platform: 'apple', artistName: trimmed, id: artistId, displayName: artistName }).catch(() => {});
       }
@@ -352,6 +415,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       tracks: allTracks,
       artists_searched: artistNames.length,
       source: 'apple_music_catalog',
+      apple_rejections: appleRejections,
+      apple_verified_count: appleVerifiedCount,
     });
   } catch (e) {
     console.error('[search-apple] Error:', e);
