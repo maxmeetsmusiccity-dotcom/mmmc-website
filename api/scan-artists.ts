@@ -142,10 +142,14 @@ function isAllowedOrigin(req: VercelRequest): boolean {
   return false;
 }
 
+function isScanSecretAuth(req: VercelRequest): boolean {
+  const auth = req.headers.authorization;
+  return !!SCAN_SECRET && auth === `Bearer ${SCAN_SECRET}`;
+}
+
 function isAuthorized(req: VercelRequest): boolean {
   // Accept SCAN_SECRET for cron/internal calls
-  const auth = req.headers.authorization;
-  if (SCAN_SECRET && auth === `Bearer ${SCAN_SECRET}`) return true;
+  if (isScanSecretAuth(req)) return true;
   // Accept valid Supabase JWT for authenticated frontend users
   const supabaseToken = req.headers['x-supabase-auth'];
   if (typeof supabaseToken === 'string' && supabaseToken.length > 20) return true;
@@ -163,7 +167,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(401).json({ error: 'Authentication required' });
   }
 
-  if (await isRateLimited(getClientIp(req), 5, 60_000)) {
+  // Trusted server-to-server calls (SCAN_SECRET) bypass the per-IP rate limit,
+  // which exists only to protect against external abuse.
+  if (!isScanSecretAuth(req) && await isRateLimited(getClientIp(req), 5, 60_000)) {
     return res.status(429).json({ error: 'Rate limit exceeded. Try again in a minute.' });
   }
 

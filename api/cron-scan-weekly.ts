@@ -67,8 +67,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const weekOverride = req.query.week as string | undefined;
   const weekDate = weekOverride && /^\d{4}-\d{2}-\d{2}$/.test(weekOverride) ? weekOverride : getLastFriday();
 
-  // Self-chaining params — parsed early because metadata update depends on chainNum
-  const maxChains = Math.min(parseInt(req.query.max_chains as string || '5', 10), 10);
+  // Self-chaining params — parsed early because metadata update depends on chainNum.
+  // Default 25 chains × 300 artists = 7,500 artists (covers the showcase universe).
+  // Cap at 30 to allow room for non-cron callers expanding scope explicitly.
+  const maxChains = Math.min(parseInt(req.query.max_chains as string || '25', 10), 30);
   const chainNum = parseInt(req.query.chain as string || '0', 10);
 
   // Update scan metadata (only reset counters on first chain)
@@ -181,77 +183,34 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     scanRunId = data?.id || null;
   } catch { /* scan_runs table or start_offset column may not exist yet */ }
 
-  // Process 2,000 artists per chain (fits within 300s Vercel timeout)
-  const BATCH_SIZE = 2000;
+  // Smaller chains: 300 artists per chain fits comfortably under 300s Vercel timeout.
+  // Apple runs first (parallelized, ~15s) so the must-have source completes even
+  // if Spotify stalls; Spotify runs second with its internal throttle (~180s).
+  const BATCH_SIZE = 300;
   const endIdx = Math.min(startIdx + BATCH_SIZE, artistNames.length);
   const batch = artistNames.slice(startIdx, endIdx);
 
   console.log(`[CRON] Chain ${chainNum}/${maxChains}: scanning artists ${startIdx}-${endIdx} of ${artistNames.length}`);
 
-  // Scan in batches, save to Supabase progressively
+  // Call-granularity batches: scan-artists caps at 200, search-apple at 100.
+  // Stay at 50 to keep per-call latency bounded and back-pressure smooth.
   const batchSize = 50;
-  let totalTracks = 0;
+  let appleTracks = 0;
+  let spotifyTracks = 0;
   let scanned = 0;
   // Internal API base — never trust req.headers.host (spoofable)
   const scanBaseUrl = process.env.SCAN_BASE_URL || 'https://maxmeetsmusiccity.com';
+  const bearer = `Bearer ${process.env.SCAN_SECRET || ''}`;
 
-  for (let i = 0; i < batch.length; i += batchSize) {
-    const chunk = batch.slice(i, i + batchSize);
-    try {
-      const resp = await fetch(`${scanBaseUrl}/api/scan-artists`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.SCAN_SECRET || ''}`,
-        },
-        body: JSON.stringify({ artistNames: chunk, daysBack: 8, targetFriday: weekDate }),
-      });
-      if (resp.ok) {
-        const data = await resp.json();
-        const tracks = data.tracks || [];
-        totalTracks += tracks.length;
-
-        // Save immediately after each batch
-        if (tracks.length > 0) {
-          const rows = tracks.map((t: any) => ({
-            scan_week: weekDate,
-            spotify_artist_id: t.artist_id || null,
-            artist_name: t.artist_names,
-            track_id: t.track_id,
-            track_name: t.track_name,
-            album_name: t.album_name,
-            album_id: t.album_spotify_id || null,
-            album_type: t.album_type || 'single',
-            release_date: t.release_date,
-            cover_art_640: t.cover_art_640 || null,
-            cover_art_300: t.cover_art_300 || null,
-            track_number: t.track_number || 1,
-            duration_ms: t.duration_ms || 0,
-            explicit: t.explicit || false,
-            total_tracks: t.total_tracks || 1,
-            spotify_url: t.track_spotify_url || null,
-          }));
-          await supabase.from('weekly_nashville_releases').upsert(rows, { onConflict: 'scan_week,track_id' });
-        }
-      }
-    } catch (e) {
-      console.error(`[CRON] Batch ${startIdx + i}-${startIdx + i + batchSize} failed:`, e);
-    }
-    scanned += chunk.length;
-  }
-
-  // Apple Music scan — same artist batches, merge results
-  let appleTracks = 0;
-  console.log(`[CRON] Starting Apple Music scan for ${batch.length} artists...`);
+  // ── Apple Music first (guaranteed must-have) ────────────────────────────
+  console.log(`[CRON] Apple Music: scanning ${batch.length} artists (concurrency=10 internal)...`);
+  const appleStart = Date.now();
   for (let i = 0; i < batch.length; i += batchSize) {
     const chunk = batch.slice(i, i + batchSize);
     try {
       const resp = await fetch(`${scanBaseUrl}/api/search-apple`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.SCAN_SECRET || ''}`,
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': bearer },
         body: JSON.stringify({ artistNames: chunk, daysBack: 7, targetFriday: weekDate }),
       });
       if (resp.ok) {
@@ -278,20 +237,68 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               total_tracks: t.total_tracks || 1,
               spotify_url: null,
             };
-            // Save composer data if available (column must exist — graceful if not)
             if (t.composer_name) row.composer_name = t.composer_name;
             return row;
           });
-          // Upsert — won't duplicate if track_id matches a Spotify entry
           await supabase.from('weekly_nashville_releases').upsert(rows, { onConflict: 'scan_week,track_id' });
         }
+      } else {
+        console.error(`[CRON] Apple batch ${startIdx + i} returned ${resp.status}`);
       }
     } catch (e) {
-      console.error(`[CRON] Apple Music batch ${startIdx + i} failed:`, e);
+      console.error(`[CRON] Apple batch ${startIdx + i} failed:`, e);
     }
   }
-  totalTracks += appleTracks;
-  console.log(`[CRON] Apple Music scan: ${appleTracks} tracks found`);
+  console.log(`[CRON] Apple Music done: ${appleTracks} tracks in ${Date.now() - appleStart}ms`);
+
+  // ── Spotify second (supplementary: popularity, playlist data) ───────────
+  console.log(`[CRON] Spotify: scanning ${batch.length} artists (serial with 100ms throttle)...`);
+  const spotifyStart = Date.now();
+  for (let i = 0; i < batch.length; i += batchSize) {
+    const chunk = batch.slice(i, i + batchSize);
+    try {
+      const resp = await fetch(`${scanBaseUrl}/api/scan-artists`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': bearer },
+        body: JSON.stringify({ artistNames: chunk, daysBack: 8, targetFriday: weekDate }),
+      });
+      if (resp.ok) {
+        const data = await resp.json();
+        const tracks = data.tracks || [];
+        spotifyTracks += tracks.length;
+        if (tracks.length > 0) {
+          const rows = tracks.map((t: any) => ({
+            scan_week: weekDate,
+            spotify_artist_id: t.artist_id || null,
+            artist_name: t.artist_names,
+            track_id: t.track_id,
+            track_name: t.track_name,
+            album_name: t.album_name,
+            album_id: t.album_spotify_id || null,
+            album_type: t.album_type || 'single',
+            release_date: t.release_date,
+            cover_art_640: t.cover_art_640 || null,
+            cover_art_300: t.cover_art_300 || null,
+            track_number: t.track_number || 1,
+            duration_ms: t.duration_ms || 0,
+            explicit: t.explicit || false,
+            total_tracks: t.total_tracks || 1,
+            spotify_url: t.track_spotify_url || null,
+          }));
+          await supabase.from('weekly_nashville_releases').upsert(rows, { onConflict: 'scan_week,track_id' });
+        }
+      } else {
+        console.error(`[CRON] Spotify batch ${startIdx + i} returned ${resp.status}`);
+      }
+    } catch (e) {
+      console.error(`[CRON] Spotify batch ${startIdx + i} failed:`, e);
+    }
+    scanned += chunk.length;
+  }
+  console.log(`[CRON] Spotify done: ${spotifyTracks} tracks in ${Date.now() - spotifyStart}ms`);
+
+  const totalTracks = appleTracks + spotifyTracks;
+  console.log(`[CRON] Chain ${chainNum} totals — apple_tracks: ${appleTracks}, spotify_tracks: ${spotifyTracks}, combined_unique_upserted≈${totalTracks}`);
 
   // Update metadata
   const isComplete = endIdx >= artistNames.length;
@@ -353,26 +360,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   let chainStatus: 'complete' | 'paused_at_chain_limit' | 'chaining' | 'chain_failed' = 'complete';
 
   if (!isComplete && chainsRemaining > 0) {
-    // 1-second delay to prevent rate limiting
-    await new Promise(resolve => setTimeout(resolve, 1000));
     const nextChain = chainNum + 1;
     const weekParam = weekOverride ? `&week=${weekOverride}` : '';
     const nextUrl = `${scanBaseUrl}/api/cron-scan-weekly?offset=${endIdx}&max_chains=${maxChains}&chain=${nextChain}${weekParam}`;
-    console.log(`[CRON] Chaining → chain ${nextChain}/${maxChains}: artists ${endIdx}-${Math.min(endIdx + BATCH_SIZE, artistNames.length)}`);
+    console.log(`[CRON] Dispatching → chain ${nextChain}/${maxChains}: artists ${endIdx}-${Math.min(endIdx + BATCH_SIZE, artistNames.length)}`);
+    // Fire-and-forget: abort our request 3s after dispatch. Vercel runs the
+    // child invocation to completion regardless of our connection — we just
+    // need enough time to ensure the child function was invoked. Awaiting the
+    // full response would stack chains inside chain 0 and blow the 300s limit.
+    const ctrl = new AbortController();
+    setTimeout(() => ctrl.abort(), 3000);
     try {
-      const chainResp = await fetch(nextUrl, {
+      await fetch(nextUrl, {
         method: 'GET',
         headers: { 'Authorization': `Bearer ${CRON_SECRET}` },
+        signal: ctrl.signal,
       });
-      if (!chainResp.ok) {
-        console.error(`[CRON] Chain ${nextChain} returned ${chainResp.status} — stopping`);
-        chainStatus = 'chain_failed';
-      } else {
-        chainStatus = 'chaining';
-      }
+      chainStatus = 'chaining';
     } catch (e) {
-      console.error(`[CRON] Chain ${nextChain} failed:`, e);
-      chainStatus = 'chain_failed';
+      if ((e as Error).name === 'AbortError') {
+        chainStatus = 'chaining'; // expected — child is running independently
+      } else {
+        console.error(`[CRON] Chain ${nextChain} dispatch failed:`, e);
+        chainStatus = 'chain_failed';
+      }
     }
   } else if (!isComplete) {
     chainStatus = 'paused_at_chain_limit';
@@ -381,18 +392,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // Observability: log this chain's results
   if (scanRunId) {
+    const baseUpdate: Record<string, any> = {
+      artists_scanned: scanned,
+      tracks_found: totalTracks,
+      future_tracks_found: 0,
+      composer_credits_found: appleTracks, // Apple is the composer source
+      duration_ms: Date.now() - chainStartMs,
+      status: chainStatus,
+    };
+    // Best-effort: include per-source counts if the columns exist. If not, the
+    // second attempt without them still writes the aggregates.
     try {
-      // Count composer credits from Apple Music tracks
-      const composerCredits = appleTracks; // approximate — refined when we track per-track
-      await supabase.from('scan_runs').update({
-        artists_scanned: scanned,
-        tracks_found: totalTracks,
-        future_tracks_found: 0, // TODO: count future-dated tracks separately
-        composer_credits_found: composerCredits,
-        duration_ms: Date.now() - chainStartMs,
-        status: chainStatus,
-      }).eq('id', scanRunId);
-    } catch { /* scan_runs table may not exist yet */ }
+      await supabase.from('scan_runs')
+        .update({ ...baseUpdate, apple_tracks: appleTracks, spotify_tracks: spotifyTracks })
+        .eq('id', scanRunId);
+    } catch {
+      try { await supabase.from('scan_runs').update(baseUpdate).eq('id', scanRunId); } catch { /* scan_runs may not exist yet */ }
+    }
   }
 
   return res.status(200).json({
@@ -402,6 +418,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     max_chains: maxChains,
     artists_scanned: scanned,
     tracks_found: totalTracks,
+    apple_tracks: appleTracks,
+    spotify_tracks: spotifyTracks,
     range: `${startIdx}-${endIdx} of ${artistNames.length}`,
     next: isComplete ? null : `/api/cron-scan-weekly?offset=${endIdx}&max_chains=${maxChains}&chain=${chainNum + 1}`,
   });

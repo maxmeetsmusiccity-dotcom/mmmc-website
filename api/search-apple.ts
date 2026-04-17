@@ -75,9 +75,13 @@ const ALLOWED_ORIGINS = new Set([
   'http://localhost:5199',
 ]);
 
-function isAuthorized(req: VercelRequest): boolean {
+function isScanSecretAuth(req: VercelRequest): boolean {
   const auth = req.headers.authorization;
-  if (SCAN_SECRET && auth === `Bearer ${SCAN_SECRET}`) return true;
+  return !!SCAN_SECRET && auth === `Bearer ${SCAN_SECRET}`;
+}
+
+function isAuthorized(req: VercelRequest): boolean {
+  if (isScanSecretAuth(req)) return true;
   const supabaseToken = req.headers['x-supabase-auth'];
   if (typeof supabaseToken === 'string' && supabaseToken.length > 20) return true;
   const origin = req.headers.origin || '';
@@ -89,6 +93,29 @@ function isAuthorized(req: VercelRequest): boolean {
   return false;
 }
 
+/** Pool executor: runs `worker` over `items` with at most `concurrency` in flight. */
+async function runPool<T, R>(items: T[], concurrency: number, worker: (item: T) => Promise<R[]>): Promise<R[]> {
+  const results: R[] = [];
+  let idx = 0;
+  async function oneRunner() {
+    while (true) {
+      const i = idx++;
+      if (i >= items.length) return;
+      try {
+        const r = await worker(items[i]);
+        if (r.length) results.push(...r);
+      } catch (e) {
+        // Per-artist failures never poison the pool
+      }
+    }
+  }
+  const workers: Promise<void>[] = [];
+  const n = Math.min(concurrency, items.length);
+  for (let i = 0; i < n; i++) workers.push(oneRunner());
+  await Promise.all(workers);
+  return results;
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
@@ -96,7 +123,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(401).json({ error: 'Authentication required' });
   }
 
-  if (await isRateLimited(getClientIp(req), 5, 60_000)) {
+  // Trusted server-to-server calls (SCAN_SECRET) bypass the per-IP rate limit.
+  if (!isScanSecretAuth(req) && await isRateLimited(getClientIp(req), 5, 60_000)) {
     return res.status(429).json({ error: 'Rate limit exceeded. Try again in a minute.' });
   }
 
@@ -115,74 +143,68 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const cutoff = new Date(friday + 'T12:00:00');
     cutoff.setDate(cutoff.getDate() - daysBack);
     const cutoffStr = cutoff.toISOString().split('T')[0];
+    // Include future releases up to 4 weeks out for "Coming Soon" feature
+    const futureLimit = new Date(friday + 'T12:00:00');
+    futureLimit.setDate(futureLimit.getDate() + 28);
+    const futureLimitStr = futureLimit.toISOString().split('T')[0];
 
     const headers = { Authorization: `Bearer ${token}` };
-    const allTracks: any[] = [];
-    const seenIds = new Set<string>();
 
-    for (const name of artistNames) {
+    // Worker: look up one artist and return all tracks (albums) in the date window.
+    async function processArtist(name: string): Promise<any[]> {
       const trimmed = name.trim();
-      if (!trimmed) continue;
+      if (!trimmed) return [];
 
-      // Search for artist
       const searchRes = await fetch(
         `${APPLE_API}/search?term=${encodeURIComponent(trimmed)}&types=artists&limit=3`,
         { headers },
       );
-      if (!searchRes.ok) continue;
+      if (!searchRes.ok) return [];
       const searchData = await searchRes.json();
       const artists = searchData.results?.artists?.data;
-      if (!artists?.length) continue;
+      if (!artists?.length) return [];
 
-      // Find best match
       const lower = trimmed.toLowerCase();
       const match = artists.find((a: any) => a.attributes.name.toLowerCase() === lower) || artists[0];
       const artistId = match.id;
       const artistName = match.attributes.name;
 
-      // Fetch recent albums
       const albumRes = await fetch(
         `${APPLE_API}/artists/${artistId}/albums?limit=10`,
         { headers },
       );
-      if (!albumRes.ok) continue;
+      if (!albumRes.ok) return [];
       const albumData = await albumRes.json();
 
-      // Collect album IDs that match date window, then batch-fetch tracks
       const matchingAlbums: AppleAlbum[] = [];
       for (const album of (albumData.data || []) as AppleAlbum[]) {
         const releaseDate = album.attributes.releaseDate;
-        // Include future releases up to 4 weeks out for "Coming Soon" feature
-        const futureLimit = new Date(friday + 'T12:00:00');
-        futureLimit.setDate(futureLimit.getDate() + 28);
-        const futureLimitStr = futureLimit.toISOString().split('T')[0];
         if (!releaseDate || releaseDate < cutoffStr || releaseDate > futureLimitStr) continue;
         matchingAlbums.push(album);
       }
+      if (matchingAlbums.length === 0) return [];
 
-      // Batch-fetch tracks for matching albums (up to 25 per request) to get composerName
       const albumTrackMap = new Map<string, { composerName: string | null; tracks: any[] }>();
-      if (matchingAlbums.length > 0) {
-        const batchIds = matchingAlbums.map(a => a.id).slice(0, 25);
-        try {
-          const trackRes = await fetch(
-            `${APPLE_API}/albums?ids=${batchIds.join(',')}&include=tracks`,
-            { headers },
-          );
-          if (trackRes.ok) {
-            const trackData = await trackRes.json();
-            for (const albumDetail of (trackData.data || [])) {
-              const tracks = albumDetail.relationships?.tracks?.data || [];
-              const firstTrack = tracks[0];
-              albumTrackMap.set(albumDetail.id, {
-                composerName: firstTrack?.attributes?.composerName || null,
-                tracks,
-              });
-            }
+      const batchIds = matchingAlbums.map(a => a.id).slice(0, 25);
+      try {
+        const trackRes = await fetch(
+          `${APPLE_API}/albums?ids=${batchIds.join(',')}&include=tracks`,
+          { headers },
+        );
+        if (trackRes.ok) {
+          const trackData = await trackRes.json();
+          for (const albumDetail of (trackData.data || [])) {
+            const tracks = albumDetail.relationships?.tracks?.data || [];
+            const firstTrack = tracks[0];
+            albumTrackMap.set(albumDetail.id, {
+              composerName: firstTrack?.attributes?.composerName || null,
+              tracks,
+            });
           }
-        } catch { /* batch fetch failed — continue without composer data */ }
-      }
+        }
+      } catch { /* batch fetch failed — continue without composer data */ }
 
+      const out: any[] = [];
       for (const album of matchingAlbums) {
         const releaseDate = album.attributes.releaseDate;
         const artUrl = album.attributes.artwork?.url
@@ -193,17 +215,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const trackInfo = albumTrackMap.get(album.id);
         const composerName = trackInfo?.composerName || null;
 
-        // Each album as a track entry
-        const trackId = `apple_${album.id}`;
-        if (seenIds.has(trackId)) continue;
-        seenIds.add(trackId);
-
-        allTracks.push({
+        out.push({
           track_name: album.attributes.name,
           track_number: 1,
           track_uri: '',
           track_spotify_url: '',
-          track_id: trackId,
+          track_id: `apple_${album.id}`,
           duration_ms: trackInfo?.tracks?.[0]?.attributes?.durationInMillis || 0,
           explicit: false,
           album_name: album.attributes.name,
@@ -224,6 +241,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           composer_name: composerName,
         });
       }
+      return out;
+    }
+
+    // Run up to 10 artist lookups concurrently (trusted callers only — frontend
+    // keeps the same 100-artist cap so parallelism stays bounded regardless).
+    const concurrency = isScanSecretAuth(req) ? 10 : 5;
+    const gathered = await runPool(artistNames, concurrency, processArtist);
+
+    // Dedupe by track_id after the pool — preserves first-seen ordering.
+    const seenIds = new Set<string>();
+    const allTracks: any[] = [];
+    for (const t of gathered) {
+      if (seenIds.has(t.track_id)) continue;
+      seenIds.add(t.track_id);
+      allTracks.push(t);
     }
 
     res.setHeader('Cache-Control', 's-maxage=300');
