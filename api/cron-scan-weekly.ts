@@ -396,6 +396,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (includeSpotify) extraParams.push('include_spotify=true');
     const extra = extraParams.length ? '&' + extraParams.join('&') : '';
     const nextUrl = `${scanBaseUrl}/api/cron-scan-weekly?offset=${endIdx}&max_chains=${maxChains}&chain=${nextChain}${extra}`;
+
+    // Apple Music + Spotify both exhibit progressive rate-limit degradation
+    // after ~80s of continuous hammering. Sleep 30s between chains so the
+    // rolling rate window recovers before the next chain starts its API burst.
+    // 30s × ~22 chains = 11min of cumulative pause — worth the cost to keep
+    // every chain productive instead of burning chains 4+ at 0 tracks.
+    console.log(`[CRON] Pacing: sleeping 30s before dispatching chain ${nextChain}`);
+    await new Promise(resolve => setTimeout(resolve, 30000));
+
     console.log(`[CRON] Dispatching → chain ${nextChain}/${maxChains}: artists ${endIdx}-${Math.min(endIdx + BATCH_SIZE, artistNames.length)}`);
     // Fire-and-forget: abort our request 3s after dispatch. Vercel runs the
     // child invocation to completion regardless of our connection — we just
