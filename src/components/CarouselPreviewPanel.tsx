@@ -443,6 +443,8 @@ const CarouselPreviewPanel = forwardRef<CarouselPanelHandle, Props>(function Car
               ]).map(opt => (
                 <button
                   key={opt.value}
+                  data-testid={`aspect-toggle-${opt.value.replace(':', '-')}`}
+                  data-is-active={carouselAspect === opt.value ? 'true' : 'false'}
                   onClick={() => { setCarouselAspect(opt.value); setAllPreviews([]); }}
                   title={`Generate ${opt.label} slides (${opt.sub})`}
                   style={{

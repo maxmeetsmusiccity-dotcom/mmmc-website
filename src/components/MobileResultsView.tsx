@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import type { TrackItem, ReleaseCluster } from '../lib/spotify';
 import { getLastFriday } from '../lib/spotify';
 import type { SelectionSlot } from '../lib/selection';
@@ -540,7 +541,10 @@ export default function MobileResultsView({
                 const ordinal = hasSelection ? mostRecentOrdinalOf(artist) : null;
                 return (
                   <div key={artist.name} style={{ alignSelf: 'start' }}>
-                    <div onClick={() => tapArtist(artist)} style={{
+                    <div
+                      data-testid="tile-grid"
+                      data-artist-name={artist.name}
+                      onClick={() => tapArtist(artist)} style={{
                       borderRadius: 8, overflow: 'hidden', cursor: 'pointer',
                       border: hasSelection ? '2px solid var(--gold)' : '2px solid transparent',
                       background: hasSelection ? 'rgba(212,168,67,0.06)' : 'var(--midnight)',
@@ -594,6 +598,8 @@ export default function MobileResultsView({
                           const isCover = isCoverFeatureTrack(trackId);
                           return (
                             <button
+                              data-testid="cover-feature-star-grid"
+                              data-is-cover={isCover ? 'true' : 'false'}
                               onClick={(e) => { e.stopPropagation(); onSetCoverFeature(trackId); }}
                               style={{
                                 position: 'absolute', bottom: 4, right: 4, zIndex: 3,
@@ -634,6 +640,8 @@ export default function MobileResultsView({
                 const hasSelection = selCount > 0;
                 return (
                   <div key={artist.name}
+                    data-testid="tile-list"
+                    data-artist-name={artist.name}
                     onClick={() => tapArtist(artist)}
                     style={{
                       display: 'flex', alignItems: 'center', gap: 10, padding: '10px 4px',
@@ -679,12 +687,12 @@ export default function MobileResultsView({
         })()}
       </div>
 
-      {/* Wave 7 Block 4 — multi-track artist modal. Fixed full-screen
-          backdrop + centered panel listing every release for this artist
-          and every track inside, matching the NashvilleReleases desktop
-          pattern. Replaces the Block 3 inline flex expansion that pushed
-          every other tile out of view. */}
-      {expandedArtist && (() => {
+      {/* Wave 7 Block 4 — multi-track artist modal. Portaled to document.body
+          so `position: fixed` is anchored to the viewport regardless of any
+          ancestor that introduces a new containing block (transform, filter,
+          backdrop-filter, etc). iOS Safari was painting the modal near the
+          DOM-flow position of the tapped tile instead of centered. */}
+      {expandedArtist && createPortal((() => {
         const artistReleases = releases.filter(r => primaryArtistOf(r.artist_names) === expandedArtist);
         if (artistReleases.length === 0) return null;
         const artistCover = artistReleases[0].tracks[0]?.cover_art_300
@@ -805,7 +813,7 @@ export default function MobileResultsView({
             </div>
           </>
         );
-      })()}
+      })(), document.body)}
 
       {/* Configure bottom sheet — full carousel settings */}
       {showConfig && (() => {
