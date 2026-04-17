@@ -36,7 +36,7 @@
   ],
   "crons": [
     {
-      "path": "/api/cron-scan-weekly?force_rescan=true",
+      "path": "/api/cron-scan-weekly?force_rescan=true&include_spotify=true",
       "schedule": "30 4 * * 5"
     }
   ]
