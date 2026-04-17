@@ -36,8 +36,16 @@
   ],
   "crons": [
     {
+      "path": "/api/preflight",
+      "schedule": "0 4 * * 5"
+    },
+    {
       "path": "/api/cron-scan-weekly?force_rescan=true&include_spotify=true",
       "schedule": "30 4 * * 5"
+    },
+    {
+      "path": "/api/postflight",
+      "schedule": "0 6 * * 5"
     }
   ]
 }
