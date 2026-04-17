@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import { IntelligenceAccumulator, emitIntelligence, type CollaborationSignal, type AppleRejection } from './_scan_intelligence.js';
+import { runHealthProbe } from './scan-health.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -73,6 +74,40 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Cap at 30 to allow room for non-cron callers expanding scope explicitly.
   const maxChains = Math.min(parseInt(req.query.max_chains as string || '25', 10), 30);
   const chainNum = parseInt(req.query.chain as string || '0', 10);
+  const skipPreflight = req.query.skip_preflight === 'true' || req.query.skip_preflight === '1';
+
+  // Pre-flight token health probe (chain 0 only). Post-April-17 guardrail:
+  // running a full scan while tokens are 429'd or 401'd EXTENDS the rate-limit
+  // window and burns the overnight budget. A 5s probe catches it, aborts the
+  // cascade, and lets the next cron run try again later. `skip_preflight=1`
+  // is an escape hatch for emergency scans while tokens are known-degraded.
+  if (chainNum === 0 && !skipPreflight) {
+    try {
+      const health = await runHealthProbe();
+      if (!health.spotify_ok || !health.apple_ok) {
+        console.error('[CRON] Pre-flight FAILED:', JSON.stringify(health));
+        // Record the degraded state for observability. Uses the base column
+        // set to avoid missing-column errors on older schemas.
+        await supabase.from('scan_metadata').upsert({
+          id: 'nashville_weekly',
+          last_scan_week: weekDate,
+          last_scan_at: new Date().toISOString(),
+          status: 'preflight_aborted',
+        });
+        return res.status(503).json({
+          status: 'preflight_aborted',
+          reason: `spotify_ok=${health.spotify_ok} apple_ok=${health.apple_ok}`,
+          health,
+        });
+      }
+      console.log(`[CRON] Pre-flight OK: spotify=${health.spotify.latency_ms}ms apple=${health.apple.latency_ms}ms`);
+    } catch (e) {
+      console.error('[CRON] Pre-flight threw:', e);
+      return res.status(500).json({ status: 'preflight_error', error: (e as Error).message });
+    }
+  } else if (skipPreflight && chainNum === 0) {
+    console.warn('[CRON] skip_preflight=1 — proceeding without token health check');
+  }
 
   // scan_metadata upsert moved below the R2 fetch so we can record the R2
   // generated_at alongside the other fields in a single write.

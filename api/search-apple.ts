@@ -1,35 +1,11 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { SignJWT, importPKCS8 } from 'jose';
 import { bulkLookupCache, saveCacheResult, fetchWith429Retry, RateBudget } from './_platform_cache.js';
 import { verifyAppleIdByIsrc } from './_apple_verify.js';
 import { getSpotifyClientToken } from './_spotify_token.js';
+import { getAppleDeveloperToken } from './_apple_token.js';
 import type { AppleRejection } from './_scan_intelligence.js';
 
-const TEAM_ID = process.env.APPLE_MUSIC_TEAM_ID || '';
-const KEY_ID = process.env.APPLE_MUSIC_KEY_ID || process.env.APPLE_MUSIC_SEARCH_KEY_ID || '';
 const APPLE_API = 'https://api.music.apple.com/v1/catalog/us';
-
-let cachedToken: { token: string; expiresAt: number } | null = null;
-
-async function getAppleToken(): Promise<string> {
-  if (cachedToken && Date.now() < cachedToken.expiresAt) return cachedToken.token;
-
-  if (!TEAM_ID || !KEY_ID) throw new Error('APPLE_MUSIC_TEAM_ID or APPLE_MUSIC_KEY_ID not configured');
-  const privateKeyPem = process.env.APPLE_MUSIC_PRIVATE_KEY;
-  if (!privateKeyPem) throw new Error('APPLE_MUSIC_PRIVATE_KEY not configured');
-
-  const privateKey = await importPKCS8(privateKeyPem, 'ES256');
-  const now = Math.floor(Date.now() / 1000);
-  const token = await new SignJWT({})
-    .setProtectedHeader({ alg: 'ES256', kid: KEY_ID })
-    .setIssuer(TEAM_ID)
-    .setIssuedAt(now)
-    .setExpirationTime(now + 43200) // 12 hours
-    .sign(privateKey);
-
-  cachedToken = { token, expiresAt: Date.now() + 39600000 }; // 11 hours
-  return token;
-}
 
 function getLastFriday(): string {
   const now = new Date();
@@ -142,7 +118,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const token = await getAppleToken();
+    const token = await getAppleDeveloperToken();
     const friday = rawTargetFriday && /^\d{4}-\d{2}-\d{2}$/.test(rawTargetFriday) ? rawTargetFriday : getLastFriday();
     const cutoff = new Date(friday + 'T12:00:00');
     cutoff.setDate(cutoff.getDate() - daysBack);
