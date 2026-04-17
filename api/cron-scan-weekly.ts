@@ -200,13 +200,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   } catch { /* scan_runs table or start_offset column may not exist yet */ }
 
   // Smaller chains: 300 artists per chain fits comfortably under 300s Vercel timeout.
-  // Apple runs first (parallelized, ~15s) so the must-have source completes even
-  // if Spotify stalls; Spotify runs second with its internal throttle (~180s).
+  // Apple runs first (must-have). Spotify is secondary and OFF by default because
+  // the client_credentials app-level rate limit deterministically exhausts after
+  // ~12 min of continuous hammering (chain 4 fails with 429 masquerading as
+  // empty results). Pass ?include_spotify=true to opt back in once a sane
+  // pacing/backoff strategy is in place.
+  const includeSpotify = req.query.include_spotify === 'true' || req.query.include_spotify === '1';
   const BATCH_SIZE = 300;
   const endIdx = Math.min(startIdx + BATCH_SIZE, artistNames.length);
   const batch = artistNames.slice(startIdx, endIdx);
 
-  console.log(`[CRON] Chain ${chainNum}/${maxChains}: scanning artists ${startIdx}-${endIdx} of ${artistNames.length}`);
+  console.log(`[CRON] Chain ${chainNum}/${maxChains}: scanning artists ${startIdx}-${endIdx} of ${artistNames.length} (include_spotify=${includeSpotify})`);
 
   // Call-granularity batches: scan-artists caps at 200, search-apple at 100.
   // Stay at 50 to keep per-call latency bounded and back-pressure smooth.
@@ -267,7 +271,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
   console.log(`[CRON] Apple Music done: ${appleTracks} tracks in ${Date.now() - appleStart}ms`);
 
-  // ── Spotify second (supplementary: popularity, playlist data) ───────────
+  // Artists "scanned" in Apple-only mode is the full batch (Apple handles all of them).
+  // Spotify block below ALSO increments `scanned`; guard against double-counting.
+  if (!includeSpotify) {
+    scanned = batch.length;
+  }
+
+  // ── Spotify second (supplementary: popularity, playlist data) — OFF by default ──
+  if (includeSpotify) {
   console.log(`[CRON] Spotify: scanning ${batch.length} artists (serial with 100ms throttle)...`);
   const spotifyStart = Date.now();
   for (let i = 0; i < batch.length; i += batchSize) {
@@ -312,6 +323,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     scanned += chunk.length;
   }
   console.log(`[CRON] Spotify done: ${spotifyTracks} tracks in ${Date.now() - spotifyStart}ms`);
+  } else {
+    console.log('[CRON] Spotify skipped (include_spotify=false)');
+  }
 
   const totalTracks = appleTracks + spotifyTracks;
   console.log(`[CRON] Chain ${chainNum} totals — apple_tracks: ${appleTracks}, spotify_tracks: ${spotifyTracks}, combined_unique_upserted≈${totalTracks}`);
@@ -377,8 +391,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (!isComplete && chainsRemaining > 0) {
     const nextChain = chainNum + 1;
-    const weekParam = weekOverride ? `&week=${weekOverride}` : '';
-    const nextUrl = `${scanBaseUrl}/api/cron-scan-weekly?offset=${endIdx}&max_chains=${maxChains}&chain=${nextChain}${weekParam}`;
+    const extraParams: string[] = [];
+    if (weekOverride) extraParams.push(`week=${weekOverride}`);
+    if (includeSpotify) extraParams.push('include_spotify=true');
+    const extra = extraParams.length ? '&' + extraParams.join('&') : '';
+    const nextUrl = `${scanBaseUrl}/api/cron-scan-weekly?offset=${endIdx}&max_chains=${maxChains}&chain=${nextChain}${extra}`;
     console.log(`[CRON] Dispatching → chain ${nextChain}/${maxChains}: artists ${endIdx}-${Math.min(endIdx + BATCH_SIZE, artistNames.length)}`);
     // Fire-and-forget: abort our request 3s after dispatch. Vercel runs the
     // child invocation to completion regardless of our connection — we just
