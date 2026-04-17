@@ -139,8 +139,18 @@ export class RateLimitError extends Error {
   }
 }
 
-/** Minimum ms between Spotify API requests — safety floor */
-const MIN_GAP_MS = 150;
+/**
+ * Minimum ms between Spotify API requests — safety floor.
+ *
+ * 150ms (~6.6 req/s, ~400 req/min) overruns Spotify's dev-mode app quota
+ * (~180 req/min per community reports) and causes 429s partway through
+ * scans that silently truncate the follow list: Lainey Wilson /
+ * Kacey Musgraves / etc quietly drop off the end. 400ms (~2.5 req/s,
+ * ~150 req/min) fits comfortably under the dev ceiling while completing
+ * a 200-artist scan in ~80s instead of ~35s. Worth the extra seconds
+ * for completeness.
+ */
+const MIN_GAP_MS = 400;
 let lastCallTime = 0;
 
 async function enforceGap(): Promise<void> {
