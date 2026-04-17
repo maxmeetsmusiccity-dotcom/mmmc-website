@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
+import { IntelligenceAccumulator, emitIntelligence, type CollaborationSignal } from './_scan_intelligence.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -83,6 +84,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Try to load artist list from R2
   let artistNames: string[] = SEED_ARTISTS;
   let r2GeneratedAt: string | null = null;
+  // Normalized lowercase name set — used during collaboration-signal extraction
+  // to check whether a composer / featured performer is in the Nashville
+  // universe. Accent-stripped for robust matching.
+  const universeNormSet = new Set<string>();
+  const normName = (s: string): string => {
+    if (!s) return '';
+    return s.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+  };
   try {
     const apiToken = ND_API_BASE && ND_AUTH_SECRET ? await generateApiToken() : '';
     const r2Url = apiToken ? `${ND_API_BASE}/api/r2?key=browse_artists.json` : '';
@@ -90,25 +99,78 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (r2Resp.ok) {
       const r2Data = await r2Resp.json();
       if (typeof r2Data.generated_at === 'string') r2GeneratedAt = r2Data.generated_at;
-      // R2 file may have artists at top level OR nested in categories
       const names = new Set<string>();
       if (r2Data.artists && r2Data.artists.length > 0) {
-        for (const a of r2Data.artists) names.add(a.name);
+        for (const a of r2Data.artists) { names.add(a.name); universeNormSet.add(normName(a.name)); }
       }
-      // Also extract from category objects (Thread A nests artists inside categories)
       if (Array.isArray(r2Data.categories)) {
         for (const cat of r2Data.categories) {
           if (Array.isArray(cat.artists)) {
-            for (const a of cat.artists) names.add(a.name);
+            for (const a of cat.artists) { names.add(a.name); universeNormSet.add(normName(a.name)); }
           }
         }
       }
       if (names.size > 0) {
         artistNames = [...names];
-        console.log(`[CRON] Loaded ${artistNames.length} artists from R2 (generated_at=${r2GeneratedAt || 'unknown'})`);
+        console.log(`[CRON] Loaded ${artistNames.length} artists from R2 (generated_at=${r2GeneratedAt || 'unknown'}, universe_norm_set=${universeNormSet.size})`);
       }
     }
   } catch { console.log('[CRON] R2 not available, using seed list'); }
+
+  // Scan intelligence accumulator — R13. Every track scanned contributes to
+  // release velocity; every Apple composer credit / multi-artist performer
+  // credit contributes to collaboration signals. Emitted at end of chain.
+  const intel = new IntelligenceAccumulator();
+
+  /** Split a comma / feat / ft / & / x — separated credit string into names. */
+  function splitCreditString(s: string): string[] {
+    if (!s) return [];
+    return s
+      .split(/,|\bfeat\.?\b|\bft\.?\b|\bwith\b|\bx\b|\band\b|&/gi)
+      .map(n => n.trim())
+      .filter(n => n.length > 0);
+  }
+
+  /** Extract collaboration signals from one track and record to accumulator.
+   *  A signal fires when 2+ distinct names from the credit strings
+   *  (performers + Apple composerName) are in the Nashville universe. */
+  function recordCollaborationFromTrack(t: any, source: 'apple' | 'spotify') {
+    const performers = splitCreditString(t.artist_names || '');
+    const composers = splitCreditString(t.composer_name || '');
+    const seen = new Set<string>();
+    const participants: CollaborationSignal['participants'] = [];
+    for (const p of performers) {
+      const n = normName(p);
+      if (!n || seen.has(n)) continue;
+      if (universeNormSet.has(n)) {
+        seen.add(n);
+        participants.push({ name: p, role: participants.length === 0 ? 'primary_performer' : 'feature' });
+      }
+    }
+    for (const c of composers) {
+      const n = normName(c);
+      if (!n || seen.has(n)) continue;
+      if (universeNormSet.has(n)) {
+        seen.add(n);
+        participants.push({ name: c, role: 'composer_credit' });
+      }
+    }
+    if (participants.length >= 2) {
+      intel.recordCollaboration({
+        track_id: t.track_id,
+        track_name: t.track_name,
+        album_name: t.album_name || null,
+        release_date: t.release_date || null,
+        source,
+        participants,
+        raw_artist_string: t.artist_names || undefined,
+        raw_composer_string: t.composer_name || undefined,
+      });
+    }
+    // Always record per-artist velocity
+    const primary = performers[0] || '';
+    if (primary) intel.recordTrack(primary, null, t.release_date || null, t.album_spotify_id || null);
+  }
 
   // Initial scan_metadata upsert (first chain only). Records the R2 snapshot
   // timestamp so we can tell which R2 data this scan is based on. Falls back
@@ -237,6 +299,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const data = await resp.json();
         const tracks = data.tracks || [];
         appleTracks += tracks.length;
+        // R13: extract collaboration + velocity signals from every track
+        for (const t of tracks) recordCollaborationFromTrack(t, 'apple');
         if (tracks.length > 0) {
           const rows = tracks.map((t: any) => {
             const row: Record<string, any> = {
@@ -293,6 +357,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const data = await resp.json();
         const tracks = data.tracks || [];
         spotifyTracks += tracks.length;
+        // R13: extract collaboration + velocity signals from every track
+        for (const t of tracks) recordCollaborationFromTrack(t, 'spotify');
         if (tracks.length > 0) {
           const rows = tracks.map((t: any) => ({
             scan_week: weekDate,
@@ -450,6 +516,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (upd.error) console.error('[CRON] scan_runs update error:', upd.error);
   }
 
+  // R13: emit the scan intelligence artifact for Thread A to ingest.
+  // Every chain emits its own row — the cascade can aggregate across chains
+  // by scan_week + generated_at window. Collaboration signals are the highest-
+  // value piece: two+ Nashville-universe artists on the same track = co-write.
+  let intelRowId: number | undefined;
+  try {
+    const artifact = intel.build({
+      scan_week: weekDate,
+      scanner: 'nmf_weekly_cron',
+      scope: {
+        universe_source: 'r2://nd-profiles/browse_artists.json',
+        universe_generated_at: r2GeneratedAt || undefined,
+        artists_input: batch.length,
+        artists_with_releases: 0,  // populated by cascade during ingest
+        tracks_found: totalTracks,
+      },
+      notes: `chain ${chainNum}/${maxChains} offset=${startIdx}-${endIdx} include_spotify=${includeSpotify}`,
+    });
+    const emit = await emitIntelligence(artifact);
+    if (emit.ok) {
+      intelRowId = emit.rowId;
+      console.log(`[CRON] Emitted scan_intelligence row id=${intelRowId} | collaborations=${artifact.collaboration_signals.length} velocity_artists=${artifact.release_velocity.length}`);
+    } else {
+      console.error('[CRON] emitIntelligence failed:', emit.error);
+    }
+  } catch (e) {
+    console.error('[CRON] scan_intelligence build/emit threw:', e);
+  }
+
   return res.status(200).json({
     status: chainStatus,
     week: weekDate,
@@ -460,6 +555,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     apple_tracks: appleTracks,
     spotify_tracks: spotifyTracks,
     range: `${startIdx}-${endIdx} of ${artistNames.length}`,
+    intel_row_id: intelRowId ?? null,
     next: isComplete ? null : `/api/cron-scan-weekly?offset=${endIdx}&max_chains=${maxChains}&chain=${chainNum + 1}`,
   });
 }
