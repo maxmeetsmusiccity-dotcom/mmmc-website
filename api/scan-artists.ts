@@ -49,11 +49,13 @@ async function findArtist(token: string, name: string): Promise<{ id: string; na
   const items = data.artists?.items;
   if (!items?.length) return null;
 
-  // Prefer exact name match (case-insensitive)
+  // STRICT: require exact case-insensitive name match. Falling back to the
+  // first result silently polluted Nashville data (e.g. "ANNALEA" fuzzy-matched
+  // to "Alea Aquarius" on the Apple side). A missed match beats a wrong match.
   const lower = name.toLowerCase();
-  const exact = items.find((a: { name: string }) => a.name.toLowerCase() === lower);
-  const best = exact || items[0];
-  return { id: best.id, name: best.name };
+  const exact = items.find((a: { name: string }) => (a.name || '').toLowerCase() === lower);
+  if (!exact) return null;
+  return { id: exact.id, name: exact.name };
 }
 
 interface SpotifyAlbum {

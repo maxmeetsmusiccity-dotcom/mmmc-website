@@ -190,8 +190,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           saveCacheResult({ platform: 'apple', artistName: trimmed, id: null, error: 'not_found' }).catch(() => {});
           return [];
         }
+        // STRICT matching: require exact (case-insensitive) name equality.
+        // Falling back to `artists[0]` silently polluted the data — e.g. searching
+        // for "ANNALEA" (a Nashville artist) returned "Alea Aquarius" (a German
+        // audiodrama) as the top fuzzy match, whose albums then landed in the
+        // Nashville release feed. A missed match beats a wrong match.
         const lower = trimmed.toLowerCase();
-        const match = artists.find((a: any) => a.attributes.name.toLowerCase() === lower) || artists[0];
+        const match = artists.find((a: any) => (a.attributes?.name || '').toLowerCase() === lower);
+        if (!match) {
+          saveCacheResult({ platform: 'apple', artistName: trimmed, id: null, error: 'no_exact_match' }).catch(() => {});
+          return [];
+        }
         artistId = match.id;
         artistName = match.attributes.name;
         // Write-through: cache the resolved ID so the next scan is fast
