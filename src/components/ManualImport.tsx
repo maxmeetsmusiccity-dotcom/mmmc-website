@@ -68,8 +68,8 @@ export default function ManualImport({ onImport, scanEndpoint = '/api/scan-artis
       setError('Paste at least one artist name (one per line)');
       return;
     }
-    if (names.length > 200) {
-      setError('Max 200 artists per scan. You have ' + names.length + '.');
+    if (names.length > 1000) {
+      setError('Max 1000 artists per scan. You have ' + names.length + '.');
       return;
     }
 
@@ -181,7 +181,7 @@ export default function ManualImport({ onImport, scanEndpoint = '/api/scan-artis
             </span>
           </div>
           <p style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)', marginTop: 6 }}>
-            No Spotify account needed. Uses server-side catalog search. Max 200 artists per scan.
+            No Spotify account needed. Uses server-side catalog search. Max 1000 artists per scan (chunked server-side for safety).
           </p>
         </div>
       )}

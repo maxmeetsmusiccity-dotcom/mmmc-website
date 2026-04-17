@@ -179,8 +179,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!Array.isArray(artistNames) || artistNames.length === 0) {
     return res.status(400).json({ error: 'artistNames array required' });
   }
-  if (artistNames.length > 200) {
-    return res.status(400).json({ error: 'Max 200 artists per request' });
+  if (artistNames.length > 1000) {
+    return res.status(400).json({ error: 'Max 1000 artists per request' });
   }
 
   try {
