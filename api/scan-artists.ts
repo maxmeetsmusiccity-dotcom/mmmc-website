@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { bulkLookupCache, saveCacheResult, fetchWith429Retry } from './_platform_cache.js';
 
 const SPOTIFY_API = 'https://api.spotify.com/v1';
 const TOKEN_URL = 'https://accounts.spotify.com/api/token';
@@ -193,15 +194,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const seenTrackIds = new Set<string>();
     let scannedCount = 0;
 
+    // Bulk-lookup the platform-ID cache up front so the main loop can skip
+    // the Spotify search step whenever we've already resolved an artist's ID.
+    const cacheMap = await bulkLookupCache(artistNames);
+
     for (const name of artistNames) {
       const trimmed = name.trim();
       if (!trimmed) continue;
 
-      const artist = await findArtist(token, trimmed);
+      // Try cache first. Cache hit → skip search, go directly to /albums.
+      // Cache miss → run findArtist (existing path) and persist the result
+      // (hit or miss) so the next scan is cheaper.
+      const cached = cacheMap.get(trimmed.toLowerCase());
+      let artist: { id: string; name: string } | null = null;
+      if (cached?.spotify_artist_id) {
+        artist = { id: cached.spotify_artist_id, name: cached.spotify_display_name || trimmed };
+      } else {
+        // Skip re-searching artists that have repeatedly not been found on Spotify
+        // (saves budget for the real universe). 3 strikes = stop searching.
+        if (cached && cached.spotify_not_found_count >= 3) { scannedCount++; continue; }
+        artist = await findArtist(token, trimmed);
+        // Write-through: record the lookup result (hit OR miss)
+        saveCacheResult({
+          platform: 'spotify',
+          artistName: trimmed,
+          id: artist?.id ?? null,
+          displayName: artist?.name ?? null,
+          error: artist ? undefined : 'not_found',
+        }).catch(() => {});
+      }
       if (!artist) { scannedCount++; continue; }
 
-      // Fetch recent albums
-      const albumRes = await fetch(
+      // Fetch recent albums (retries transient 429s with Retry-After backoff)
+      const albumRes = await fetchWith429Retry(
         `${SPOTIFY_API}/artists/${artist.id}/albums?include_groups=album,single&market=US&limit=20`,
         { headers: { Authorization: `Bearer ${token}` } },
       );

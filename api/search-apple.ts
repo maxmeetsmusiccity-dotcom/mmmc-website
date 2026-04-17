@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { SignJWT, importPKCS8 } from 'jose';
+import { bulkLookupCache, saveCacheResult, fetchWith429Retry } from './_platform_cache.js';
 
 const TEAM_ID = process.env.APPLE_MUSIC_TEAM_ID || '';
 const KEY_ID = process.env.APPLE_MUSIC_KEY_ID || process.env.APPLE_MUSIC_SEARCH_KEY_ID || '';
@@ -150,26 +151,49 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const headers = { Authorization: `Bearer ${token}` };
 
+    // Bulk-lookup the platform-ID cache so processArtist() can skip the search
+    // step whenever we've already resolved an Apple artist ID in a prior scan.
+    const cacheMap = await bulkLookupCache(artistNames);
+
     // Worker: look up one artist and return all tracks (albums) in the date window.
     async function processArtist(name: string): Promise<any[]> {
       const trimmed = name.trim();
       if (!trimmed) return [];
 
-      const searchRes = await fetch(
-        `${APPLE_API}/search?term=${encodeURIComponent(trimmed)}&types=artists&limit=3`,
-        { headers },
-      );
-      if (!searchRes.ok) return [];
-      const searchData = await searchRes.json();
-      const artists = searchData.results?.artists?.data;
-      if (!artists?.length) return [];
+      let artistId: string;
+      let artistName: string;
 
-      const lower = trimmed.toLowerCase();
-      const match = artists.find((a: any) => a.attributes.name.toLowerCase() === lower) || artists[0];
-      const artistId = match.id;
-      const artistName = match.attributes.name;
+      const cached = cacheMap.get(trimmed.toLowerCase());
+      if (cached?.apple_artist_id) {
+        // Cache hit — skip search entirely
+        artistId = cached.apple_artist_id;
+        artistName = cached.apple_display_name || trimmed;
+      } else {
+        // Skip artists we've failed to find 3+ times (budget preservation)
+        if (cached && cached.apple_not_found_count >= 3) return [];
+        const searchRes = await fetchWith429Retry(
+          `${APPLE_API}/search?term=${encodeURIComponent(trimmed)}&types=artists&limit=3`,
+          { headers },
+        );
+        if (!searchRes.ok) {
+          saveCacheResult({ platform: 'apple', artistName: trimmed, id: null, error: `search_${searchRes.status}` }).catch(() => {});
+          return [];
+        }
+        const searchData = await searchRes.json();
+        const artists = searchData.results?.artists?.data;
+        if (!artists?.length) {
+          saveCacheResult({ platform: 'apple', artistName: trimmed, id: null, error: 'not_found' }).catch(() => {});
+          return [];
+        }
+        const lower = trimmed.toLowerCase();
+        const match = artists.find((a: any) => a.attributes.name.toLowerCase() === lower) || artists[0];
+        artistId = match.id;
+        artistName = match.attributes.name;
+        // Write-through: cache the resolved ID so the next scan is fast
+        saveCacheResult({ platform: 'apple', artistName: trimmed, id: artistId, displayName: artistName }).catch(() => {});
+      }
 
-      const albumRes = await fetch(
+      const albumRes = await fetchWith429Retry(
         `${APPLE_API}/artists/${artistId}/albums?limit=10`,
         { headers },
       );
