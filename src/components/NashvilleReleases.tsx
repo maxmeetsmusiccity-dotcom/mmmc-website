@@ -501,7 +501,13 @@ export default function NashvilleReleases({ showcases, onImport, activeShowcase,
         width: '100%', marginBottom: 12, minHeight: 44,
       }}
     >
-      <option value="">All Nashville ({filteredStats.releases} releases, {filteredStats.tracks} tracks)</option>
+      {/* "All Nashville" count must be the UNFILTERED base — not `filtered`, which
+          already has the active showcase applied (causing it to mirror the
+          selected showcase count). Use `baseReleases` + the same dedupe rule. */}
+      {(() => {
+        const all = countStats(baseReleases);
+        return <option value="">All Nashville ({all.releases} releases, {all.tracks} tracks)</option>;
+      })()}
       {sortedShowcases.map(s => {
         const stats = showcaseStats.get(s.id);
         const label = stats && stats.releases > 0
