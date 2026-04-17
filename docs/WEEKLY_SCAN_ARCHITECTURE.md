@@ -121,6 +121,37 @@ albums and confirm at least one track's ISRC matches a known Spotify track
 ISRC for the same Nashville identity. Zero ISRC overlap = reject the match,
 flag for human review, continue with Spotify-only data for that artist.
 
+### R14. ISRC verify policy: reject only on confirmed mismatch; abstain on API failure.
+An initial strict "reject on anything non-verified" policy is too aggressive —
+under Spotify rate-limit storms it rejects every artist and poisons cache
+coverage for weeks. The correct policy:
+
+- `verified === true` → ACCEPT (cache the Apple ID).
+- `verified === false, reason === 'no_isrc_overlap'` → REJECT (both catalogs
+  returned ISRCs, zero overlap = confirmed different person).
+- Any other `verified === false` (`spotify_no_tracks`, `apple_no_tracks`,
+  `spotify_api_error`, `apple_api_error`) → ABSTAIN. Cache the Apple ID, log
+  a warning. Transient errors heal on their own; reject-loops do not.
+
+The rejection must be the DURABLE signal carried to Thread A via
+`nmf_scan_intelligence.apple_rejections` so ND can bind the correct Apple ID
+on the next cascade. Verified April 17 2026 when Spotify dev quota was 429ing
+every `/artists/{id}/albums` call and the strict policy would have blocked
+every new Apple cache write.
+
+### R15. Token health probes must target the hot-path endpoint, not `/search`.
+Spotify applies per-endpoint quotas. Observed April 17 2026: the
+`/v1/search` endpoint returned `200` while `/v1/artists/{id}/albums`
+(the endpoint the scan actually hammers) returned `429` on the same token at
+the same time. A probe that only tests `/search` gives false positives that
+let the scan start against already-poisoned `/albums` quota.
+
+- Spotify probe: `GET /v1/artists/6tPHARSq45lQ8BSALCfkFC/albums` (Lainey Wilson)
+- Apple probe: `GET /v1/catalog/us/artists/907166363/albums` (Lainey Wilson)
+
+Use a well-known Nashville artist with a stable catalog. If that artist is
+ever deleted or renamed, pick another from the canonical seed list.
+
 ### R13. Every scan emits intelligence back to ND.
 The scan is a SENSOR, not just a consumer. After every run, Thread C emits
 `nmf_scan_intelligence__YYYY-MM-DD.json` to R2 containing:
@@ -218,16 +249,29 @@ silently logged and never alerted on. Monitoring gaps:
 - cron response includes `apple_tracks` and `spotify_tracks` per-chain.
 - Console logs for each chain include duration, track counts, and status.
 
+### Built (April 17 2026, Session 4)
+
+- **`/api/scan-health`** — token health probe (R15). Hits the hot-path
+  `/albums` endpoint for both platforms, returns 200/503 with per-platform
+  latency and HTTP status. Used by pre-flight.
+- **`/api/preflight`** — Friday 04:00 UTC cron (30 min before scan). Checks
+  tokens, R2 universe ≥ 5000, cache ≥ 5000, `scan_metadata` not stuck. Slack
+  alerts on failure (falls back to log-only if SLACK_WEBHOOK_URL unset).
+- **`/api/postflight`** — Friday 06:00 UTC cron (90 min after scan). Checks
+  release count ≥ 200, status = 'complete', ≥ 1 intel row emitted, no silent-
+  failure chains (tracks_found=0 AND duration_ms<5000). Slack alerts.
+- **Cron chain-0 pre-flight gate** in `cron-scan-weekly.ts`: if tokens are
+  degraded on the pre-scan probe, abort before R2 load. `skip_preflight=1`
+  escape hatch for emergency scans while tokens are known-degraded.
+
 ### Required (not yet built)
 
-- **Zero-track alert.** If the Friday cron sum-of-tracks-this-week < 100, page
-  on-call. Any number below that means the scan broke.
+- **Slack webhook wiring.** `SLACK_WEBHOOK_URL` env var is the only missing
+  piece — once set, preflight/postflight alerts route to Slack. Without it
+  they log-only.
 - **Week-over-week anomaly alert.** If this week's release count is < 50% of
   the rolling 4-week average, alert. Catches silent regressions like the
   fuzzy-match pollution that inflates counts without reflecting reality.
-- **Rate-limit health probe.** Hourly call to Spotify `/v1/me` and Apple
-  catalog search. Any 429 response → alert. Pre-warning of imminent overnight
-  run trouble.
 - **SCAN_SECRET integrity check.** On boot, compare the env var's length and
   prefix to a known-good fingerprint stored in Supabase. If mismatched, refuse
   to run the cron and alert. (The April 17 root cause was a trailing `\n`
