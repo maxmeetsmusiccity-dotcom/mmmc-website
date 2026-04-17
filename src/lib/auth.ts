@@ -26,7 +26,11 @@ function base64url(buf: ArrayBuffer): string {
 export async function startAuth(): Promise<void> {
   const verifier = generateRandomString(128);
   const challenge = base64url(await sha256(verifier));
-  sessionStorage.setItem('pkce_verifier', verifier);
+  // localStorage (not sessionStorage): sessionStorage is tab/session-scoped
+  // and can be cleared during Spotify's redirect chain, especially in
+  // incognito mode — produces "Missing PKCE verifier" on callback. The
+  // verifier is single-use and deleted in exchangeCode on success.
+  localStorage.setItem('pkce_verifier', verifier);
 
   const params = new URLSearchParams({
     client_id: CLIENT_ID,
@@ -41,7 +45,9 @@ export async function startAuth(): Promise<void> {
 }
 
 export async function exchangeCode(code: string): Promise<string> {
-  const verifier = sessionStorage.getItem('pkce_verifier');
+  // Prefer localStorage (current). Fall back to sessionStorage for in-flight
+  // auth flows started before the storage change so no user is stranded.
+  const verifier = localStorage.getItem('pkce_verifier') || sessionStorage.getItem('pkce_verifier');
   if (!verifier) throw new Error('Missing PKCE verifier');
 
   const res = await fetch('https://accounts.spotify.com/api/token', {
@@ -62,7 +68,8 @@ export async function exchangeCode(code: string): Promise<string> {
   }
 
   const data = await res.json();
-  sessionStorage.removeItem('pkce_verifier');
+  localStorage.removeItem('pkce_verifier');
+  sessionStorage.removeItem('pkce_verifier'); // clear legacy key too
   sessionStorage.setItem('spotify_token', data.access_token);
   if (data.refresh_token) {
     sessionStorage.setItem('spotify_refresh_token', data.refresh_token);
