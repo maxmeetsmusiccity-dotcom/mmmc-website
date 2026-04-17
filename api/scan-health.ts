@@ -18,6 +18,14 @@ const SPOTIFY_API = 'https://api.spotify.com/v1';
 const APPLE_API = 'https://api.music.apple.com/v1/catalog/us';
 const PROBE_TIMEOUT_MS = 5000;
 
+// Stable artist IDs for endpoint-specific probes. Lainey Wilson picked because
+// she's the canonical "healthy Nashville artist" — reliably present on both
+// platforms with an active catalog. Use /albums NOT /search: Spotify applies
+// per-endpoint quotas, so /search can return 200 while /albums is 429. The
+// scan hammers /albums, so that's the endpoint whose health matters.
+const SPOTIFY_PROBE_ARTIST_ID = '6tPHARSq45lQ8BSALCfkFC'; // Lainey Wilson
+const APPLE_PROBE_ARTIST_ID = '907166363';                // Lainey Wilson
+
 const SCAN_SECRET = process.env.SCAN_SECRET || '';
 
 function isAuthorized(req: VercelRequest): boolean {
@@ -60,7 +68,7 @@ async function probeSpotify(): Promise<ProbeOutcome> {
     return { ok: false, status: null, latency_ms: Date.now() - tokenStart, error: `token_failed:${(e as Error).message}` };
   }
   const { resp, latency_ms, aborted, netError } = await probeWithTimeout(
-    `${SPOTIFY_API}/search?q=test&type=artist&limit=1`,
+    `${SPOTIFY_API}/artists/${SPOTIFY_PROBE_ARTIST_ID}/albums?market=US&limit=1`,
     { headers: { Authorization: `Bearer ${token}` } },
   );
   if (!resp) return { ok: false, status: null, latency_ms, error: aborted ? 'timeout' : (netError || 'network_error') };
@@ -83,7 +91,7 @@ async function probeApple(): Promise<ProbeOutcome> {
     return { ok: false, status: null, latency_ms: Date.now() - tokenStart, error: `token_failed:${(e as Error).message}` };
   }
   const { resp, latency_ms, aborted, netError } = await probeWithTimeout(
-    `${APPLE_API}/search?term=test&types=artists&limit=1`,
+    `${APPLE_API}/artists/${APPLE_PROBE_ARTIST_ID}/albums?limit=1&sort=-releaseDate`,
     { headers: { Authorization: `Bearer ${token}` } },
   );
   if (!resp) return { ok: false, status: null, latency_ms, error: aborted ? 'timeout' : (netError || 'network_error') };
