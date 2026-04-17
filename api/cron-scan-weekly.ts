@@ -73,17 +73,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const maxChains = Math.min(parseInt(req.query.max_chains as string || '25', 10), 30);
   const chainNum = parseInt(req.query.chain as string || '0', 10);
 
-  // Update scan metadata (only reset counters on first chain)
-  if (chainNum === 0) {
-    await supabase.from('scan_metadata').upsert({
-      id: 'nashville_weekly',
-      last_scan_week: weekDate,
-      last_scan_at: new Date().toISOString(),
-      status: 'scanning',
-      total_artists_scanned: 0,
-      total_tracks_found: 0,
-    });
-  }
+  // scan_metadata upsert moved below the R2 fetch so we can record the R2
+  // generated_at alongside the other fields in a single write.
 
   // Observability: measure chain duration from here (includes R2 load + self-heal lookup)
   const chainStartMs = Date.now();
@@ -118,6 +109,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
   } catch { console.log('[CRON] R2 not available, using seed list'); }
+
+  // Initial scan_metadata upsert (first chain only). Records the R2 snapshot
+  // timestamp so we can tell which R2 data this scan is based on. Falls back
+  // to the same upsert without r2_generated_at if the column doesn't exist yet.
+  // Schema migration (run once in Supabase):
+  //   ALTER TABLE scan_metadata ADD COLUMN IF NOT EXISTS r2_generated_at timestamptz;
+  if (chainNum === 0) {
+    const baseMetadata: Record<string, any> = {
+      id: 'nashville_weekly',
+      last_scan_week: weekDate,
+      last_scan_at: new Date().toISOString(),
+      status: 'scanning',
+      total_artists_scanned: 0,
+      total_tracks_found: 0,
+    };
+    const withR2 = { ...baseMetadata, r2_generated_at: r2GeneratedAt };
+    const first = await supabase.from('scan_metadata').upsert(withR2);
+    if (first.error?.code === 'PGRST204') {
+      // Column not yet migrated — fall back to base columns only
+      await supabase.from('scan_metadata').upsert(baseMetadata);
+      console.warn('[CRON] scan_metadata.r2_generated_at column missing — run migration');
+    } else if (first.error) {
+      console.error('[CRON] scan_metadata upsert error:', first.error);
+    }
+  }
 
   // Seed artists FIRST — they're the active Nashville performers most likely to release
   const seedSet = new Set(SEED_ARTISTS.map(n => n.toLowerCase()));
