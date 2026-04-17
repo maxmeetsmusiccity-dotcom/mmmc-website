@@ -400,15 +400,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       duration_ms: Date.now() - chainStartMs,
       status: chainStatus,
     };
-    // Best-effort: include per-source counts if the columns exist. If not, the
-    // second attempt without them still writes the aggregates.
-    try {
-      await supabase.from('scan_runs')
-        .update({ ...baseUpdate, apple_tracks: appleTracks, spotify_tracks: spotifyTracks })
-        .eq('id', scanRunId);
-    } catch {
-      try { await supabase.from('scan_runs').update(baseUpdate).eq('id', scanRunId); } catch { /* scan_runs may not exist yet */ }
-    }
+    // Per-source counts (apple_tracks / spotify_tracks) live only in logs +
+    // the JSON response — not in scan_runs — so we don't depend on a schema
+    // migration. supabase-js returns {error} without throwing on unknown columns,
+    // so silent write-loss is the trap we avoid by only sending known columns.
+    const upd = await supabase.from('scan_runs').update(baseUpdate).eq('id', scanRunId);
+    if (upd.error) console.error('[CRON] scan_runs update error:', upd.error);
   }
 
   return res.status(200).json({
