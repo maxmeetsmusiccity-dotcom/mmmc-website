@@ -239,7 +239,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             });
           }
         }
-      } catch { /* batch fetch failed — continue without composer data */ }
+      } catch { /* batch fetch failed — fall back to album-level entry only */ }
 
       const out: any[] = [];
       for (const album of matchingAlbums) {
@@ -251,32 +251,75 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         const trackInfo = albumTrackMap.get(album.id);
         const composerName = trackInfo?.composerName || null;
+        const albumTracks = trackInfo?.tracks || [];
+        const albumType = album.attributes.isSingle ? 'single' : 'album';
+        // Grouping key the UI can use to cluster rows from the same album.
+        // Prefix with apple_album_ so it doesn't collide with Spotify album IDs.
+        const albumGroupId = `apple_album_${album.id}`;
 
-        out.push({
-          track_name: album.attributes.name,
-          track_number: 1,
-          track_uri: '',
-          track_spotify_url: '',
-          track_id: `apple_${album.id}`,
-          duration_ms: trackInfo?.tracks?.[0]?.attributes?.durationInMillis || 0,
-          explicit: false,
-          album_name: album.attributes.name,
-          artist_names: artistName,
-          artist_id: artistId,
-          artist_spotify_url: '',
-          artist_genres: [],
-          artist_followers: 0,
-          album_type: album.attributes.isSingle ? 'single' : 'album',
-          album_spotify_url: '',
-          album_spotify_id: '',
-          release_date: releaseDate,
-          total_tracks: album.attributes.trackCount,
-          cover_art_640: artUrl,
-          cover_art_300: art300,
-          cover_art_64: art300,
-          apple_music_url: album.attributes.url,
-          composer_name: composerName,
-        });
+        // Emit one row per track when we have the track list. Falls back to a
+        // single album-level row if the track fetch failed. Brooke Lee's EP
+        // should appear as N rows under the same album card, not one.
+        if (albumTracks.length > 0) {
+          for (const track of albumTracks) {
+            const ta = track.attributes || {};
+            out.push({
+              track_name: ta.name || album.attributes.name,
+              track_number: ta.trackNumber || 1,
+              track_uri: '',
+              track_spotify_url: '',
+              // track_id: prefer the ISRC (stable across platforms) then the
+              // Apple catalog id, falling back to a synthesized key.
+              track_id: ta.isrc ? `apple_isrc_${ta.isrc}` : `apple_track_${track.id}`,
+              duration_ms: ta.durationInMillis || 0,
+              explicit: false,
+              album_name: album.attributes.name,
+              artist_names: artistName,
+              artist_id: artistId,
+              artist_spotify_url: '',
+              artist_genres: [],
+              artist_followers: 0,
+              album_type: albumType,
+              album_spotify_url: '',
+              album_spotify_id: albumGroupId,
+              release_date: releaseDate,
+              total_tracks: album.attributes.trackCount,
+              cover_art_640: artUrl,
+              cover_art_300: art300,
+              cover_art_64: art300,
+              apple_music_url: ta.url || album.attributes.url,
+              composer_name: ta.composerName || composerName,
+            });
+          }
+        } else {
+          // Fallback when Apple's track batch fetch failed — preserve prior
+          // album-level behavior so we don't lose the release entirely.
+          out.push({
+            track_name: album.attributes.name,
+            track_number: 1,
+            track_uri: '',
+            track_spotify_url: '',
+            track_id: `apple_${album.id}`,
+            duration_ms: 0,
+            explicit: false,
+            album_name: album.attributes.name,
+            artist_names: artistName,
+            artist_id: artistId,
+            artist_spotify_url: '',
+            artist_genres: [],
+            artist_followers: 0,
+            album_type: albumType,
+            album_spotify_url: '',
+            album_spotify_id: albumGroupId,
+            release_date: releaseDate,
+            total_tracks: album.attributes.trackCount,
+            cover_art_640: artUrl,
+            cover_art_300: art300,
+            cover_art_64: art300,
+            apple_music_url: album.attributes.url,
+            composer_name: composerName,
+          });
+        }
       }
       return out;
     }
