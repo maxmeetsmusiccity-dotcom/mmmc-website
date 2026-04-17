@@ -198,8 +198,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         saveCacheResult({ platform: 'apple', artistName: trimmed, id: artistId, displayName: artistName }).catch(() => {});
       }
 
+      // CRITICAL: Apple's default sort for /artists/{id}/albums is NOT chronological.
+      // Without `sort=-releaseDate`, a brand-new single from a prolific artist
+      // (Kacey Musgraves, Lainey Wilson, etc — decades of catalog) sits at
+      // position 50+ and is invisible to any reasonable `limit`. This was the
+      // root cause of "why is Kacey's April 17 release missing" on April 17 2026.
+      // Also bump limit 10 -> 25 so catalog-heavy artists don't truncate newer
+      // singles during a prolific release window.
       const albumRes = await fetchWith429Retry(
-        `${APPLE_API}/artists/${artistId}/albums?limit=10`,
+        `${APPLE_API}/artists/${artistId}/albums?limit=25&sort=-releaseDate`,
         { headers },
         budget,
       );
