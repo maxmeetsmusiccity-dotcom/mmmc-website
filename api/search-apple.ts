@@ -221,11 +221,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // Apple is necessary but NOT sufficient — "Mark Williams" resolves to
         // a Nashville country artist on Spotify AND a UK classical conductor
         // on Apple, both exact-name matches. Without this gate, we cache the
-        // wrong person and poison every subsequent scan. Only runs when ND has
-        // already given us a Spotify anchor ID for this artist.
+        // wrong person and poison every subsequent scan.
+        //
+        // Policy: REJECT only on `no_isrc_overlap` — a CONFIRMED mismatch
+        // where both catalogs returned ISRCs and zero overlapped. On API
+        // failure (Spotify 429, Apple outage, either side returned empty due
+        // to a network error) we ABSTAIN: cache the Apple ID, log, and move
+        // on. Blocking cache writes on transient errors would make a single
+        // Spotify rate-limit storm poison every scan for weeks. Verified on
+        // April 17 2026 when Spotify dev quota was 429ing every call.
         if (cached?.spotify_artist_id) {
-          let verified = false;
-          let reason: AppleRejection['reason'] = 'spotify_not_resolvable';
+          let verifyOk: boolean | null = null;            // true=accept, false=reject, null=abstain
+          let rejectionReason: AppleRejection['reason'] | null = null;
+          let abstainReason: string | null = null;
           try {
             if (!spotifyTokenCache) spotifyTokenCache = await getSpotifyClientToken();
             const v = await verifyAppleIdByIsrc(
@@ -235,35 +243,45 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               token,
               budget,
             );
-            verified = v.verified;
-            if (!verified) {
-              reason = v.reason === 'apple_no_tracks' ? 'apple_no_albums'
-                : v.reason === 'no_isrc_overlap' ? 'no_isrc_overlap'
-                : 'spotify_not_resolvable';
+            if (v.verified) {
+              verifyOk = true;
+            } else if (v.reason === 'no_isrc_overlap') {
+              verifyOk = false;
+              rejectionReason = 'no_isrc_overlap';
+            } else {
+              // spotify_no_tracks / apple_no_tracks / spotify_api_error /
+              // apple_api_error — could be transient. Don't block caching.
+              verifyOk = null;
+              abstainReason = v.reason || 'unknown';
             }
           } catch (e) {
             console.warn('[search-apple] ISRC verify threw for', trimmed, e);
-            verified = false;
+            verifyOk = null;
+            abstainReason = 'verify_threw';
           }
-          if (!verified) {
+          if (verifyOk === false) {
             appleRejections.push({
               nashville_name: trimmed,
               spotify_artist_id: cached.spotify_artist_id,
               apple_artist_id_rejected: artistId,
               apple_display_name_rejected: artistName,
-              reason,
+              reason: rejectionReason!,
             });
-            // Record a cache MISS (not a success) — transient errors auto-heal
-            // next scan. The rejection is the durable signal via intelligence.
+            // Cache MISS so the next scan re-attempts. The rejection is the
+            // durable signal flowing via intelligence to Thread A.
             saveCacheResult({
               platform: 'apple',
               artistName: trimmed,
               id: null,
-              error: `isrc_verify_failed:${reason}`,
+              error: `isrc_verify_rejected:${rejectionReason}`,
             }).catch(() => {});
             return [];
           }
-          appleVerifiedCount += 1;
+          if (verifyOk === true) {
+            appleVerifiedCount += 1;
+          } else {
+            console.warn(`[search-apple] ISRC verify abstain for ${trimmed} reason=${abstainReason} — caching Apple ID without verification`);
+          }
         }
 
         // Write-through: cache the resolved ID so the next scan is fast
