@@ -269,15 +269,21 @@ export async function fetchFollowedArtists(
   forceRefresh = false,
   signal?: AbortSignal,
 ): Promise<SpotifyArtist[]> {
-  // Check localStorage cache first
+  // Check localStorage cache first. TTL is 1 hour, not 7 days — Max's follow
+  // list changes weekly (he follows new Nashville artists all the time), and
+  // a week-long cache silently masked every new follow from the scan. One hour
+  // is long enough to avoid pounding /me/following on repeated scans in the
+  // same session, short enough that next-day scans pick up yesterday's
+  // follows.
+  const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
   if (!forceRefresh) {
     try {
       const cached = localStorage.getItem('nmf_followed_artists');
       if (cached) {
         const { artists, timestamp } = JSON.parse(cached);
-        if (artists?.length > 0 && Date.now() - timestamp < 7 * 24 * 60 * 60 * 1000) {
+        if (artists?.length > 0 && Date.now() - timestamp < CACHE_TTL_MS) {
           onProgress(artists.length, artists.length);
-          if (import.meta.env.DEV) console.log(`[SCAN] Loaded ${artists.length} artists from cache`);
+          if (import.meta.env.DEV) console.log(`[SCAN] Loaded ${artists.length} artists from cache (age: ${Math.round((Date.now() - timestamp)/60000)}min)`);
           return artists;
         }
       }
