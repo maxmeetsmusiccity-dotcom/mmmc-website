@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { bulkLookupCache, saveCacheResult, fetchWith429Retry, RateBudget } from './_platform_cache.js';
+import { bulkLookupCache, saveCacheResult, fetchWith429Retry, RateBudget, normalizeTrackName } from './_platform_cache.js';
 
 const SPOTIFY_API = 'https://api.spotify.com/v1';
 const TOKEN_URL = 'https://accounts.spotify.com/api/token';
@@ -194,6 +194,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const allTracks: TrackResult[] = [];
     const seenTrackIds = new Set<string>();
+    const seenTrackNameKeys = new Set<string>();  // M-Z11: (artist_id, normalizedName) dedup
     let scannedCount = 0;
 
     // Single shared retry-sleep budget across the entire handler. Vercel's
@@ -264,6 +265,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         for (const t of (trackData.items || []) as SpotifyTrack[]) {
           if (seenTrackIds.has(t.id)) continue;
           seenTrackIds.add(t.id);
+          const nameKey = `${artist.id}:${normalizeTrackName(t.name)}`;
+          if (seenTrackNameKeys.has(nameKey)) continue;
+          seenTrackNameKeys.add(nameKey);
 
           allTracks.push({
             track_name: t.name,

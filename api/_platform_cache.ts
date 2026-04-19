@@ -47,6 +47,26 @@ export function sanitizeArtistName(raw: string | null | undefined): string | nul
   return trimmed;
 }
 
+/**
+ * Normalize a track name for dedup purposes.
+ * Strips release-variant suffixes so "Jolene" collapses with "Jolene - Single",
+ * "Jolene - EP", "Jolene (Deluxe)", "Jolene (Remastered 2012)", etc. Keeps
+ * live/acoustic/radio-edit style variants DISTINCT because those are actually
+ * different recordings.
+ */
+export function normalizeTrackName(name: string | null | undefined): string {
+  if (!name) return '';
+  return String(name)
+    .replace(/\s*-\s*Single$/i, '')
+    .replace(/\s*-\s*EP$/i, '')
+    .replace(/\s*\(Deluxe[^)]*\)$/i, '')
+    .replace(/\s*\(Remastered[^)]*\)$/i, '')
+    .replace(/\s*-\s*Remastered.*$/i, '')
+    .replace(/\s*-\s*\d{4}\s*Remaster.*$/i, '')
+    .trim()
+    .toLowerCase();
+}
+
 export interface PlatformIds {
   artist_name: string;
   spotify_artist_id: string | null;

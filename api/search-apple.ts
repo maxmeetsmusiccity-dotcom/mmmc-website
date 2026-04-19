@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { bulkLookupCache, saveCacheResult, fetchWith429Retry, RateBudget } from './_platform_cache.js';
+import { bulkLookupCache, saveCacheResult, fetchWith429Retry, RateBudget, normalizeTrackName } from './_platform_cache.js';
 import { verifyAppleIdByIsrc } from './_apple_verify.js';
 import { getSpotifyClientToken } from './_spotify_token.js';
 import { getAppleDeveloperToken } from './_apple_token.js';
@@ -396,11 +396,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const gathered = await runPool(artistNames, concurrency, processArtist);
 
     // Dedupe by track_id after the pool — preserves first-seen ordering.
+    // Then a second pass dedupes by (artist_id, normalizedName) to collapse
+    // "Jolene" with "Jolene - Single" etc. (M-Z11).
     const seenIds = new Set<string>();
+    const seenNameKeys = new Set<string>();
     const allTracks: any[] = [];
     for (const t of gathered) {
       if (seenIds.has(t.track_id)) continue;
       seenIds.add(t.track_id);
+      const nameKey = `${t.artist_id}:${normalizeTrackName(t.track_name)}`;
+      if (seenNameKeys.has(nameKey)) continue;
+      seenNameKeys.add(nameKey);
       allTracks.push(t);
     }
 
