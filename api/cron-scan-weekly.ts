@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import { IntelligenceAccumulator, emitIntelligence, type CollaborationSignal, type AppleRejection } from './_scan_intelligence.js';
+import { IntelligenceAccumulator, emitIntelligence, extractComposerCandidates, splitPerformerCreditString, type CollaborationSignal, type AppleRejection } from './_scan_intelligence.js';
 import { runHealthProbe } from './scan-health.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
@@ -157,21 +157,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // credit contributes to collaboration signals. Emitted at end of chain.
   const intel = new IntelligenceAccumulator();
 
-  /** Split a comma / feat / ft / & / x — separated credit string into names. */
-  function splitCreditString(s: string): string[] {
-    if (!s) return [];
-    return s
-      .split(/,|\bfeat\.?\b|\bft\.?\b|\bwith\b|\bx\b|\band\b|&/gi)
-      .map(n => n.trim())
-      .filter(n => n.length > 0);
-  }
+  /** Shared splitter — see `splitPerformerCreditString` in _scan_intelligence.ts.
+   *  Inline helper removed (had `\bfeat\.?\b` boundary bug — same class as the
+   *  M-Z13 composer-credits test). */
 
   /** Extract collaboration signals from one track and record to accumulator.
    *  A signal fires when 2+ distinct names from the credit strings
    *  (performers + Apple composerName) are in the Nashville universe. */
   function recordCollaborationFromTrack(t: any, source: 'apple' | 'spotify') {
-    const performers = splitCreditString(t.artist_names || '');
-    const composers = splitCreditString(t.composer_name || '');
+    const performers = splitPerformerCreditString(t.artist_names || '');
+    const composers = splitPerformerCreditString(t.composer_name || '');
     const seen = new Set<string>();
     const participants: CollaborationSignal['participants'] = [];
     for (const p of performers) {
@@ -335,7 +330,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const tracks = data.tracks || [];
         appleTracks += tracks.length;
         // R13: extract collaboration + velocity signals from every track
-        for (const t of tracks) recordCollaborationFromTrack(t, 'apple');
+        for (const t of tracks) {
+          recordCollaborationFromTrack(t, 'apple');
+          // M-Z13: raw Apple composerName signal for Alpha's M20 credit ingest
+          const composers = extractComposerCandidates(t.composer_name);
+          if (composers.length > 0) {
+            intel.recordAppleComposerCredit({
+              track_id: t.track_id,
+              track_name: t.track_name,
+              primary_artist_id: t.artist_id || null,
+              primary_artist_name: t.artist_names || '',
+              composer_names: composers,
+              source: 'apple_composer_field',
+              release_date: t.release_date || null,
+            });
+          }
+        }
         // R12: record any ISRC-verify rejections so Thread A can act on them
         // (wrong-person Apple matches gated before cache write).
         const rejections = (data.apple_rejections || []) as AppleRejection[];

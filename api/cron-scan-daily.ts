@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import { IntelligenceAccumulator, emitIntelligence, type CollaborationSignal, type AppleRejection } from './_scan_intelligence.js';
+import { IntelligenceAccumulator, emitIntelligence, extractComposerCandidates, splitPerformerCreditString, type CollaborationSignal, type AppleRejection } from './_scan_intelligence.js';
 import { runHealthProbe } from './scan-health.js';
 import { alertSlack } from './_alert.js';
 
@@ -143,13 +143,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   console.log(`[DAILY] universe=${artistNames.length} (seeds=${SEED_ARTISTS.length})`);
 
   const intel = new IntelligenceAccumulator();
-  function splitCredits(s: string): string[] {
-    if (!s) return [];
-    return s.split(/,|\bfeat\.?\b|\bft\.?\b|\bwith\b|\bx\b|\band\b|&/gi).map(n => n.trim()).filter(Boolean);
-  }
   function recordFromTrack(t: any) {
-    const performers = splitCredits(t.artist_names || '');
-    const composers = splitCredits(t.composer_name || '');
+    const performers = splitPerformerCreditString(t.artist_names || '');
+    const composers = splitPerformerCreditString(t.composer_name || '');
     const seen = new Set<string>();
     const participants: CollaborationSignal['participants'] = [];
     for (const p of performers) {
@@ -213,7 +209,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const data = await resp.json();
         const tracks = data.tracks || [];
         appleTracks += tracks.length;
-        for (const t of tracks) recordFromTrack(t);
+        for (const t of tracks) {
+          recordFromTrack(t);
+          const composers = extractComposerCandidates(t.composer_name);
+          if (composers.length > 0) {
+            intel.recordAppleComposerCredit({
+              track_id: t.track_id,
+              track_name: t.track_name,
+              primary_artist_id: t.artist_id || null,
+              primary_artist_name: t.artist_names || '',
+              composer_names: composers,
+              source: 'apple_composer_field',
+              release_date: t.release_date || null,
+            });
+          }
+        }
         const rejections = (data.apple_rejections || []) as AppleRejection[];
         for (const r of rejections) intel.recordAppleRejection(r);
         if (tracks.length > 0) {
