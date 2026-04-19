@@ -28,12 +28,19 @@ const APPLE_PROBE_ARTIST_ID = '907166363';                // Lainey Wilson
 
 const SCAN_SECRET = process.env.SCAN_SECRET || '';
 
-function isAuthorized(req: VercelRequest): boolean {
+type AuthLevel = 'none' | 'public_probe' | 'internal';
+
+/**
+ * SCAN_SECRET → public_probe (slim response; for external monitoring)
+ * CRON_SECRET → internal    (full response; for privileged callers)
+ * anything else → none      (401)
+ */
+function getAuthLevel(req: VercelRequest): AuthLevel {
   const auth = req.headers.authorization;
-  if (SCAN_SECRET && auth === `Bearer ${SCAN_SECRET}`) return true;
   const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret && auth === `Bearer ${cronSecret}`) return true;
-  return false;
+  if (cronSecret && auth === `Bearer ${cronSecret}`) return 'internal';
+  if (SCAN_SECRET && auth === `Bearer ${SCAN_SECRET}`) return 'public_probe';
+  return 'none';
 }
 
 export interface ProbeOutcome {
@@ -126,14 +133,41 @@ export async function runHealthProbe(): Promise<HealthReport> {
   };
 }
 
+/** Public slim shape — strips latency_ms + error strings; keeps platform ok +
+ *  http status code + Retry-After so external uptime monitors can page. */
+export interface SlimHealthReport {
+  spotify: { ok: boolean; status: number | null; retry_after_s?: number };
+  apple: { ok: boolean; status: number | null; retry_after_s?: number };
+  tested_at: string;
+}
+
+export function toSlim(report: HealthReport): SlimHealthReport {
+  return {
+    spotify: {
+      ok: report.spotify.ok,
+      status: report.spotify.status,
+      retry_after_s: report.spotify.retry_after_seconds,
+    },
+    apple: {
+      ok: report.apple.ok,
+      status: report.apple.status,
+      retry_after_s: report.apple.retry_after_seconds,
+    },
+    tested_at: report.tested_at,
+  };
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET' && req.method !== 'POST') {
     return res.status(405).json({ error: 'GET or POST only' });
   }
-  if (!isAuthorized(req)) return res.status(401).json({ error: 'Authentication required' });
+  const level = getAuthLevel(req);
+  if (level === 'none') return res.status(401).json({ error: 'Authentication required' });
 
   const report = await runHealthProbe();
   const statusCode = report.spotify_ok && report.apple_ok ? 200 : 503;
   res.setHeader('Cache-Control', 'no-store');
-  return res.status(statusCode).json(report);
+
+  const body = level === 'internal' ? report : toSlim(report);
+  return res.status(statusCode).json(body);
 }
