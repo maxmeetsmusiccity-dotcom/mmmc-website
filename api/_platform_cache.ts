@@ -11,6 +11,7 @@
 //   artist_name_lower for case-insensitive reuse.
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { alertSlack } from './_alert.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -20,6 +21,30 @@ function sb(): SupabaseClient | null {
   if (!SUPABASE_URL || !SUPABASE_KEY) return null;
   if (!cachedClient) cachedClient = createClient(SUPABASE_URL, SUPABASE_KEY);
   return cachedClient;
+}
+
+/**
+ * Sanitize an artist name before it enters artist_platform_ids.
+ * Prevents recurrence of the 2026-04 `"Name",` CSV-paste corruption class
+ * (M-Z5 scrubbed 537 rows; M-Z17 rules it out at the ingest boundary).
+ *
+ * Auto-fix: wrapping quote+comma pattern `^"...",$` → strips wrap
+ * Reject:   empty after trim, or length > 200 (multi-artist concat)
+ * Preserve: legitimate punctuation (`"Weird Al" Yankovic`, `Goodnight, Texas`)
+ *
+ * Returns null for rejection; caller must skip the write.
+ */
+export function sanitizeArtistName(raw: string | null | undefined): string | null {
+  if (raw == null) return null;
+  const trimmed = String(raw).trim();
+  if (!trimmed) return null;
+  if (trimmed.length > 200) return null;
+  const wrapMatch = trimmed.match(/^"(.*)",$/);
+  if (wrapMatch) {
+    const inner = wrapMatch[1].trim();
+    return inner.length > 0 && inner.length <= 200 ? inner : null;
+  }
+  return trimmed;
 }
 
 export interface PlatformIds {
@@ -73,8 +98,26 @@ type PlatformUpdate =
 export async function saveCacheResult(u: PlatformUpdate): Promise<void> {
   const client = sb();
   if (!client) return;
-  const name = (u.artistName || '').trim();
-  if (!name) return;
+  const raw = u.artistName || '';
+  const sanitized = sanitizeArtistName(raw);
+  if (sanitized == null) {
+    console.warn(`[platform_cache] sanitizeArtistName rejected: ${JSON.stringify(raw)}`);
+    alertSlack('artist_platform_ids: sanitizer rejected name', {
+      platform: u.platform,
+      raw,
+      raw_length: raw.length,
+    }).catch(() => {});
+    return;
+  }
+  if (sanitized !== raw.trim()) {
+    console.warn(`[platform_cache] sanitizeArtistName auto-fixed: ${JSON.stringify(raw)} -> ${JSON.stringify(sanitized)}`);
+    alertSlack('artist_platform_ids: sanitizer auto-fixed name', {
+      platform: u.platform,
+      original: raw,
+      sanitized,
+    }).catch(() => {});
+  }
+  const name = sanitized;
   const now = new Date().toISOString();
 
   // Read existing row (if any) so we can increment not_found counters without
