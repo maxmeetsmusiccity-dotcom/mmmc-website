@@ -1,15 +1,109 @@
-name: CI
-on: [push, pull_request]
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
 jobs:
-  build-and-test:
+  build:
+    name: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version: '20'
           cache: 'npm'
       - run: npm ci
-      - run: npx tsc --noEmit
-      - run: npx vitest run
-      - run: npm run build
+      - name: Type check
+        run: npx tsc --noEmit
+      - name: Build
+        run: npm run build
+
+  vitest:
+    name: vitest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - name: Vitest
+        run: npm run test
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: test-results/
+
+  contract_tests:
+    name: apple_spotify_contract
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - name: Run contract tests (if configured)
+        run: |
+          if grep -q 'test:contracts' package.json; then
+            npm run test:contracts
+          else
+            echo "no contract tests defined; skipping"
+          fi
+        env:
+          SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
+          SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
+          APPLE_MUSIC_KEY_ID: ${{ secrets.APPLE_MUSIC_KEY_ID }}
+          APPLE_MUSIC_TEAM_ID: ${{ secrets.APPLE_MUSIC_TEAM_ID }}
+          APPLE_MUSIC_PRIVATE_KEY: ${{ secrets.APPLE_MUSIC_PRIVATE_KEY }}
+
+  playwright:
+    name: playwright_e2e
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Playwright against maxmeetsmusiccity.com
+        run: npx playwright test --reporter=list
+        env:
+          BASE_URL: https://maxmeetsmusiccity.com
+          SCAN_SECRET: ${{ secrets.SCAN_SECRET }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report/
+
+  scan_health_probe:
+    name: scan_health_slim_probe
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Probe slim scan-health endpoint
+        run: |
+          RESPONSE=$(curl -sH "Authorization: Bearer ${{ secrets.SCAN_SECRET }}" https://maxmeetsmusiccity.com/api/scan-health)
+          echo "$RESPONSE" | jq .
+          # Verify slim shape: apple + spotify + tested_at keys present
+          echo "$RESPONSE" | jq -e '.apple and .spotify and .tested_at' > /dev/null || {
+            echo "scan-health slim shape broken"
+            exit 1
+          }
+          # Verify sensitive fields NOT present in slim shape
+          echo "$RESPONSE" | jq -e '.latency == null and .error_details == null' > /dev/null || {
+            echo "scan-health leaked sensitive fields to SCAN_SECRET tier"
+            exit 1
+          }
