@@ -111,6 +111,18 @@ export function extractComposerCandidates(composerName: string | null | undefine
     .filter(s => s.length > 0 && s.length <= 120);
 }
 
+/** Split a performer credit string (wider delimiter set than composerName —
+ *  includes `with`, `x`, `and` for multi-billed performers). Carries the
+ *  same lookahead fix as `extractComposerCandidates` so `feat.` + space
+ *  splits but `featuring` stays intact. */
+export function splitPerformerCreditString(s: string | null | undefined): string[] {
+  if (!s) return [];
+  return String(s)
+    .split(/,|\bfeat\.?(?=\s|$|,|&)|\bft\.?(?=\s|$|,|&)|\bwith\b|\bx\b|\band\b|&/gi)
+    .map(n => n.trim())
+    .filter(n => n.length > 0);
+}
+
 /** Rate-limit / scan-health incidents for this run. */
 export interface RateLimitIncident {
   platform: 'spotify' | 'apple';
