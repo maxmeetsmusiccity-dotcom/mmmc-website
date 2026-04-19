@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import { IntelligenceAccumulator, emitIntelligence, type CollaborationSignal, type AppleRejection } from './_scan_intelligence.js';
+import { IntelligenceAccumulator, emitIntelligence, extractComposerCandidates, type CollaborationSignal, type AppleRejection } from './_scan_intelligence.js';
 import { runHealthProbe } from './scan-health.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
@@ -335,7 +335,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const tracks = data.tracks || [];
         appleTracks += tracks.length;
         // R13: extract collaboration + velocity signals from every track
-        for (const t of tracks) recordCollaborationFromTrack(t, 'apple');
+        for (const t of tracks) {
+          recordCollaborationFromTrack(t, 'apple');
+          // M-Z13: raw Apple composerName signal for Alpha's M20 credit ingest
+          const composers = extractComposerCandidates(t.composer_name);
+          if (composers.length > 0) {
+            intel.recordAppleComposerCredit({
+              track_id: t.track_id,
+              track_name: t.track_name,
+              primary_artist_id: t.artist_id || null,
+              primary_artist_name: t.artist_names || '',
+              composer_names: composers,
+              source: 'apple_composer_field',
+              release_date: t.release_date || null,
+            });
+          }
+        }
         // R12: record any ISRC-verify rejections so Thread A can act on them
         // (wrong-person Apple matches gated before cache write).
         const rejections = (data.apple_rejections || []) as AppleRejection[];

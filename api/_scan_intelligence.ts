@@ -83,6 +83,34 @@ export interface ReleaseVelocity {
   latest_release_date: string | null;
 }
 
+/** Apple `composerName` extracted per track — emitted as a credit-edge
+ *  CANDIDATE (not a confirmed co-write) so Alpha's M20 Credit Corroboration
+ *  Agent can cross-reference against MusicBrainz / ISWC / Spotscraper. Zeta
+ *  is the raw-signal emitter; corroboration lives in the cascade. */
+export interface AppleComposerCredit {
+  track_id: string;                  // apple_isrc_* or apple_track_*
+  track_name: string;
+  primary_artist_id: string | null;  // performer's Apple artist ID
+  primary_artist_name: string;
+  composer_names: string[];          // split from ta.composerName by ,/&/feat
+  source: 'apple_composer_field';
+  release_date: string | null;
+}
+
+/** Split Apple's composerName string into candidate names. Conservative —
+ *  handles the common `Name1, Name2 & Name3` shape without swallowing single
+ *  hyphenated names. */
+export function extractComposerCandidates(composerName: string | null | undefined): string[] {
+  if (!composerName) return [];
+  // Lookahead on (space|end|,|&) after the optional `.` so `feat. ` splits but
+  // `featuring` stays intact. Trailing `\b` alone fails because `.` then space
+  // is non-word→non-word (no boundary).
+  return String(composerName)
+    .split(/,|&|\bfeat\.?(?=\s|$|,|&)|\bft\.?(?=\s|$|,|&)/gi)
+    .map(s => s.trim())
+    .filter(s => s.length > 0 && s.length <= 120);
+}
+
 /** Rate-limit / scan-health incidents for this run. */
 export interface RateLimitIncident {
   platform: 'spotify' | 'apple';
@@ -109,6 +137,7 @@ export interface ScanIntelligence {
   apple_rejections: AppleRejection[];
   stale_spotify_ids: StaleSpotifyId[];
   collaboration_signals: CollaborationSignal[];
+  composer_credits: AppleComposerCredit[];
   release_velocity: ReleaseVelocity[];
   rate_limit_incidents: RateLimitIncident[];
   notes?: string;
@@ -123,6 +152,7 @@ export class IntelligenceAccumulator {
   private appleRejections: AppleRejection[] = [];
   private staleSpotify: StaleSpotifyId[] = [];
   private collaborations: CollaborationSignal[] = [];
+  private composerCredits: AppleComposerCredit[] = [];
   private rateLimit: RateLimitIncident[] = [];
   private releaseVelocityMap = new Map<string, ReleaseVelocity>();
 
@@ -130,6 +160,7 @@ export class IntelligenceAccumulator {
   recordAppleRejection(r: AppleRejection) { this.appleRejections.push(r); }
   recordStaleSpotify(s: StaleSpotifyId) { this.staleSpotify.push(s); }
   recordCollaboration(c: CollaborationSignal) { this.collaborations.push(c); }
+  recordAppleComposerCredit(c: AppleComposerCredit) { this.composerCredits.push(c); }
   recordRateLimit(i: RateLimitIncident) { this.rateLimit.push(i); }
 
   recordTrack(artistName: string, pgId: string | null | undefined, releaseDate: string | null, albumId: string | null) {
@@ -161,6 +192,7 @@ export class IntelligenceAccumulator {
       apple_rejections: this.appleRejections,
       stale_spotify_ids: this.staleSpotify,
       collaboration_signals: this.collaborations,
+      composer_credits: this.composerCredits,
       release_velocity: [...this.releaseVelocityMap.values()],
       rate_limit_incidents: this.rateLimit,
       notes: meta.notes,
@@ -184,6 +216,7 @@ export async function emitIntelligence(artifact: ScanIntelligence): Promise<{ ok
     apple_rejections_count: artifact.apple_rejections.length,
     stale_spotify_ids_count: artifact.stale_spotify_ids.length,
     collaboration_signals_count: artifact.collaboration_signals.length,
+    composer_credits_count: artifact.composer_credits.length,
     release_velocity_count: artifact.release_velocity.length,
     rate_limit_incidents_count: artifact.rate_limit_incidents.length,
     tracks_found: artifact.scope.tracks_found,
