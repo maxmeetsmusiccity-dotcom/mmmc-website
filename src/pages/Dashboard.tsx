@@ -194,7 +194,7 @@ export default function Dashboard() {
                 {curators.length === 0 ? 'No curators registered yet.' : 'No curators match your filters.'}
               </p>
             ) : (
-              <div data-testid="dashboard-curator-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12 }}>
+              <div data-testid="dashboard-curator-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
                 {filteredCurators.map(c => (
                   <Link key={c.id} to={`/curator/${c.username || c.id}`} className="card card-hover"
                     style={{ textDecoration: 'none', color: 'inherit' }}
