@@ -50,6 +50,10 @@
     {
       "path": "/api/cron-scan-daily",
       "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron-claim-review",
+      "schedule": "0 14 * * 1"
     }
   ]
 }

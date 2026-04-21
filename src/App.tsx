@@ -10,6 +10,7 @@ import CuratorProfile from './pages/CuratorProfile';
 import Terms from './pages/Terms';
 import Privacy from './pages/Privacy';
 import Artists from './pages/Artists';
+import WriterClaim from './pages/WriterClaim';
 import ErrorBoundary from './components/ErrorBoundary';
 import AuthGate from './components/AuthGate';
 
@@ -28,6 +29,7 @@ export default function App() {
         <Route path="/terms" element={<Terms />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/artists" element={<Artists />} />
+        <Route path="/claim/:pg_id/:token" element={<WriterClaim />} />
         <Route path="/nmf" element={<Navigate to="/newmusicfriday" replace />} />
         <Route path="/nmf/*" element={<Navigate to="/newmusicfriday" replace />} />
       </Routes>
