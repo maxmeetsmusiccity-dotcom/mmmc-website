@@ -1,0 +1,4226 @@
+{
+  "version": "1.0",
+  "generated": "2025-12-17T21:29:13.151195",
+  "artists": {
+    "\"weirdal\"yankovic": {
+      "canonical_name": "\"Weird Al\" Yankovic",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "aaronsimmonsmusic": {
+      "canonical_name": "Aaron Simmons",
+      "source": "spotify",
+      "aliases": []
+    },
+    "abba": {
+      "canonical_name": "ABBA",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "iamabbiecallahan": {
+      "canonical_name": "Abbie Callahan",
+      "source": "spotify",
+      "aliases": []
+    },
+    "abbieferris": {
+      "canonical_name": "Abbie Ferris",
+      "source": "spotify",
+      "aliases": []
+    },
+    "abbyandersonmusic": {
+      "canonical_name": "Abby Anderson",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "abbycates": {
+      "canonical_name": "Abby Cates",
+      "source": "spotify",
+      "aliases": []
+    },
+    "abbychristo": {
+      "canonical_name": "Abby Christo",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "abigailvirginia_": {
+      "canonical_name": "Abigail Virginia",
+      "source": "spotify",
+      "aliases": []
+    },
+    "adapasternak": {
+      "canonical_name": "Ada Pasternak",
+      "source": "spotify",
+      "aliases": []
+    },
+    "adamdoleac": {
+      "canonical_name": "Adam Doleac",
+      "source": "spotify",
+      "aliases": []
+    },
+    "adammacmusic": {
+      "canonical_name": "Adam Mac",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "adrien_nunez": {
+      "canonical_name": "Adrien Nunez",
+      "source": "spotify",
+      "aliases": []
+    },
+    "adysenmalek": {
+      "canonical_name": "Adysen Malek",
+      "source": "spotify",
+      "aliases": []
+    },
+    "alanaspringsteen": {
+      "canonical_name": "Alana Springsteen",
+      "source": "spotify",
+      "aliases": []
+    },
+    "alanismorissette": {
+      "canonical_name": "Alanis Morissette",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "gottabealee": {
+      "canonical_name": "Alee",
+      "source": "spotify",
+      "aliases": []
+    },
+    "alexangelo": {
+      "canonical_name": "Alex Angelo",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "alexagoldiemusic": {
+      "canonical_name": "Alexa Goldie",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "alexandrakaymusic": {
+      "canonical_name": "Alexandra Kay",
+      "source": "spotify",
+      "aliases": []
+    },
+    "alexandriamcorn": {
+      "canonical_name": "Alexandria Corn",
+      "source": "spotify",
+      "aliases": []
+    },
+    "alitaylormusic": {
+      "canonical_name": "Ali Taylor",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "alisvibe": {
+      "canonical_name": "Alis Vibe",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "alisaamador": {
+      "canonical_name": "Alisa Amador",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "alisonnicholsmusic": {
+      "canonical_name": "Alison Nichols",
+      "source": "spotify",
+      "aliases": []
+    },
+    "allileighann": {
+      "canonical_name": "Alli Leighann",
+      "source": "spotify",
+      "aliases": []
+    },
+    "alliwalker": {
+      "canonical_name": "Alli Walker",
+      "source": "spotify",
+      "aliases": []
+    },
+    "alliekeckmusic": {
+      "canonical_name": "Allie Keck",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "alyssabonagura": {
+      "canonical_name": "Alyssa Bonagura",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "alyssavflaherty": {
+      "canonical_name": "Alyssa Flaherty",
+      "source": "spotify",
+      "aliases": []
+    },
+    "imalyssalazar": {
+      "canonical_name": "Alyssa Lazar",
+      "source": "spotify",
+      "aliases": []
+    },
+    "amandajordan": {
+      "canonical_name": "Amanda Jordan",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "ambergideon": {
+      "canonical_name": "Amber Gideon",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "amberikemanmusic": {
+      "canonical_name": "Amber Ikeman",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "americanblondemusic": {
+      "canonical_name": "American Blonde",
+      "source": "spotify",
+      "aliases": []
+    },
+    "amyalexander": {
+      "canonical_name": "Amy Alexander",
+      "source": "spotify",
+      "aliases": []
+    },
+    "anacristinacash": {
+      "canonical_name": "Ana Cristina Cash",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "andreadalymusic": {
+      "canonical_name": "Andrea Daly",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "andreavasquez": {
+      "canonical_name": "Andrea Vasquez",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "officialangiek": {
+      "canonical_name": "Angie K",
+      "source": "spotify",
+      "aliases": []
+    },
+    "angierey": {
+      "canonical_name": "Angie Rey",
+      "source": "spotify",
+      "aliases": []
+    },
+    "annaj": {
+      "canonical_name": "Anna J",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "annamcelroy": {
+      "canonical_name": "Anna McElroy",
+      "source": "spotify",
+      "aliases": []
+    },
+    "annascott": {
+      "canonical_name": "Anna Scott",
+      "source": "spotify",
+      "aliases": []
+    },
+    "annashoemaker": {
+      "canonical_name": "Anna Shoemaker",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "annavaus": {
+      "canonical_name": "Anna Vaus",
+      "source": "spotify",
+      "aliases": []
+    },
+    "annewilsonmusic": {
+      "canonical_name": "Anne Wilson",
+      "source": "spotify",
+      "aliases": []
+    },
+    "anniebosko": {
+      "canonical_name": "Annie Bosko",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "annieleerose": {
+      "canonical_name": "Annie Lee Rose",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "ansleedavidsonmusic": {
+      "canonical_name": "Anslee Davidson",
+      "source": "spotify",
+      "aliases": []
+    },
+    "ariannapappas": {
+      "canonical_name": "Arianna Pappas",
+      "source": "spotify",
+      "aliases": []
+    },
+    "hannahdasher": {
+      "canonical_name": "Ashe",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "ashlandcraft": {
+      "canonical_name": "Ashland Craft",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "ashleyannemusic": {
+      "canonical_name": "Ashley Anne",
+      "source": "spotify",
+      "aliases": []
+    },
+    "theashleycooke": {
+      "canonical_name": "Ashley Cooke",
+      "source": "spotify",
+      "aliases": []
+    },
+    "ashleywalls": {
+      "canonical_name": "Ashley Walls",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "ashlieamberofficial": {
+      "canonical_name": "Ashlie Amber",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "audramclaugh": {
+      "canonical_name": "Audra McLaughlin",
+      "source": "spotify",
+      "aliases": []
+    },
+    "austinmahone": {
+      "canonical_name": "Austin Mahone",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "austinsnellmusic": {
+      "canonical_name": "Austin Snell",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "autumnmcentiresongs": {
+      "canonical_name": "Autumn McEntire",
+      "source": "spotify",
+      "aliases": []
+    },
+    "autumnnicholas": {
+      "canonical_name": "Autumn Nicholas",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "avaaconnell": {
+      "canonical_name": "Ava Connell",
+      "source": "spotify",
+      "aliases": []
+    },
+    "avahall19": {
+      "canonical_name": "Ava Hall",
+      "source": "spotify",
+      "aliases": []
+    },
+    "avapoling": {
+      "canonical_name": "Ava Poling",
+      "source": "spotify",
+      "aliases": []
+    },
+    "avarowland": {
+      "canonical_name": "Ava Rowland",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "averiebielski": {
+      "canonical_name": "Averie Bielski",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "avery.anna.music": {
+      "canonical_name": "Avery Anna",
+      "source": "spotify",
+      "aliases": []
+    },
+    "averylogan": {
+      "canonical_name": "Avery Logan",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "baileytaylor": {
+      "canonical_name": "Bailey Taylor",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "baileyzimmerman": {
+      "canonical_name": "Bailey Zimmerman",
+      "source": "spotify",
+      "aliases": []
+    },
+    "bandanacheyenna": {
+      "canonical_name": "BANDANA CHEYENNA",
+      "source": "spotify",
+      "aliases": []
+    },
+    "bayleelynn": {
+      "canonical_name": "Baylee Lynn",
+      "source": "spotify",
+      "aliases": []
+    },
+    "beccaraemusic": {
+      "canonical_name": "Becca Rae",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "bella.hudson.music": {
+      "canonical_name": "Bella Hudson",
+      "source": "spotify",
+      "aliases": []
+    },
+    "bellarayemusic": {
+      "canonical_name": "Bella Raye",
+      "source": "spotify",
+      "aliases": []
+    },
+    "bellarose": {
+      "canonical_name": "Bella Rose",
+      "source": "spotify",
+      "aliases": []
+    },
+    "bellegray": {
+      "canonical_name": "Belle Gray",
+      "source": "spotify",
+      "aliases": []
+    },
+    "bellesmusic": {
+      "canonical_name": "Belles",
+      "source": "spotify",
+      "aliases": []
+    },
+    "bellsxmusic": {
+      "canonical_name": "BELLS",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "benchapmanmusic": {
+      "canonical_name": "Ben Chapman",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "beyonc\u00e9": {
+      "canonical_name": "Beyonc\u00e9",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "blakewhiten": {
+      "canonical_name": "Blake Whiten",
+      "source": "spotify",
+      "aliases": []
+    },
+    "bonnerblack": {
+      "canonical_name": "Bonner Black",
+      "source": "spotify",
+      "aliases": []
+    },
+    "bonnerrhaemusic": {
+      "canonical_name": "Bonner Rhae",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "bonniekstewart": {
+      "canonical_name": "Bonnie Stewart",
+      "source": "spotify",
+      "aliases": []
+    },
+    "booknotbrooke": {
+      "canonical_name": "book NOT brooke",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "boysclubforgirls": {
+      "canonical_name": "Boys Club For Girls",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "bradbrownfield": {
+      "canonical_name": "Brad Brownfield",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "bradyriley": {
+      "canonical_name": "Brady Riley",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "brandonwisham": {
+      "canonical_name": "Brandon Wisham",
+      "source": "spotify",
+      "aliases": []
+    },
+    "breland": {
+      "canonical_name": "BRELAND",
+      "source": "spotify",
+      "aliases": []
+    },
+    "brennabone": {
+      "canonical_name": "Brenna Bone",
+      "source": "spotify",
+      "aliases": []
+    },
+    "brettlandin": {
+      "canonical_name": "Brett Landin",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "brettyoungmusic": {
+      "canonical_name": "Brett Young",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "findingxfletcher": {
+      "canonical_name": "Bri Fletcher",
+      "source": "spotify",
+      "aliases": []
+    },
+    "briannabollingermusic": {
+      "canonical_name": "Brianna Bollinger",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "brittanybrodie": {
+      "canonical_name": "Brittany Brodie",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "brittneyspencer": {
+      "canonical_name": "Brittney Spencer",
+      "source": "spotify",
+      "aliases": []
+    },
+    "brookealexx": {
+      "canonical_name": "Brooke Alexx",
+      "source": "spotify",
+      "aliases": []
+    },
+    "brookeeden": {
+      "canonical_name": "Brooke Eden",
+      "source": "spotify",
+      "aliases": []
+    },
+    "brookehatala": {
+      "canonical_name": "Brooke Hatala",
+      "source": "spotify",
+      "aliases": []
+    },
+    "brookeleemusic": {
+      "canonical_name": "Brooke Lee",
+      "source": "spotify",
+      "aliases": []
+    },
+    "brooksanddunn": {
+      "canonical_name": "Brooks & Dunn",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "brooksherring": {
+      "canonical_name": "Brooks Herring",
+      "source": "spotify",
+      "aliases": []
+    },
+    "brookshuntley": {
+      "canonical_name": "Brooks Huntley",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "brotherelsey": {
+      "canonical_name": "Brother Elsey",
+      "source": "spotify",
+      "aliases": []
+    },
+    "bryanrubyofficial": {
+      "canonical_name": "Bryan Ruby",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "tristanbushman": {
+      "canonical_name": "Tristan Bushman",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "caitlinmaemusic": {
+      "canonical_name": "Caitlin Mae",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "callieprince": {
+      "canonical_name": "Callie Prince",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "callistaclark": {
+      "canonical_name": "Callista Clark",
+      "source": "spotify",
+      "aliases": []
+    },
+    "katecameronmusic": {
+      "canonical_name": "Kate Cameron",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "camdenwestmusic": {
+      "canonical_name": "Camden West",
+      "source": "spotify",
+      "aliases": []
+    },
+    "iamcamilleparker": {
+      "canonical_name": "Camille Parker",
+      "source": "spotify",
+      "aliases": []
+    },
+    "carlypearce": {
+      "canonical_name": "Carly Pearce",
+      "source": "spotify",
+      "aliases": []
+    },
+    "carlysica": {
+      "canonical_name": "Carly Sica",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "carlylegriffin": {
+      "canonical_name": "Carlyle Griffin",
+      "source": "spotify",
+      "aliases": []
+    },
+    "carmendianne": {
+      "canonical_name": "Carmen Dianne",
+      "source": "spotify",
+      "aliases": []
+    },
+    "carolinedaremusic": {
+      "canonical_name": "Caroline Dare",
+      "source": "spotify",
+      "aliases": []
+    },
+    "carolinejones": {
+      "canonical_name": "Caroline Jones",
+      "source": "spotify",
+      "aliases": []
+    },
+    "carolynmillermusic": {
+      "canonical_name": "Carolyn Miller",
+      "source": "spotify",
+      "aliases": []
+    },
+    "carrieunderwood": {
+      "canonical_name": "Carrie Underwood",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "carsonwallace": {
+      "canonical_name": "Carson Wallace",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "carterfaith": {
+      "canonical_name": "Carter Faith",
+      "source": "spotify",
+      "aliases": []
+    },
+    "caseyweston": {
+      "canonical_name": "Casey Weston",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "cassadeepope": {
+      "canonical_name": "Cassadee Pope",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "cassidydanielsmusic": {
+      "canonical_name": "Cassidy Daniels",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "catflint": {
+      "canonical_name": "Cat Flint",
+      "source": "spotify",
+      "aliases": []
+    },
+    "catieofferman": {
+      "canonical_name": "Catie Offerman",
+      "source": "spotify",
+      "aliases": []
+    },
+    "cayleehammack": {
+      "canonical_name": "Caylee Hammack",
+      "source": "spotify",
+      "aliases": []
+    },
+    "ceciliacastleman": {
+      "canonical_name": "Cecilia Castleman",
+      "source": "spotify",
+      "aliases": []
+    },
+    "chandaddy69": {
+      "canonical_name": "Chandler Brown",
+      "source": "spotify",
+      "aliases": []
+    },
+    "chandlermariemusic": {
+      "canonical_name": "Chandler Marie",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "chapelhartband": {
+      "canonical_name": "Chapel Hart",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "chappellroan": {
+      "canonical_name": "Chappell Roan",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "charlesesten": {
+      "canonical_name": "Charles Esten",
+      "source": "spotify",
+      "aliases": []
+    },
+    "charlottemorris": {
+      "canonical_name": "Charlotte Morris",
+      "source": "spotify",
+      "aliases": []
+    },
+    "charlyreynoldsmusic": {
+      "canonical_name": "Charly Reynolds",
+      "source": "spotify",
+      "aliases": []
+    },
+    "chaserice": {
+      "canonical_name": "Chase Rice",
+      "source": "spotify",
+      "aliases": []
+    },
+    "chasewrightmusic": {
+      "canonical_name": "CHASE WRIGHT",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "chaycebeckham": {
+      "canonical_name": "Chayce Beckham",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "chelseystallings": {
+      "canonical_name": "Chelsey Stallings",
+      "source": "spotify",
+      "aliases": []
+    },
+    "chloecollinsmusic": {
+      "canonical_name": "Chloe Collins",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "chrishousmanmusic": {
+      "canonical_name": "Chris Housman",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "chrisruediger": {
+      "canonical_name": "Chris Ruediger",
+      "source": "spotify",
+      "aliases": []
+    },
+    "christianyancey": {
+      "canonical_name": "Christian Yancey",
+      "source": "spotify",
+      "aliases": []
+    },
+    "christiehuff": {
+      "canonical_name": "Christie Huff",
+      "source": "spotify",
+      "aliases": []
+    },
+    "cieramackenzie": {
+      "canonical_name": "Ciera MacKenzie",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "cjfam": {
+      "canonical_name": "CJ Fam",
+      "source": "spotify",
+      "aliases": []
+    },
+    "claireernst": {
+      "canonical_name": "Claire Ernst",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "clarebowen": {
+      "canonical_name": "Clare Bowen",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "claytonshaymusic": {
+      "canonical_name": "Clayton Shay",
+      "source": "spotify",
+      "aliases": []
+    },
+    "whoisclever": {
+      "canonical_name": "Clever",
+      "source": "spotify",
+      "aliases": []
+    },
+    "clintshermanmusic": {
+      "canonical_name": "Clint Sherman",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "coin": {
+      "canonical_name": "COIN",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "colbiecaillat": {
+      "canonical_name": "Colbie Caillat",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "colbyacuff": {
+      "canonical_name": "Colby Acuff",
+      "source": "spotify",
+      "aliases": []
+    },
+    "colegoodwin": {
+      "canonical_name": "Cole Goodwin",
+      "source": "spotify",
+      "aliases": []
+    },
+    "coleman.x": {
+      "canonical_name": "Coleman.X",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "coltonpointz": {
+      "canonical_name": "Colton Pointz",
+      "source": "spotify",
+      "aliases": []
+    },
+    "connersmith": {
+      "canonical_name": "Conner Smith",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "connorhicks": {
+      "canonical_name": "Connor Hicks",
+      "source": "spotify",
+      "aliases": []
+    },
+    "connormccutcheonmusic": {
+      "canonical_name": "Connor McCutcheon",
+      "source": "spotify",
+      "aliases": []
+    },
+    "cooperalanmusic": {
+      "canonical_name": "Cooper Alan",
+      "source": "spotify",
+      "aliases": []
+    },
+    "corrinamusic": {
+      "canonical_name": "Corrina",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "cosette": {
+      "canonical_name": "Cosette",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "crookeddiehlband": {
+      "canonical_name": "Crooked Diehl",
+      "source": "spotify",
+      "aliases": []
+    },
+    "daenamusic": {
+      "canonical_name": "daena",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "daisysellas517": {
+      "canonical_name": "Daisy Sellas",
+      "source": "spotify",
+      "aliases": []
+    },
+    "dallascaroline": {
+      "canonical_name": "Dallas Caroline",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "dallassmith": {
+      "canonical_name": "Dallas Smith",
+      "source": "spotify",
+      "aliases": []
+    },
+    "cowboycasanova": {
+      "canonical_name": "Dalton Davis",
+      "source": "spotify",
+      "aliases": []
+    },
+    "danharrisonmusic": {
+      "canonical_name": "Dan Harrison",
+      "source": "spotify",
+      "aliases": []
+    },
+    "danirose": {
+      "canonical_name": "Dani Rose",
+      "source": "spotify",
+      "aliases": []
+    },
+    "danieljeffers": {
+      "canonical_name": "Daniel Jeffers",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "daniellebradbery": {
+      "canonical_name": "Danielle Bradbery",
+      "source": "spotify",
+      "aliases": []
+    },
+    "dannyworsnop": {
+      "canonical_name": "Danny Worsnop",
+      "source": "spotify",
+      "aliases": []
+    },
+    "dariusrucker": {
+      "canonical_name": "Darius Rucker",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "dashamusic": {
+      "canonical_name": "Dasha",
+      "source": "spotify",
+      "aliases": []
+    },
+    "dasie": {
+      "canonical_name": "Dasie",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "davidaustinsongs": {
+      "canonical_name": "David Austin",
+      "source": "spotify",
+      "aliases": []
+    },
+    "davidevansmusic": {
+      "canonical_name": "David Evans",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "davidj": {
+      "canonical_name": "David J",
+      "source": "spotify",
+      "aliases": []
+    },
+    "davvn": {
+      "canonical_name": "davvn",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "dawes": {
+      "canonical_name": "Dawes",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "dawsonanderson": {
+      "canonical_name": "Dawson Anderson",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "dawsoncolemusic": {
+      "canonical_name": "Dawson Cole",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "therealdemps93": {
+      "canonical_name": "Demps",
+      "source": "spotify",
+      "aliases": []
+    },
+    "denitiadenitia": {
+      "canonical_name": "Denitia",
+      "source": "spotify",
+      "aliases": []
+    },
+    "devonmcole": {
+      "canonical_name": "Devon Cole",
+      "source": "spotify",
+      "aliases": []
+    },
+    "dezduron": {
+      "canonical_name": "Dez Duron",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "diamonddixiellc": {
+      "canonical_name": "Diamond Dixie",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "dierksbentley": {
+      "canonical_name": "Dierks Bentley",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "donnyvanslee": {
+      "canonical_name": "Donny Van Slee",
+      "source": "spotify",
+      "aliases": []
+    },
+    "drewerwin_": {
+      "canonical_name": "Drew Erwin",
+      "source": "spotify",
+      "aliases": []
+    },
+    "drewpulliam": {
+      "canonical_name": "Drew Pulliam",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "dylanmarlowemusic": {
+      "canonical_name": "Dylan Marlowe",
+      "source": "spotify",
+      "aliases": []
+    },
+    "dylanwolfe": {
+      "canonical_name": "Dylan Wolfe",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "echosmith": {
+      "canonical_name": "Echosmith",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "eddieandthegetaway": {
+      "canonical_name": "Eddie And The Getaway",
+      "source": "spotify",
+      "aliases": []
+    },
+    "edensedge": {
+      "canonical_name": "Edens Edge",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "einstein": {
+      "canonical_name": "Einstein",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "elainachristina": {
+      "canonical_name": "Elaina Christina",
+      "source": "spotify",
+      "aliases": []
+    },
+    "elanajane": {
+      "canonical_name": "Elana Jane",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "eleivory": {
+      "canonical_name": "Ele Ivory",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "electraqueens": {
+      "canonical_name": "ElectraQueens",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "eliaesparza": {
+      "canonical_name": "Elia Esparza",
+      "source": "spotify",
+      "aliases": []
+    },
+    "elizabethnichols": {
+      "canonical_name": "Elizabeth Nichols",
+      "source": "spotify",
+      "aliases": []
+    },
+    "ellaboh": {
+      "canonical_name": "Ella Boh",
+      "source": "spotify",
+      "aliases": []
+    },
+    "ellagibsonmusic": {
+      "canonical_name": "Ella Gibson",
+      "source": "spotify",
+      "aliases": []
+    },
+    "ellalangleymusic": {
+      "canonical_name": "Ella Langley",
+      "source": "spotify",
+      "aliases": []
+    },
+    "elleking": {
+      "canonical_name": "Elle King",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "elleeduke": {
+      "canonical_name": "Ellee Duke",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "elliottblaufuss": {
+      "canonical_name": "Elliott Blaufuss",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "emilyann": {
+      "canonical_name": "Emily Ann Roberts",
+      "source": "spotify",
+      "aliases": []
+    },
+    "emilybrooke": {
+      "canonical_name": "Emily Brooke",
+      "source": "spotify",
+      "aliases": []
+    },
+    "emilypayton": {
+      "canonical_name": "Emily Payton",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "awheckitsemilyzeck": {
+      "canonical_name": "Emily Zeck",
+      "source": "spotify",
+      "aliases": []
+    },
+    "emmacarolinemusic": {
+      "canonical_name": "Emma Caroline",
+      "source": "spotify",
+      "aliases": []
+    },
+    "emma.ogier": {
+      "canonical_name": "Emma Ogier",
+      "source": "spotify",
+      "aliases": []
+    },
+    "emmarowley": {
+      "canonical_name": "Emma Rowley",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "emmazinck": {
+      "canonical_name": "Emma Zinck",
+      "source": "spotify",
+      "aliases": []
+    },
+    "emmielliott": {
+      "canonical_name": "Emmi Elliott",
+      "source": "spotify",
+      "aliases": []
+    },
+    "entangleddreams": {
+      "canonical_name": "Entangled Dreams",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "erinalvey": {
+      "canonical_name": "Erin Alvey",
+      "source": "spotify",
+      "aliases": []
+    },
+    "erinashleymusic": {
+      "canonical_name": "Erin Ashley",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "eringibney": {
+      "canonical_name": "Erin Gibney",
+      "source": "spotify",
+      "aliases": []
+    },
+    "itseringrand": {
+      "canonical_name": "Erin Grand",
+      "source": "spotify",
+      "aliases": []
+    },
+    "erinkinseytx": {
+      "canonical_name": "Erin Kinsey",
+      "source": "spotify",
+      "aliases": []
+    },
+    "erinkirbymusic": {
+      "canonical_name": "Erin Kirby",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "essysounds": {
+      "canonical_name": "Essy",
+      "source": "spotify",
+      "aliases": []
+    },
+    "evancyote": {
+      "canonical_name": "Evan Cyote",
+      "source": "spotify",
+      "aliases": []
+    },
+    "evangiia": {
+      "canonical_name": "EVAN GIIA",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "eviexoxo": {
+      "canonical_name": "Evie",
+      "source": "spotify",
+      "aliases": []
+    },
+    "evieirie": {
+      "canonical_name": "Evie Irie",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "faithhopkins": {
+      "canonical_name": "Faith Hopkins",
+      "source": "spotify",
+      "aliases": []
+    },
+    "faithschueler": {
+      "canonical_name": "Faith Schueler",
+      "source": "spotify",
+      "aliases": []
+    },
+    "fancyhagood": {
+      "canonical_name": "Fancy Hagood",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "felicitysinstagram": {
+      "canonical_name": "Felicity",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "flamygrant": {
+      "canonical_name": "Flamy Grant",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "fleetwoodmac": {
+      "canonical_name": "Fleetwood Mac",
+      "source": "spotify",
+      "aliases": []
+    },
+    "findingfletcherrr": {
+      "canonical_name": "FLETCHER",
+      "source": "spotify",
+      "aliases": []
+    },
+    "fleuke": {
+      "canonical_name": "Fleuke",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "frankraymusic": {
+      "canonical_name": "Frank Ray",
+      "source": "spotify",
+      "aliases": []
+    },
+    "gabbybarrett": {
+      "canonical_name": "Gabby Barrett",
+      "source": "spotify",
+      "aliases": []
+    },
+    "gabrielthomasbroussard": {
+      "canonical_name": "Gabriel Thomas Broussard",
+      "source": "spotify",
+      "aliases": []
+    },
+    "gabriellarose": {
+      "canonical_name": "Gabriella Rose",
+      "source": "spotify",
+      "aliases": []
+    },
+    "gabriellemetz": {
+      "canonical_name": "Gabrielle Metz",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "garethmusic": {
+      "canonical_name": "Gareth",
+      "source": "spotify",
+      "aliases": []
+    },
+    "garrettshultzmusic": {
+      "canonical_name": "Garrett Shultz",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "garywayne": {
+      "canonical_name": "Gary Wayne",
+      "source": "spotify",
+      "aliases": []
+    },
+    "gayle": {
+      "canonical_name": "GAYLE",
+      "source": "spotify",
+      "aliases": []
+    },
+    "georgiaowen": {
+      "canonical_name": "Georgia Owen",
+      "source": "spotify",
+      "aliases": []
+    },
+    "itsgeorgiawebster": {
+      "canonical_name": "Georgia Webster",
+      "source": "spotify",
+      "aliases": []
+    },
+    "iamgigirich": {
+      "canonical_name": "Gigi Rich",
+      "source": "spotify",
+      "aliases": []
+    },
+    "gilliansmith": {
+      "canonical_name": "gilliansmith",
+      "source": "spotify",
+      "aliases": []
+    },
+    "ginavenier": {
+      "canonical_name": "Gina Venier",
+      "source": "spotify",
+      "aliases": []
+    },
+    "matthewmcginn": {
+      "canonical_name": "Ginn",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "girlnamedtom": {
+      "canonical_name": "Girl Named Tom",
+      "source": "spotify",
+      "aliases": []
+    },
+    "gleecast": {
+      "canonical_name": "Glee Cast",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "gracebowersandthehodgepodge": {
+      "canonical_name": "Grace Bowers & The Hodge Podge",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "grcegunn": {
+      "canonical_name": "Grace Gunn",
+      "source": "spotify",
+      "aliases": []
+    },
+    "graceleermusic": {
+      "canonical_name": "Grace Leer",
+      "source": "spotify",
+      "aliases": []
+    },
+    "grace.tyler": {
+      "canonical_name": "Grace Tyler",
+      "source": "spotify",
+      "aliases": []
+    },
+    "gracewestmusic": {
+      "canonical_name": "Grace West",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "graceeshriver": {
+      "canonical_name": "Gracee Shriver",
+      "source": "spotify",
+      "aliases": []
+    },
+    "gracieabrams": {
+      "canonical_name": "Gracie Abrams",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "thegraciecarol": {
+      "canonical_name": "Gracie Carol",
+      "source": "spotify",
+      "aliases": []
+    },
+    "graciemoses": {
+      "canonical_name": "Gracie Moses",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "grahambarham": {
+      "canonical_name": "Graham Barham",
+      "source": "spotify",
+      "aliases": []
+    },
+    "greenday": {
+      "canonical_name": "Green Day",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "gregprattcountry": {
+      "canonical_name": "Greg Pratt",
+      "source": "spotify",
+      "aliases": []
+    },
+    "iamgrenon": {
+      "canonical_name": "Grenon",
+      "source": "spotify",
+      "aliases": []
+    },
+    "greylanjames": {
+      "canonical_name": "Greylan James",
+      "source": "spotify",
+      "aliases": []
+    },
+    "guster": {
+      "canonical_name": "Guster",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "haileywhitters": {
+      "canonical_name": "Hailey Whitters",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "haim": {
+      "canonical_name": "HAIM",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "haleydreis": {
+      "canonical_name": "Haley Dreis",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "haleymaecampbell": {
+      "canonical_name": "Haley Mae Campbell",
+      "source": "spotify",
+      "aliases": []
+    },
+    "halie": {
+      "canonical_name": "HALIE",
+      "source": "spotify",
+      "aliases": []
+    },
+    "hallekearns": {
+      "canonical_name": "Halle Kearns",
+      "source": "spotify",
+      "aliases": []
+    },
+    "hallieofficial": {
+      "canonical_name": "HALLIE",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "hannahbellmusic": {
+      "canonical_name": "Hannah Bell",
+      "source": "spotify",
+      "aliases": []
+    },
+    "hannahblaylock": {
+      "canonical_name": "Hannah Blaylock",
+      "source": "spotify",
+      "aliases": []
+    },
+    "hannahellis": {
+      "canonical_name": "Hannah Ellis",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "thehannahjeverhart": {
+      "canonical_name": "Hannah Everhart",
+      "source": "spotify",
+      "aliases": []
+    },
+    "hannah.geiser": {
+      "canonical_name": "Hannah Geiser",
+      "source": "spotify",
+      "aliases": []
+    },
+    "hannahmmcfarland": {
+      "canonical_name": "Hannah McFarland",
+      "source": "spotify",
+      "aliases": []
+    },
+    "hardy": {
+      "canonical_name": "HARDY",
+      "source": "spotify",
+      "aliases": []
+    },
+    "harpergracexo": {
+      "canonical_name": "Harper Grace",
+      "source": "spotify",
+      "aliases": []
+    },
+    "harperoneillmusic": {
+      "canonical_name": "Harper O'Neill",
+      "source": "spotify",
+      "aliases": []
+    },
+    "hastingandco": {
+      "canonical_name": "HASTING",
+      "source": "spotify",
+      "aliases": []
+    },
+    "havenmadison": {
+      "canonical_name": "Haven Madison",
+      "source": "spotify",
+      "aliases": []
+    },
+    "hayleypaynemusic": {
+      "canonical_name": "Hayley Payne",
+      "source": "spotify",
+      "aliases": []
+    },
+    "heathermorgan": {
+      "canonical_name": "Heather Morgan",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "henryconlonmusic": {
+      "canonical_name": "Henry Conlon",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "hippocampus": {
+      "canonical_name": "Hippo Campus",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "hozier": {
+      "canonical_name": "Hozier",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "hudsonwestbrook": {
+      "canonical_name": "Hudson Westbrook",
+      "source": "spotify",
+      "aliases": []
+    },
+    "huntergirlmusic": {
+      "canonical_name": "HunterGirl",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "ianharrison": {
+      "canonical_name": "Ian Harrison",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "ingridandress": {
+      "canonical_name": "Ingrid Andress",
+      "source": "spotify",
+      "aliases": []
+    },
+    "itzhakperlman": {
+      "canonical_name": "Itzhak Perlman",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "izzymahoubi": {
+      "canonical_name": "Izzy Mahoubi",
+      "source": "spotify",
+      "aliases": []
+    },
+    "jaceeverett": {
+      "canonical_name": "Jace Everett",
+      "source": "spotify",
+      "aliases": []
+    },
+    "jacquesmerlino": {
+      "canonical_name": "Jacques Merlino",
+      "source": "spotify",
+      "aliases": []
+    },
+    "jacquieroar": {
+      "canonical_name": "Jacquie Roar",
+      "source": "spotify",
+      "aliases": []
+    },
+    "jadeeagleson": {
+      "canonical_name": "Jade Eagleson",
+      "source": "spotify",
+      "aliases": []
+    },
+    "jademillion": {
+      "canonical_name": "Jade Million",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "jadyncejean": {
+      "canonical_name": "Jadynce Jean",
+      "source": "spotify",
+      "aliases": []
+    },
+    "jaggerwhitakermusic": {
+      "canonical_name": "Jagger Whitaker",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "jakeandshelbyofficial": {
+      "canonical_name": "Jake & Shelby",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "itsjakepuliti": {
+      "canonical_name": "Jake Puliti",
+      "source": "spotify",
+      "aliases": []
+    },
+    "jamesblunt": {
+      "canonical_name": "James Blunt",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "jamescarothers": {
+      "canonical_name": "James Carothers",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "jamesmaslow": {
+      "canonical_name": "James Maslow",
+      "source": "spotify",
+      "aliases": []
+    },
+    "jamiahiam": {
+      "canonical_name": "Jamiah",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "jamiefloyd": {
+      "canonical_name": "Jamie Floyd",
+      "source": "spotify",
+      "aliases": []
+    },
+    "jax": {
+      "canonical_name": "Jax",
+      "source": "spotify",
+      "aliases": []
+    },
+    "jaxhollow": {
+      "canonical_name": "Jax Hollow",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "jaxsonfree": {
+      "canonical_name": "Jaxson Free",
+      "source": "spotify",
+      "aliases": []
+    },
+    "jayallenmusic": {
+      "canonical_name": "Jay Allen",
+      "source": "spotify",
+      "aliases": []
+    },
+    "jeansaintlazarus": {
+      "canonical_name": "Jean Saint Lazarus",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "jellyroll615": {
+      "canonical_name": "Jelly Roll",
+      "source": "spotify",
+      "aliases": []
+    },
+    "jennadavis": {
+      "canonical_name": "Jenna Davis",
+      "source": "spotify",
+      "aliases": []
+    },
+    "devries": {
+      "canonical_name": "Jenna DeVries",
+      "source": "spotify",
+      "aliases": []
+    },
+    "jennakay": {
+      "canonical_name": "Jenna Kay",
+      "source": "spotify",
+      "aliases": []
+    },
+    "jennaraine": {
+      "canonical_name": "Jenna Raine",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "jennaferlynsey": {
+      "canonical_name": "Jennafer Lynsey",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "jenniferhart": {
+      "canonical_name": "Jennifer Hart",
+      "source": "spotify",
+      "aliases": []
+    },
+    "jessantonette": {
+      "canonical_name": "Jess Antonette",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "jessicanixon": {
+      "canonical_name": "Jessica Nixon",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "jessicawillisfisher": {
+      "canonical_name": "Jessica Willis Fisher",
+      "source": "spotify",
+      "aliases": []
+    },
+    "jessiejamesdecker": {
+      "canonical_name": "Jessie James Decker",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "jilliandawn": {
+      "canonical_name": "Jillian Dawn",
+      "source": "spotify",
+      "aliases": []
+    },
+    "jillianjacqueline": {
+      "canonical_name": "Jillian Jacqueline",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "jilliansteelemusic": {
+      "canonical_name": "Jillian Steele",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "jodigoodmusic44": {
+      "canonical_name": "Jodi Good",
+      "source": "spotify",
+      "aliases": []
+    },
+    "joemajormusic": {
+      "canonical_name": "Joe Major",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "joepurdy": {
+      "canonical_name": "Joe Purdy",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "johnlegend": {
+      "canonical_name": "John Legend",
+      "source": "spotify",
+      "aliases": []
+    },
+    "johnmayer": {
+      "canonical_name": "John Mayer",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "johnmorgan": {
+      "canonical_name": "John Morgan",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "johnsplithoff": {
+      "canonical_name": "John Splithoff",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "jonahprill": {
+      "canonical_name": "Jonah Prill",
+      "source": "spotify",
+      "aliases": []
+    },
+    "jonathanhutcherson": {
+      "canonical_name": "Jonathan Hutcherson",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "jordana.bryant": {
+      "canonical_name": "Jordana Bryant",
+      "source": "spotify",
+      "aliases": []
+    },
+    "jordynmallory": {
+      "canonical_name": "Jordyn Mallory",
+      "source": "spotify",
+      "aliases": []
+    },
+    "jordynshellhart": {
+      "canonical_name": "Jordyn Shellhart",
+      "source": "spotify",
+      "aliases": []
+    },
+    "joshkerr": {
+      "canonical_name": "Josh Kerr",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "jos\u00e9echampoux": {
+      "canonical_name": "Jos\u00e9e Champoux",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "joybethtaylor": {
+      "canonical_name": "Joybeth Taylor",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "judaea": {
+      "canonical_name": "Judaea",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "cooliajannon": {
+      "canonical_name": "Julia Cannon",
+      "source": "spotify",
+      "aliases": []
+    },
+    "juliacolemusic": {
+      "canonical_name": "Julia Cole",
+      "source": "spotify",
+      "aliases": []
+    },
+    "juliadigrazia": {
+      "canonical_name": "Julia DiGrazia",
+      "source": "spotify",
+      "aliases": []
+    },
+    "juliagolden": {
+      "canonical_name": "Julia Golden",
+      "source": "spotify",
+      "aliases": []
+    },
+    "juliakahn": {
+      "canonical_name": "Julia Kahn",
+      "source": "spotify",
+      "aliases": []
+    },
+    "julialarkinmusic": {
+      "canonical_name": "Julia Larkin",
+      "source": "spotify",
+      "aliases": []
+    },
+    "juliemazz": {
+      "canonical_name": "Julie Mazz",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "juliewilliamsmusic": {
+      "canonical_name": "Julie Williams",
+      "source": "spotify",
+      "aliases": []
+    },
+    "juliellemusic": {
+      "canonical_name": "Julielle",
+      "source": "spotify",
+      "aliases": []
+    },
+    "julymoonofficial": {
+      "canonical_name": "July Moon",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "junanjoey": {
+      "canonical_name": "Juna N Joey",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "justjaynemusic": {
+      "canonical_name": "Just Jayne",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "justinebeverley": {
+      "canonical_name": "Justine Beverley",
+      "source": "spotify",
+      "aliases": []
+    },
+    "k.michelle": {
+      "canonical_name": "K. Michelle",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "spaceykacey": {
+      "canonical_name": "Kacey Musgraves",
+      "source": "spotify",
+      "aliases": []
+    },
+    "kacymoon": {
+      "canonical_name": "Kacy Moon",
+      "source": "spotify",
+      "aliases": []
+    },
+    "kaibrienne": {
+      "canonical_name": "Kaibrienne",
+      "source": "spotify",
+      "aliases": []
+    },
+    "kaitlinbutts": {
+      "canonical_name": "Kaitlin Butts",
+      "source": "spotify",
+      "aliases": []
+    },
+    "kaitlyncroker": {
+      "canonical_name": "Kaitlyn Croker",
+      "source": "spotify",
+      "aliases": []
+    },
+    "kalieshorr": {
+      "canonical_name": "Kalie Shorr",
+      "source": "spotify",
+      "aliases": []
+    },
+    "kameronmarlowe": {
+      "canonical_name": "Kameron Marlowe",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "karissaellamusic": {
+      "canonical_name": "Karissa Ella",
+      "source": "spotify",
+      "aliases": []
+    },
+    "karleyscottcollins": {
+      "canonical_name": "Karley Scott Collins",
+      "source": "spotify",
+      "aliases": []
+    },
+    "kaseytyndall": {
+      "canonical_name": "Kasey Tyndall",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "katcunning": {
+      "canonical_name": "Kat Cunning",
+      "source": "spotify",
+      "aliases": []
+    },
+    "katlunamusic": {
+      "canonical_name": "Kat Luna",
+      "source": "spotify",
+      "aliases": []
+    },
+    "katehardingcountry": {
+      "canonical_name": "Kate Harding",
+      "source": "spotify",
+      "aliases": []
+    },
+    "katesykes": {
+      "canonical_name": "Kate Sykes",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "katiejamesmusic": {
+      "canonical_name": "Katie James",
+      "source": "spotify",
+      "aliases": []
+    },
+    "katilynmusic": {
+      "canonical_name": "Katilyn",
+      "source": "spotify",
+      "aliases": []
+    },
+    "kaykomusic": {
+      "canonical_name": "KAYKO",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "kaylaann": {
+      "canonical_name": "Kayla Ann",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "kayleebellmusic": {
+      "canonical_name": "Kaylee Bell",
+      "source": "spotify",
+      "aliases": []
+    },
+    "kayleefedermann": {
+      "canonical_name": "Kaylee Federmann",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "iamkayleerose": {
+      "canonical_name": "Kaylee Rose",
+      "source": "spotify",
+      "aliases": []
+    },
+    "kayleybish": {
+      "canonical_name": "Kayley Bishop",
+      "source": "spotify",
+      "aliases": []
+    },
+    "kayleygreen": {
+      "canonical_name": "Kayley Green",
+      "source": "spotify",
+      "aliases": []
+    },
+    "kaylinkole": {
+      "canonical_name": "Kaylin Kole",
+      "source": "spotify",
+      "aliases": []
+    },
+    "kaylinroberson": {
+      "canonical_name": "Kaylin Roberson",
+      "source": "spotify",
+      "aliases": []
+    },
+    "kellyjeancarter": {
+      "canonical_name": "Kelly Jean Carter",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "kellymctiguee": {
+      "canonical_name": "Kelly McTigue",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "findingkels": {
+      "canonical_name": "KELS",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "kelseaballerini": {
+      "canonical_name": "Kelsea Ballerini",
+      "source": "spotify",
+      "aliases": []
+    },
+    "kelseyblackstone": {
+      "canonical_name": "Kelsey Blackstone",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "kelseylamb": {
+      "canonical_name": "Kelsey Lamb",
+      "source": "spotify",
+      "aliases": []
+    },
+    "kelsimayne": {
+      "canonical_name": "Kelsi Mayne",
+      "source": "spotify",
+      "aliases": []
+    },
+    "kendraremedios": {
+      "canonical_name": "Kendra Remedios",
+      "source": "spotify",
+      "aliases": []
+    },
+    "kennedyscottofficial": {
+      "canonical_name": "Kennedy Scott",
+      "source": "spotify",
+      "aliases": []
+    },
+    "kesleybou": {
+      "canonical_name": "Kesley Bou",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "kianax": {
+      "canonical_name": "KIANA",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "kiernanmcmullan": {
+      "canonical_name": "Kiernan McMullan",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "thekimberlyperry": {
+      "canonical_name": "Kimberly Perry",
+      "source": "spotify",
+      "aliases": []
+    },
+    "kingcalaway": {
+      "canonical_name": "King Calaway",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "kinsley.music": {
+      "canonical_name": "Kinsley",
+      "source": "spotify",
+      "aliases": []
+    },
+    "kiralynn": {
+      "canonical_name": "Kira Lynn",
+      "source": "spotify",
+      "aliases": []
+    },
+    "kirstiekraus": {
+      "canonical_name": "Kirstie Kraus",
+      "source": "spotify",
+      "aliases": []
+    },
+    "kristinamurray": {
+      "canonical_name": "Kristina Murray",
+      "source": "spotify",
+      "aliases": []
+    },
+    "krystalkingmusic": {
+      "canonical_name": "Krystal King",
+      "source": "spotify",
+      "aliases": []
+    },
+    "kyliefrey": {
+      "canonical_name": "Kylie Frey",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "kyliemorganmusic": {
+      "canonical_name": "Kylie Morgan",
+      "source": "spotify",
+      "aliases": []
+    },
+    "kyndalinskeep": {
+      "canonical_name": "Kyndal",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "kyrstamckade": {
+      "canonical_name": "Kyrsta McKade",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "lacikayebooth": {
+      "canonical_name": "Laci Kaye Booth",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "ladygaga": {
+      "canonical_name": "Lady Gaga",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "ladycouch": {
+      "canonical_name": "LadyCouch",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "lainelal": {
+      "canonical_name": "Laine Lonero",
+      "source": "spotify",
+      "aliases": []
+    },
+    "laineywilson": {
+      "canonical_name": "Lainey Wilson",
+      "source": "spotify",
+      "aliases": []
+    },
+    "lakestreetdive": {
+      "canonical_name": "Lake Street Dive",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "ameasureoflana": {
+      "canonical_name": "Lana Scott",
+      "source": "spotify",
+      "aliases": []
+    },
+    "lancecarpenter": {
+      "canonical_name": "Lance Carpenter",
+      "source": "spotify",
+      "aliases": []
+    },
+    "landonparker": {
+      "canonical_name": "Landon Parker",
+      "source": "spotify",
+      "aliases": []
+    },
+    "laniegardner": {
+      "canonical_name": "Lanie Gardner",
+      "source": "spotify",
+      "aliases": []
+    },
+    "larabell": {
+      "canonical_name": "Lara Bell",
+      "source": "spotify",
+      "aliases": []
+    },
+    "lathanbryant": {
+      "canonical_name": "Lathan Bryant",
+      "source": "spotify",
+      "aliases": []
+    },
+    "lauravinson": {
+      "canonical_name": "Laura Vinson",
+      "source": "spotify",
+      "aliases": []
+    },
+    "laurelsabadosh": {
+      "canonical_name": "Laurel Sabadosh",
+      "source": "spotify",
+      "aliases": []
+    },
+    "laurenalaina": {
+      "canonical_name": "Lauren Alaina",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "laurengottshall": {
+      "canonical_name": "Lauren Gottshall",
+      "source": "spotify",
+      "aliases": []
+    },
+    "lauren_mascitti_music": {
+      "canonical_name": "Lauren Mascitti",
+      "source": "spotify",
+      "aliases": []
+    },
+    "lauren.watkins": {
+      "canonical_name": "Lauren Watkins",
+      "source": "spotify",
+      "aliases": []
+    },
+    "laylafrankel": {
+      "canonical_name": "Layla Frankel",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "leahcolon": {
+      "canonical_name": "Leah Colon",
+      "source": "spotify",
+      "aliases": []
+    },
+    "leahcrosemusic": {
+      "canonical_name": "Leah Crose",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "leahkate": {
+      "canonical_name": "Leah Kate",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "leahmmason": {
+      "canonical_name": "Leah Mason",
+      "source": "spotify",
+      "aliases": []
+    },
+    "leahturner": {
+      "canonical_name": "Leah Turner",
+      "source": "spotify",
+      "aliases": []
+    },
+    "leniblack": {
+      "canonical_name": "Leni Black",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "levihummon": {
+      "canonical_name": "Levi Hummon",
+      "source": "spotify",
+      "aliases": []
+    },
+    "taelewis": {
+      "canonical_name": "Tae Lewis",
+      "source": "spotify",
+      "aliases": []
+    },
+    "lewiscapaldi": {
+      "canonical_name": "Lewis Capaldi",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "lexiehayden": {
+      "canonical_name": "Lexie Hayden",
+      "source": "spotify",
+      "aliases": []
+    },
+    "lexcarney": {
+      "canonical_name": "LEX CARNEY",
+      "source": "spotify",
+      "aliases": []
+    },
+    "lexianandmusic": {
+      "canonical_name": "Lexi Anand",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "lilliekolich": {
+      "canonical_name": "Lillie Kolich",
+      "source": "spotify",
+      "aliases": []
+    },
+    "lilyfitts": {
+      "canonical_name": "Lily Fitts",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "lilygracelive": {
+      "canonical_name": "Lily Grace",
+      "source": "spotify",
+      "aliases": []
+    },
+    "lilyrosemusic": {
+      "canonical_name": "Lily Rose",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "lindsayell": {
+      "canonical_name": "Lindsay Ell",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "lindsayjames": {
+      "canonical_name": "Lindsay James",
+      "source": "spotify",
+      "aliases": []
+    },
+    "lindseyfish": {
+      "canonical_name": "Lindsey Fish",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "livcharette": {
+      "canonical_name": "Liv Charette",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "lockwoodbarr": {
+      "canonical_name": "Lockwood Barr",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "louneal": {
+      "canonical_name": "Lou Neal",
+      "source": "spotify",
+      "aliases": []
+    },
+    "louridleyx": {
+      "canonical_name": "Lou Ridley",
+      "source": "spotify",
+      "aliases": []
+    },
+    "lukasnelson": {
+      "canonical_name": "Lukas Nelson",
+      "source": "spotify",
+      "aliases": []
+    },
+    "lukecombs": {
+      "canonical_name": "Luke Combs",
+      "source": "spotify",
+      "aliases": []
+    },
+    "lukegrimes": {
+      "canonical_name": "Luke Grimes",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "lulumadeleine": {
+      "canonical_name": "LuLu Madeleine",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "lynagh": {
+      "canonical_name": "Lynagh",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "lynyrdskynyrd": {
+      "canonical_name": "Lynyrd Skynyrd",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "macartneyreinhardtmusic": {
+      "canonical_name": "Macartney Reinhardt",
+      "source": "spotify",
+      "aliases": []
+    },
+    "mackenziecarpenter": {
+      "canonical_name": "Mackenzie Carpenter",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "mackenziep": {
+      "canonical_name": "MacKenzie Porter",
+      "source": "spotify",
+      "aliases": []
+    },
+    "mackmartin": {
+      "canonical_name": "MackMartin",
+      "source": "spotify",
+      "aliases": []
+    },
+    "macykrewmusic": {
+      "canonical_name": "Macy Krew",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "maddieandtae": {
+      "canonical_name": "Maddie & Tae",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "maddieettrich": {
+      "canonical_name": "Maddie Ettrich",
+      "source": "spotify",
+      "aliases": []
+    },
+    "maddiel0u": {
+      "canonical_name": "Maddie Lenhart",
+      "source": "spotify",
+      "aliases": []
+    },
+    "maddiepoppe": {
+      "canonical_name": "Maddie Poppe",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "maddiezahm": {
+      "canonical_name": "Maddie Zahm",
+      "source": "spotify",
+      "aliases": []
+    },
+    "madeleinekelson": {
+      "canonical_name": "Madeleine Kelson",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "madelineedwards": {
+      "canonical_name": "Madeline Edwards",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "madelinemerlo": {
+      "canonical_name": "Madeline Merlo",
+      "source": "spotify",
+      "aliases": []
+    },
+    "madelinerose": {
+      "canonical_name": "Madeline Rose",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "madisoncunningham": {
+      "canonical_name": "Madison Cunningham",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "itsmadisonhughes": {
+      "canonical_name": "Madison Hughes",
+      "source": "spotify",
+      "aliases": []
+    },
+    "madison_kozak": {
+      "canonical_name": "Madison Kozak",
+      "source": "spotify",
+      "aliases": []
+    },
+    "madisonparks": {
+      "canonical_name": "Madison Parks",
+      "source": "spotify",
+      "aliases": []
+    },
+    "madisonspratley": {
+      "canonical_name": "Madison Spratley",
+      "source": "spotify",
+      "aliases": []
+    },
+    "mady": {
+      "canonical_name": "MADY",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "maeestes": {
+      "canonical_name": "Mae Estes",
+      "source": "spotify",
+      "aliases": []
+    },
+    "maggieantone": {
+      "canonical_name": "Maggie Antone",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "maggie_baugh": {
+      "canonical_name": "Maggie Baugh",
+      "source": "spotify",
+      "aliases": []
+    },
+    "maggierogers": {
+      "canonical_name": "Maggie Rogers",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "iammaggierose": {
+      "canonical_name": "Maggie Rose",
+      "source": "spotify",
+      "aliases": []
+    },
+    "magnoliarising": {
+      "canonical_name": "Magnolia Rising",
+      "source": "spotify",
+      "aliases": []
+    },
+    "magsduvalmusic": {
+      "canonical_name": "Mags Duval",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "makaylalynn": {
+      "canonical_name": "Makayla Lynn",
+      "source": "spotify",
+      "aliases": []
+    },
+    "makenahartlin": {
+      "canonical_name": "Makena Hartlin",
+      "source": "spotify",
+      "aliases": []
+    },
+    "marcscibilia": {
+      "canonical_name": "Marc Scibilia",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "margoprice": {
+      "canonical_name": "Margo Price",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "mariellekraft": {
+      "canonical_name": "Marielle Kraft",
+      "source": "spotify",
+      "aliases": []
+    },
+    "marleyhale": {
+      "canonical_name": "Marley Hale",
+      "source": "spotify",
+      "aliases": []
+    },
+    "maryheatherhickman": {
+      "canonical_name": "Mary Heather Hickman",
+      "source": "spotify",
+      "aliases": []
+    },
+    "marykatefarmer": {
+      "canonical_name": "Mary Kate Farmer",
+      "source": "spotify",
+      "aliases": []
+    },
+    "marykutter": {
+      "canonical_name": "Mary Kutter",
+      "source": "spotify",
+      "aliases": []
+    },
+    "mary_moore_music": {
+      "canonical_name": "Mary Moore",
+      "source": "spotify",
+      "aliases": []
+    },
+    "marynntaylor": {
+      "canonical_name": "MaRynn Taylor",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "masonramsey": {
+      "canonical_name": "Mason Ramsey",
+      "source": "spotify",
+      "aliases": []
+    },
+    "matisyahu": {
+      "canonical_name": "Matisyahu",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "mattkoziolmusic": {
+      "canonical_name": "Matt Koziol",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "mattschuster": {
+      "canonical_name": "Matt Schuster",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "maurastreppamusic": {
+      "canonical_name": "Maura Streppa",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "maxalan": {
+      "canonical_name": "Max Alan",
+      "source": "spotify",
+      "aliases": []
+    },
+    "maxboylemusic": {
+      "canonical_name": "Max Boyle",
+      "source": "spotify",
+      "aliases": []
+    },
+    "maxgallmusic": {
+      "canonical_name": "Max Gall",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "maxmcnown": {
+      "canonical_name": "Max McNown",
+      "source": "spotify",
+      "aliases": []
+    },
+    "maxine": {
+      "canonical_name": "Maxine",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "megandtheboys": {
+      "canonical_name": "Meg & The Boys",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "megmcree": {
+      "canonical_name": "Meg McRee",
+      "source": "spotify",
+      "aliases": []
+    },
+    "megrilley": {
+      "canonical_name": "Meg Rilley",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "megmoroney": {
+      "canonical_name": "Megan Moroney",
+      "source": "spotify",
+      "aliases": []
+    },
+    "meghanlinsey": {
+      "canonical_name": "Meghan Linsey",
+      "source": "spotify",
+      "aliases": []
+    },
+    "megpatrick": {
+      "canonical_name": "Meghan Patrick",
+      "source": "spotify",
+      "aliases": []
+    },
+    "meghantrainor": {
+      "canonical_name": "Meghan Trainor",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "melissaerin": {
+      "canonical_name": "Melissa Erin",
+      "source": "spotify",
+      "aliases": []
+    },
+    "miamatthews": {
+      "canonical_name": "Mia Matthews",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "miamorrismusic": {
+      "canonical_name": "Mia Morris",
+      "source": "spotify",
+      "aliases": []
+    },
+    "micahkennedy": {
+      "canonical_name": "Micah Kennedy",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "michaelwarrenonline": {
+      "canonical_name": "Michael Warren",
+      "source": "spotify",
+      "aliases": []
+    },
+    "mickeyguyton": {
+      "canonical_name": "Mickey Guyton",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "miggiesnyder": {
+      "canonical_name": "Miggie Snyder",
+      "source": "spotify",
+      "aliases": []
+    },
+    "mignonmusic": {
+      "canonical_name": "Mignon",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "mikalynch": {
+      "canonical_name": "Mika Lynch",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "musicbymikeparker": {
+      "canonical_name": "Mike Parker",
+      "source": "spotify",
+      "aliases": []
+    },
+    "mikkizipofficial": {
+      "canonical_name": "Mikki Zip",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "ilymistermoon": {
+      "canonical_name": "MisterMoon",
+      "source": "spotify",
+      "aliases": []
+    },
+    "mogafamily": {
+      "canonical_name": "Moga Family Band",
+      "source": "spotify",
+      "aliases": []
+    },
+    "mollyforbes": {
+      "canonical_name": "Molly Forbes",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "mollylovette": {
+      "canonical_name": "Molly Lovette",
+      "source": "spotify",
+      "aliases": []
+    },
+    "morganjohnstonmusic": {
+      "canonical_name": "Morgan Johnston",
+      "source": "spotify",
+      "aliases": []
+    },
+    "morganmyleslive": {
+      "canonical_name": "Morgan Myles",
+      "source": "spotify",
+      "aliases": []
+    },
+    "morganwade": {
+      "canonical_name": "Morgan Wade",
+      "source": "spotify",
+      "aliases": []
+    },
+    "moxiehotel": {
+      "canonical_name": "Moxie Hotel",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "mp_gannon": {
+      "canonical_name": "MP Gannon",
+      "source": "spotify",
+      "aliases": []
+    },
+    "mtfog": {
+      "canonical_name": "Mt Fog",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "muna": {
+      "canonical_name": "MUNA",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "natalielaynemusic": {
+      "canonical_name": "Natalie Layne",
+      "source": "spotify",
+      "aliases": []
+    },
+    "nataliemadigan_": {
+      "canonical_name": "Natalie Madigan",
+      "source": "spotify",
+      "aliases": []
+    },
+    "natashablaine": {
+      "canonical_name": "Natasha Blaine",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "n8kenyon": {
+      "canonical_name": "Nate Kenyon",
+      "source": "spotify",
+      "aliases": []
+    },
+    "natesmith": {
+      "canonical_name": "Nate Smith",
+      "source": "spotify",
+      "aliases": []
+    },
+    "nathancolberg": {
+      "canonical_name": "Nathan Colberg",
+      "source": "spotify",
+      "aliases": []
+    },
+    "needtobreathe": {
+      "canonical_name": "NEEDTOBREATHE",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "nefeshmountain": {
+      "canonical_name": "Nefesh Mountain",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "neonunionmusic": {
+      "canonical_name": "Neon Union",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "nicholascollins": {
+      "canonical_name": "Nicholas Collins",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "nicolealexis": {
+      "canonical_name": "Nicole Alexis",
+      "source": "spotify",
+      "aliases": []
+    },
+    "nicolesophiamusic": {
+      "canonical_name": "Nicole Sophia",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "nicolesumerlyn": {
+      "canonical_name": "Nicole Sumerlyn",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "nicolezadok": {
+      "canonical_name": "Nicole Zadok",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "nikitakarmen": {
+      "canonical_name": "Nikita Karmen",
+      "source": "spotify",
+      "aliases": []
+    },
+    "nikomoon": {
+      "canonical_name": "Niko Moon",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "ninadaig": {
+      "canonical_name": "Nina Daig",
+      "source": "spotify",
+      "aliases": []
+    },
+    "noahhicks": {
+      "canonical_name": "Noah Hicks",
+      "source": "spotify",
+      "aliases": []
+    },
+    "noahkesselman": {
+      "canonical_name": "Noah Kesselman",
+      "source": "spotify",
+      "aliases": []
+    },
+    "noahpelty": {
+      "canonical_name": "Noah Pelty",
+      "source": "spotify",
+      "aliases": []
+    },
+    "noahsilver": {
+      "canonical_name": "Noah Silver",
+      "source": "spotify",
+      "aliases": []
+    },
+    "noelinehofmann": {
+      "canonical_name": "Noeline Hofmann",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "nora_collins": {
+      "canonical_name": "Nora Collins",
+      "source": "spotify",
+      "aliases": []
+    },
+    "normannorth": {
+      "canonical_name": "Norman North",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "o.n.etheduo": {
+      "canonical_name": "O.N.E The Duo",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "oldcrowmedicineshow": {
+      "canonical_name": "Old Crow Medicine Show",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "theoliversteele": {
+      "canonical_name": "Oliver Steele",
+      "source": "spotify",
+      "aliases": []
+    },
+    "oliviadaponte": {
+      "canonical_name": "Olivia DaPonte",
+      "source": "spotify",
+      "aliases": []
+    },
+    "heyoliviafrances": {
+      "canonical_name": "Olivia Frances",
+      "source": "spotify",
+      "aliases": []
+    },
+    "onoleigh": {
+      "canonical_name": "Onoleigh",
+      "source": "spotify",
+      "aliases": []
+    },
+    "otnes": {
+      "canonical_name": "OTNES",
+      "source": "spotify",
+      "aliases": []
+    },
+    "paigedavismusic": {
+      "canonical_name": "Paige Davis",
+      "source": "spotify",
+      "aliases": []
+    },
+    "paigekeinermusic": {
+      "canonical_name": "Paige Keiner",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "paigemadison": {
+      "canonical_name": "Paige Madison",
+      "source": "spotify",
+      "aliases": []
+    },
+    "paramore": {
+      "canonical_name": "Paramore",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "heyparkermckay": {
+      "canonical_name": "Parker McKay",
+      "source": "spotify",
+      "aliases": []
+    },
+    "patrickdavis": {
+      "canonical_name": "Patrick Davis",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "paulaabdul": {
+      "canonical_name": "Paula Abdul",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "paulinajayne": {
+      "canonical_name": "Paulina Jayne",
+      "source": "spotify",
+      "aliases": []
+    },
+    "thepaytonsmith": {
+      "canonical_name": "Payton Smith",
+      "source": "spotify",
+      "aliases": []
+    },
+    "pearlclarkin": {
+      "canonical_name": "Pearl Clarkin",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "peytanporter": {
+      "canonical_name": "Peytan Porter",
+      "source": "spotify",
+      "aliases": []
+    },
+    "pierrealexandermusic": {
+      "canonical_name": "Pierre Alexander",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "pipella": {
+      "canonical_name": "PiPEllA",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "pistolpearlsongs": {
+      "canonical_name": "Pistol Pearl",
+      "source": "spotify",
+      "aliases": []
+    },
+    "presleyandtaylor": {
+      "canonical_name": "Presley & Taylor",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "prestoncooper": {
+      "canonical_name": "Preston Cooper",
+      "source": "spotify",
+      "aliases": []
+    },
+    "priscillablock": {
+      "canonical_name": "Priscilla Block",
+      "source": "spotify",
+      "aliases": []
+    },
+    "hometowntragicqueen": {
+      "canonical_name": "Queen",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "qwynn": {
+      "canonical_name": "Qwynn",
+      "source": "spotify",
+      "aliases": []
+    },
+    "racheldeelynn": {
+      "canonical_name": "Rachel DeeLynn",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "rachelhorter": {
+      "canonical_name": "Rachel Horter",
+      "source": "spotify",
+      "aliases": []
+    },
+    "rachellaren": {
+      "canonical_name": "Rachel LaRen",
+      "source": "spotify",
+      "aliases": []
+    },
+    "rachelneal": {
+      "canonical_name": "Rachel Neal",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "rachelschumacher": {
+      "canonical_name": "Rachel Schumacher",
+      "source": "spotify",
+      "aliases": []
+    },
+    "rachelwiggins": {
+      "canonical_name": "Rachel Wiggins",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "raelynnofficial": {
+      "canonical_name": "RaeLynn",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "raffi": {
+      "canonical_name": "Raffi",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "raquelcolemusic": {
+      "canonical_name": "Raquel Cole",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "rauldiblasio": {
+      "canonical_name": "Raul Di Blasio",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "rayduncanmusic": {
+      "canonical_name": "Ray Duncan",
+      "source": "spotify",
+      "aliases": []
+    },
+    "rebeccabrunnermusic": {
+      "canonical_name": "Rebecca Brunner",
+      "source": "spotify",
+      "aliases": []
+    },
+    "redhotchilipeppers": {
+      "canonical_name": "Red Hot Chili Peppers",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "redferrin": {
+      "canonical_name": "Redferrin",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "reganstewart": {
+      "canonical_name": "Regan Stewart",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "remygarrison": {
+      "canonical_name": "Remy Garrison",
+      "source": "spotify",
+      "aliases": []
+    },
+    "renatatheband": {
+      "canonical_name": "Renata The Band",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "restlessroad": {
+      "canonical_name": "Restless Road",
+      "source": "spotify",
+      "aliases": []
+    },
+    "thereynaroberts": {
+      "canonical_name": "Reyna Roberts",
+      "source": "spotify",
+      "aliases": []
+    },
+    "rileygreen": {
+      "canonical_name": "Riley Green",
+      "source": "spotify",
+      "aliases": []
+    },
+    "rileywhittaker": {
+      "canonical_name": "Riley Whittaker",
+      "source": "spotify",
+      "aliases": []
+    },
+    "riothousehq": {
+      "canonical_name": "Riot House",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "iamrobertalea": {
+      "canonical_name": "Roberta Lea",
+      "source": "spotify",
+      "aliases": []
+    },
+    "robynottolini": {
+      "canonical_name": "Robyn Ottolini",
+      "source": "spotify",
+      "aliases": []
+    },
+    "romanalexandermusic": {
+      "canonical_name": "Roman Alexander",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "rosemaryjoaquin": {
+      "canonical_name": "Rosemary Joaquin",
+      "source": "spotify",
+      "aliases": []
+    },
+    "rosiedarling": {
+      "canonical_name": "Rosie Darling",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "runawayjune": {
+      "canonical_name": "Runaway June",
+      "source": "spotify",
+      "aliases": []
+    },
+    "rvshvd": {
+      "canonical_name": "Rvshvd",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "ryanadams": {
+      "canonical_name": "Ryan Adams",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "ryangriffinlive": {
+      "canonical_name": "Ryan Griffin",
+      "source": "spotify",
+      "aliases": []
+    },
+    "sachaofficial": {
+      "canonical_name": "Sacha",
+      "source": "spotify",
+      "aliases": []
+    },
+    "sadiefinesingsfine": {
+      "canonical_name": "Sadie Fine",
+      "source": "spotify",
+      "aliases": []
+    },
+    "sadiejean": {
+      "canonical_name": "Sadie Jean",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "ilovesalemtown": {
+      "canonical_name": "Salemtown",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "sambarber": {
+      "canonical_name": "Sam Barber",
+      "source": "spotify",
+      "aliases": []
+    },
+    "samhuntmusic": {
+      "canonical_name": "Sam Hunt",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "sampalladio": {
+      "canonical_name": "Sam Palladio",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "samryder": {
+      "canonical_name": "Sam Ryder",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "samstoane": {
+      "canonical_name": "Sam Stoane",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "samvarga": {
+      "canonical_name": "Sam Varga",
+      "source": "spotify",
+      "aliases": []
+    },
+    "samwillivms": {
+      "canonical_name": "Sam Williams",
+      "source": "spotify",
+      "aliases": []
+    },
+    "samijosongs": {
+      "canonical_name": "Sami Jo",
+      "source": "spotify",
+      "aliases": []
+    },
+    "sammyarriaga": {
+      "canonical_name": "Sammy Arriaga",
+      "source": "spotify",
+      "aliases": []
+    },
+    "samuelherbmusic": {
+      "canonical_name": "Samuel Herb",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "sarabareilles": {
+      "canonical_name": "Sara Bareilles",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "sarakelly": {
+      "canonical_name": "Sara Kelly",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "sarahallisonturner": {
+      "canonical_name": "Sarah Allison Turner",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "sarahmoreymusic": {
+      "canonical_name": "Sarah Morey",
+      "source": "spotify",
+      "aliases": []
+    },
+    "savannahdexter": {
+      "canonical_name": "Savannah Dexter",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "savannahkeyesmusic": {
+      "canonical_name": "Savannah Keyes",
+      "source": "spotify",
+      "aliases": []
+    },
+    "savs": {
+      "canonical_name": "Savs",
+      "source": "spotify",
+      "aliases": []
+    },
+    "savshouse": {
+      "canonical_name": "savs house",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "scottgrimes": {
+      "canonical_name": "Scott Grimes",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "seanckennedy": {
+      "canonical_name": "Sean C Kennedy",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "seanstemaly": {
+      "canonical_name": "Sean Stemaly",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "shaboozey": {
+      "canonical_name": "Shaboozey",
+      "source": "spotify",
+      "aliases": []
+    },
+    "shannonlaurencallihan": {
+      "canonical_name": "Shannon Lauren Callihan",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "shantaiamusic": {
+      "canonical_name": "Shantaia",
+      "source": "spotify",
+      "aliases": []
+    },
+    "shaylenofficial": {
+      "canonical_name": "Shaylen",
+      "source": "spotify",
+      "aliases": []
+    },
+    "shelbydarrall": {
+      "canonical_name": "Shelby Darrall",
+      "source": "spotify",
+      "aliases": []
+    },
+    "shelbyrayemusic": {
+      "canonical_name": "Shelby Raye",
+      "source": "spotify",
+      "aliases": []
+    },
+    "shinedown": {
+      "canonical_name": "Shinedown",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "sierraferrell": {
+      "canonical_name": "Sierra Ferrell",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "sjmcdonaldmusic": {
+      "canonical_name": "SJ McDonald",
+      "source": "spotify",
+      "aliases": []
+    },
+    "skoutoutloud": {
+      "canonical_name": "Skout",
+      "source": "spotify",
+      "aliases": []
+    },
+    "smashby": {
+      "canonical_name": "Smashby",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "iamsofielynn": {
+      "canonical_name": "Sofie Lynn",
+      "source": "spotify",
+      "aliases": []
+    },
+    "sololowit": {
+      "canonical_name": "Solo Lowit",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "somewherebluemusic": {
+      "canonical_name": "Somewhere Blue",
+      "source": "spotify",
+      "aliases": []
+    },
+    "songhouse": {
+      "canonical_name": "Song House",
+      "source": "spotify",
+      "aliases": []
+    },
+    "songsuffragettes": {
+      "canonical_name": "Song Suffragettes",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "sonialeigh": {
+      "canonical_name": "Sonia Leigh",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "sophiaroselle": {
+      "canonical_name": "Sophia Roselle",
+      "source": "spotify",
+      "aliases": []
+    },
+    "sophunky": {
+      "canonical_name": "Sophia Scott",
+      "source": "spotify",
+      "aliases": []
+    },
+    "southerncall": {
+      "canonical_name": "Southern Call",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "spencercrandall": {
+      "canonical_name": "Spencer Crandall",
+      "source": "spotify",
+      "aliases": []
+    },
+    "iamstaceykelleher": {
+      "canonical_name": "Stacey Kelleher",
+      "source": "spotify",
+      "aliases": []
+    },
+    "stantonlangleymusic": {
+      "canonical_name": "Stanton Langley",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "stefaniejoycemusic": {
+      "canonical_name": "Stefanie Joyce",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "stellaprincemusic": {
+      "canonical_name": "Stella Prince",
+      "source": "spotify",
+      "aliases": []
+    },
+    "stephensanchez": {
+      "canonical_name": "Stephen Sanchez",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "stevienicks": {
+      "canonical_name": "Stevie Nicks",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "stevieraestephens": {
+      "canonical_name": "Stevie Rae Stephens",
+      "source": "spotify",
+      "aliases": []
+    },
+    "sublime": {
+      "canonical_name": "Sublime",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "sugarray": {
+      "canonical_name": "Sugar Ray",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "summerthejoy": {
+      "canonical_name": "Summer Joy",
+      "source": "spotify",
+      "aliases": []
+    },
+    "summerlynpowers": {
+      "canonical_name": "Summerlyn Powers",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "sydneyquiseng": {
+      "canonical_name": "Sydney Quiseng",
+      "source": "spotify",
+      "aliases": []
+    },
+    "sydneyrose": {
+      "canonical_name": "Sydney Rose",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "piano_tabs.": {
+      "canonical_name": "Tabitha Meeks",
+      "source": "spotify",
+      "aliases": []
+    },
+    "tanneradell": {
+      "canonical_name": "Tanner Adell",
+      "source": "spotify",
+      "aliases": []
+    },
+    "tarynpapa": {
+      "canonical_name": "Taryn Papa",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "tatumscottt": {
+      "canonical_name": "Tatum Scott",
+      "source": "spotify",
+      "aliases": []
+    },
+    "taydeemarie": {
+      "canonical_name": "Taydee Marie",
+      "source": "spotify",
+      "aliases": []
+    },
+    "itstaylerholder": {
+      "canonical_name": "Tayler Holder",
+      "source": "spotify",
+      "aliases": []
+    },
+    "taylorashton": {
+      "canonical_name": "Taylor Ashton",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "tayloraustindye": {
+      "canonical_name": "Taylor Austin Dye",
+      "source": "spotify",
+      "aliases": []
+    },
+    "taylorbickett": {
+      "canonical_name": "Taylor Bickett",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "taylordemp": {
+      "canonical_name": "Taylor Demp",
+      "source": "spotify",
+      "aliases": []
+    },
+    "tayloredwards": {
+      "canonical_name": "Taylor Edwards",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "taylorhicks": {
+      "canonical_name": "Taylor Hicks",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "taylorhoganmusic": {
+      "canonical_name": "Taylor Hogan",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "taylorhughesmusic": {
+      "canonical_name": "Taylor Hughes",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "taylorswift": {
+      "canonical_name": "Taylor Swift",
+      "source": "spotify",
+      "aliases": []
+    },
+    "teaganstewart": {
+      "canonical_name": "Teagan Stewart",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "temecularoad": {
+      "canonical_name": "Temecula Road",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "tenillearts": {
+      "canonical_name": "Tenille Arts",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "tenilletownes": {
+      "canonical_name": "Tenille Townes",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "thetezza": {
+      "canonical_name": "Tezza",
+      "source": "spotify",
+      "aliases": []
+    },
+    "the615house": {
+      "canonical_name": "The 615 House",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "thebandperry": {
+      "canonical_name": "The Band Perry",
+      "source": "spotify",
+      "aliases": []
+    },
+    "thebeatles": {
+      "canonical_name": "The Beatles",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "theblackcrowes": {
+      "canonical_name": "The Black Crowes",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "thecastellows": {
+      "canonical_name": "The Castellows",
+      "source": "spotify",
+      "aliases": []
+    },
+    "chattahoochies": {
+      "canonical_name": "The Chattahoochies",
+      "source": "spotify",
+      "aliases": []
+    },
+    "theclarks": {
+      "canonical_name": "The Clarks",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "thedryes": {
+      "canonical_name": "The Dryes",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "theheels": {
+      "canonical_name": "The Heels",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "thehobbssisters": {
+      "canonical_name": "The Hobbs Sisters",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "thejackwharffband": {
+      "canonical_name": "The Jack Wharff Band",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "thekygentlemen": {
+      "canonical_name": "The Kentucky Gentlemen",
+      "source": "spotify",
+      "aliases": []
+    },
+    "thelastshadowpuppets": {
+      "canonical_name": "The Last Shadow Puppets",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "thepanhandlers": {
+      "canonical_name": "The Panhandlers",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "theredclaystrays": {
+      "canonical_name": "The Red Clay Strays",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "whoarethewoods": {
+      "canonical_name": "The Woods",
+      "source": "spotify",
+      "aliases": []
+    },
+    "theyoungsomething": {
+      "canonical_name": "The Young Something",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "thelmaandjames": {
+      "canonical_name": "Thelma & James",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "thomaskavanagh": {
+      "canonical_name": "Thomas Kavanagh",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "thomasrhettakins": {
+      "canonical_name": "Thomas Rhett",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "tieramusic": {
+      "canonical_name": "Tiera Kennedy",
+      "source": "spotify",
+      "aliases": []
+    },
+    "tiffanyjohnsonsings": {
+      "canonical_name": "Tiffany Johnson",
+      "source": "spotify",
+      "aliases": []
+    },
+    "tigirlily": {
+      "canonical_name": "Tigirlily Gold",
+      "source": "spotify",
+      "aliases": []
+    },
+    "thetimmcgraw": {
+      "canonical_name": "Tim McGraw",
+      "source": "spotify",
+      "aliases": []
+    },
+    "timminchin": {
+      "canonical_name": "Tim Minchin",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "timmymckeever": {
+      "canonical_name": "Timmy McKeever",
+      "source": "spotify",
+      "aliases": []
+    },
+    "tobaccoroad": {
+      "canonical_name": "Tobacco Road",
+      "source": "spotify",
+      "aliases": []
+    },
+    "torimiller": {
+      "canonical_name": "Tori Miller",
+      "source": "spotify",
+      "aliases": []
+    },
+    "tracielynn": {
+      "canonical_name": "TracieLynn",
+      "source": "spotify",
+      "aliases": []
+    },
+    "treylewis": {
+      "canonical_name": "Trey Lewis",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "trissityjane": {
+      "canonical_name": "Trissity Jane",
+      "source": "spotify",
+      "aliases": []
+    },
+    "troycartwright": {
+      "canonical_name": "Troy Cartwright",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "tuckerwetmore": {
+      "canonical_name": "Tucker Wetmore",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "twinnieofficial": {
+      "canonical_name": "Twinnie",
+      "source": "spotify",
+      "aliases": []
+    },
+    "tyherndonofficial": {
+      "canonical_name": "Ty Herndon",
+      "source": "spotify",
+      "aliases": []
+    },
+    "tylerdial": {
+      "canonical_name": "Tyler Dial",
+      "source": "spotify",
+      "aliases": []
+    },
+    "tyramadison": {
+      "canonical_name": "Tyra Madison",
+      "source": "spotify",
+      "aliases": []
+    },
+    "valerielynnmusic": {
+      "canonical_name": "Valerie Lynn",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "valerieponzio": {
+      "canonical_name": "Valerie Ponzio",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "velvetellis": {
+      "canonical_name": "Velvet Ellis",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "velvetrodeoofficial": {
+      "canonical_name": "Velvet Rodeo",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "verygently": {
+      "canonical_name": "verygently",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "vincentmason": {
+      "canonical_name": "Vincent Mason",
+      "source": "spotify",
+      "aliases": []
+    },
+    "walkerburroughs": {
+      "canonical_name": "Walker Burroughs",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "walkerhayes": {
+      "canonical_name": "Walker Hayes",
+      "source": "spotify",
+      "aliases": []
+    },
+    "warhippies": {
+      "canonical_name": "War Hippies",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "weidd": {
+      "canonical_name": "Weidd",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "rafewester": {
+      "canonical_name": "Wester",
+      "source": "spotify_partial",
+      "aliases": []
+    },
+    "whitneyfenimore": {
+      "canonical_name": "Whitney Fenimore",
+      "source": "spotify",
+      "aliases": []
+    },
+    "whynot": {
+      "canonical_name": "WHYNOT",
+      "source": "spotify",
+      "aliases": []
+    },
+    "willjones": {
+      "canonical_name": "Will Jones",
+      "source": "spotify",
+      "aliases": []
+    },
+    "williamhinson": {
+      "canonical_name": "William Hinson",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "williejones": {
+      "canonical_name": "Willie Jones",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "iamwilliemorrison": {
+      "canonical_name": "Willie Morrison",
+      "source": "spotify",
+      "aliases": []
+    },
+    "willowavalon": {
+      "canonical_name": "Willow Avalon",
+      "source": "spotify",
+      "aliases": []
+    },
+    "willowzhu7": {
+      "canonical_name": "Willow Zhu",
+      "source": "spotify",
+      "aliases": []
+    },
+    "willy.sinclair": {
+      "canonical_name": "Willy Sinclair",
+      "source": "spotify",
+      "aliases": []
+    },
+    "winonafighter": {
+      "canonical_name": "Winona Fighter",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "winterwilson": {
+      "canonical_name": "Winter Wilson",
+      "source": "spotify",
+      "aliases": []
+    },
+    "officialwyattflores": {
+      "canonical_name": "Wyatt Flores",
+      "source": "spotify",
+      "aliases": []
+    },
+    "xambassadors": {
+      "canonical_name": "X Ambassadors",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "zacbrownband": {
+      "canonical_name": "Zac Brown Band",
+      "source": "spotify_no_handle",
+      "aliases": []
+    },
+    "zachjohnking": {
+      "canonical_name": "Zach John King",
+      "source": "spotify",
+      "aliases": []
+    },
+    "zach_top": {
+      "canonical_name": "Zach Top",
+      "source": "spotify",
+      "aliases": []
+    },
+    "zackdyer": {
+      "canonical_name": "Zack Dyer",
+      "source": "spotify_fuzzy",
+      "aliases": []
+    },
+    "runyonzack": {
+      "canonical_name": "Zack Runyon",
+      "source": "spotify",
+      "aliases": []
+    },
+    "zandiholup": {
+      "canonical_name": "Zandi Holup",
+      "source": "spotify",
+      "aliases": []
+    },
+    "zeemachine": {
+      "canonical_name": "ZEE MACHINE",
+      "source": "spotify",
+      "aliases": []
+    },
+    "zoecummins": {
+      "canonical_name": "Zoe Cummins",
+      "source": "spotify",
+      "aliases": []
+    },
+    "zoejeanfowler": {
+      "canonical_name": "Zoe Jean Fowler",
+      "source": "spotify",
+      "aliases": []
+    },
+    "zoeemusic": {
+      "canonical_name": "Zoee",
+      "source": "spotify",
+      "aliases": []
+    },
+    "jaidjoice": {
+      "canonical_name": "Jaid Joice",
+      "source": "manual",
+      "aliases": []
+    }
+  },
+  "venues": {
+    "3rdandlindsley": {
+      "canonical_name": "3rd and Lindsley",
+      "source": "resolved_names",
+      "aliases": [
+        "3rd and Lindsley"
+      ]
+    },
+    "6thandpeabody": {
+      "canonical_name": "6th and Peabody",
+      "source": "resolved_names",
+      "aliases": [
+        "6th and Peabody"
+      ]
+    },
+    "anzieblue": {
+      "canonical_name": "Anzie Blue",
+      "source": "resolved_names",
+      "aliases": [
+        "Anzie Blue"
+      ]
+    },
+    "assemblyfoodhall": {
+      "canonical_name": "Assembly Food Hall",
+      "source": "resolved_names",
+      "aliases": [
+        "Assembly Food Hall"
+      ]
+    },
+    "bluebirdcafetn": {
+      "canonical_name": "Bluebird Caf\u00c2\u008e TN",
+      "source": "resolved_names",
+      "aliases": [
+        "Bluebird Caf\u00c2\u008e TN"
+      ]
+    },
+    "cartervintageguitars": {
+      "canonical_name": "Carters Vintage Guitars",
+      "source": "resolved_names",
+      "aliases": [
+        "Carters Vintage Guitars"
+      ]
+    },
+    "citywinerynsh": {
+      "canonical_name": "City Winery Nashville",
+      "source": "resolved_names",
+      "aliases": [
+        "City Winery Nashville"
+      ]
+    },
+    "commonsclubnsh": {
+      "canonical_name": "Commons Club Nashville",
+      "source": "resolved_names",
+      "aliases": [
+        "Commons Club Nashville"
+      ]
+    },
+    "electricjane": {
+      "canonical_name": "Electric Jane",
+      "source": "resolved_names",
+      "aliases": [
+        "Electric Jane"
+      ]
+    },
+    "nissanstadium": {
+      "canonical_name": "Nissan Stadium",
+      "source": "resolved_names",
+      "aliases": [
+        "Nissan Stadium"
+      ]
+    },
+    "odiesbar": {
+      "canonical_name": "Odie's Bar",
+      "source": "resolved_names",
+      "aliases": [
+        "Odie's Bar"
+      ]
+    },
+    "officialcategory10": {
+      "canonical_name": "Official Category 10",
+      "source": "resolved_names",
+      "aliases": [
+        "Official Category 10"
+      ]
+    },
+    "olered": {
+      "canonical_name": "Ole Red",
+      "source": "resolved_names",
+      "aliases": [
+        "Ole Red"
+      ]
+    },
+    "skydeckonbroadway": {
+      "canonical_name": "Skydeck on Broadway",
+      "source": "resolved_names",
+      "aliases": [
+        "Skydeck on Broadway"
+      ]
+    },
+    "thelipsticklounge": {
+      "canonical_name": "The Lipstick Lounge",
+      "source": "resolved_names",
+      "aliases": [
+        "The Lipstick Lounge"
+      ]
+    },
+    "thenashvillepalace": {
+      "canonical_name": "The Nashville Palace",
+      "source": "resolved_names",
+      "aliases": [
+        "The Nashville Palace"
+      ]
+    },
+    "theryman": {
+      "canonical_name": "The Ryman",
+      "source": "resolved_names",
+      "aliases": [
+        "The Ryman"
+      ]
+    },
+    "virginhotelsnsh": {
+      "canonical_name": "Virgin Hotel Nashville",
+      "source": "resolved_names",
+      "aliases": [
+        "Virgin Hotel Nashville"
+      ]
+    }
+  },
+  "showcases": {
+    "allshewantsmedia": {
+      "canonical_name": "All She Wants Media",
+      "source": "resolved_names",
+      "aliases": [
+        "All She Wants Media"
+      ]
+    },
+    "americanafest": {
+      "canonical_name": "Americana Fest",
+      "source": "resolved_names",
+      "aliases": [
+        "Americana Fest"
+      ]
+    },
+    "americanidol": {
+      "canonical_name": "American Idol",
+      "source": "resolved_names",
+      "aliases": [
+        "American Idol"
+      ]
+    },
+    "bigloud": {
+      "canonical_name": "Big Loud",
+      "source": "resolved_names",
+      "aliases": [
+        "Big Loud"
+      ]
+    },
+    "bigmachinelabelgroup": {
+      "canonical_name": "Big Machine Label Group",
+      "source": "resolved_names",
+      "aliases": [
+        "Big Machine Label Group"
+      ]
+    },
+    "bmi": {
+      "canonical_name": "BMI",
+      "source": "resolved_names",
+      "aliases": [
+        "BMI"
+      ]
+    },
+    "cmt": {
+      "canonical_name": "CMT",
+      "source": "resolved_names",
+      "aliases": [
+        "CMT"
+      ]
+    },
+    "golongentertain": {
+      "canonical_name": "Golong Entertainment",
+      "source": "resolved_names",
+      "aliases": [
+        "Golong Entertainment"
+      ]
+    },
+    "hopeontherow": {
+      "canonical_name": "Hope on the Row",
+      "source": "resolved_names",
+      "aliases": [
+        "Hope on the Row"
+      ]
+    },
+    "hotcountry": {
+      "canonical_name": "Hot Country",
+      "source": "resolved_names",
+      "aliases": [
+        "Hot Country"
+      ]
+    },
+    "iheartcountry": {
+      "canonical_name": "I Heart Country",
+      "source": "resolved_names",
+      "aliases": [
+        "I Heart Country"
+      ]
+    },
+    "luckymoneyentertainment": {
+      "canonical_name": "Lucky Money Entertainment",
+      "source": "resolved_names",
+      "aliases": [
+        "Lucky Money Entertainment"
+      ]
+    },
+    "luckymoneylive": {
+      "canonical_name": "Lucky Money Live",
+      "source": "resolved_names",
+      "aliases": [
+        "Lucky Money Live"
+      ]
+    },
+    "musiccitygp": {
+      "canonical_name": "Music City Grand Prix",
+      "source": "resolved_names",
+      "aliases": [
+        "Music City Grand Prix"
+      ]
+    },
+    "nashvillebriefing": {
+      "canonical_name": "Nashville Briefing",
+      "source": "resolved_names",
+      "aliases": [
+        "Nashville Briefing"
+      ]
+    },
+    "nashvillepridefestival": {
+      "canonical_name": "Nashville Pride Festival",
+      "source": "resolved_names",
+      "aliases": [
+        "Nashville Pride Festival"
+      ]
+    },
+    "nativemanorartist": {
+      "canonical_name": "Native Mantor Artist",
+      "source": "resolved_names",
+      "aliases": [
+        "Native Mantor Artist"
+      ]
+    },
+    "nbcthevoice": {
+      "canonical_name": "NBC The Voice",
+      "source": "resolved_names",
+      "aliases": [
+        "NBC The Voice"
+      ]
+    },
+    "pilgrimagefestival": {
+      "canonical_name": "Pilgrimate Festival",
+      "source": "resolved_names",
+      "aliases": [
+        "Pilgrimate Festival"
+      ]
+    },
+    "pindropsongwriterseries": {
+      "canonical_name": "Pindrop Songwriter Series",
+      "source": "resolved_names",
+      "aliases": [
+        "Pindrop Songwriter Series"
+      ]
+    },
+    "porchlightpickers": {
+      "canonical_name": "Porchlight Pickers",
+      "source": "resolved_names",
+      "aliases": [
+        "Porchlight Pickers"
+      ]
+    },
+    "radiosobro": {
+      "canonical_name": "Radio Sobro",
+      "source": "resolved_names",
+      "aliases": [
+        "Radio Sobro"
+      ]
+    },
+    "raisedrowdy": {
+      "canonical_name": "Raised Rowdy",
+      "source": "resolved_names",
+      "aliases": [
+        "Raised Rowdy"
+      ]
+    },
+    "rowdyontherow": {
+      "canonical_name": "Rowdy on the Row",
+      "source": "resolved_names",
+      "aliases": [
+        "Rowdy on the Row"
+      ]
+    },
+    "stagecoach": {
+      "canonical_name": "Stage Coach",
+      "source": "resolved_names",
+      "aliases": [
+        "Stage Coach"
+      ]
+    },
+    "theheartwranglers": {
+      "canonical_name": "The Heart Wranglers",
+      "source": "resolved_names",
+      "aliases": [
+        "The Heart Wranglers"
+      ]
+    },
+    "tiktok": {
+      "canonical_name": "Tiktok",
+      "source": "resolved_names",
+      "aliases": [
+        "Tiktok"
+      ]
+    },
+    "tinpansouth": {
+      "canonical_name": "Tin Pan South",
+      "source": "resolved_names",
+      "aliases": [
+        "Tin Pan South"
+      ]
+    },
+    "tristarproductiongroup": {
+      "canonical_name": "Tristar Production Group",
+      "source": "resolved_names",
+      "aliases": [
+        "Tristar Production Group"
+      ]
+    },
+    "visitmusiccity": {
+      "canonical_name": "Visit Music City",
+      "source": "resolved_names",
+      "aliases": [
+        "Visit Music City"
+      ]
+    },
+    "ynotwednesdays": {
+      "canonical_name": "YNTO Wednesdays",
+      "source": "resolved_names",
+      "aliases": [
+        "YNTO Wednesdays"
+      ]
+    },
+    "youngmusiccity": {
+      "canonical_name": "Young Music City",
+      "source": "resolved_names",
+      "aliases": [
+        "Young Music City"
+      ]
+    }
+  },
+  "songs": {}
+}
