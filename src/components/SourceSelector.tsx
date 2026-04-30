@@ -1,7 +1,4 @@
 import { SOURCES, type MusicSource } from '../lib/sources/types';
-import { useAuth } from '../lib/auth-context';
-
-// Admin check uses auth context (backed by user_profiles.user_role)
 
 interface Props {
   selected: MusicSource['id'];
@@ -13,8 +10,6 @@ interface Props {
 export default function SourceSelector({
   selected, onSelect, spotifyConnected, appleMusicConnected,
 }: Props) {
-  const { isAdmin } = useAuth();
-
   return (
     <div data-testid="source-selector" style={{ marginBottom: 16 }}>
       <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginBottom: 8 }}>Source</p>
