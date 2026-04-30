@@ -21,7 +21,7 @@ export default function PlaylistSection({
   isAdmin, token, selectedCount, weekDate, selectedTracks,
   onCreateAndPush, onPushMaster, startAuth, setError,
 }: PlaylistSectionProps) {
-  if (!isAdmin) return null;
+  if (!token) return null;
 
   return (
     <details style={{ marginTop: 16, borderTop: '1px solid var(--midnight-border)', paddingTop: 16 }}>
