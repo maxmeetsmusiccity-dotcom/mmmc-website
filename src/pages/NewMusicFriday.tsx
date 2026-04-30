@@ -1614,7 +1614,6 @@ export default function NewMusicFriday() {
               />
 
               <PlaylistSection
-                isAdmin={isAdmin}
                 token={token}
                 selectedCount={selections.length}
                 weekDate={weekDate}

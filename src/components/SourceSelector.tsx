@@ -13,7 +13,6 @@ interface Props {
 export default function SourceSelector({
   selected, onSelect, spotifyConnected, appleMusicConnected,
 }: Props) {
-  const { isAdmin } = useAuth();
 
   return (
     <div data-testid="source-selector" style={{ marginBottom: 16 }}>
