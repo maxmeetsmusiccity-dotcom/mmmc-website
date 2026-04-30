@@ -1,4 +1,25 @@
 {
-  "confirmations": [],
-  "exported_at": "2026-04-11T11:05:58.612330-05:00"
+  "confirmations": [
+    {
+      "pg_id": "pg_df752e8c5e64",
+      "display_name": "Ashley Gorley",
+      "instagram_handle": "ashleygorley",
+      "source": "nmf_curation_test",
+      "evidence_type": "human_verified_handle",
+      "confirmed_at": "2026-04-12T01:07:18.778828",
+      "corrected_from": null
+    },
+    {
+      "pg_id": "pg_eef60d4fedfa",
+      "display_name": "Jessie Jo Dillon",
+      "instagram_handle": "jessiejodillon",
+      "source": "nmf_curation_test",
+      "evidence_type": "human_verified_handle",
+      "confirmed_at": "2026-04-12T01:07:39.095944",
+      "corrected_from": null
+    }
+  ],
+  "exported_at": "2026-04-11T20:07:43.824407-05:00",
+  "total": 2,
+  "with_pg_id": 2
 }

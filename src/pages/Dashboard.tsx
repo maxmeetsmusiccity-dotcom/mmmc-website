@@ -143,10 +143,11 @@ export default function Dashboard() {
       </header>
 
       {/* Tabs */}
-      <div style={{ padding: '0 24px', borderBottom: '1px solid var(--midnight-border)', display: 'flex', gap: 4, overflowX: 'auto' }}>
+      <div data-testid="dashboard-tabs" style={{ padding: '0 24px', borderBottom: '1px solid var(--midnight-border)', display: 'flex', gap: 4, overflowX: 'auto' }}>
         {(['curators', 'submissions', 'intelligence', ...(isAdmin ? ['admin'] : [])] as const).map(t => (
           <button
             key={t}
+            data-testid={`dashboard-tab-${t}`}
             className={`filter-pill ${tab === t ? 'active' : ''}`}
             onClick={() => { setTab(t as typeof tab); logUsageEvent('tab_switch', { tab: t }); }}
             style={{ borderRadius: '8px 8px 0 0', borderBottom: 'none', whiteSpace: 'nowrap' }}
@@ -164,12 +165,14 @@ export default function Dashboard() {
           <div>
             <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
               <input
+                data-testid="dashboard-search-curators"
                 type="text" placeholder="Search curators..."
                 className="search-input" value={curatorSearch}
                 onChange={e => setCuratorSearch(e.target.value)}
                 style={{ maxWidth: 240 }}
               />
               <select
+                data-testid="dashboard-filter-genre"
                 value={genreFilter}
                 onChange={e => setGenreFilter(e.target.value)}
                 style={{
@@ -191,7 +194,7 @@ export default function Dashboard() {
                 {curators.length === 0 ? 'No curators registered yet.' : 'No curators match your filters.'}
               </p>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12 }}>
+              <div data-testid="dashboard-curator-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
                 {filteredCurators.map(c => (
                   <Link key={c.id} to={`/curator/${c.username || c.id}`} className="card card-hover"
                     style={{ textDecoration: 'none', color: 'inherit' }}
@@ -230,7 +233,7 @@ export default function Dashboard() {
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-2xl)' }}>My Submissions</h2>
-              <Link to="/newmusicfriday/submit" className="btn btn-sm btn-gold">Submit New Track</Link>
+              <Link data-testid="dashboard-cta-submit-new" to="/newmusicfriday/submit" className="btn btn-sm btn-gold">Submit New Track</Link>
             </div>
 
             {/* Status summary */}

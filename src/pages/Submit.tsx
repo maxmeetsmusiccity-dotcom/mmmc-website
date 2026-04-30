@@ -51,14 +51,14 @@ export default function Submit() {
 
       <div style={{ maxWidth: 520, margin: '0 auto', padding: 32 }}>
         {submitted ? (
-          <div style={{ textAlign: 'center', padding: '48px 0' }}>
+          <div data-testid="submit-success" style={{ textAlign: 'center', padding: '48px 0' }}>
             <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-3xl)', marginBottom: 12, color: 'var(--gold)' }}>
               Submitted!
             </h2>
             <p style={{ color: 'var(--text-secondary)', marginBottom: 24 }}>
               Your track has been submitted for consideration. We review submissions weekly.
             </p>
-            <button className="btn btn-gold" onClick={() => { setSubmitted(false); setTrackUrl(''); setPitch(''); }}>
+            <button data-testid="submit-success-cta" className="btn btn-gold" onClick={() => { setSubmitted(false); setTrackUrl(''); setPitch(''); }}>
               Submit Another
             </button>
           </div>
@@ -68,16 +68,16 @@ export default function Submit() {
               Submit a track for consideration on New Music Friday. We review submissions every Thursday for the following week's picks.
             </p>
 
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <input className="search-input" type="url" placeholder="Spotify or Apple Music URL *" value={trackUrl} onChange={e => setTrackUrl(e.target.value)} required />
-              <textarea className="search-input" placeholder="One-liner pitch (optional)" value={pitch} onChange={e => setPitch(e.target.value)} rows={2} style={{ resize: 'vertical' }} />
-              <input className="search-input" type="text" placeholder="Your name *" value={name} onChange={e => setName(e.target.value)} required />
-              <input className="search-input" type="email" placeholder="Your email *" value={email} onChange={e => setEmail(e.target.value)} required />
-              <input className="search-input" type="text" placeholder="Label (optional)" value={label} onChange={e => setLabel(e.target.value)} />
+            <form data-testid="submit-form" onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <input data-testid="submit-input-track-url" className="search-input" type="url" placeholder="Spotify or Apple Music URL *" value={trackUrl} onChange={e => setTrackUrl(e.target.value)} required />
+              <textarea data-testid="submit-input-pitch" className="search-input" placeholder="One-liner pitch (optional)" value={pitch} onChange={e => setPitch(e.target.value)} rows={2} style={{ resize: 'vertical' }} />
+              <input data-testid="submit-input-name" className="search-input" type="text" placeholder="Your name *" value={name} onChange={e => setName(e.target.value)} required />
+              <input data-testid="submit-input-email" className="search-input" type="email" placeholder="Your email *" value={email} onChange={e => setEmail(e.target.value)} required />
+              <input data-testid="submit-input-label" className="search-input" type="text" placeholder="Label (optional)" value={label} onChange={e => setLabel(e.target.value)} />
 
-              {error && <p style={{ color: 'var(--mmmc-red)', fontSize: 'var(--fs-md)' }}>{error}</p>}
+              {error && <p data-testid="submit-error" style={{ color: 'var(--mmmc-red)', fontSize: 'var(--fs-md)' }}>{error}</p>}
 
-              <button className="btn btn-gold" type="submit" disabled={submitting} style={{ width: '100%', justifyContent: 'center', marginTop: 8 }}>
+              <button data-testid="submit-button-track" className="btn btn-gold" type="submit" disabled={submitting} style={{ width: '100%', justifyContent: 'center', marginTop: 8 }}>
                 {submitting ? 'Submitting...' : 'Submit Track'}
               </button>
             </form>

@@ -1,7 +1,4 @@
 import { SOURCES, type MusicSource } from '../lib/sources/types';
-import { useAuth } from '../lib/auth-context';
-
-// Admin check uses auth context (backed by user_profiles.user_role)
 
 interface Props {
   selected: MusicSource['id'];
@@ -13,7 +10,6 @@ interface Props {
 export default function SourceSelector({
   selected, onSelect, spotifyConnected, appleMusicConnected,
 }: Props) {
-  const { isAdmin } = useAuth();
 
   return (
     <div data-testid="source-selector" style={{ marginBottom: 16 }}>
@@ -25,8 +21,8 @@ export default function SourceSelector({
             : source.id === 'apple-music' ? appleMusicConnected
             : true;
 
-          // Spotify is admin-only until quota approved. Apple Music is open to all.
-          const isSpotifyLocked = source.id === 'spotify' && !isAdmin;
+          // Spotify quota approved — open to all users.
+          const isSpotifyLocked = false;
           const isLocked = isSpotifyLocked;
 
           return (

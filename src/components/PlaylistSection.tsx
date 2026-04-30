@@ -6,7 +6,6 @@ import type { TrackItem } from '../lib/spotify';
 const PLAYLIST_ID = '0ve1vYFkWoRaElCmfkw2IB';
 
 interface PlaylistSectionProps {
-  isAdmin: boolean;
   token: string | null;
   selectedCount: number;
   weekDate: string;
@@ -18,10 +17,10 @@ interface PlaylistSectionProps {
 }
 
 export default function PlaylistSection({
-  isAdmin, token, selectedCount, weekDate, selectedTracks,
+  token, selectedCount, weekDate, selectedTracks,
   onCreateAndPush, onPushMaster, startAuth, setError,
 }: PlaylistSectionProps) {
-  if (!isAdmin) return null;
+  if (!token) return null;
 
   return (
     <details style={{ marginTop: 16, borderTop: '1px solid var(--midnight-border)', paddingTop: 16 }}>
