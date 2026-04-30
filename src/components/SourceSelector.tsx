@@ -10,7 +10,6 @@ interface Props {
 export default function SourceSelector({
   selected, onSelect, spotifyConnected, appleMusicConnected,
 }: Props) {
-
   return (
     <div data-testid="source-selector" style={{ marginBottom: 16 }}>
       <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginBottom: 8 }}>Source</p>
