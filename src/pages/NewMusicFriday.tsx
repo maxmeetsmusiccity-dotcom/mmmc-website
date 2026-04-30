@@ -109,7 +109,7 @@ const DEMO_TRACKS: TrackItem[] = [
 /* ------------------------------------------------------------------ */
 
 export default function NewMusicFriday() {
-  const { user, isGuest, isAdmin, signOut, signInWithGoogle, signInWithApple } = useAuth();
+  const { user, isGuest, signOut, signInWithGoogle, signInWithApple } = useAuth();
   const userId = user?.id || null;
   const nmfNavigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();

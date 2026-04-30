@@ -1,7 +1,4 @@
 import { SOURCES, type MusicSource } from '../lib/sources/types';
-import { useAuth } from '../lib/auth-context';
-
-// Admin check uses auth context (backed by user_profiles.user_role)
 
 interface Props {
   selected: MusicSource['id'];
