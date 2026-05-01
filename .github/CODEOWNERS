@@ -1,0 +1,49 @@
+# mmmc-website · v5 5-thread file ownership (2026-04-29)
+# NMF Curator Studio (live `/newmusicfriday`) + marketing site host
+# 11 pages · 22 API routes · 4 Vercel crons · React + TS SPA
+# Lane format: <pattern> @<owner>
+
+# === Max primary reviewer (highest-risk paths) ===
+/.github/workflows/** @max @qe-thread
+/.github/CODEOWNERS @max @strategy-thread
+/vercel.json @max @build-gen-thread
+/migrations/** @max @build-db-thread
+
+# === Build-DB lane (NMF taxonomy · cascade integrations · DB-write scripts) ===
+/scripts/nmf_*.py @build-db-thread
+/scripts/cascade/** @build-db-thread
+/api/nmf/scan-*.ts @build-db-thread
+/api/cron-scan-*.ts @build-db-thread
+/src/data/nmf_engine/** @build-db-thread
+
+# === Build-General lane (TSX · API endpoints · NMF UI · marketing pages · writer-claim flow) ===
+/src/** @build-gen-thread
+/api/nmf/browse-artists.ts @build-gen-thread
+/api/nmf/apple-token.ts @build-gen-thread
+/api/nmf/scan-artists.ts @build-gen-thread
+/api/writer-claim/** @build-gen-thread
+/api/curator/** @build-gen-thread
+
+# === Aesthetic lane (UI design · NMF Curator UI · brand · marketing visual) ===
+/src/components/** @aesthetic-thread @build-gen-thread
+/src/pages/curator/** @aesthetic-thread @build-gen-thread
+/src/pages/newmusicfriday/** @aesthetic-thread @build-gen-thread
+
+# === QE lane (tests · regression · Playwright E2E) ===
+/__tests__/** @qe-thread
+/tests/** @qe-thread
+*.spec.ts @qe-thread
+*.test.ts @qe-thread @build-gen-thread
+
+# === Strategy lane (coord docs · CONTINUITY_MEMO files · README) ===
+/CONTINUITY_MEMO_*.md @strategy-thread
+/docs/** @strategy-thread
+/README.md @strategy-thread
+/.claude/CLAUDE.md @max @strategy-thread
+
+# === Default ===
+* @max-multi-thread
+
+# === Future MCO scope (greenfield 6th product · sourcing from venue + NMF + Archive) ===
+# When MCO scaffolding lands, /src/pages/oracle/** + /api/mco/** routes will follow
+# Build-General owns scaffolding · Aesthetic owns brand identity
