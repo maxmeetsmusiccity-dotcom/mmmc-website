@@ -22,7 +22,7 @@
 --   3. Writes to writer_claim_submission + claim_token_used via service_role key
 --
 -- pg_id is the persistent-grain-ID MMMC uses for writers/artists; same column
--- used in artist_platform_ids.pg_id + nd_pg_id throughout mmmc-website/.
+-- used in artist_platform_ids.pg_id + nd_pg_id throughout NMF Curator Studio.
 
 -- -------------------------------------------------------------------------
 -- Table 1: writer_claim_submission

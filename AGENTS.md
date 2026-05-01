@@ -1,6 +1,6 @@
 # NMF Curator Studio Agent Notes
 
-NMF Curator Studio is the renamed successor to `mmmc-website` and owns the NMF curator and related marketing/runtime surfaces.
+NMF Curator Studio owns the NMF curator and related marketing/runtime surfaces after the 2026-05-01 repo rename.
 
 ## Canon And Coordination
 
@@ -19,9 +19,8 @@ NMF Curator Studio is the renamed successor to `mmmc-website` and owns the NMF c
 
 ## Guardrails
 
-- Do not reintroduce `mmmc-website` identifiers except in historical migration notes.
+- Do not reintroduce pre-rename repo identifiers except in historical migration notes.
 - Use canonical repo name `nmf-curator-studio` for new docs, scripts, and CI labels.
 - Do not run production ingest or DB mutation scripts from this repo.
 - Self-QE Part A: verify changed files and cite command output before reporting done.
 - Self-QE Part B: use Gemini second-eye when requested for cross-product consistency review.
-
