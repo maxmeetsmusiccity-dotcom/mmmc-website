@@ -1,5 +1,5 @@
 {
-  "name": "mmmc-website",
+  "name": "nmf-curator-studio",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -12,8 +12,9 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:mobile": "playwright test tests/mobile.spec.ts",
-    "test:prod": "E2E_API_BASE=https://maxmeetsmusiccity.com playwright test --reporter=list",
+    "test:prod": "E2E_API_BASE=https://newmusicfriday.app playwright test --reporter=list",
     "test:all": "tsc -b && vitest run && playwright test && npm run test:prod",
+    "evidence:security": "node scripts/evidence/nmf-template-security.mjs",
     "session:verify": "bash scripts/session-end-verify.sh",
     "validate": "bash scripts/validate.sh"
   },
@@ -46,5 +47,12 @@
     "typescript-eslint": "^8.59.1",
     "vite": "^8.0.10",
     "vitest": "^4.1.5"
+  },
+  "overrides": {
+    "ajv": "^8.20.0",
+    "minimatch": "^10.2.5",
+    "path-to-regexp": "^6.3.0",
+    "smol-toml": "^1.6.1",
+    "undici": "^6.24.0"
   }
 }
