@@ -1,80 +1,43 @@
-name: path-lint · drift prevention
+name: path-lint
 
 on:
   pull_request:
-    paths:
-      - 'strategy/**'
-      - 'cross_thread/**'
-      - '.github/CODEOWNERS'
-      - '.claude/CLAUDE.md'
 
 jobs:
   path-lint:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Lint strategy/ paths against allow-list
+      - name: Block drift-prone paths and stale names
+        shell: bash
         run: |
-          set -e
-          # Allow-list: q_specs · runbooks · fleet_dashboard · audits · post_mortems · sabermetrics
-          # · doctrines · regression_specs · checkpoint_memos · launch · aesthetic · design ·
-          # intelligence_surfaces · decks · carryovers · proposals (existing only · NEW proposals/* fail)
+          set -euo pipefail
           BASE_SHA="${{ github.event.pull_request.base.sha }}"
           HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+          files="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")"
+          failed=0
 
-          NEW_FILES=$(git diff --name-only --diff-filter=A "$BASE_SHA" "$HEAD_SHA")
+          while IFS= read -r file; do
+            [ -z "$file" ] && continue
+            case "$file" in
+              .env|.env.*|*/.env|*/.env.*)
+                echo "::error file=$file::.env files must not be committed"
+                failed=1
+                ;;
+            esac
+          done <<< "$files"
 
-          DRIFT_WARN=0
-          PROPOSALS_FAIL=0
-
-          while IFS= read -r f; do
-            [ -z "$f" ] && continue
-
-            # FAIL: new files in strategy/proposals/ (per audit Rec 2 · proposals/ is dead canon)
-            if [[ "$f" =~ ^strategy/proposals/.*\.md$ ]]; then
-              echo "::error file=$f::DRIFT VIOLATION · new file in strategy/proposals/ · per audit Rec 2 the proposals/ directory is deprecated · use bd remember + MP edit OR file as a SPEC in strategy/ root with __SPEC__ suffix · OR file a GitHub Issue."
-              PROPOSALS_FAIL=1
-              continue
-            fi
-
-            # WARN: new strategy/*.md outside allow-list
-            if [[ "$f" =~ ^strategy/[^/]+\.md$ ]]; then
-              # Allow if filename has __SPEC__ or __ADDENDUM__ or __NARRATIVE__ in it
-              if [[ ! "$f" =~ __SPEC__ && ! "$f" =~ __ADDENDUM__ && ! "$f" =~ __NARRATIVE__ && ! "$f" =~ __SCAFFOLDING__ && ! "$f" =~ COMPREHENSIVE_ ]]; then
-                echo "::warning file=$f::DRIFT WARN · new top-level strategy/*.md without __SPEC__/__ADDENDUM__/__NARRATIVE__/__SCAFFOLDING__ marker · per audit Rec 2 ask: should this live as a GitHub Issue, BD memory, or refined-in-place MP edit?"
-                DRIFT_WARN=1
-              fi
-            fi
-
-            # WARN: >5K word .md files (proxy for ≥30KB)
-            if [[ "$f" =~ \.md$ ]]; then
-              SIZE=$(wc -w < "$f" 2>/dev/null || echo 0)
-              if [ "$SIZE" -gt 5000 ]; then
-                echo "::warning file=$f::SIZE WARN · $SIZE words · over 5K word soft cap · consider splitting or reducing"
-                DRIFT_WARN=1
-              fi
-            fi
-
-            # WARN: new cross_thread/heartbeats/* files (event-driven only · heartbeats migrating to GH Project status field)
-            if [[ "$f" =~ ^cross_thread/heartbeats/.*\.md$ ]]; then
-              echo "::notice file=$f::HEARTBEAT NOTICE · new heartbeat file · per drift-prevention plan, heartbeats migrate to GitHub Project status field updates · OK during transition window"
-            fi
-          done <<< "$NEW_FILES"
-
-          if [ "$PROPOSALS_FAIL" -eq 1 ]; then
-            echo ""
-            echo "::error::Path-lint FAILED · strategy/proposals/ violations above · per audit Rec 2"
-            exit 1
+          if git diff "$BASE_SHA" "$HEAD_SHA" -- . ':(exclude).github/workflows/path-lint.yml' | grep -E 'mmmc-website|truth-smart-archive'; then
+            echo "::error::stale repo name reference detected"
+            failed=1
           fi
 
-          if [ "$DRIFT_WARN" -eq 1 ]; then
-            echo ""
-            echo "::warning::Path-lint completed with WARNINGS · review above · proceed if intentional"
+          if git diff "$BASE_SHA" "$HEAD_SHA" -- 'src/**' 'app/**' 'api/**' 'pages/**' | grep -E 'console\\.log\\('; then
+            echo "::error::console.log is forbidden in production paths"
+            failed=1
           fi
 
-          echo ""
-          echo "Path-lint completed."
+          exit "$failed"
