@@ -13,11 +13,15 @@ function isAuthorized(headers: Record<string, string | undefined>, scanSecret: s
   const supabaseToken = headers['x-supabase-auth'];
   if (typeof supabaseToken === 'string' && supabaseToken.length > 20) return true;
   const origin = headers['origin'] || headers['referer'] || '';
-  if (
-    origin.includes('newmusicfriday.app') ||
-    origin.includes('maxmeetsmusiccity.com') ||
-    origin.includes('localhost')
-  ) return true;
+  const allowedOrigins = new Set([
+    'https://newmusicfriday.app',
+    'https://maxmeetsmusiccity.com',
+    'http://localhost:5173',
+  ]);
+  try {
+    const parsed = new URL(origin);
+    if (allowedOrigins.has(parsed.origin)) return true;
+  } catch {}
   return false;
 }
 
@@ -54,6 +58,10 @@ describe('scan endpoint authorization', () => {
 
   it('rejects unknown origin without auth', () => {
     expect(isAuthorized({ origin: 'https://evil.com' }, SECRET)).toBe(false);
+  });
+
+  it('rejects attacker-controlled subdomain containing an allowed hostname', () => {
+    expect(isAuthorized({ origin: 'https://newmusicfriday.app.evil.com' }, SECRET)).toBe(false);
   });
 
   it('rejects empty headers', () => {
