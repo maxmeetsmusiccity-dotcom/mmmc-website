@@ -2,7 +2,7 @@ const CLIENT_ID = (import.meta.env.VITE_SPOTIFY_CLIENT_ID || '').trim();
 // No fallback — env var must be set in .env.local / Vercel
 const REDIRECT_URI = window.location.hostname === 'localhost'
   ? `${window.location.origin}/newmusicfriday`
-  : 'https://maxmeetsmusiccity.com/newmusicfriday';
+  : 'https://newmusicfriday.app/newmusicfriday';
 const SCOPES = 'user-follow-read playlist-modify-public playlist-modify-private';
 
 function generateRandomString(length: number): string {

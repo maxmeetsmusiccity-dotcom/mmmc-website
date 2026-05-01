@@ -311,7 +311,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   let spotifyTracks = 0;
   let scanned = 0;
   // Internal API base — never trust req.headers.host (spoofable)
-  const scanBaseUrl = process.env.SCAN_BASE_URL || 'https://maxmeetsmusiccity.com';
+  const scanBaseUrl = process.env.SCAN_BASE_URL || 'https://newmusicfriday.app';
   const bearer = `Bearer ${process.env.SCAN_SECRET || ''}`;
 
   // ── Apple Music first (guaranteed must-have) ────────────────────────────

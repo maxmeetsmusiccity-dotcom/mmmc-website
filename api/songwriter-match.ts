@@ -43,7 +43,7 @@ async function loadCache(req: VercelRequest): Promise<CacheShape | null> {
   const hostHeader = req.headers.host || '';
   const vercelUrl = process.env.VERCEL_URL || '';
   const candidates = [
-    'https://maxmeetsmusiccity.com/data/songwriter_cache.json',
+    'https://newmusicfriday.app/data/songwriter_cache.json',
     vercelUrl ? `https://${vercelUrl}/data/songwriter_cache.json` : '',
     hostHeader ? `https://${hostHeader.replace(/^https?:\/\//, '')}/data/songwriter_cache.json` : '',
   ].filter(Boolean);

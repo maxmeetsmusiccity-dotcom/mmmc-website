@@ -7,6 +7,7 @@ const KEY_ID = process.env.APPLE_MUSIC_KEY_ID || '';
 const TOKEN_TTL = 60 * 60 * 12; // 12 hours
 
 const ALLOWED_ORIGINS = new Set([
+  'https://newmusicfriday.app',
   'https://maxmeetsmusiccity.com',
   'http://localhost:5173',
   'http://localhost:5174',

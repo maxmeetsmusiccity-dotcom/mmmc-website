@@ -26,7 +26,7 @@ const MAGIC_LINK_SECRET = process.env.MAGIC_LINK_SECRET || '';
 const MAX_EMAIL = 'msblachman@gmail.com';
 const REAL_SENDS_AUTHORIZED = process.env.REAL_WRITER_SENDS_AUTHORIZED === 'true';
 const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
-const CLAIM_BASE_URL = process.env.CLAIM_BASE_URL || 'https://maxmeetsmusiccity.com';
+const CLAIM_BASE_URL = process.env.CLAIM_BASE_URL || 'https://newmusicfriday.app';
 const TOKEN_TTL_SECONDS = 7 * 24 * 60 * 60; // 7 days
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {

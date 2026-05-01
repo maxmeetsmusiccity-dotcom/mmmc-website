@@ -20,6 +20,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
   // Same-origin check (exact-match allowlist)
   const ALLOWED_ORIGINS = new Set([
+    'https://newmusicfriday.app',
     'https://maxmeetsmusiccity.com',
     'http://localhost:5173',
     'http://localhost:5174',

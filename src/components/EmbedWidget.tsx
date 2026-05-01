@@ -6,7 +6,7 @@ export default function EmbedWidget() {
   const [interval, setInterval_] = useState(5);
   const weekDate = getLastFriday();
 
-  const embedUrl = `https://maxmeetsmusiccity.com/newmusicfriday/embed?week=${weekDate}&interval=${interval * 1000}`;
+  const embedUrl = `https://newmusicfriday.app/newmusicfriday/embed?week=${weekDate}&interval=${interval * 1000}`;
   const embedCode = `<iframe src="${embedUrl}" width="100%" height="480" frameborder="0" style="border-radius:12px;border:1px solid #2A3A5C;" loading="lazy"></iframe>`;
 
   return (
