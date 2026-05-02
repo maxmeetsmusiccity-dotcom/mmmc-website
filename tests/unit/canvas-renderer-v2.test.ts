@@ -29,10 +29,14 @@ import {
   getVisibleTemplates,
 } from '../../src/lib/carousel-templates';
 import {
+  PHASE4_LIVE_TITLE_TEMPLATE_PRESETS,
   PHASE4_TITLE_TEMPLATE_IDS,
   PHASE4_TITLE_TEMPLATE_SCAFFOLD,
 } from '../../src/lib/title-templates-v2-phase4';
-import { PHASE5_CLOSING_TEMPLATE_SCAFFOLD } from '../../src/lib/closing-template-v2-phase5';
+import {
+  PHASE5_CLOSING_TEMPLATE_PRESET,
+  PHASE5_CLOSING_TEMPLATE_SCAFFOLD,
+} from '../../src/lib/closing-template-v2-phase5';
 
 describe('canvas renderer v2 phase 1 surface', () => {
   it('normalizes design zip dash IDs to production-safe underscore IDs', () => {
@@ -132,19 +136,25 @@ describe('canvas renderer v2 phase 1 surface', () => {
     expect(getV2BodyTemplatePreset(ropeStage)?.decoration).toBe('rope-frame');
   });
 
-  it('prepares the Phase 4 11-title-template slate without activating it', () => {
+  it('ships the Phase 4 11-title-template slate through the title registry', () => {
     expect(PHASE4_TITLE_TEMPLATE_IDS).toHaveLength(11);
     expect(new Set(PHASE4_TITLE_TEMPLATE_IDS).size).toBe(11);
+    expect(PHASE4_LIVE_TITLE_TEMPLATE_PRESETS).toHaveLength(11);
     expect(PHASE4_TITLE_TEMPLATE_SCAFFOLD.filter(item => item.band === 'launch-3')).toHaveLength(3);
     expect(PHASE4_TITLE_TEMPLATE_SCAFFOLD.filter(item => item.band === 'expansion-4')).toHaveLength(4);
     expect(PHASE4_TITLE_TEMPLATE_SCAFFOLD.filter(item => item.band === 'reserve-4')).toHaveLength(4);
     expect(PHASE4_TITLE_TEMPLATE_SCAFFOLD.every(item => item.template.engine === 'v2')).toBe(true);
     expect(PHASE4_TITLE_TEMPLATE_SCAFFOLD.every(item => item.template.kind === 'title')).toBe(true);
+    expect(getVisibleTitleTemplates('curator@example.com').map(template => template.id)).toEqual(
+      expect.arrayContaining(PHASE4_TITLE_TEMPLATE_IDS),
+    );
+    expect(getV2TitleTemplatePreset(getTitleTemplate('v2_sunburst_countdown'))?.layout).toBe('radial-burst');
   });
 
-  it('prepares the Phase 5 closing-template scaffold without activating it', () => {
-    expect(PHASE5_CLOSING_TEMPLATE_SCAFFOLD.liveInPhase5).toBe(false);
+  it('ships the Phase 5 closing-template preset', () => {
+    expect(PHASE5_CLOSING_TEMPLATE_SCAFFOLD.liveInPhase5).toBe(true);
     expect(PHASE5_CLOSING_TEMPLATE_SCAFFOLD.template.id).toBe('v2_closing_saved_stack');
+    expect(PHASE5_CLOSING_TEMPLATE_PRESET.id).toBe('v2_closing_saved_stack');
     expect(PHASE5_CLOSING_TEMPLATE_SCAFFOLD.template.kind).toBe('title');
     expect(PHASE5_CLOSING_TEMPLATE_SCAFFOLD.requiredMoments).toEqual([
       'playlist-save',

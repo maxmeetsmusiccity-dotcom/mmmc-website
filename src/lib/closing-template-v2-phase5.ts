@@ -39,5 +39,7 @@ export const PHASE5_CLOSING_TEMPLATE_SCAFFOLD: Phase5ClosingTemplateScaffold = {
     'share-reminder',
     'next-friday-return',
   ],
-  liveInPhase5: false,
+  liveInPhase5: true,
 };
+
+export const PHASE5_CLOSING_TEMPLATE_PRESET = PHASE5_CLOSING_TEMPLATE_SCAFFOLD.template;

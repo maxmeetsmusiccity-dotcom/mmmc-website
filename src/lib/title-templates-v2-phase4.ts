@@ -221,3 +221,5 @@ export const PHASE4_TITLE_TEMPLATE_SCAFFOLD: Phase4TitleTemplateScaffold[] = [
 ];
 
 export const PHASE4_TITLE_TEMPLATE_IDS = PHASE4_TITLE_TEMPLATE_SCAFFOLD.map(item => item.template.id);
+
+export const PHASE4_LIVE_TITLE_TEMPLATE_PRESETS = PHASE4_TITLE_TEMPLATE_SCAFFOLD.map(item => item.template);
