@@ -177,6 +177,10 @@ export const PHASE3_PRIMARY_BODY_TEMPLATE_IDS = PHASE3_BODY_TEMPLATE_SCAFFOLD
   .filter(item => item.primaryPhase3)
   .map(item => item.template.id);
 
+export const PHASE3_LIVE_BODY_TEMPLATE_PRESETS = PHASE3_BODY_TEMPLATE_SCAFFOLD
+  .filter(item => item.primaryPhase3)
+  .map(item => item.template);
+
 export const PHASE3_RESERVE_BODY_TEMPLATE_IDS = PHASE3_BODY_TEMPLATE_SCAFFOLD
   .filter(item => !item.primaryPhase3)
   .map(item => item.template.id);
