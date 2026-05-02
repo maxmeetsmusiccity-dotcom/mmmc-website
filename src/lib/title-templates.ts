@@ -1,3 +1,6 @@
+import { V2_TITLE_TEMPLATE_PRESETS } from './brand-tokens';
+import type { TemplateEngine, V2TitleSlideTemplate } from './template-types-v2';
+
 /**
  * 10 Title Slide Templates for New Music Friday carousels.
  * Based on research of country music media visual trends (2025-2026).
@@ -9,6 +12,8 @@ export interface TitleSlideTemplate {
   id: string;
   name: string;
   description: string;
+  engine?: TemplateEngine;
+  v2PresetId?: string;
 
   // Colors
   background: string;
@@ -77,7 +82,7 @@ export interface TitleSlideTemplate {
   customElements?: import('./editor-elements').EditorElement[];
 }
 
-export const TITLE_TEMPLATES: TitleSlideTemplate[] = [
+const LEGACY_TITLE_TEMPLATES: TitleSlideTemplate[] = [
   // 1. Nashville Neon
   {
     id: 'nashville_neon',
@@ -498,6 +503,44 @@ export const TITLE_TEMPLATES: TitleSlideTemplate[] = [
   },
 ];
 
+const V2_MARQUEE_TITLE_TEMPLATE: TitleSlideTemplate = {
+  id: 'v2_marquee',
+  name: 'Velvet Marquee v2',
+  description: 'Renderer v2 theater marquee with plush rose, bulbs, and rotated feature art',
+  engine: 'v2',
+  v2PresetId: 'v2_marquee',
+  background: '#1a0f17',
+  textPrimary: '#FFD7A8',
+  textSecondary: '#c9a387',
+  accent: '#FF69B4',
+  headlineFont: '"Playfair Display", serif',
+  subtitleFont: '"Source Serif 4", serif',
+  dateFont: '"JetBrains Mono", monospace',
+  headlineWeight: 700,
+  headlineCase: 'capitalize',
+  headlineSize: 0.062,
+  subtitleSize: 0.024,
+  dateSize: 0.026,
+  headlineX: 0.5, headlineY: 0.08,
+  subtitleX: 0.5, subtitleY: 0.16,
+  dateX: 0.5, dateY: 0.9,
+  featuredImageX: 0.5, featuredImageY: 0.2,
+  featuredImageSize: 0.5,
+  glow: { color: 'rgba(255,105,180,0.34)', blur: 38, passes: 4 },
+  grain: 0.05,
+  vignette: 0.24,
+  showFrame: true, frameColor: '#FFD7A8', frameWidth: 8,
+  showDivider: true, dividerColor: 'rgba(255,215,168,0.42)',
+  featuredBorder: 8, featuredBorderColor: '#FFD7A8', featuredShadowBlur: 32, featuredRotation: -3,
+  texture: 'grain',
+  swipePill: true,
+};
+
+export const TITLE_TEMPLATES: TitleSlideTemplate[] = [
+  V2_MARQUEE_TITLE_TEMPLATE,
+  ...LEGACY_TITLE_TEMPLATES.map(template => ({ engine: 'v1' as const, ...template })),
+];
+
 /** Title templates that are exclusive to Max's account */
 export const MAX_ONLY_TITLE_TEMPLATES = new Set(['nashville_neon', 'vinyl_classic', 'gold_frame', 'spotlight', 'polaroid_stack']);
 
@@ -505,9 +548,15 @@ export function getTitleTemplate(id: string): TitleSlideTemplate {
   return TITLE_TEMPLATES.find(t => t.id === id) || TITLE_TEMPLATES[0];
 }
 
+export function getV2TitleTemplatePreset(template: TitleSlideTemplate): V2TitleSlideTemplate | undefined {
+  if (template.engine !== 'v2') return undefined;
+  const id = template.v2PresetId || template.id;
+  return V2_TITLE_TEMPLATE_PRESETS.find(t => t.id === id);
+}
+
 /** Get title templates visible to a user (filters out Max-only for other users) */
 export function getVisibleTitleTemplates(userEmail?: string): TitleSlideTemplate[] {
-  const isMax = userEmail === 'maxmeetsmusiccity@gmail.com' || userEmail === 'maxblachman@gmail.com';
+  const isMax = userEmail === 'maxmeetsmusiccity@gmail.com';
   if (isMax) {
     // Max-only templates first, then the rest
     const maxOnly = TITLE_TEMPLATES.filter(t => MAX_ONLY_TITLE_TEMPLATES.has(t.id));
@@ -519,7 +568,7 @@ export function getVisibleTitleTemplates(userEmail?: string): TitleSlideTemplate
 
 /** Get the default title template ID for a user */
 export function getDefaultTitleTemplateId(userEmail?: string): string {
-  const isMax = userEmail === 'maxmeetsmusiccity@gmail.com' || userEmail === 'maxblachman@gmail.com';
+  const isMax = userEmail === 'maxmeetsmusiccity@gmail.com';
   if (isMax) return 'vinyl_classic';
   const firstVisible = TITLE_TEMPLATES.find(t => !MAX_ONLY_TITLE_TEMPLATES.has(t.id));
   return firstVisible?.id || TITLE_TEMPLATES[0].id;

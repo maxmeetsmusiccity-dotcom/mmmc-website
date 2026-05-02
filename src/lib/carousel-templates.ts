@@ -1,7 +1,10 @@
+import type { TemplateEngine } from './template-types-v2';
+
 export interface CarouselTemplate {
   id: string;
   name: string;
   description: string;
+  engine?: TemplateEngine;
 
   // Colors
   background: string;
@@ -84,7 +87,7 @@ export interface CarouselTemplate {
   customElements?: import('./editor-elements').EditorElement[];
 }
 
-export const TEMPLATES: CarouselTemplate[] = [
+const LEGACY_TEMPLATES: CarouselTemplate[] = [
   {
     id: 'mmmc_classic',
     name: 'MMMC Classic',
@@ -369,6 +372,11 @@ export const TEMPLATES: CarouselTemplate[] = [
   },
 ];
 
+export const TEMPLATES: CarouselTemplate[] = LEGACY_TEMPLATES.map(template => ({
+  engine: 'v1',
+  ...template,
+}));
+
 /** Templates that are exclusive to Max's account */
 export const MAX_ONLY_TEMPLATES = new Set(['mmmc_classic', 'neon_rose', 'golden_hour']);
 
@@ -388,7 +396,7 @@ export function getTemplate(id: string): CarouselTemplate {
 
 /** Get templates visible to a user (filters out Max-only for other users) */
 export function getVisibleTemplates(userEmail?: string): CarouselTemplate[] {
-  const isMax = userEmail === 'maxmeetsmusiccity@gmail.com' || userEmail === 'maxblachman@gmail.com';
+  const isMax = userEmail === 'maxmeetsmusiccity@gmail.com';
   if (isMax) return TEMPLATES;
   return TEMPLATES.filter(t => !MAX_ONLY_TEMPLATES.has(t.id));
 }

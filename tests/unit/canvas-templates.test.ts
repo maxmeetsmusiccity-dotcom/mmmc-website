@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import {
   TEMPLATES,
   MAX_ONLY_TEMPLATES,
@@ -100,9 +100,9 @@ describe('getVisibleTemplates', () => {
     expect(visible).toHaveLength(TEMPLATES.length);
   });
 
-  it('returns all templates for Max (maxblachman@gmail.com)', () => {
+  it('treats maxblachman@gmail.com as non-Max', () => {
     const visible = getVisibleTemplates('maxblachman@gmail.com');
-    expect(visible).toHaveLength(TEMPLATES.length);
+    expect(visible).toHaveLength(TEMPLATES.length - MAX_ONLY_TEMPLATES.size);
   });
 
   it('filters out Max-only templates for other users', () => {
@@ -219,7 +219,7 @@ describe('getVisibleTitleTemplates', () => {
   });
 
   it('Max-only templates appear first for Max', () => {
-    const visible = getVisibleTitleTemplates('maxblachman@gmail.com');
+    const visible = getVisibleTitleTemplates('maxmeetsmusiccity@gmail.com');
     const firstFew = visible.slice(0, MAX_ONLY_TITLE_TEMPLATES.size);
     for (const t of firstFew) {
       expect(MAX_ONLY_TITLE_TEMPLATES.has(t.id)).toBe(true);
@@ -240,7 +240,6 @@ describe('getVisibleTitleTemplates', () => {
 describe('getDefaultTitleTemplateId', () => {
   it('returns vinyl_classic for Max', () => {
     expect(getDefaultTitleTemplateId('maxmeetsmusiccity@gmail.com')).toBe('vinyl_classic');
-    expect(getDefaultTitleTemplateId('maxblachman@gmail.com')).toBe('vinyl_classic');
   });
 
   it('returns a non-Max-only template for other users', () => {

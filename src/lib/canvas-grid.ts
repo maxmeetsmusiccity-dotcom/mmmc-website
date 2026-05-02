@@ -1,7 +1,8 @@
 import type { SelectionSlot } from './selection';
 import type { CarouselTemplate } from './carousel-templates';
 import { getTemplate } from './carousel-templates';
-import { getTitleTemplate, type TitleSlideTemplate } from './title-templates';
+import { getTitleTemplate, getV2TitleTemplatePreset, type TitleSlideTemplate } from './title-templates';
+import { preloadV2TemplateAssets, renderTitleSlide } from './canvas-renderer-v2';
 import { drawCustomElements, type EditorElement } from './editor-elements';
 import { type GridConfig, getGridById, getGridsForCount, computeCellRects } from './grid-layouts';
 import { computeLastFriday } from './scan-utils';
@@ -240,10 +241,14 @@ function goldRule(ctx: CanvasRenderingContext2D, y: number, t: CarouselTemplate)
 function drawNotes(ctx: CanvasRenderingContext2D, size: number) {
   const gi = (key: string) => imageCache.get(key)?.img ?? null;
   const cw = ctx.canvas.width, ch = ctx.canvas.height;
-  const tl = gi(ASSETS.noteTL); tl && ctx.drawImage(tl, 52, 52, size * 0.7, size);
-  const tr = gi(ASSETS.noteTR); tr && ctx.drawImage(tr, cw - 52 - size * 0.65, 52, size * 0.65, size);
-  const bl = gi(ASSETS.noteBL); bl && ctx.drawImage(bl, 52, ch - 52 - size * 0.85, size * 0.85, size);
-  const br = gi(ASSETS.noteBR); br && ctx.drawImage(br, cw - 52 - size * 0.85, ch - 52 - size * 0.85, size * 0.85, size);
+  const tl = gi(ASSETS.noteTL);
+  if (tl) ctx.drawImage(tl, 52, 52, size * 0.7, size);
+  const tr = gi(ASSETS.noteTR);
+  if (tr) ctx.drawImage(tr, cw - 52 - size * 0.65, 52, size * 0.65, size);
+  const bl = gi(ASSETS.noteBL);
+  if (bl) ctx.drawImage(bl, 52, ch - 52 - size * 0.85, size * 0.85, size);
+  const br = gi(ASSETS.noteBR);
+  if (br) ctx.drawImage(br, cw - 52 - size * 0.85, ch - 52 - size * 0.85, size * 0.85, size);
 }
 
 function drawSparkles(ctx: CanvasRenderingContext2D, positions: [number, number][], sz: number) {
@@ -410,6 +415,37 @@ export async function generateTitleSlide(
     : templateOrId;
   const dim = getDimensions(aspect);
   const W = dim.w, H = dim.h;
+
+  const v2Template = getV2TitleTemplatePreset(tt);
+  if (v2Template) {
+    const canvas = document.createElement('canvas');
+    canvas.width = W; canvas.height = H;
+    const ctx = canvas.getContext('2d')!;
+    const featured = coverFeature ? {
+      id: coverFeature.track.track_id,
+      title: coverFeature.track.track_name,
+      artist: coverFeature.track.artist_names,
+      cover: coverFeature.track.cover_art_640,
+    } : undefined;
+    await preloadV2TemplateAssets(v2Template, featured ? [featured] : []);
+    await renderTitleSlide(ctx, W, H, {
+      template: v2Template,
+      title: 'New Music Friday',
+      subtitle: 'Max Meets Music City',
+      edition: formatDate(weekDate),
+      featured,
+      count: coverFeature ? 1 : 0,
+    });
+    if (customElements?.length) {
+      await drawCustomElements(ctx, customElements, W, H);
+    }
+    return new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob(b => {
+        if (b) resolve(b);
+        else reject(new Error('Canvas toBlob returned null — canvas may be tainted or browser ran out of memory'));
+      }, 'image/png');
+    });
+  }
 
   // Pre-load fonts
   await Promise.all([

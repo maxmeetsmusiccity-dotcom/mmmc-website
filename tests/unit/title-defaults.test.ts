@@ -5,8 +5,8 @@ describe('title template defaults', () => {
   it('returns vinyl_classic for maxmeetsmusiccity@gmail.com', () => {
     expect(getDefaultTitleTemplateId('maxmeetsmusiccity@gmail.com')).toBe('vinyl_classic');
   });
-  it('returns vinyl_classic for maxblachman@gmail.com', () => {
-    expect(getDefaultTitleTemplateId('maxblachman@gmail.com')).toBe('vinyl_classic');
+  it('treats maxblachman@gmail.com as non-Max', () => {
+    expect(MAX_ONLY_TITLE_TEMPLATES.has(getDefaultTitleTemplateId('maxblachman@gmail.com'))).toBe(false);
   });
   it('returns first visible (non-Max-only) template for non-Max users', () => {
     const defaultId = getDefaultTitleTemplateId('user@example.com');
