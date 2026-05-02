@@ -19,9 +19,15 @@ import {
 } from '../../src/lib/title-templates';
 import {
   PHASE3_BODY_TEMPLATE_SCAFFOLD,
+  PHASE3_LIVE_BODY_TEMPLATE_PRESETS,
   PHASE3_PRIMARY_BODY_TEMPLATE_IDS,
   PHASE3_RESERVE_BODY_TEMPLATE_IDS,
 } from '../../src/lib/body-templates-v2-phase3';
+import {
+  getTemplate,
+  getV2BodyTemplatePreset,
+  getVisibleTemplates,
+} from '../../src/lib/carousel-templates';
 
 describe('canvas renderer v2 phase 1 surface', () => {
   it('normalizes design zip dash IDs to production-safe underscore IDs', () => {
@@ -106,5 +112,18 @@ describe('canvas renderer v2 phase 1 surface', () => {
     expect(PHASE3_BODY_TEMPLATE_SCAFFOLD.filter(item => item.band === 'reserve-3')).toHaveLength(3);
     expect(PHASE3_BODY_TEMPLATE_SCAFFOLD.every(item => item.template.engine === 'v2')).toBe(true);
     expect(PHASE3_BODY_TEMPLATE_SCAFFOLD.every(item => item.template.kind === 'body')).toBe(true);
+  });
+
+  it('ships the Phase 3 primary body templates through the carousel registry', () => {
+    expect(PHASE3_LIVE_BODY_TEMPLATE_PRESETS).toHaveLength(10);
+    expect(PHASE3_LIVE_BODY_TEMPLATE_PRESETS.map(template => template.id)).toEqual(PHASE3_PRIMARY_BODY_TEMPLATE_IDS);
+    expect(getVisibleTemplates('curator@example.com').map(template => template.id)).toEqual(
+      expect.arrayContaining(PHASE3_PRIMARY_BODY_TEMPLATE_IDS),
+    );
+    expect(getVisibleTemplates('curator@example.com').map(template => template.id)).not.toContain('v2_tape_archive');
+
+    const ropeStage = getTemplate('v2_rope_stage');
+    expect(ropeStage.engine).toBe('v2');
+    expect(getV2BodyTemplatePreset(ropeStage)?.decoration).toBe('rope-frame');
   });
 });
