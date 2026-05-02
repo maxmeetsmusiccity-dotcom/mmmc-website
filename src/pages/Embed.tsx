@@ -119,7 +119,7 @@ export default function Embed() {
           {weekDate}
         </span>
         <a
-          href="https://maxmeetsmusiccity.com/newmusicfriday"
+          href="https://newmusicfriday.app/newmusicfriday"
           target="_blank"
           rel="noopener noreferrer"
           style={{ fontSize: 'var(--fs-3xs)', color: '#D4A843', textDecoration: 'none' }}

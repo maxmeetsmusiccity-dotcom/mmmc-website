@@ -49,6 +49,7 @@ import { getClientIp, isRateLimited } from './_rateLimit.js';
 const SCAN_SECRET = process.env.SCAN_SECRET || '';
 
 const ALLOWED_ORIGINS = new Set([
+  'https://newmusicfriday.app',
   'https://maxmeetsmusiccity.com',
   'http://localhost:5173',
   'http://localhost:5174',

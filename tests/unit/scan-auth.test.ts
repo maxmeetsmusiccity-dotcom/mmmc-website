@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest';
 /**
  * Regression tests for scan endpoint auth.
  * Bug: frontend calls were rejected 401 because no auth header sent.
- * Fix: accept same-origin requests from maxmeetsmusiccity.com
+ * Fix: accept same-origin requests from NMF production domains.
  */
 
 // Extract the auth logic for testing (mirrors scan-artists.ts isAuthorized)
@@ -13,7 +13,15 @@ function isAuthorized(headers: Record<string, string | undefined>, scanSecret: s
   const supabaseToken = headers['x-supabase-auth'];
   if (typeof supabaseToken === 'string' && supabaseToken.length > 20) return true;
   const origin = headers['origin'] || headers['referer'] || '';
-  if (origin.includes('maxmeetsmusiccity.com') || origin.includes('localhost')) return true;
+  const allowedOrigins = new Set([
+    'https://newmusicfriday.app',
+    'https://maxmeetsmusiccity.com',
+    'http://localhost:5173',
+  ]);
+  try {
+    const parsed = new URL(origin);
+    if (allowedOrigins.has(parsed.origin)) return true;
+  } catch {}
   return false;
 }
 
@@ -28,6 +36,10 @@ describe('scan endpoint authorization', () => {
     expect(isAuthorized({ 'x-supabase-auth': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.long-token-here' }, SECRET)).toBe(true);
   });
 
+  it('accepts same-origin from newmusicfriday.app', () => {
+    expect(isAuthorized({ origin: 'https://newmusicfriday.app' }, SECRET)).toBe(true);
+  });
+
   it('accepts same-origin from maxmeetsmusiccity.com', () => {
     expect(isAuthorized({ origin: 'https://maxmeetsmusiccity.com' }, SECRET)).toBe(true);
   });
@@ -36,12 +48,20 @@ describe('scan endpoint authorization', () => {
     expect(isAuthorized({ origin: 'http://localhost:5173' }, SECRET)).toBe(true);
   });
 
+  it('accepts referer from newmusicfriday.app', () => {
+    expect(isAuthorized({ referer: 'https://newmusicfriday.app/newmusicfriday' }, SECRET)).toBe(true);
+  });
+
   it('accepts referer from maxmeetsmusiccity.com', () => {
     expect(isAuthorized({ referer: 'https://maxmeetsmusiccity.com/newmusicfriday' }, SECRET)).toBe(true);
   });
 
   it('rejects unknown origin without auth', () => {
     expect(isAuthorized({ origin: 'https://evil.com' }, SECRET)).toBe(false);
+  });
+
+  it('rejects attacker-controlled subdomain containing an allowed hostname', () => {
+    expect(isAuthorized({ origin: 'https://newmusicfriday.app.evil.com' }, SECRET)).toBe(false);
   });
 
   it('rejects empty headers', () => {

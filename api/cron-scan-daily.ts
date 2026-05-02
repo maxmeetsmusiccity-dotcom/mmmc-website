@@ -223,7 +223,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     scanRunId = data?.id || null;
   } catch { /* table may not yet accept daily runs — ignore */ }
 
-  const scanBaseUrl = process.env.SCAN_BASE_URL || 'https://maxmeetsmusiccity.com';
+  const scanBaseUrl = process.env.SCAN_BASE_URL || 'https://newmusicfriday.app';
   const bearer = `Bearer ${process.env.SCAN_SECRET || ''}`;
   const batchSize = 50;
   let appleTracks = 0;

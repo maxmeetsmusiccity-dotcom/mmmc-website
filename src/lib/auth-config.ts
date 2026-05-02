@@ -39,7 +39,7 @@ export const NMF_AUTH_CONFIG: ProductAuthConfig = {
   productId: 'nmf',
   productName: 'NMF Curator Studio',
   canonicalOrigins: [
-    'https://maxmeetsmusiccity.com',
+    'https://newmusicfriday.app',
   ],
   devOrigins: [
     'http://localhost:5173',
@@ -66,7 +66,7 @@ export const MMMC_PRODUCTS: ProductAuthConfig[] = [
   {
     productId: 'nd',
     productName: 'Nashville Decoder',
-    canonicalOrigins: ['https://nashvilledecoder.com'],
+    canonicalOrigins: ['https://nashvilledecoder.com', 'https://nashvilledecoder.io', 'https://nashvilledecoder.app'],
     devOrigins: [],
     storageKey: 'sb-nd-auth-token',
   },
