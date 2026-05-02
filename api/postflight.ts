@@ -16,6 +16,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import { alertSlack } from './_alert.js';
+import { recordAuditEvent } from './_audit.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -33,11 +34,32 @@ function getLastFriday(): string {
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const CRON_SECRET = process.env.CRON_SECRET;
-  if (!CRON_SECRET) return res.status(500).json({ error: 'CRON_SECRET not configured' });
+  if (!CRON_SECRET) {
+    await recordAuditEvent(req, {
+      action: 'nmf.cron.postflight',
+      outcome: 'skipped',
+      status: 500,
+      metadata: { reason: 'cron_secret_missing' },
+    });
+    return res.status(500).json({ error: 'CRON_SECRET not configured' });
+  }
   if (req.headers.authorization !== `Bearer ${CRON_SECRET}`) {
+    await recordAuditEvent(req, {
+      action: 'nmf.cron.postflight',
+      outcome: 'unauthorized',
+      status: 401,
+    });
     return res.status(401).json({ error: 'Unauthorized' });
   }
-  if (!SUPABASE_URL || !SUPABASE_KEY) return res.status(500).json({ error: 'Supabase not configured' });
+  if (!SUPABASE_URL || !SUPABASE_KEY) {
+    await recordAuditEvent(req, {
+      action: 'nmf.cron.postflight',
+      outcome: 'skipped',
+      status: 500,
+      metadata: { reason: 'supabase_config_missing' },
+    });
+    return res.status(500).json({ error: 'Supabase not configured' });
+  }
   const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
   const weekDate = (req.query.week as string) || getLastFriday();
@@ -97,7 +119,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (failures.length > 0) {
     await alertSlack(`NMF Post-flight FAILED for ${weekDate}`, report).catch(() => {});
+    await recordAuditEvent(req, {
+      action: 'nmf.cron.postflight',
+      outcome: 'failure',
+      status: 503,
+      metadata: {
+        week: weekDate,
+        release_count: releaseCount,
+        intel_rows: intelCount,
+        failure_checks: failures.map(f => f.check),
+      },
+    });
     return res.status(503).json(report);
   }
+  await recordAuditEvent(req, {
+    action: 'nmf.cron.postflight',
+    outcome: 'success',
+    status: 200,
+    metadata: { week: weekDate, release_count: releaseCount, intel_rows: intelCount },
+  });
   return res.status(200).json(report);
 }

@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { runWeeklyReview } from '../scripts/claim-weekly-alpha-handoff.js';
+import { recordAuditEvent } from './_audit.js';
 
 /**
  * GET /api/cron-claim-review
@@ -20,12 +21,23 @@ const CRON_SECRET = process.env.CRON_SECRET || '';
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET' && req.method !== 'POST') {
     res.setHeader('Allow', 'GET, POST');
+    await recordAuditEvent(req, {
+      action: 'nmf.cron.claim_review',
+      outcome: 'skipped',
+      status: 405,
+      metadata: { reason: 'method_not_allowed' },
+    });
     return res.status(405).json({ error: 'GET/POST only' });
   }
   // Vercel cron sends `Authorization: Bearer ${CRON_SECRET}` when configured.
   if (CRON_SECRET) {
     const auth = req.headers.authorization || '';
     if (auth !== `Bearer ${CRON_SECRET}`) {
+      await recordAuditEvent(req, {
+        action: 'nmf.cron.claim_review',
+        outcome: 'unauthorized',
+        status: 401,
+      });
       return res.status(401).json({ error: 'Unauthorized' });
     }
   }
@@ -35,9 +47,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const result = await runWeeklyReview();
+    await recordAuditEvent(req, {
+      action: 'nmf.cron.claim_review',
+      outcome: result.ok ? 'success' : 'failure',
+      status: result.ok ? 200 : 500,
+      metadata: { ok: result.ok },
+    });
     return res.status(result.ok ? 200 : 500).json(result);
   } catch (e) {
     console.error('[cron-claim-review] exception:', e);
+    await recordAuditEvent(req, {
+      action: 'nmf.cron.claim_review',
+      outcome: 'failure',
+      status: 500,
+      metadata: { reason: 'exception' },
+    });
     return res.status(500).json({
       ok: false,
       error: e instanceof Error ? e.message : 'unknown',

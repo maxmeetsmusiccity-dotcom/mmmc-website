@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { IntelligenceAccumulator, emitIntelligence, extractComposerCandidates, splitPerformerCreditString, type CollaborationSignal, type AppleRejection } from './_scan_intelligence.js';
 import { runHealthProbe } from './scan-health.js';
 import { alertSlack } from './_alert.js';
+import { recordAuditEvent } from './_audit.js';
 
 // Daily Apple-only fresh-release scan (M-Z12).
 // Target window: the last 48h of releases. Paired with the weekly full-universe
@@ -77,14 +78,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const CRON_SECRET = process.env.CRON_SECRET;
   if (!CRON_SECRET) {
     console.error('[DAILY] CRON_SECRET not configured — refusing to run');
+    await recordAuditEvent(req, {
+      action: 'nmf.cron.daily_scan',
+      outcome: 'skipped',
+      status: 500,
+      metadata: { reason: 'cron_secret_missing' },
+    });
     return res.status(500).json({ error: 'Server misconfigured' });
   }
   const authHeader = req.headers.authorization;
   if (authHeader !== `Bearer ${CRON_SECRET}`) {
+    await recordAuditEvent(req, {
+      action: 'nmf.cron.daily_scan',
+      outcome: 'unauthorized',
+      status: 401,
+    });
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
   if (!SUPABASE_URL || !SUPABASE_KEY) {
+    await recordAuditEvent(req, {
+      action: 'nmf.cron.daily_scan',
+      outcome: 'skipped',
+      status: 500,
+      metadata: { reason: 'supabase_config_missing' },
+    });
     return res.status(500).json({ error: 'Server misconfigured' });
   }
   const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -105,10 +123,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           apple_error: health.apple.error,
           retry_after_s: health.apple.retry_after_seconds,
         }).catch(() => {});
+        await recordAuditEvent(req, {
+          action: 'nmf.cron.daily_scan',
+          outcome: 'failure',
+          status: 503,
+          metadata: {
+            scan_date: scanDate,
+            chain: chainNum,
+            reason: 'preflight_aborted',
+            apple_status: health.apple.status,
+          },
+        });
         return res.status(503).json({ status: 'preflight_aborted', apple: health.apple });
       }
     } catch (e) {
       console.error('[DAILY] Pre-flight threw:', e);
+      await recordAuditEvent(req, {
+        action: 'nmf.cron.daily_scan',
+        outcome: 'failure',
+        status: 500,
+        metadata: { scan_date: scanDate, chain: chainNum, reason: 'preflight_error' },
+      });
       return res.status(500).json({ status: 'preflight_error', error: (e as Error).message });
     }
   }
@@ -320,6 +355,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   } catch (e) {
     console.error('[DAILY] scan_intelligence emit threw:', e);
   }
+
+  await recordAuditEvent(req, {
+    action: 'nmf.cron.daily_scan',
+    outcome: 'success',
+    status: 200,
+    metadata: {
+      scan_date: scanDate,
+      chain: chainNum,
+      max_chains: maxChains,
+      artists_scanned: batch.length,
+      apple_tracks: appleTracks,
+      failed_batches: failedBatches,
+      status: chainStatus,
+    },
+  });
 
   return res.status(200).json({
     status: chainStatus,
