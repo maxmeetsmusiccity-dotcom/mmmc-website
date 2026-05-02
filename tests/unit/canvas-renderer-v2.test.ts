@@ -28,6 +28,11 @@ import {
   getV2BodyTemplatePreset,
   getVisibleTemplates,
 } from '../../src/lib/carousel-templates';
+import {
+  PHASE4_TITLE_TEMPLATE_IDS,
+  PHASE4_TITLE_TEMPLATE_SCAFFOLD,
+} from '../../src/lib/title-templates-v2-phase4';
+import { PHASE5_CLOSING_TEMPLATE_SCAFFOLD } from '../../src/lib/closing-template-v2-phase5';
 
 describe('canvas renderer v2 phase 1 surface', () => {
   it('normalizes design zip dash IDs to production-safe underscore IDs', () => {
@@ -125,5 +130,27 @@ describe('canvas renderer v2 phase 1 surface', () => {
     const ropeStage = getTemplate('v2_rope_stage');
     expect(ropeStage.engine).toBe('v2');
     expect(getV2BodyTemplatePreset(ropeStage)?.decoration).toBe('rope-frame');
+  });
+
+  it('prepares the Phase 4 11-title-template slate without activating it', () => {
+    expect(PHASE4_TITLE_TEMPLATE_IDS).toHaveLength(11);
+    expect(new Set(PHASE4_TITLE_TEMPLATE_IDS).size).toBe(11);
+    expect(PHASE4_TITLE_TEMPLATE_SCAFFOLD.filter(item => item.band === 'launch-3')).toHaveLength(3);
+    expect(PHASE4_TITLE_TEMPLATE_SCAFFOLD.filter(item => item.band === 'expansion-4')).toHaveLength(4);
+    expect(PHASE4_TITLE_TEMPLATE_SCAFFOLD.filter(item => item.band === 'reserve-4')).toHaveLength(4);
+    expect(PHASE4_TITLE_TEMPLATE_SCAFFOLD.every(item => item.template.engine === 'v2')).toBe(true);
+    expect(PHASE4_TITLE_TEMPLATE_SCAFFOLD.every(item => item.template.kind === 'title')).toBe(true);
+  });
+
+  it('prepares the Phase 5 closing-template scaffold without activating it', () => {
+    expect(PHASE5_CLOSING_TEMPLATE_SCAFFOLD.liveInPhase5).toBe(false);
+    expect(PHASE5_CLOSING_TEMPLATE_SCAFFOLD.template.id).toBe('v2_closing_saved_stack');
+    expect(PHASE5_CLOSING_TEMPLATE_SCAFFOLD.template.kind).toBe('title');
+    expect(PHASE5_CLOSING_TEMPLATE_SCAFFOLD.requiredMoments).toEqual([
+      'playlist-save',
+      'curator-credit',
+      'share-reminder',
+      'next-friday-return',
+    ]);
   });
 });
