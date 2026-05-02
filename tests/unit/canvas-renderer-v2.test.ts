@@ -37,6 +37,11 @@ import {
   PHASE5_CLOSING_TEMPLATE_PRESET,
   PHASE5_CLOSING_TEMPLATE_SCAFFOLD,
 } from '../../src/lib/closing-template-v2-phase5';
+import {
+  PHASE6_LIVE_BODY_TEMPLATE_PRESETS,
+  PHASE6_MARQUEE_BODY_TEMPLATE_IDS,
+  PHASE6_MARQUEE_BODY_TEMPLATE_SCAFFOLD,
+} from '../../src/lib/body-templates-v2-phase6';
 
 describe('canvas renderer v2 phase 1 surface', () => {
   it('normalizes design zip dash IDs to production-safe underscore IDs', () => {
@@ -162,5 +167,22 @@ describe('canvas renderer v2 phase 1 surface', () => {
       'share-reminder',
       'next-friday-return',
     ]);
+  });
+
+  it('ships Phase 6 Marquee body templates rev 2 through the carousel registry', () => {
+    expect(PHASE6_MARQUEE_BODY_TEMPLATE_IDS).toEqual([
+      'v2_marquee_gold_room',
+      'v2_marquee_neon_backline',
+      'v2_marquee_poster_stack',
+    ]);
+    expect(PHASE6_MARQUEE_BODY_TEMPLATE_SCAFFOLD.every(item => item.marqueeRevision === 'rev-2')).toBe(true);
+    expect(PHASE6_MARQUEE_BODY_TEMPLATE_SCAFFOLD.every(item => item.liveInPhase6)).toBe(true);
+    expect(PHASE6_LIVE_BODY_TEMPLATE_PRESETS).toHaveLength(
+      PHASE3_LIVE_BODY_TEMPLATE_PRESETS.length + PHASE6_MARQUEE_BODY_TEMPLATE_IDS.length,
+    );
+    expect(getVisibleTemplates('curator@example.com').map(template => template.id)).toEqual(
+      expect.arrayContaining(PHASE6_MARQUEE_BODY_TEMPLATE_IDS),
+    );
+    expect(getV2BodyTemplatePreset(getTemplate('v2_marquee_gold_room'))?.decoration).toBe('marquee-bulbs');
   });
 });
