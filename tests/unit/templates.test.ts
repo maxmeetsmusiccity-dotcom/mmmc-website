@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { TEMPLATES, getVisibleTemplates, MAX_ONLY_TEMPLATES, getTemplate } from '../../src/lib/carousel-templates';
 import { TITLE_TEMPLATES, getTitleTemplate, MAX_ONLY_TITLE_TEMPLATES, getVisibleTitleTemplates, getDefaultTitleTemplateId } from '../../src/lib/title-templates';
+import { PHASE4_LIVE_TITLE_TEMPLATE_PRESETS } from '../../src/lib/title-templates-v2-phase4';
 
 describe('carousel templates', () => {
   it('has at least 6 templates', () => {
@@ -46,8 +47,9 @@ describe('carousel templates', () => {
 });
 
 describe('title templates', () => {
-  it('has 14 title templates (13 v1 + Marquee v2, no duplicates)', () => {
-    expect(TITLE_TEMPLATES.length).toBe(14);
+  it('includes Phase 4 v2 title templates plus legacy templates, with no duplicates', () => {
+    expect(TITLE_TEMPLATES.filter(t => t.engine === 'v2')).toHaveLength(PHASE4_LIVE_TITLE_TEMPLATE_PRESETS.length);
+    expect(TITLE_TEMPLATES.filter(t => t.engine === 'v1').length).toBeGreaterThan(0);
     // Verify no duplicate IDs
     const ids = TITLE_TEMPLATES.map(t => t.id);
     expect(new Set(ids).size).toBe(ids.length);
