@@ -1,4 +1,4 @@
-import { V2_BODY_TEMPLATE_PRESETS, V2_PALETTES } from './brand-tokens';
+import { NMF_BRAND_TOKENS, V2_BODY_TEMPLATE_PRESETS, V2_PALETTES } from './brand-tokens';
 import type { V2CarouselBodyTemplate } from './template-types-v2';
 
 export type Phase3BodyTemplateBand = 'launch-4' | 'expansion-4' | 'reserve-3';
@@ -25,11 +25,11 @@ const ropeStage: V2CarouselBodyTemplate = {
   engine: 'v2',
   kind: 'body',
   palette: {
-    bg: '#111827',
-    accent: '#F5C453',
-    accent2: '#C8511C',
-    text: '#F5E6B8',
-    textMuted: '#A0B4C8',
+    bg: NMF_BRAND_TOKENS.color.inkPrimary,
+    accent: NMF_BRAND_TOKENS.color.accentGold,
+    accent2: NMF_BRAND_TOKENS.color.rust,
+    text: NMF_BRAND_TOKENS.color.ivory,
+    textMuted: NMF_BRAND_TOKENS.color.accentTeal,
   },
   fonts: {
     display: 'Playfair Display',
@@ -38,7 +38,7 @@ const ropeStage: V2CarouselBodyTemplate = {
   },
   cellPadding: 14,
   cellRadius: 6,
-  cellShadow: '0 12px 30px rgba(0,0,0,.42)',
+  cellShadow: V2_BODY_TEMPLATE_PRESETS[1].cellShadow,
   cellRotate: [-1.2, 0.8, -0.7, 1.1, -0.9, 0.6, -1.4, 1, -0.5],
   decoration: 'rope-frame',
   showGrain: true,
@@ -52,11 +52,11 @@ const scriptWriter: V2CarouselBodyTemplate = {
   engine: 'v2',
   kind: 'body',
   palette: {
-    bg: '#F5E6B8',
-    accent: '#0F1B33',
-    accent2: '#2DAFAA',
-    text: '#0F1B33',
-    textMuted: '#4A7189',
+    bg: NMF_BRAND_TOKENS.color.ivory,
+    accent: NMF_BRAND_TOKENS.color.inkPrimary,
+    accent2: NMF_BRAND_TOKENS.color.turquoise,
+    text: NMF_BRAND_TOKENS.color.inkPrimary,
+    textMuted: NMF_BRAND_TOKENS.color.turquoise,
   },
   fonts: {
     display: 'Playfair Display',
@@ -66,7 +66,7 @@ const scriptWriter: V2CarouselBodyTemplate = {
   },
   cellPadding: 16,
   cellRadius: 3,
-  cellShadow: '0 6px 18px rgba(15,27,51,.18)',
+  cellShadow: V2_BODY_TEMPLATE_PRESETS[0].cellShadow,
   cellRotate: [-0.6, 0.4, -0.3, 0.7, -0.5, 0.3, -0.8, 0.5, -0.2],
   decoration: 'script-flourish',
   showGrain: true,
@@ -87,7 +87,7 @@ const vinylAfterparty: V2CarouselBodyTemplate = {
   },
   cellPadding: 12,
   cellRadius: 8,
-  cellShadow: '0 18px 38px rgba(0,0,0,.5)',
+  cellShadow: V2_BODY_TEMPLATE_PRESETS[4].cellShadow,
   cellRotate: [0.4, -0.4, 0.6, -0.6, 0.3, -0.3, 0.5, -0.5, 0],
   decoration: 'vinyl-disc',
   showVinyl: true,
@@ -103,11 +103,11 @@ const sunburstRodeo: V2CarouselBodyTemplate = {
   engine: 'v2',
   kind: 'body',
   palette: {
-    bg: '#24120A',
-    accent: '#F5C453',
-    accent2: '#FF69B4',
-    text: '#FFEFC4',
-    textMuted: '#D4A843',
+    bg: NMF_BRAND_TOKENS.color.inkPrimary,
+    accent: NMF_BRAND_TOKENS.color.accentGold,
+    accent2: NMF_BRAND_TOKENS.color.rose,
+    text: NMF_BRAND_TOKENS.color.ivory,
+    textMuted: NMF_BRAND_TOKENS.color.warmGold,
   },
   fonts: {
     display: 'DM Sans',
@@ -116,7 +116,7 @@ const sunburstRodeo: V2CarouselBodyTemplate = {
   },
   cellPadding: 10,
   cellRadius: 4,
-  cellShadow: '0 12px 32px rgba(0,0,0,.45)',
+  cellShadow: V2_BODY_TEMPLATE_PRESETS[4].cellShadow,
   cellRotate: [-1, 1, -1, 1, -0.5, 0.5, -1.5, 1.5, 0],
   decoration: 'sunburst-rays',
   showGrain: true,
@@ -130,11 +130,11 @@ const tapeArchive: V2CarouselBodyTemplate = {
   engine: 'v2',
   kind: 'body',
   palette: {
-    bg: '#201A14',
-    accent: '#F5E6B8',
-    accent2: '#D4A843',
-    text: '#F5E6B8',
-    textMuted: '#c9a387',
+    bg: NMF_BRAND_TOKENS.color.inkPrimary,
+    accent: NMF_BRAND_TOKENS.color.ivory,
+    accent2: NMF_BRAND_TOKENS.color.warmGold,
+    text: NMF_BRAND_TOKENS.color.ivory,
+    textMuted: NMF_BRAND_TOKENS.color.warmGold,
   },
   fonts: {
     display: 'Source Serif 4',
@@ -143,7 +143,7 @@ const tapeArchive: V2CarouselBodyTemplate = {
   },
   cellPadding: 10,
   cellRadius: 1,
-  cellShadow: '4px 4px 0 rgba(0,0,0,.35)',
+  cellShadow: V2_BODY_TEMPLATE_PRESETS[3].cellShadow,
   cellRotate: [-0.4, 0.4, -0.6, 0.6, -0.2, 0.2, -0.5, 0.5, 0],
   decoration: 'gold-frame',
   postProcess: 'sepia',
