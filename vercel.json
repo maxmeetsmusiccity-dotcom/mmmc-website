@@ -1,5 +1,11 @@
 {
   "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "maxmeetsmusiccity.com" }],
+      "destination": "https://newmusicfriday.app/:path*",
+      "statusCode": 308
+    },
     { "source": "/nmf", "destination": "/newmusicfriday", "statusCode": 301 },
     { "source": "/nmf/:path*", "destination": "/newmusicfriday/:path*", "statusCode": 301 }
   ],
