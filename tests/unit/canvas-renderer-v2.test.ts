@@ -12,6 +12,11 @@ import {
   radians,
   v2GridFromLegacy,
 } from '../../src/lib/canvas-renderer-v2';
+import {
+  getTitleTemplate,
+  getV2TitleTemplatePreset,
+  getVisibleTitleTemplates,
+} from '../../src/lib/title-templates';
 
 describe('canvas renderer v2 phase 1 surface', () => {
   it('normalizes design zip dash IDs to production-safe underscore IDs', () => {
@@ -65,6 +70,20 @@ describe('canvas renderer v2 phase 1 surface', () => {
     expect(marquee).toBeDefined();
     expect(marquee?.layout).toBe('marquee-frame');
     expect(marquee?.swipePillStyle).toBe('rose-tag');
+  });
+
+  it('exposes Marquee v2 through the title registry with engine dispatch metadata', () => {
+    const marquee = getTitleTemplate('v2_marquee');
+    expect(marquee.engine).toBe('v2');
+    expect(marquee.v2PresetId).toBe('v2_marquee');
+    expect(getV2TitleTemplatePreset(marquee)?.layout).toBe('marquee-frame');
+  });
+
+  it('keeps Marquee v2 visible while retaining the Max-only HeroSingle gate', () => {
+    const nonMax = getVisibleTitleTemplates('maxblachman@gmail.com').map(t => t.id);
+    expect(nonMax).toContain('v2_marquee');
+    expect(nonMax).not.toContain('vinyl_classic');
+    expect(getVisibleTitleTemplates('maxmeetsmusiccity@gmail.com').map(t => t.id)).toContain('vinyl_classic');
   });
 
   it('centralizes BB v2.1-adjacent brand colors for renderer presets', () => {
