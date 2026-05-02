@@ -1,15 +1,78 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-// Strict whitelist — only NMF-safe endpoints allowed through the proxy
+const NMF_SAFE_PROFILE_PATHS = [
+  '/api/profile/instagram',
+  '/api/profile/search',
+  '/api/profile/research-agent',
+] as const;
+
+const DENIED_PROFILE_PATH_PREFIXES = [
+  '/api/profile/credit',
+  '/api/profile/royalty',
+  '/api/profile/private',
+] as const;
+
 const ALLOWED_PATH_PREFIXES = [
   '/api/nmf/browse',
   '/api/nmf/collaborators',
   '/api/nmf/instagram',
   '/api/nmf/releases',
   '/api/search',
-  '/api/profile/',
   '/api/research/',
-];
+] as const;
+
+const HOUR_MS = 60 * 60 * 1000;
+const MINUTE_MS = 60 * 1000;
+const hourlyHits = new Map<string, number[]>();
+const burstHits = new Map<string, number[]>();
+
+function startsWithPath(path: string, prefix: string): boolean {
+  return path === prefix || path.startsWith(`${prefix}/`) || path.startsWith(`${prefix}?`);
+}
+
+export function isDeniedPath(path: string): boolean {
+  return DENIED_PROFILE_PATH_PREFIXES.some((prefix) => startsWithPath(path, prefix));
+}
+
+export function isAllowedPath(path: string): boolean {
+  if (isDeniedPath(path)) return false;
+  if (NMF_SAFE_PROFILE_PATHS.some((prefix) => startsWithPath(path, prefix))) {
+    return true;
+  }
+  if (path.startsWith('/api/profile/')) return false;
+  return ALLOWED_PATH_PREFIXES.some((prefix) => startsWithPath(path, prefix));
+}
+
+function clientIp(req: VercelRequest): string {
+  const forwarded = req.headers['x-forwarded-for'];
+  if (typeof forwarded === 'string') return forwarded.split(',')[0].trim();
+  if (Array.isArray(forwarded)) return forwarded[0]?.split(',')[0]?.trim() ?? 'unknown';
+  return req.socket?.remoteAddress ?? 'unknown';
+}
+
+function recordHit(
+  store: Map<string, number[]>,
+  key: string,
+  now: number,
+  windowMs: number,
+  maxHits: number
+): boolean {
+  const hits = (store.get(key) ?? []).filter((ts) => now - ts < windowMs);
+  hits.push(now);
+  store.set(key, hits);
+  return hits.length > maxHits;
+}
+
+export function resetProxyRateLimitForTests(): void {
+  hourlyHits.clear();
+  burstHits.clear();
+}
+
+export function isProxyRateLimited(ip: string, now = Date.now()): boolean {
+  const hourlyLimited = recordHit(hourlyHits, ip, now, HOUR_MS, 60);
+  const burstLimited = recordHit(burstHits, ip, now, MINUTE_MS, 10);
+  return hourlyLimited || burstLimited;
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // ── Path validation (BEFORE any proxy logic) ──
@@ -24,10 +87,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(403).json({ error: 'Forbidden' });
   }
 
-  // Whitelist check — path must start with an allowed prefix
-  const isAllowed = ALLOWED_PATH_PREFIXES.some(p => path.startsWith(p));
-  if (!isAllowed) {
+  if (!isAllowedPath(path)) {
     return res.status(403).json({ error: 'Path not allowed' });
+  }
+
+  if (isProxyRateLimited(clientIp(req))) {
+    return res.status(429).json({ error: 'Rate limit exceeded' });
   }
 
   // ── Proxy logic ──
