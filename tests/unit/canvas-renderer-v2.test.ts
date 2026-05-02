@@ -17,6 +17,11 @@ import {
   getV2TitleTemplatePreset,
   getVisibleTitleTemplates,
 } from '../../src/lib/title-templates';
+import {
+  PHASE3_BODY_TEMPLATE_SCAFFOLD,
+  PHASE3_PRIMARY_BODY_TEMPLATE_IDS,
+  PHASE3_RESERVE_BODY_TEMPLATE_IDS,
+} from '../../src/lib/body-templates-v2-phase3';
 
 describe('canvas renderer v2 phase 1 surface', () => {
   it('normalizes design zip dash IDs to production-safe underscore IDs', () => {
@@ -91,5 +96,15 @@ describe('canvas renderer v2 phase 1 surface', () => {
     expect(NMF_BRAND_TOKENS.color.accentTeal).toBe('#3EE6C3');
     expect(NMF_BRAND_TOKENS.color.accentGold).toBe('#F5C453');
     expect(V2_PALETTES.mmmcClassic.accent).toBe(NMF_BRAND_TOKENS.color.inkPrimary);
+  });
+
+  it('prepares the Phase 3 body-template slate without activating it in Phase 2', () => {
+    expect(PHASE3_PRIMARY_BODY_TEMPLATE_IDS).toHaveLength(10);
+    expect(PHASE3_RESERVE_BODY_TEMPLATE_IDS).toEqual(['v2_tape_archive']);
+    expect(PHASE3_BODY_TEMPLATE_SCAFFOLD.filter(item => item.band === 'launch-4')).toHaveLength(4);
+    expect(PHASE3_BODY_TEMPLATE_SCAFFOLD.filter(item => item.band === 'expansion-4')).toHaveLength(4);
+    expect(PHASE3_BODY_TEMPLATE_SCAFFOLD.filter(item => item.band === 'reserve-3')).toHaveLength(3);
+    expect(PHASE3_BODY_TEMPLATE_SCAFFOLD.every(item => item.template.engine === 'v2')).toBe(true);
+    expect(PHASE3_BODY_TEMPLATE_SCAFFOLD.every(item => item.template.kind === 'body')).toBe(true);
   });
 });
