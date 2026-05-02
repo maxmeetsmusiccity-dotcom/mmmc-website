@@ -3,6 +3,7 @@ import type { CarouselTemplate } from './carousel-templates';
 import { getTemplate, getV2BodyTemplatePreset } from './carousel-templates';
 import { getTitleTemplate, getV2TitleTemplatePreset, type TitleSlideTemplate } from './title-templates';
 import { defaultV2Grid, preloadV2TemplateAssets, renderBodySlide, renderTitleSlide, v2GridFromLegacy } from './canvas-renderer-v2';
+import { PHASE5_CLOSING_TEMPLATE_PRESET } from './closing-template-v2-phase5';
 import { drawCustomElements, type EditorElement } from './editor-elements';
 import { type GridConfig, getGridById, getGridsForCount, computeCellRects } from './grid-layouts';
 import { computeLastFriday } from './scan-utils';
@@ -751,6 +752,43 @@ export async function generateTitleSlide(
     canvas.toBlob(b => {
       if (b) resolve(b);
       else reject(new Error('Canvas toBlob returned null — canvas may be tainted or browser ran out of memory'));
+    }, 'image/png');
+  });
+}
+
+export async function generateClosingSlide(
+  coverFeature: SelectionSlot,
+  weekDate: string,
+  aspect: CarouselAspect = '1:1',
+  title = 'Save the stack',
+  subtitle = 'Share it before next Friday',
+): Promise<Blob> {
+  const dim = getDimensions(aspect);
+  const canvas = document.createElement('canvas');
+  canvas.width = dim.w;
+  canvas.height = dim.h;
+  const ctx = canvas.getContext('2d')!;
+  const featured = {
+    id: coverFeature.track.track_id,
+    title: coverFeature.track.track_name,
+    artist: coverFeature.track.artist_names,
+    cover: coverFeature.track.cover_art_640,
+  };
+
+  await preloadV2TemplateAssets(PHASE5_CLOSING_TEMPLATE_PRESET, [featured]);
+  await renderTitleSlide(ctx, dim.w, dim.h, {
+    template: PHASE5_CLOSING_TEMPLATE_PRESET,
+    title,
+    subtitle,
+    featured,
+    count: 1,
+    edition: formatDate(weekDate),
+  });
+
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(b => {
+      if (b) resolve(b);
+      else reject(new Error('Canvas export failed'));
     }, 'image/png');
   });
 }
