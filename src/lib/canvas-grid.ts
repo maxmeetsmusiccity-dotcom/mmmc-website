@@ -1,8 +1,9 @@
 import type { SelectionSlot } from './selection';
 import type { CarouselTemplate } from './carousel-templates';
-import { getTemplate } from './carousel-templates';
+import { getTemplate, getV2BodyTemplatePreset } from './carousel-templates';
 import { getTitleTemplate, getV2TitleTemplatePreset, type TitleSlideTemplate } from './title-templates';
-import { preloadV2TemplateAssets, renderTitleSlide } from './canvas-renderer-v2';
+import { defaultV2Grid, preloadV2TemplateAssets, renderBodySlide, renderTitleSlide, v2GridFromLegacy } from './canvas-renderer-v2';
+import { PHASE5_CLOSING_TEMPLATE_PRESET } from './closing-template-v2-phase5';
 import { drawCustomElements, type EditorElement } from './editor-elements';
 import { type GridConfig, getGridById, getGridsForCount, computeCellRects } from './grid-layouts';
 import { computeLastFriday } from './scan-utils';
@@ -755,6 +756,43 @@ export async function generateTitleSlide(
   });
 }
 
+export async function generateClosingSlide(
+  coverFeature: SelectionSlot,
+  weekDate: string,
+  aspect: CarouselAspect = '1:1',
+  title = 'Save the stack',
+  subtitle = 'Share it before next Friday',
+): Promise<Blob> {
+  const dim = getDimensions(aspect);
+  const canvas = document.createElement('canvas');
+  canvas.width = dim.w;
+  canvas.height = dim.h;
+  const ctx = canvas.getContext('2d')!;
+  const featured = {
+    id: coverFeature.track.track_id,
+    title: coverFeature.track.track_name,
+    artist: coverFeature.track.artist_names,
+    cover: coverFeature.track.cover_art_640,
+  };
+
+  await preloadV2TemplateAssets(PHASE5_CLOSING_TEMPLATE_PRESET, [featured]);
+  await renderTitleSlide(ctx, dim.w, dim.h, {
+    template: PHASE5_CLOSING_TEMPLATE_PRESET,
+    title,
+    subtitle,
+    featured,
+    count: 1,
+    edition: formatDate(weekDate),
+  });
+
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(b => {
+      if (b) resolve(b);
+      else reject(new Error('Canvas export failed'));
+    }, 'image/png');
+  });
+}
+
 // ─── GRID ────────────────────────────────────────────────
 
 /** Layout-aware grid renderer — works with any GridConfig */
@@ -973,6 +1011,67 @@ export interface SlideComposerCredit {
   publisher?: string | null;
 }
 
+function resolveGridLayout(slotCount: number, layoutId?: string): GridConfig | null {
+  if (layoutId) {
+    let resolvedLayout = getGridById(slotCount, layoutId);
+    if (!resolvedLayout) {
+      for (let n = slotCount + 1; n <= 16; n++) {
+        resolvedLayout = getGridById(n, layoutId);
+        if (resolvedLayout) break;
+      }
+    }
+    if (resolvedLayout) return resolvedLayout;
+  }
+
+  const autoOpts = getGridsForCount(slotCount);
+  return autoOpts.logo[0] || autoOpts.exact.find(g => g.columns > 1 && g.rows > 1) || autoOpts.exact[0] || autoOpts.close[0] || null;
+}
+
+async function generateV2GridSlide(
+  slots: SelectionSlot[],
+  weekDate: string,
+  template: CarouselTemplate,
+  logoUrl: string,
+  layoutId: string | undefined,
+  aspect: CarouselAspect,
+): Promise<Blob> {
+  const v2Template = getV2BodyTemplatePreset(template);
+  if (!v2Template) throw new Error(`Missing v2 body template preset: ${template.id}`);
+
+  const dim = getDimensions(aspect);
+  const canvas = document.createElement('canvas');
+  canvas.width = dim.w;
+  canvas.height = dim.h;
+  const ctx = canvas.getContext('2d')!;
+  const tracks = slots.map(slot => ({
+    id: slot.track.track_id,
+    title: slot.track.track_name,
+    artist: slot.track.artist_names,
+    cover: slot.track.cover_art_640,
+  }));
+  const legacyLayout = resolveGridLayout(slots.length, layoutId);
+  const cols = Math.max(1, Math.ceil(Math.sqrt(Math.max(slots.length, 1))));
+  const grid = legacyLayout
+    ? v2GridFromLegacy(legacyLayout)
+    : defaultV2Grid(cols, Math.max(1, Math.ceil(Math.max(slots.length, 1) / cols)));
+
+  await preloadV2TemplateAssets(v2Template, tracks, logoUrl);
+  await renderBodySlide(ctx, dim.w, dim.h, {
+    template: v2Template,
+    grid,
+    tracks,
+    logo: logoUrl,
+    edition: formatDate(weekDate),
+  });
+
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(b => {
+      if (b) resolve(b);
+      else reject(new Error('Canvas export failed'));
+    }, 'image/png');
+  });
+}
+
 export async function generateGridSlide(
   slots: SelectionSlot[],
   weekDate: string,
@@ -984,6 +1083,9 @@ export async function generateGridSlide(
   composerCredits?: SlideComposerCredit[],
 ): Promise<Blob> {
   const t = getTemplate(templateId);
+  if (getV2BodyTemplatePreset(t)) {
+    return generateV2GridSlide(slots, weekDate, t, logoUrl, layoutId, aspect);
+  }
   await loadAllAssets(t);
   // Merge custom elements from template + explicit param
   const allCustom = [...(t.customElements || []), ...(customElements || [])];
@@ -1013,16 +1115,7 @@ export async function generateGridSlide(
   // Always use layout-aware renderer — resolve layout from ID or auto-select
   // Try the exact slot count first, then try larger counts up to 16 so a user-selected
   // layout (e.g. 4×2 for 8) still renders when fewer tracks are actually selected.
-  let resolvedLayout: GridConfig | null = null;
-  if (layoutId) {
-    resolvedLayout = getGridById(slots.length, layoutId);
-    if (!resolvedLayout) {
-      for (let n = slots.length + 1; n <= 16; n++) {
-        resolvedLayout = getGridById(n, layoutId);
-        if (resolvedLayout) break;
-      }
-    }
-  }
+  const resolvedLayout = layoutId ? resolveGridLayout(slots.length, layoutId) : null;
   const gridX = 74;
   const gridW = dim.w - 74 * 2;
 

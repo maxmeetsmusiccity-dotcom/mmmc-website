@@ -1,10 +1,12 @@
-import type { TemplateEngine } from './template-types-v2';
+import { PHASE6_LIVE_BODY_TEMPLATE_PRESETS } from './body-templates-v2-phase6';
+import type { TemplateEngine, V2CarouselBodyTemplate } from './template-types-v2';
 
 export interface CarouselTemplate {
   id: string;
   name: string;
   description: string;
   engine?: TemplateEngine;
+  v2PresetId?: string;
 
   // Colors
   background: string;
@@ -372,10 +374,71 @@ const LEGACY_TEMPLATES: CarouselTemplate[] = [
   },
 ];
 
-export const TEMPLATES: CarouselTemplate[] = LEGACY_TEMPLATES.map(template => ({
+function carouselShellFromV2(template: V2CarouselBodyTemplate): CarouselTemplate {
+  return {
+    id: template.id,
+    name: template.name,
+    description: template.description,
+    engine: 'v2',
+    v2PresetId: template.id,
+    background: template.palette.bg,
+    textPrimary: template.palette.text,
+    textSecondary: template.palette.textMuted ?? template.palette.text,
+    accent: template.palette.accent,
+    accentGlow: 'rgba(245, 196, 83, ',
+    scriptFont: `"${template.fonts.display}", serif`,
+    bodyFont: `"${template.fonts.body}", sans-serif`,
+    neon: {
+      outerGlow: 'rgba(245, 196, 83, 0.15)',
+      outerBlur: 30,
+      outerAlpha: 0.2,
+      midGlow: 'rgba(245, 196, 83, 0.3)',
+      midBlur: 14,
+      midAlpha: 0.4,
+      coreColor: template.palette.text,
+      coreBlur: 4,
+    },
+    grid: {
+      gap: 0.005,
+      rotations: template.cellRotate.slice(0, 8),
+      cellShadow: Boolean(template.cellShadow),
+      cellBorder: false,
+      cellBorderColor: '',
+    },
+    cover: {
+      vinylOverlay: Boolean(template.showVinyl),
+      vinylOpacity: template.vinylOpacity ?? 0,
+      grooveCount: 60,
+      frameBorder: Math.max(2, Math.round(template.cellPadding * 0.5)),
+      frameColor: template.palette.accent,
+      frameShadowBlur: 24,
+      showChevrons: false,
+      showArtistName: true,
+      showTrackName: true,
+      subtitleText: 'New Music Friday',
+    },
+    decorations: {
+      showNotes: false,
+      showSparkles: template.decoration === 'sunburst-rays',
+      noteSize: 0,
+      sparkleSize: 24,
+    },
+    grainIntensity: template.grainOpacity ?? 0.04,
+    vignetteIntensity: 0.18,
+  };
+}
+
+const V1_TEMPLATES: CarouselTemplate[] = LEGACY_TEMPLATES.map(template => ({
   engine: 'v1',
   ...template,
 }));
+
+export const TEMPLATES: CarouselTemplate[] = [
+  ...V1_TEMPLATES,
+  ...PHASE6_LIVE_BODY_TEMPLATE_PRESETS.map(carouselShellFromV2),
+];
+
+const V2_BODY_TEMPLATE_PRESET_BY_ID = new Map(PHASE6_LIVE_BODY_TEMPLATE_PRESETS.map(template => [template.id, template]));
 
 /** Templates that are exclusive to Max's account */
 export const MAX_ONLY_TEMPLATES = new Set(['mmmc_classic', 'neon_rose', 'golden_hour']);
@@ -392,6 +455,11 @@ export function clearTempTemplate() { _tempTemplate = null; }
 export function getTemplate(id: string): CarouselTemplate {
   if (_tempTemplate && _tempTemplate.id === id) return _tempTemplate;
   return TEMPLATES.find(t => t.id === id) || _customTemplateRegistry.find(t => t.id === id) || TEMPLATES[0];
+}
+
+export function getV2BodyTemplatePreset(template: CarouselTemplate): V2CarouselBodyTemplate | undefined {
+  if (template.engine !== 'v2') return undefined;
+  return V2_BODY_TEMPLATE_PRESET_BY_ID.get(template.v2PresetId || template.id);
 }
 
 /** Get templates visible to a user (filters out Max-only for other users) */

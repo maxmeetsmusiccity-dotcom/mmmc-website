@@ -1,4 +1,4 @@
-import { V2_TITLE_TEMPLATE_PRESETS } from './brand-tokens';
+import { PHASE4_LIVE_TITLE_TEMPLATE_PRESETS } from './title-templates-v2-phase4';
 import type { TemplateEngine, V2TitleSlideTemplate } from './template-types-v2';
 
 /**
@@ -503,41 +503,56 @@ const LEGACY_TITLE_TEMPLATES: TitleSlideTemplate[] = [
   },
 ];
 
-const V2_MARQUEE_TITLE_TEMPLATE: TitleSlideTemplate = {
-  id: 'v2_marquee',
-  name: 'Velvet Marquee v2',
-  description: 'Renderer v2 theater marquee with plush rose, bulbs, and rotated feature art',
-  engine: 'v2',
-  v2PresetId: 'v2_marquee',
-  background: '#1a0f17',
-  textPrimary: '#FFD7A8',
-  textSecondary: '#c9a387',
-  accent: '#FF69B4',
-  headlineFont: '"Playfair Display", serif',
-  subtitleFont: '"Source Serif 4", serif',
-  dateFont: '"JetBrains Mono", monospace',
-  headlineWeight: 700,
-  headlineCase: 'capitalize',
-  headlineSize: 0.062,
-  subtitleSize: 0.024,
-  dateSize: 0.026,
-  headlineX: 0.5, headlineY: 0.08,
-  subtitleX: 0.5, subtitleY: 0.16,
-  dateX: 0.5, dateY: 0.9,
-  featuredImageX: 0.5, featuredImageY: 0.2,
-  featuredImageSize: 0.5,
-  glow: { color: 'rgba(255,105,180,0.34)', blur: 38, passes: 4 },
-  grain: 0.05,
-  vignette: 0.24,
-  showFrame: true, frameColor: '#FFD7A8', frameWidth: 8,
-  showDivider: true, dividerColor: 'rgba(255,215,168,0.42)',
-  featuredBorder: 8, featuredBorderColor: '#FFD7A8', featuredShadowBlur: 32, featuredRotation: -3,
-  texture: 'grain',
-  swipePill: true,
-};
+function titleShellFromV2(template: V2TitleSlideTemplate): TitleSlideTemplate {
+  return {
+    id: template.id,
+    name: `${template.name} v2`,
+    description: template.description,
+    engine: 'v2',
+    v2PresetId: template.id,
+    background: template.palette.bg,
+    textPrimary: template.palette.text,
+    textSecondary: template.palette.textMuted ?? template.palette.text,
+    accent: template.palette.accent,
+    headlineFont: `"${template.fonts.display}", serif`,
+    subtitleFont: `"${template.fonts.body}", serif`,
+    dateFont: `"${template.fonts.mono ?? template.fonts.body}", monospace`,
+    headlineWeight: template.titleStyle === 'sans-bold' ? 800 : 700,
+    headlineCase: template.titleStyle === 'sans-bold' ? 'uppercase' : 'capitalize',
+    headlineSize: template.titleStyle === 'serif-display-huge' ? 0.07 : 0.062,
+    subtitleSize: 0.024,
+    dateSize: 0.026,
+    headlineX: 0.5,
+    headlineY: 0.08,
+    subtitleX: 0.5,
+    subtitleY: 0.16,
+    dateX: 0.5,
+    dateY: 0.9,
+    featuredImageX: 0.5,
+    featuredImageY: 0.2,
+    featuredImageSize: template.featuredSize,
+    glow: { color: `${template.palette.accent}55`, blur: template.titleStyle === 'neon-glow' ? 46 : 28, passes: 3 },
+    grain: template.grainOpacity ?? 0.04,
+    vignette: 0.24,
+    showFrame: Boolean(template.decoration && template.decoration !== 'neon-grid'),
+    frameColor: template.palette.accent,
+    frameWidth: 6,
+    showDivider: true,
+    dividerColor: `${template.palette.accent}66`,
+    featuredBorder: Math.max(0, Math.round(template.featuredRadius)),
+    featuredBorderColor: template.palette.accent,
+    featuredShadowBlur: 32,
+    featuredRotation: template.featuredRotate,
+    texture: template.postProcess === 'halftone' ? 'halftone' : template.postProcess === 'sepia' ? 'grain' : undefined,
+    swipePill: template.showSwipePill,
+    vinylRecord: template.showVinyl,
+  };
+}
+
+const V2_TITLE_TEMPLATE_PRESET_BY_ID = new Map(PHASE4_LIVE_TITLE_TEMPLATE_PRESETS.map(template => [template.id, template]));
 
 export const TITLE_TEMPLATES: TitleSlideTemplate[] = [
-  V2_MARQUEE_TITLE_TEMPLATE,
+  ...PHASE4_LIVE_TITLE_TEMPLATE_PRESETS.map(titleShellFromV2),
   ...LEGACY_TITLE_TEMPLATES.map(template => ({ engine: 'v1' as const, ...template })),
 ];
 
@@ -551,7 +566,7 @@ export function getTitleTemplate(id: string): TitleSlideTemplate {
 export function getV2TitleTemplatePreset(template: TitleSlideTemplate): V2TitleSlideTemplate | undefined {
   if (template.engine !== 'v2') return undefined;
   const id = template.v2PresetId || template.id;
-  return V2_TITLE_TEMPLATE_PRESETS.find(t => t.id === id);
+  return V2_TITLE_TEMPLATE_PRESET_BY_ID.get(id);
 }
 
 /** Get title templates visible to a user (filters out Max-only for other users) */
