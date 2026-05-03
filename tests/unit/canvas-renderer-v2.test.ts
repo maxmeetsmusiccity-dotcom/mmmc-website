@@ -47,6 +47,13 @@ import {
   PHASE7_CURATOR_BODY_TEMPLATE_SCAFFOLD,
   PHASE7_LIVE_BODY_TEMPLATE_PRESETS,
 } from '../../src/lib/body-templates-v2-phase7';
+import {
+  isPhase8PairingResolvable,
+  PHASE8_TEMPLATE_PAIRING_BODY_IDS,
+  PHASE8_TEMPLATE_PAIRING_IDS,
+  PHASE8_TEMPLATE_PAIRING_SCAFFOLD,
+  PHASE8_TEMPLATE_PAIRING_TITLE_IDS,
+} from '../../src/lib/template-pairings-v2-phase8';
 
 describe('canvas renderer v2 phase 1 surface', () => {
   it('normalizes design zip dash IDs to production-safe underscore IDs', () => {
@@ -208,5 +215,25 @@ describe('canvas renderer v2 phase 1 surface', () => {
       expect.arrayContaining(PHASE7_CURATOR_BODY_TEMPLATE_IDS),
     );
     expect(getV2BodyTemplatePreset(getTemplate('v2_writer_board'))?.fonts.script).toBe(NMF_BRAND_TOKENS.font.script);
+  });
+
+  it('scaffolds Phase 8 title/body/closing pairings without activating runtime visibility', () => {
+    expect(PHASE8_TEMPLATE_PAIRING_IDS).toEqual([
+      'phase8_discovery-stack',
+      'phase8_playlist-pitch',
+      'phase8_writer-credit',
+      'phase8_weekly-recap',
+    ]);
+    expect(PHASE8_TEMPLATE_PAIRING_BODY_IDS).toEqual(PHASE7_CURATOR_BODY_TEMPLATE_IDS);
+    expect(PHASE8_TEMPLATE_PAIRING_TITLE_IDS).toEqual([
+      'v2_script_spotlight',
+      'v2_stadium_poster',
+      'v2_rope_overture',
+      'v2_sunburst_countdown',
+    ]);
+    expect(PHASE8_TEMPLATE_PAIRING_SCAFFOLD.every(item => item.readyForPhase8Activation)).toBe(true);
+    expect(PHASE8_TEMPLATE_PAIRING_SCAFFOLD.every(item => !item.liveInPhase8)).toBe(true);
+    expect(PHASE8_TEMPLATE_PAIRING_SCAFFOLD.every(item => item.editorialCue.length > 20)).toBe(true);
+    expect(PHASE8_TEMPLATE_PAIRING_SCAFFOLD.every(isPhase8PairingResolvable)).toBe(true);
   });
 });
