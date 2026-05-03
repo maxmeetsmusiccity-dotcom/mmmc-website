@@ -54,7 +54,7 @@ export default function TemplateImporter({ onImport, onCancel }: Props) {
   // Sampled colors
   const [bgColor, setBgColor] = useState('#0F1B33');
   const [borderColor, setBorderColor] = useState('#2A3A5C');
-  const [accentColor, setAccentColor] = useState('#D4A843');
+  const [accentColor, setAccentColor] = useState('#F5C453');
 
   // Name
   const [name, setName] = useState('Imported Template');
@@ -142,7 +142,7 @@ export default function TemplateImporter({ onImport, onCancel }: Props) {
       const logoRow = Math.floor(rows / 2);
       ctx.fillStyle = 'rgba(212,168,67,0.3)';
       ctx.fillRect(gx + logoCol * cellW, gy + logoRow * cellH, cellW, cellH);
-      ctx.fillStyle = '#D4A843';
+      ctx.fillStyle = '#F5C453';
       ctx.font = '12px "DM Sans", sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';

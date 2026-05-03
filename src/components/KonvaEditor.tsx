@@ -220,7 +220,7 @@ export default function KonvaEditor({
               height={h}
               rotation={el.rotation || 0}
               fill="transparent"
-              stroke="#D4A843"
+              stroke="#F5C453"
               strokeWidth={1}
               dash={[4, 2]}
               draggable={!isLocked}
@@ -238,10 +238,10 @@ export default function KonvaEditor({
             'top-left', 'top-right', 'bottom-left', 'bottom-right',
             'middle-left', 'middle-right',
           ]}
-          anchorStroke="#D4A843"
+          anchorStroke="#F5C453"
           anchorFill="#0F1B33"
           anchorSize={8}
-          borderStroke="#D4A843"
+          borderStroke="#F5C453"
           borderDash={[4, 4]}
           boundBoxFunc={(_oldBox, newBox) => {
             if (Math.abs(newBox.width) < 10 || Math.abs(newBox.height) < 10) {

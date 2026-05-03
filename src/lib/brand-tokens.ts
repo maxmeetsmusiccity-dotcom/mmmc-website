@@ -9,7 +9,7 @@ export const NMF_BRAND_TOKENS = {
     inkPrimary: '#0F1B33',
     accentTeal: '#3EE6C3',
     accentGold: '#F5C453',
-    warmGold: '#D4A843',
+    warmGold: '#F5C453',
     ivory: '#F5E6B8',
     paper: '#FAFAF6',
     rose: '#FF69B4',

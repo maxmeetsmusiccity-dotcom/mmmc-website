@@ -13,7 +13,7 @@ function LayoutIcon({ config, size = 36, active }: { config: GridConfig; size?: 
   const pad = 2;
   const gap = 1;
   const rects = computeCellRects(config, pad, pad, size - pad * 2, size - pad * 2, gap);
-  const accent = active ? '#D4A843' : '#6B7F95';
+  const accent = active ? '#F5C453' : '#6B7F95';
   const logoColor = active ? '#B08A2E' : '#4A5568';
   const emptyColor = active ? '#2A3A5C' : '#1E2D4F';
 
