@@ -42,6 +42,11 @@ import {
   PHASE6_MARQUEE_BODY_TEMPLATE_IDS,
   PHASE6_MARQUEE_BODY_TEMPLATE_SCAFFOLD,
 } from '../../src/lib/body-templates-v2-phase6';
+import {
+  PHASE7_CURATOR_BODY_TEMPLATE_IDS,
+  PHASE7_CURATOR_BODY_TEMPLATE_SCAFFOLD,
+  PHASE7_LIVE_BODY_TEMPLATE_PRESETS,
+} from '../../src/lib/body-templates-v2-phase7';
 
 describe('canvas renderer v2 phase 1 surface', () => {
   it('normalizes design zip dash IDs to production-safe underscore IDs', () => {
@@ -184,5 +189,24 @@ describe('canvas renderer v2 phase 1 surface', () => {
       expect.arrayContaining(PHASE6_MARQUEE_BODY_TEMPLATE_IDS),
     );
     expect(getV2BodyTemplatePreset(getTemplate('v2_marquee_gold_room'))?.decoration).toBe('marquee-bulbs');
+  });
+
+  it('ships Phase 7 curator-enrichment body templates through the carousel registry', () => {
+    expect(PHASE7_CURATOR_BODY_TEMPLATE_IDS).toEqual([
+      'v2_curator_spotlight',
+      'v2_pitch_room',
+      'v2_writer_board',
+      'v2_recap_wall',
+    ]);
+    expect(PHASE7_CURATOR_BODY_TEMPLATE_SCAFFOLD.every(item => item.curatorEnrichment === 'phase-7')).toBe(true);
+    expect(PHASE7_CURATOR_BODY_TEMPLATE_SCAFFOLD.every(item => item.liveInPhase7)).toBe(true);
+    expect(PHASE7_CURATOR_BODY_TEMPLATE_SCAFFOLD.every(item => item.recommendedTrackCounts.length > 0)).toBe(true);
+    expect(PHASE7_LIVE_BODY_TEMPLATE_PRESETS).toHaveLength(
+      PHASE6_LIVE_BODY_TEMPLATE_PRESETS.length + PHASE7_CURATOR_BODY_TEMPLATE_IDS.length,
+    );
+    expect(getVisibleTemplates('curator@example.com').map(template => template.id)).toEqual(
+      expect.arrayContaining(PHASE7_CURATOR_BODY_TEMPLATE_IDS),
+    );
+    expect(getV2BodyTemplatePreset(getTemplate('v2_writer_board'))?.fonts.script).toBe(NMF_BRAND_TOKENS.font.script);
   });
 });

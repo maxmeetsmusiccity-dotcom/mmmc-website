@@ -1,4 +1,4 @@
-import { PHASE6_LIVE_BODY_TEMPLATE_PRESETS } from './body-templates-v2-phase6';
+import { PHASE7_LIVE_BODY_TEMPLATE_PRESETS } from './body-templates-v2-phase7';
 import type { TemplateEngine, V2CarouselBodyTemplate } from './template-types-v2';
 
 export interface CarouselTemplate {
@@ -435,10 +435,10 @@ const V1_TEMPLATES: CarouselTemplate[] = LEGACY_TEMPLATES.map(template => ({
 
 export const TEMPLATES: CarouselTemplate[] = [
   ...V1_TEMPLATES,
-  ...PHASE6_LIVE_BODY_TEMPLATE_PRESETS.map(carouselShellFromV2),
+  ...PHASE7_LIVE_BODY_TEMPLATE_PRESETS.map(carouselShellFromV2),
 ];
 
-const V2_BODY_TEMPLATE_PRESET_BY_ID = new Map(PHASE6_LIVE_BODY_TEMPLATE_PRESETS.map(template => [template.id, template]));
+const V2_BODY_TEMPLATE_PRESET_BY_ID = new Map(PHASE7_LIVE_BODY_TEMPLATE_PRESETS.map(template => [template.id, template]));
 
 /** Templates that are exclusive to Max's account */
 export const MAX_ONLY_TEMPLATES = new Set(['mmmc_classic', 'neon_rose', 'golden_hour']);
