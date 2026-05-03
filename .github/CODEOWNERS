@@ -1,5 +1,5 @@
-# mmmc-website · v5 5-thread file ownership (2026-04-29)
-# NMF Curator Studio (live `/newmusicfriday`) + marketing site host
+# NMF Curator Studio · Wave 8 file ownership (2026-05-02)
+# Canonical repo/product: nmf-curator-studio. Legacy mmmc-website references are historical only.
 # 11 pages · 22 API routes · 4 Vercel crons · React + TS SPA
 # Lane format: <pattern> @<owner>
 
@@ -44,6 +44,5 @@
 # === Default ===
 * @max-multi-thread
 
-# === Future MCO scope (greenfield 6th product · sourcing from venue + NMF + Archive) ===
-# When MCO scaffolding lands, /src/pages/oracle/** + /api/mco/** routes will follow
-# Build-General owns scaffolding · Aesthetic owns brand identity
+# === MCO scope ===
+# MCO is a Nashville Decoder lane, not an NMF Curator Studio product surface.
