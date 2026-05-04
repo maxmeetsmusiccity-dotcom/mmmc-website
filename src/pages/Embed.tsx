@@ -59,7 +59,7 @@ export default function Embed() {
           <ProductNav backTo="/newmusicfriday" backLabel="Curator Studio" />
         </header>
         <h2 style={titleStyle}>
-          New Music <span style={{ color: '#D4A843' }}>Friday</span>
+          New Music <span style={{ color: '#F5C453' }}>Friday</span>
         </h2>
         <p style={{ color: '#6B7F95', fontSize: 'var(--fs-md)', marginTop: 12 }}>
           No carousel generated for this week yet.
@@ -106,7 +106,7 @@ export default function Embed() {
             onClick={() => goTo(i)}
             style={{
               width: i === activeSlide ? 16 : 6, height: 6, borderRadius: 3,
-              background: i === activeSlide ? '#D4A843' : '#2A3A5C',
+              background: i === activeSlide ? '#F5C453' : '#2A3A5C',
               transition: 'all 0.3s', cursor: 'pointer', border: 'none',
             }}
           />
@@ -122,7 +122,7 @@ export default function Embed() {
           href="https://newmusicfriday.app/newmusicfriday"
           target="_blank"
           rel="noopener noreferrer"
-          style={{ fontSize: 'var(--fs-3xs)', color: '#D4A843', textDecoration: 'none' }}
+          style={{ fontSize: 'var(--fs-3xs)', color: '#F5C453', textDecoration: 'none' }}
         >
           Max Meets Music City
         </a>

@@ -332,7 +332,7 @@ export function createCustomShape(kind: ShapeKind = 'rectangle'): EditorElement 
     props: {
       kind,
       fill: kind === 'line' ? 'transparent' : 'rgba(212,168,67,0.2)',
-      stroke: '#D4A843',
+      stroke: '#F5C453',
       strokeWidth: 2,
     },
   };

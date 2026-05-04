@@ -81,7 +81,7 @@ const PRESET_COLORS = [
 ];
 
 const ACCENT_COLORS = [
-  '#D4A843', '#FFFFFF', '#FF69B4', '#FF4500',
+  '#F5C453', '#FFFFFF', '#FF69B4', '#FF4500',
   '#FFB347', '#1A1A1A', '#00D4FF', '#7B68EE',
   '#E8E8E8', '#7BA87A', '#CC1100', '#C4572A',
 ];
@@ -277,7 +277,7 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
   const [glowColor, setGlowColor] = useState(() => {
     if (!isGrid && titleInit) {
       const gc = titleInit.glow.color;
-      return gc.includes('#') ? gc : '#D4A843';
+      return gc.includes('#') ? gc : '#F5C453';
     }
     return initial?.accent || TEMPLATES[0].accent;
   });
@@ -331,7 +331,7 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
 
   /* ---------- decorations (title) ---------- */
   const [showFrame, setShowFrame] = useState(titleInit?.showFrame ?? false);
-  const [frameColor, setFrameColor] = useState(titleInit?.frameColor || '#D4A843');
+  const [frameColor, setFrameColor] = useState(titleInit?.frameColor || '#F5C453');
   const [frameWidth, setFrameWidth] = useState(titleInit?.frameWidth ?? 4);
   const [showDivider, setShowDivider] = useState(titleInit?.showDivider ?? false);
   const [dividerColor, setDividerColor] = useState(titleInit?.dividerColor || 'rgba(255,255,255,0.3)');
@@ -662,7 +662,7 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
       setFeaturedShadowBlur(t.featuredShadowBlur);
       setGlowBlur(t.glow.blur);
       setGlowPasses(t.glow.passes);
-      setGlowColor(t.glow.color.includes('#') ? t.glow.color : '#D4A843');
+      setGlowColor(t.glow.color.includes('#') ? t.glow.color : '#F5C453');
       setGrainIntensity(t.grain);
       setVignetteIntensity(t.vignette);
       setShowFrame(t.showFrame);
@@ -1436,7 +1436,7 @@ export default function UnifiedTemplateBuilder({ mode, onSave, onCancel, initial
                         onChange={v => setCustomElements(prev => prev.map(el => el.id === sel.id ? { ...el, height: v } : el))} />
                       <ColorField label="Fill" value={(sel.props.fill as string) || 'transparent'}
                         onChange={v => updateProp('fill', v)} />
-                      <ColorField label="Stroke" value={(sel.props.stroke as string) || '#D4A843'}
+                      <ColorField label="Stroke" value={(sel.props.stroke as string) || '#F5C453'}
                         onChange={v => updateProp('stroke', v)} />
                       <Slider label="Stroke Width" value={(sel.props.strokeWidth as number) || 1}
                         min={0} max={10} step={1} onChange={v => updateProp('strokeWidth', v)} suffix="px" />
